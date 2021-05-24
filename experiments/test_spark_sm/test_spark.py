@@ -12,7 +12,11 @@ Download JDBC Driver:
 https://docs.microsoft.com/en-us/sql/connect/jdbc/download-microsoft-jdbc-driver-for-sql-server?view=sql-server-ver15
 
 
+https://github.com/microsoft/sql-spark-connector
+
+
 """
+
 
 # %% Import Libraries
 
@@ -56,7 +60,7 @@ if not secrets.password:
 
 # %% Initiate a Spark Session
 
-path_to_jdbc_jar = r'C:\Users\smammadov\OneDrive - Advisor Group Inc\Desktop\Coding\drivers\sqljdbc_9.2\enu\mssql-jdbc-9.2.1.jre8.jar'
+path_to_jdbc_jar = r'C:\Users\smammadov\OneDrive - Advisor Group Inc\Desktop\EDIP-Code\drivers\mssql-jdbc-9.2.1.jre8.jar'
 
 spark_master = "spark://10.128.25.82:7077"
 
@@ -65,6 +69,7 @@ spark = SparkSession \
             .appName(app_name) \
             .master(spark_master) \
             .config('spark.driver.extraClassPath', path_to_jdbc_jar) \
+            .config('spark.executor.extraClassPath', path_to_jdbc_jar) \
             .getOrCreate()
 
 sc = spark.sparkContext
@@ -76,7 +81,9 @@ spark
 
 server = 'TSQLOLTP01'
 database = 'LR'
-dbtable = 'INFORMATION_SCHEMA.TABLES'
+
+#dbtable = 'INFORMATION_SCHEMA.TABLES'
+dbtable = 'OLTP.Individual'
 
 url = f'jdbc:sqlserver://{server};databaseName={database}'
 driver = 'com.microsoft.sqlserver.jdbc.SQLServerDriver'
@@ -93,7 +100,7 @@ df = (
 
 # %%
 
-
+df.limit(5).show()
 
 
 # %% Release Spark Session - To be used at the end.

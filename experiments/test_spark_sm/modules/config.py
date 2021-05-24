@@ -12,7 +12,7 @@ import yaml
 
 # %% Config Files
 
-secrets_file = './config/secrets.yaml'
+secrets_file = '../../config/secrets.yaml'
 
 
 logger = make_logging(__name__)
