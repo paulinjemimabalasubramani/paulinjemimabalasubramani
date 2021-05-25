@@ -10,9 +10,7 @@ from .common import make_logging
 import yaml
 
 
-# %% Config Files
-
-secrets_file = '../../config/secrets.yaml'
+# %% Logger
 
 
 logger = make_logging(__name__)
