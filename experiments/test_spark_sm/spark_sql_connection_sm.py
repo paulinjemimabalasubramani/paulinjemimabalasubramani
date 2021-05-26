@@ -1,5 +1,5 @@
 """
-Pull Table X
+Test Spark - SQL connection
 
 Spark Web UI:
 http://10.128.25.82:8181/
@@ -44,7 +44,28 @@ if __name__ == '__main__':
     df.printSchema()
     
 
-    
-# %% DEBUGGING
+
+
+# %% DEBUGGING AND RAW CODE:
+
+# 'INFORMATION_SCHEMA.TABLES', 'INFORMATION_SCHEMA.COLUMNS'
+
+# %% Print DF Info
+
+print(f'Columns: {len(df.columns)}')
+print(f'Rows: {df.count()}')
+print(f'Partitions: {df.rdd.getNumPartitions()}')
+
+# %% Show Table
+
+print('Show Table')
+
+x = df.select(col('EffDate').cast(StringType())).limit(5).collect()
+
+print(x)
+
+
+# %%
+
 
 
