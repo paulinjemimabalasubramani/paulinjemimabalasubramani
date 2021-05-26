@@ -7,7 +7,7 @@ Library Class for retrieving and storing configuration data
 
 from .common import make_logging
 
-import yaml
+#import yaml
 
 
 # %% Logger
@@ -27,7 +27,7 @@ class Config:
 
         try:
             with open(file_path, 'r') as f:
-                contents = yaml.load(f, Loader=yaml.FullLoader)
+                contents = {} #yaml.load(f, Loader=yaml.FullLoader)
         except Exception as e:
             except_str = f'Error File was not read: {file_path}'
             print(except_str)
