@@ -6,6 +6,26 @@ Library for common generic functions
 # %% Import Libraries
 import os, logging
 
+from functools import wraps
+
+
+# %% Wrapper/Decorator function for catching errors
+
+def catch_error(logger=None):
+    def outer(fn):
+        @wraps(fn)
+        def inner(*args, **kwargs):
+            try:
+                response = fn(*args, **kwargs)
+            except Exception as e:
+                exception_message = f"Exception occurred inside '{fn.__name__}' --> Exception Message: {e}"
+                print(exception_message)
+                if logger:
+                    logger.error(exception_message)
+                raise e
+            return response
+        return inner
+    return outer
 
 
 # %% Create file with associated directory tree

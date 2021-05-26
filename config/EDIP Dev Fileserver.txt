@@ -1,0 +1,17 @@
+File Server
+local server: ql1aqledip04
+local dir: /mnt/FileServer
+user: edipsp01
+password: 3YdRVfSp8mEp
+
+
+
+connect from ubuntu: 
+-sudo apt install samba-client samba-common cifs-utils
+-mkdirs "directory to mount in"
+-sudo mount -t cifs -o username=edipsp01 //10.128.25.85/edipshare /mnt/edipshares
+--Enter password
+
+Mount Windows:
+net use /persistent:yes m: \\10.128.25.85\edipshare /user:edipsp01
+--Enter Password
