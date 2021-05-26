@@ -5,6 +5,8 @@ Library Class for retrieving and storing configuration data
 
 # %% libraries
 
+import os
+
 from .common import make_logging
 
 #import yaml
@@ -12,6 +14,11 @@ from .common import make_logging
 
 # %% Logging
 logger = make_logging(__name__)
+
+
+# %% Config Folder Path
+
+config_path = os.path.realpath(os.path.dirname(__file__)+'/../../config')
 
 
 # %% Main Class

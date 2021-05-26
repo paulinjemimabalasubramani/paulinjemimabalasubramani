@@ -15,7 +15,7 @@ https://spark.apache.org/docs/latest/configuration
 
 # %% libraries
 from .common import make_logging, catch_error
-from .config import Config
+from .config import Config, config_path
 
 import os, sys, platform
 import getpass
@@ -23,9 +23,11 @@ import getpass
 from pyspark.sql import SparkSession
 
 
-
 # %% Logging
 logger = make_logging(__name__)
+
+# %% Driver Folder Path
+drivers_path = os.path.realpath(os.path.dirname(__file__)+'/../../drivers')
 
 
 # %% Main Class
@@ -39,6 +41,9 @@ class MySession():
 
     @catch_error(logger)
     def get_env(self):
+        """
+        Get environment data, like, app name, os system etc.
+        """
         self.app_name = os.path.basename(__file__)
         self.app_info = f'Running {self.app_name} on {platform.system()}'
 
@@ -50,6 +55,9 @@ class MySession():
 
     @catch_error(logger)
     def set_paths(self):
+        """
+        Set correct paths for Spark, config files, drivers, etc. based on system.
+        """
         if self.is_pc:
             os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.1-bin-hadoop3.2'
             os.environ["HADOOP_HOME"] = r'C:\Spark\Hadoop'
@@ -58,18 +66,19 @@ class MySession():
             sys.path.insert(0, '%SPARK_HOME%\bin')
             sys.path.insert(0, '%HADOOP_HOME%\bin')
             sys.path.insert(0, '%JAVA_HOME%\bin')
-
-            self.extraClassPath = r'C:\Users\smammadov\OneDrive - Advisor Group Inc\Desktop\EDIP-Code\drivers\mssql-jdbc-9.2.1.jre8.jar'
-
-            self.secrets_file = r"C:\Users\smammadov\OneDrive - Advisor Group Inc\Desktop\EDIP-Code\config\secrets.yaml"
-
+        
         else:
-            self.extraClassPath = ''
-            self.secrets_file = ''
+            pass # placeholer
+
+        self.extraClassPath = os.path.join(drivers_path,'mssql-jdbc-9.2.1.jre8.jar')
+        self.secrets_file = os.path.join(config_path, "secrets.yaml")
 
 
     @catch_error(logger)
     def read_config(self):
+        """
+        Read configuration files, username/passwords
+        """
         defaults = dict(
             user = "svc_ediprolr",
             password = "E0d!pr$L",
@@ -90,6 +99,9 @@ class MySession():
 
     @catch_error(logger)
     def initiate_spark(self):
+        """
+        Initiate a new spark session
+        """
         self.spark = (
             SparkSession
             .builder
@@ -105,6 +117,9 @@ class MySession():
 
     @catch_error(logger)
     def read_sql(self, table:str, database:str='LR', server:str='TSQLOLTP01'):
+        """
+        Read a table from SQL server
+        """
         print(f"Reading SQL: server='{server}', database='{database}', table='{table}'")
 
         url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
@@ -127,6 +142,9 @@ class MySession():
 
     @catch_error(logger)
     def stop_spark(self):
+        """
+        Stop Spark session
+        """
         self.spark.stop()
 
 
