@@ -33,6 +33,14 @@ transfer/*
 
 
 
+
+# parquet files
+*.crc
+*.parquet
+_SUCCESS
+
+
+
 # Compiled source #
 ###################
 *.com
