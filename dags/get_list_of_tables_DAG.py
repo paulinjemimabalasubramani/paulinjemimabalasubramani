@@ -18,9 +18,16 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, _
 # Parameters
 ###############################################
 spark_master = "spark://spark:7077"
-spark_app_name = "Spark Send Metadata"
+spark_app_name = "Get table List from OLTP"
 file_path = "/usr/local/spark/resources/data/airflow.cfg"
-firmlist = ["raa","faa","sao"]
+
+
+
+
+
+
+
+
 
 default_args = {
     'owner': 'JaredF',
@@ -28,32 +35,33 @@ default_args = {
 }
 
 with DAG(
-    'Spark-Send',
+    'Spark-Get-Table-List',
     default_args=default_args,
-    description='A simple Cat DAG',
-    schedule_interval=timedelta(hours=6),
+    description='DAG get a list of Tables from SQL OLTP schema',
+    schedule_interval=timedelta(hours=24),
     start_date=days_ago(2),
 ) as dag:
     current_datetime = datetime.now()
-    firmnum = len(firmlist)
     info = "CAT"
     startpipe = BashOperator(
         task_id='Start_Pipe',
-        bash_command='echo "Start Pipeline for " + firmlist'
+        bash_command='echo "Start Pipeline for "'
     )
-    for firm in firmlist:
-        spark_job = SparkSubmitOperator(
-            task_id="spark_job" + str(firm),
-                application="/usr/local/spark/app/get_tables.py",
-                name=spark_app_name,
-                packages="org.apache.spark:spark-sql_2.12:3.0.1",
-                jars="/usr/local/spark/resources/jars/spark-mssql-connector_2.11-1.0.0.jar",
-                conn_id="spark_default",
-                verbose=1,
-                conf={"spark.master":spark_master},
-                application_args=[file_path],
-                dag=dag)
+ #   for firm in firmlist:
+    spark_job = SparkSubmitOperator(
+         task_id="spark_job",
+         application="/usr/local/spark/app/get-table-list.py",
+         name=spark_app_name,
+         jars="/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/mssql-jdbc_auth-9.2.1.x64.dll",
+         conn_id="spark_default",
+         num_executors=2,
+         executor_cores=3,
+         executor_memory="3G",
+         verbose=1,
+         conf={"spark.master":spark_master},
+         application_args=[file_path],
+         dag=dag)
 
 
 
-        startpipe >> [spark_job]
+    startpipe >> [spark_job]
