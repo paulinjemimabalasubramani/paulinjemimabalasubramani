@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     df.write.parquet(path = data_path, mode='overwrite')
     
-    ss.spark.stop()
+    #ss.spark.stop()
     print('Done')
 
 

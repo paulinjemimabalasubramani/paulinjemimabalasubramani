@@ -7,7 +7,7 @@ Library Class for retrieving and storing configuration data
 
 import os
 
-from .common import make_logging
+from .common import make_logging, catch_error
 
 #import yaml
 
@@ -26,6 +26,7 @@ class Config:
     """
     Class for retrieving and storing configuration data
     """
+    @catch_error(logger)
     def __init__(self, file_path:str, defaults:dict={}):
         for name, value in defaults.items():
             setattr(self, name, value) # Write defaults
