@@ -21,6 +21,7 @@ import os, sys, platform
 import getpass
 
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
 
 
 # %% Logging
@@ -147,4 +148,16 @@ class MySession():
         """
         self.spark.stop()
 
+
+    @catch_error(logger)
+    def to_string(self, df, col_types=['timestamp']):
+        """
+        Convert timestamp's or other types to string - as it cause errors otherwise.
+        """
+        for col_name, col_type in df.dtypes:
+            if not col_types or col_type in col_types:
+                print(f"Converting {col_name} from '{col_type}' to 'string' type")
+                df = df.withColumn(col_name, col(col_name).cast('string'))
+        
+        return df
 

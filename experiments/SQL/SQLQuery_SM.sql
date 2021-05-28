@@ -1,0 +1,19 @@
+select * from INFORMATION_SCHEMA.TABLES
+where TABLE_CATALOG = 'LR'and
+	TABLE_SCHEMA = 'OLTP' and
+	TABLE_TYPE = 'BASE TABLE'
+order by TABLE_NAME;
+
+
+
+
+
+select * from INFORMATION_SCHEMA.COLUMNS;
+
+
+
+
+
+
+
+

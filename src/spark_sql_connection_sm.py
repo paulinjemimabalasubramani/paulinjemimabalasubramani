@@ -17,6 +17,7 @@ import os, sys
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
+sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common import make_logging, catch_error
 from modules.mysession import MySession
@@ -41,15 +42,12 @@ if __name__ == '__main__':
 
     table = 'OLTP.Individual'
 
-    df = ss.read_sql(table=table, database='LR')
+    df = ss.read_sql(table=table, database='LR', server='TSQLOLTP01')
 
     df.printSchema()
 
     # Convert timestamp's to string - as it cause errors otherwise.
-    for col_name, col_type in df.dtypes:
-        if col_type in ['timestamp']:
-            print(f"Converting {col_name} from '{col_type}' to 'string' type")
-            df = df.withColumn(col_name, col(col_name).cast('string'))
+    df = ss.to_string(df, col_types = ['timestamp'])
 
     print(os.path.realpath(os.path.dirname(__file__)))
 
@@ -65,6 +63,7 @@ if __name__ == '__main__':
 
     df.write.parquet(path = data_path, mode='overwrite')
     
+    ss.spark.stop()
     print('Done')
 
 
