@@ -51,10 +51,13 @@ if __name__ == '__main__':
 
     print(os.path.realpath(os.path.dirname(__file__)))
 
-    # /usr/local/spark/resources/fileshare/Shared
-    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared')
-    #os.makedirs(data_path_folder, exist_ok=True)
+    if ss.is_pc:
+        data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared')
+    else:
+        # /usr/local/spark/resources/fileshare/Shared
+        data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared')
 
+    #os.makedirs(data_path_folder, exist_ok=True)
     data_path = os.path.join(data_path_folder, table+'.parquet')
     print(f'Data path: {data_path}')
 
