@@ -67,11 +67,17 @@ class MySession():
             sys.path.insert(0, '%SPARK_HOME%\bin')
             sys.path.insert(0, '%HADOOP_HOME%\bin')
             sys.path.insert(0, '%JAVA_HOME%\bin')
+            
+            joinstr = ';' # for extraClassPath
         
         else:
-            pass # placeholer
+            joinstr = ':' # for extraClassPath
 
-        self.extraClassPath = os.path.join(drivers_path,'mssql-jdbc-9.2.1.jre8.jar')
+        self.extraClassPath = joinstr.join([
+            os.path.join(drivers_path,'mssql-jdbc-9.2.1.jre8.jar'),
+            os.path.join(drivers_path,'spark-xml_2.12-0.13.0.jar')
+        ])
+
         self.secrets_file = os.path.join(config_path, "secrets.yaml")
 
 

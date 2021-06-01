@@ -84,3 +84,19 @@ recursive_unzip(data_path_folder, temp_path_folder)
 
 
 # %%
+
+file_path = os.path.join(temp_path_folder, r'2021-05-16\7461_PostAppointmentsReport_2021-05-16.xml')
+print(file_path)
+
+df = (ss.spark.read
+    .format("com.databricks.spark.xml")
+#    .option("rootTag", "PostAppointmentsReport")
+    .option("rowTag", "Criteria")
+    .load(file_path)
+)
+
+
+# %%
+
+df.show()
+# %%
