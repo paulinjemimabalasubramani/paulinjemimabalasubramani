@@ -148,6 +148,21 @@ class MySession():
 
 
     @catch_error(logger)
+    def read_xml(self, file_path:str, rowTag:str="?xml"):
+        """
+        Read XML Files using Spark
+        """
+        df = (self.spark.read
+            .format("xml")
+            .option("rowTag", rowTag)
+            .option("inferSchema", 'true')
+            .load(file_path)
+        )
+
+        return df
+
+
+    @catch_error(logger)
     def stop_spark(self):
         """
         Stop Spark session

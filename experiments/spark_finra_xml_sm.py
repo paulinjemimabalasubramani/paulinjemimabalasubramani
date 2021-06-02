@@ -66,9 +66,10 @@ def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', w
     if walk:
         for root, dirs, files in os.walk(folder_path):
             for file in files:
-                # Placeholder
                 if file.endswith('.zip'):
                     zip_files.append(os.path.join(root, file))
+                else:
+                    pass # Placeholder
     else:
         for file in os.listdir(folder_path):
             if file.endswith('.zip'):
@@ -87,17 +88,10 @@ recursive_unzip(data_path_folder, temp_path_folder)
 
 # %%
 
-file_path = os.path.join(temp_path_folder, r'2021-05-16\C:\Users\smammadov\packages\Temp\2021-05-16\7461_IndividualInformationReport_2021-05-16\7461_IndividualInformationReport_2021-05-16.iid')
+file_path = os.path.join(temp_path_folder, r'2021-05-16\7461_IndividualInformationReport_2021-05-16\7461_IndividualInformationReport_2021-05-16.iid')
 print(file_path)
 
-df = (ss.spark.read
-    .format("xml")
-#    .option("rootTag", "?xml")
-    .option("rowTag", "?xml")
-    .option("inferSchema", 'true')
-    .load(file_path)
-)
-
+df = ss.read_xml(file_path, rowTag="?xml")
 
 df.printSchema()
 
@@ -126,7 +120,7 @@ def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
     cols = []
     nested = False
 
-    # to ensure not to have more than 1 expolosion in a table
+    # to ensure not to have more than 1 explosion in a table
     expolode_flag = len([c[0] for c in df.dtypes if c[1].startswith('array')]) <= 1
 
     for c in df.dtypes:
@@ -144,8 +138,8 @@ def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
             cols.append(c[0])
 
     dfx = df.select(cols)
-    print('\n' ,dfx.columns)
     if nested:
+        print('\n' ,dfx.columns)
         dfx = flatten_df(dfx)
 
     return dfx
