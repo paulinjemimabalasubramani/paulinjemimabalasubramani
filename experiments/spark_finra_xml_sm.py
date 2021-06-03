@@ -27,7 +27,7 @@ from modules.mysession import MySession
 # %% Spark Libraries
 
 import pyspark
-from pyspark.sql.types import StructType, StructField, StringType, TimestampType, BooleanType, DoubleType, IntegerType, FloatType
+from pyspark.sql.types import StructType, StructField, StringType, TimestampType, BooleanType, DoubleType, IntegerType, FloatType, ArrayType, LongType
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit, split, explode, udf
@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
 
 
-# %%
+# %% Recursive Unzip
 
 def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', walk:bool=False):
     zip_files = []
@@ -86,16 +86,182 @@ def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', w
 recursive_unzip(data_path_folder, temp_path_folder)
 
 
-# %%
+# %% Create Schema - Test
+
+
+base = {
+    'person': [{
+        '_age':None, 
+        '_height':None, 
+        '_name':None, 
+        'locations':{
+            'loc':[{
+                '_address':None, 
+                '_id':None
+            }]
+        }
+    }]
+}
+
+
+# %% Create Schema
+
+base = {
+    'Indvl': [{
+        'Comp': {
+            'Nm': {
+                '_VALUE': None,
+                '_first': None,
+                '_last': None,
+                '_mid': None,
+                '_suf': None,
+            },
+            '_actvMltry': None,
+            '_bllngCd': None,
+            '_indvlPK': None,
+            '_indvlSSN': None,
+            '_matDiff': None,
+            '_rgstdMult': None,
+            '_rptblDisc': None,
+            '_statDisq': None,
+        },
+        'ContEds': {
+            'ContEd': [{
+                'Appts': None,
+                '_begDt': None,
+                '_endDt': None,
+                '_eventDt': None,
+                '_frgnDfrdFl': None,
+                '_mltryDfrdFl': None,
+                '_nrlmtID': None,
+                '_rslt': None,
+                '_sssn': None,
+                '_sssnDt': None,
+                '_sssnReqSt': None,
+                '_sssnSt': None,
+            }],
+            '_VALUE': None,
+            '_baseDt': None,
+            '_st': None,
+        },
+        'CrntRgstns': { # Manual Input
+            'CrntRgstn':[{
+                'CrntDfcnys': None,
+                '_actvReg': None,
+                '_aprvlDt': None,
+                '_crtnDt': None,
+                '_empStDt': None,
+                '_regAuth': None,
+                '_regCat': None,
+                '_st': None,
+                '_stDt': None,
+                '_trmnnDt': None,
+                '_updateTS': None,
+            }],
+        },
+        'DRPs': None,
+        'Dsgntns': None,
+        'EmpHists': None,
+        'EventFlngHists': {
+            'EventFlngHist': [{
+                '_VALUE': None,
+                '_dt': None,
+                '_flngType': None,
+                '_frmType': None,
+                '_id': None,
+                '_src': None,
+                '_type': None,
+            }]
+        },
+        'ExmWvrs': None,
+        'Exms': None,
+        'FngprInfos': None,
+        'IAAffltns': None,
+        'IdentInfo': {
+            'Ht': {
+                '_VALUE': None,
+                '_ft': None,
+                '_in': None,
+            },
+            '_birthCntryCd': None,
+            '_birthCntryOld': None,
+            '_birthPrvnc': None,
+            '_birthStCd': None,
+            '_dob': None,
+            '_eye': None,
+            '_gender': None,
+            '_hair': None,
+            '_wt': None,
+        },
+        'OffHists': {
+            'OffHist': [{
+                'DtRng': {
+                    '_VALUE': None,
+                    '_fromDt': None,
+                    '_toDt': None,
+                },
+                'EmpLocs': None,
+                '_empCntxt': None,
+                '_firmAsctnSt': None,
+                '_ndpndCntrcrFl': None,
+                '_orgNm': None,
+                '_orgPK': None,
+                '_termDt': None,
+                '_termExpln': None,
+                '_termRsn': None,
+                '_termRsnAmndtExpln': None,
+            }]
+        },
+        'OthrBuss': None,
+        'OthrNms': None,
+        'ResHists': None,
+    }]
+}
+
+
+
+
+def base_to_schema(base:dict):
+    st = []
+    for key, val in base.items():
+        if val is None:
+            v = StringType()
+        elif isinstance(val, dict):
+            v = base_to_schema(val)
+        elif isinstance(val, list):
+            v = ArrayType(base_to_schema(val[0]), True)
+        else:
+            v = val
+        
+        st.append(StructField(key, v, True))
+    return StructType(st)
+
+
+
+schema = base_to_schema(base)
+
+
+
+# %% Read XML File
+
+file_name = r'7461_IndividualInformationReport_2021-05-16.iid'
 
 file_path = os.path.join(temp_path_folder, r'2021-05-16\7461_IndividualInformationReport_2021-05-16\7461_IndividualInformationReport_2021-05-16.iid')
+#file_path = os.path.join(data_path_folder, r'test2.xml')
+
 print(file_path)
 
-df = ss.read_xml(file_path, rowTag="?xml")
+#df = ss.read_xml(file_path, rowTag="?xml")
+df = ss.read_xml(file_path, rowTag="Indvls", schema=schema)
+
 
 df.printSchema()
 
-# %% Get Criteria
+df.show(1)
+
+df.schema
+
+# %% Get XML Criteria
 
 def get_xml_criteria(df, criteria_str:str='Criteria'):
     if df.count()==1 and criteria_str in df.columns:
@@ -104,13 +270,13 @@ def get_xml_criteria(df, criteria_str:str='Criteria'):
             return df.select(col(criteria_str)).collect()[0][0].asDict()
     return {}
 
-get_xml_criteria(df)
+criteria = get_xml_criteria(df)
 
+print(criteria)
+# TODO: Track Criteria in metadata
 
-# %% Critera-less DF
+df = df.select([col(c) for c in df.columns if c!='Criteria'])
 
-
-dfc = df.select([col(c) for c in df.columns if c!='Criteria'])
 
 
 # %% Flatten XML
@@ -145,20 +311,57 @@ def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
     return dfx
 
 
-dfy = flatten_df(dfc)
+df = flatten_df(df)
+
+# %% Print Number of Columns and Schema
+
+print(len(df.columns))
+df.printSchema()
+
+
+# %% Wrtie to parquet format
+
+print(os.path.realpath(os.path.dirname(__file__)))
+
+if ss.is_pc:
+    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared/Finra')
+else:
+    # /usr/local/spark/resources/fileshare/Shared/Finra
+    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared/Finra')
+
+#os.makedirs(data_path_folder, exist_ok=True)
+data_path = os.path.join(data_path_folder, file_name+'.parquet')
+print(f'Data path: {data_path}')
+
+codec = ss.spark.conf.get("spark.sql.parquet.compression.codec")
+print(f"Write data in parquet format with '{codec}' compression")
+
+df.write.parquet(path = data_path, mode='overwrite')
+
+
+# %% Write to JSON
+"""
+data_path = os.path.join(data_path_folder, file_name+'.json')
+df.coalesce(1).write.json(path = data_path, mode='overwrite')
+
+
+""";
+
+
+# %% Show sample row(s)
+
+#df.show(n=5, truncate=True)
+
+df.limit(1).write.json(r"C:\Users\smammadov\packages\Temp\t.json", mode='overwrite')
+
 
 # %%
 
-print(len(dfy.columns))
-dfy.printSchema()
+#df.select('Comp_Nm__first').where(lit(14)==F.length(col("Comp_Nm__first"))).collect()
+
+
+#df.select(F.max(F.length(col("Comp_Nm__first"))).alias('maxx')).collect()
 
 
 # %%
 
-dfy.limit(1).collect()
-
-
-# %%
-
-df.show(n=10, truncate=True)
-# %%

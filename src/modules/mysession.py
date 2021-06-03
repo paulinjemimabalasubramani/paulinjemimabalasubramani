@@ -148,18 +148,23 @@ class MySession():
 
 
     @catch_error(logger)
-    def read_xml(self, file_path:str, rowTag:str="?xml"):
+    def read_xml(self, file_path:str, rowTag:str="?xml", schema=None):
         """
         Read XML Files using Spark
         """
         df = (self.spark.read
-            .format("xml")
+            .format("com.databricks.spark.xml")
             .option("rowTag", rowTag)
-            .option("inferSchema", 'true')
-            .load(file_path)
+            .option("inferSchema", 'false')
+            .option("excludeAttribute", 'false')
+            .option("ignoreSurroundingSpaces", 'true')
+            .option("mode", "PERMISSIVE")
         )
 
-        return df
+        if schema:
+            df = df.schema(schema=schema)
+
+        return df.load(file_path)
 
 
     @catch_error(logger)
