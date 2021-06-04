@@ -15,7 +15,7 @@ https://spark.apache.org/docs/latest/configuration
 
 # %% libraries
 from .common import make_logging, catch_error
-from .config import Config, config_path
+from .config import Config, secrets_file, is_pc, extraClassPath
 
 import os, sys, platform
 import getpass
@@ -34,55 +34,9 @@ logger = make_logging(__name__)
 # %% Main Class
 class MySession():
     def __init__(self):
-        self.get_env()
-        self.set_paths()
+        self.app_name = os.path.basename(__file__)
         self.read_config()
         self.initiate_spark()
-
-
-    @catch_error(logger)
-    def get_env(self):
-        """
-        Get environment data, like, app name, os system etc.
-        """
-        self.app_name = os.path.basename(__file__)
-        self.app_info = f'Running {self.app_name} on {platform.system()}'
-
-        print(self.app_info)
-        logger.info(self.app_info)
-
-        self.is_pc = platform.system().lower() == 'windows'
-
-
-    @catch_error(logger)
-    def set_paths(self):
-        """
-        Set correct paths for Spark, config files, drivers, etc. based on system.
-        """
-        if self.is_pc:
-            os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.1-bin-hadoop3.2'
-            os.environ["HADOOP_HOME"] = r'C:\Spark\Hadoop'
-            os.environ["JAVA_HOME"]   = r'C:\Program Files\Java\jre1.8.0_241'
-
-            sys.path.insert(0, '%SPARK_HOME%\bin')
-            sys.path.insert(0, '%HADOOP_HOME%\bin')
-            sys.path.insert(0, '%JAVA_HOME%\bin')
-
-            self.drivers_path = os.path.realpath(os.path.dirname(__file__)+'/../../drivers')
-            joinstr = ';' # for extraClassPath
-        
-        else:
-            self.drivers_path = '/usr/local/spark/resources/fileshare/EDIP-Code/drivers'
-            joinstr = ':' # for extraClassPath
-        
-        drivers = []
-        for file in os.listdir(self.drivers_path):
-            if file.endswith('.jar'):
-                drivers.append(os.path.join(self.drivers_path, file))
-        self.extraClassPath = joinstr.join(drivers)
-        print(f'extraClassPath: {self.extraClassPath}')
-
-        self.secrets_file = os.path.join(config_path, "secrets.yaml")
 
 
     @catch_error(logger)
@@ -91,19 +45,19 @@ class MySession():
         Read configuration files, username/passwords
         """
         defaults = dict(
-            user = "svc_ediprolr",
-            password = "E0d!pr$L",
+            user = None,
+            password = None,
         )
 
-        self.secrets = Config(file_path=self.secrets_file, defaults=defaults)
+        self.secrets = Config(file_path=secrets_file, defaults=defaults)
 
         if not self.secrets.user:
-            if not self.is_pc:
+            if not is_pc:
                     raise ValueError('Username is missing')
             self.secrets.user = getpass.getpass('Enter username for SQL Server: ')
 
         if not self.secrets.password:
-            if not self.is_pc:
+            if not is_pc:
                     raise ValueError('Password is missing')
             self.secrets.password = getpass.getpass('Enter password for SQL Server: ')
 
@@ -117,8 +71,8 @@ class MySession():
             SparkSession
             .builder
             .appName(self.app_name)
-            .config('spark.driver.extraClassPath', self.extraClassPath)
-            .config('spark.executor.extraClassPath', self.extraClassPath)
+            .config('spark.driver.extraClassPath', extraClassPath)
+            .config('spark.executor.extraClassPath', extraClassPath)
             .getOrCreate()
             )
 
