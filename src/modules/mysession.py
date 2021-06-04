@@ -122,6 +122,10 @@ class MySession():
         self.sc = self.spark.sparkContext
         self.spark.getActiveSession()
 
+        print(f"\nSpark version = {self.spark.version}")
+        print(f"Hadoop version = {self.sc._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}")
+
+
 
     @catch_error(logger)
     def read_sql(self, table:str, database:str='LR', server:str='TSQLOLTP01'):
