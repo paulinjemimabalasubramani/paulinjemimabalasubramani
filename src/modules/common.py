@@ -30,6 +30,7 @@ def catch_error(logger=None):
 
 # %% Create file with associated directory tree
 
+@catch_error()
 def write_file(file_path:str, contents, mode = 'w'):
     """
     Create file with associated directory tree
@@ -45,6 +46,7 @@ def write_file(file_path:str, contents, mode = 'w'):
 
 # %% Create Logger with custom configuration
 
+@catch_error()
 def make_logging(module_name:str):
     logger = logging.getLogger(module_name)
 
