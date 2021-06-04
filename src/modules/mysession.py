@@ -28,7 +28,7 @@ from pyspark.sql.functions import col
 logger = make_logging(__name__)
 
 # %% Driver Folder Path
-drivers_path = os.path.realpath(os.path.dirname(__file__)+'/../../drivers')
+
 
 
 # %% Main Class
@@ -67,16 +67,22 @@ class MySession():
             sys.path.insert(0, '%SPARK_HOME%\bin')
             sys.path.insert(0, '%HADOOP_HOME%\bin')
             sys.path.insert(0, '%JAVA_HOME%\bin')
+
+            self.drivers_path = os.path.realpath(os.path.dirname(__file__)+'/../../drivers')
             
             joinstr = ';' # for extraClassPath
         
         else:
+            self.drivers_path = '/usr/local/spark/resources/fileshare/drivers'
+
             joinstr = ':' # for extraClassPath
+        
+        
 
         drivers = []
-        for file in os.listdir(drivers_path):
+        for file in os.listdir(self.drivers_path):
             if file.endswith('.jar'):
-                drivers.append(os.path.join(drivers_path, file))
+                drivers.append(os.path.join(self.drivers_path, file))
         self.extraClassPath = joinstr.join(drivers)
 
         self.secrets_file = os.path.join(config_path, "secrets.yaml")
