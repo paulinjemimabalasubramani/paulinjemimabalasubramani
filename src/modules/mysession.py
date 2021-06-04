@@ -77,13 +77,12 @@ class MySession():
 
             joinstr = ':' # for extraClassPath
         
-        
-
         drivers = []
         for file in os.listdir(self.drivers_path):
             if file.endswith('.jar'):
                 drivers.append(os.path.join(self.drivers_path, file))
         self.extraClassPath = joinstr.join(drivers)
+        print(f'extraClassPath: {self.extraClassPath}')
 
         self.secrets_file = os.path.join(config_path, "secrets.yaml")
 
