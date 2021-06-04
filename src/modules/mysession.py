@@ -192,3 +192,26 @@ class MySession():
         
         return df
 
+
+    @catch_error(logger)
+    def save_parquet_adls_gen2(self, df,
+            storage_account_name:str,
+            storage_account_access_key:str,
+            container_name:str,
+            container_folder:str,
+            table_name:str):
+
+        codec = self.spark.conf.get("spark.sql.parquet.compression.codec")
+        print(f"Write {table_name} in parquet format with '{codec}' compression")
+
+        self.spark.conf.set(
+            key = f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net",
+            value = storage_account_access_key
+            )
+
+        data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder}/{table_name}"
+
+        df.write.parquet(path = data_path, mode='overwrite')
+        print(f'Finished Writing {table_name}')
+
+

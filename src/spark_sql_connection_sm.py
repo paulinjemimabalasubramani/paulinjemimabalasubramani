@@ -10,7 +10,6 @@ http://10.128.25.82:8282/
 
 """
 
-
 # %% Import Libraries
 
 import os, sys
@@ -36,65 +35,39 @@ from pyspark.sql import Row, Window
 logger = make_logging(__name__)
 
 
-# %% Main Body
-if __name__ == '__main__':
-    ss = MySession()
+# %% Parameters
 
-    table = 'OLTP.Individual'
-
-    df = ss.read_sql(table=table, database='LR', server='TSQLOLTP01')
-
-    df.printSchema()
-
-    # Convert timestamp's to string - as it cause errors otherwise.
-    df = ss.to_string(df, col_types = [])
-
-    print(os.path.realpath(os.path.dirname(__file__)))
-
-    if ss.is_pc:
-        data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared')
-    else:
-        # /usr/local/spark/resources/fileshare/Shared
-        data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared')
-
-    #os.makedirs(data_path_folder, exist_ok=True)
-    data_path = os.path.join(data_path_folder, table+'.parquet')
-    print(f'Data path: {data_path}')
-
-    codec = ss.spark.conf.get("spark.sql.parquet.compression.codec")
-    print(f"Write data in parquet format with '{codec}' compression")
-
-    #df.write.parquet(path = data_path, mode='overwrite')
-    
-    #ss.spark.stop()
-    print('Done')
-
-
-
-
-# %% DEBUGGING AND RAW CODE:
-# 'INFORMATION_SCHEMA.TABLES', 'INFORMATION_SCHEMA.COLUMNS'
-
-# %% connect to Azure Blob
-
-# https://luminousmen.com/post/azure-blob-storage-with-pyspark
+table = 'OLTP.Individual'
+database='LR'
+server='TSQLOLTP01'
 
 storage_account_name = "agfsclakescd"
 storage_account_access_key = "SGILPYErZL2RTSGN8/8fHjBLLlwS6ODMyRUIfts8F0p8UYqxcHxz97ujV9ym4RRCXPDUEoViRcCM8AxpLgsrbA=="
 container_name = "ingress"
 container_folder = "data/financial_professional/source/LR/OLTP"
 
-ss.spark.conf.set(
-    key = f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net",
-    value = storage_account_access_key
+
+# %% Main Body
+if __name__ == '__main__':
+    ss = MySession()
+
+    df = ss.read_sql(table=table, database=database, server=server)
+
+    df.printSchema()
+    
+    df = ss.to_string(df, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
+
+    ss.save_parquet_adls_gen2(df=df,
+        storage_account_name = storage_account_name,
+        storage_account_access_key = storage_account_access_key,
+        container_name = container_name,
+        container_folder = container_folder,
+        table_name=table
     )
+    
+    #ss.spark.stop()
+    print('Done')
 
-
-# %%
-
-data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder}/{table}"
-
-df.write.parquet(path = data_path)
 
 
 # %%
