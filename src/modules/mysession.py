@@ -69,12 +69,10 @@ class MySession():
             sys.path.insert(0, '%JAVA_HOME%\bin')
 
             self.drivers_path = os.path.realpath(os.path.dirname(__file__)+'/../../drivers')
-            
             joinstr = ';' # for extraClassPath
         
         else:
             self.drivers_path = '/usr/local/spark/resources/fileshare/EDIP-Code/drivers'
-
             joinstr = ':' # for extraClassPath
         
         drivers = []
