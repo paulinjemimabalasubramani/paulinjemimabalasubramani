@@ -1,0 +1,1 @@
+DefaultEndpointsProtocol=https;AccountName=agfsclakescd;AccountKey=SGILPYErZL2RTSGN8/8fHjBLLlwS6ODMyRUIfts8F0p8UYqxcHxz97ujV9ym4RRCXPDUEoViRcCM8AxpLgsrbA==;EndpointSuffix=core.windows.net

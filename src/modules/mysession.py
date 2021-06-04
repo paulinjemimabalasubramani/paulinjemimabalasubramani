@@ -73,10 +73,11 @@ class MySession():
         else:
             joinstr = ':' # for extraClassPath
 
-        self.extraClassPath = joinstr.join([
-            os.path.join(drivers_path,'mssql-jdbc-9.2.1.jre8.jar'),
-            os.path.join(drivers_path,'spark-xml_2.12-0.13.0.jar')
-        ])
+        drivers = []
+        for file in os.listdir(drivers_path):
+            if file.endswith('.jar'):
+                drivers.append(os.path.join(drivers_path, file))
+        self.extraClassPath = joinstr.join(drivers)
 
         self.secrets_file = os.path.join(config_path, "secrets.yaml")
 
