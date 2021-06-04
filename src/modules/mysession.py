@@ -73,7 +73,7 @@ class MySession():
             joinstr = ';' # for extraClassPath
         
         else:
-            self.drivers_path = '/usr/local/spark/resources/fileshare/drivers'
+            self.drivers_path = '/usr/local/spark/resources/fileshare/EDIP-Code/drivers'
 
             joinstr = ':' # for extraClassPath
         
