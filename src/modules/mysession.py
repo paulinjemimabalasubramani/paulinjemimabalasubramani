@@ -14,15 +14,13 @@ https://spark.apache.org/docs/latest/configuration
 """
 
 # %% libraries
-from py4j.java_gateway import DEFAULT_PORT
 from .common import make_logging, catch_error
 from .config import Config, secrets_file, is_pc, extraClassPath
 
-import os
-import getpass
+import os, getpass
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, lit
 
 
 # %% Logging
@@ -158,6 +156,7 @@ class MySession():
         return df
 
 
+    """
     @catch_error(logger)
     def save_adls_gen2(self, 
             df,
@@ -166,6 +165,7 @@ class MySession():
             container_name:str,
             container_folder:str,
             table:str,
+            partitionBy:str=None,
             format:str='delta'):
 
         data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder}/{table}"
@@ -173,13 +173,13 @@ class MySession():
 
         self.spark.conf.set(f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net", storage_account_access_key)
 
-        df.write.save(path=data_path, format=format, mode='overwrite')
+        df.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy)
         print(f'Finished Writing {container_folder}/{table}')
-
+    """
 
 
     @catch_error(logger)
-    def save_adls_gen2_oauth2(self, 
+    def save_adls_gen2_sp(self, 
             df,
             storage_account_name:str,
             azure_tenant_id:str,
@@ -188,6 +188,7 @@ class MySession():
             container_name:str,
             container_folder:str,
             table:str,
+            partitionBy:str=None,
             format:str='delta'):
 
         data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder}/{table}"
@@ -200,6 +201,22 @@ class MySession():
         self.spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_account_name}.dfs.core.windows.net", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token")
         self.spark.conf.set("fs.azure.createRemoteFileSystemDuringInitialization", "true")
 
-        df.write.save(path=data_path, format=format, mode='overwrite')
+        df.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy)
         print(f'Finished Writing {container_folder}/{table}')
+
+
+
+    def add_etl_columns(self, df, reception_date=None, execution_date=None, source:str=None):
+        if reception_date:
+            df = df.withColumn('RECEPTION_DATE', lit(str(reception_date)))
+        
+        if execution_date:
+            df = df.withColumn('EXECUTION_DATE', lit(str(execution_date)))
+        
+        if source:
+            df = df.withColumn('SOURCE', lit(str(source)))
+
+        return df
+
+
 

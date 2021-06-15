@@ -110,6 +110,5 @@ def get_azure_storage_key_valut(storage_name:str):
 
     sp_id = client.get_secret(f"qa-{storage_name}-id").value
     sp_pass = client.get_secret(f"qa-{storage_name}-pass").value
-
     return azure_tenant_id, sp_id, sp_pass
 
