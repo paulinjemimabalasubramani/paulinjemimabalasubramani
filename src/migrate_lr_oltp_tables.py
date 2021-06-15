@@ -19,9 +19,11 @@ from datetime import datetime
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
-from modules.common import make_logging, catch_error
-from modules.spark_functions import MySparkSession
-from modules.config import get_azure_storage_key_valut
+from modules.common_functions import make_logging, catch_error
+from modules.config import is_pc
+from modules.spark_functions import create_spark, read_sql, read_sql_config
+from modules.azure_functions import get_azure_storage_key_vault, save_adls_gen2_sp
+from modules.data_functions import to_string, remove_column_spaces, add_etl_columns
 
 
 # %% Spark Libraries
@@ -45,23 +47,31 @@ database = 'LR'
 server = 'TSQLOLTP01'
 
 storage_account_name = "agaggrlakescd"
-azure_tenant_id, sp_id, sp_pass = get_azure_storage_key_valut(storage_name=storage_account_name)
+azure_tenant_id, sp_id, sp_pass = get_azure_storage_key_vault(storage_name=storage_account_name)
 container_name = "ingress"
 domain_name = 'financial_professional'
 format = 'delta'
 
 partitionBy = 'EXECUTION_DATE'
+execution_date = datetime.now()
+
 
 # %% Create Session
 
-ss = MySparkSession()
+spark = create_spark()
+
+
+# %% Read SQL Config
+
+sql_config = read_sql_config()
+
 
 # %% Get Table and Column Metadata from information_schema
 
-df_tables = ss.read_sql(schema='information_schema', table='tables', database=database, server=server)
+df_tables = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='tables', database=database, server=server)
 df_tables.printSchema()
 
-df_columns = ss.read_sql(schema='information_schema', table='columns', database=database, server=server)
+df_columns = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='columns', database=database, server=server)
 df_columns.printSchema()
 
 # %% Filter Tables for Schema
@@ -75,7 +85,7 @@ print(f"{table_count} tables in {schema}")
 # %% Loop over all selected tables
 
 for i, table in enumerate(table_list):
-    if i>0: # for testing
+    if is_pc and i>0: # for testing
         break
 
     print(f'\nTable {i+1} of {table_count}: {table}')
@@ -83,12 +93,14 @@ for i, table in enumerate(table_list):
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
 
-    df = ss.read_sql(schema=schema, table=table, database=database, server=server)
-    df = ss.to_string(df, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
-    df = ss.remove_column_spaces(df) # May create "name not matching" problems as we are saving column metadata as well.
-    df = ss.add_etl_columns(df=df, execution_date=datetime.now())
+    df = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema=schema, table=table, database=database, server=server)
+    df = to_string(df, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
+    df = remove_column_spaces(df) # May create "name not matching" problems as we are saving column metadata as well.
+    df = add_etl_columns(df=df, execution_date=execution_date)
 
-    ss.save_adls_gen2_sp(df=df,
+    save_adls_gen2_sp(
+        spark=spark,
+        df=df,
         storage_account_name = storage_account_name,
         azure_tenant_id = azure_tenant_id,
         sp_id = sp_id,
@@ -105,10 +117,12 @@ for i, table in enumerate(table_list):
     container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
 
     df_meta = df_columns.filter((col('TABLE_NAME') == table) & (col('TABLE_SCHEMA') == schema))
-    df_meta = ss.remove_column_spaces(df_meta)
-    df_meta = ss.add_etl_columns(df=df_meta, execution_date=datetime.now())
+    df_meta = remove_column_spaces(df_meta)
+    df_meta = add_etl_columns(df=df_meta, execution_date=execution_date)
 
-    ss.save_adls_gen2_sp(df=df_meta,
+    save_adls_gen2_sp(
+        spark=spark,
+        df=df_meta,
         storage_account_name = storage_account_name,
         azure_tenant_id = azure_tenant_id,
         sp_id = sp_id,
