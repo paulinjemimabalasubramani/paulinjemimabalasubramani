@@ -14,14 +14,6 @@ from azure.keyvault.secrets import SecretClient
 logger = make_logging(__name__)
 
 
-# %% Manually set Azure Key Vault for pc - TO BE REMOVED
-
-if is_pc:
-    os.environ["AZURE_TENANT_ID"] = str("c1ef4e97-eeff-48b2-b720-0c8480a08061")
-    os.environ["AZURE_KV_ID"] = str("d23f5bf8-15a0-4ba7-8ddc-88d131a550e0")
-    os.environ["AZURE_KV_SECRET"] = str("n.sruiBdlT9xu7-kg4_3rG22cc_5-Jpq43")
-
-
 # %% Get Azure Key Vault
 
 @catch_error(logger)
