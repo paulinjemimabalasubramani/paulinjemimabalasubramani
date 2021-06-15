@@ -201,7 +201,7 @@ class MySession():
         self.spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_account_name}.dfs.core.windows.net", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token")
         self.spark.conf.set("fs.azure.createRemoteFileSystemDuringInitialization", "true")
 
-        df.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy)
+        df.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
         print(f'Finished Writing {container_folder}/{table}')
 
 
