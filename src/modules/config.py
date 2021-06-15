@@ -56,8 +56,6 @@ for file in os.listdir(drivers_path):
 extraClassPath = joinstr.join(drivers)
 print(f'extraClassPath: {extraClassPath}')
 
-secrets_file = os.path.join(config_path, "secrets.yaml")
-
 
 # %% Main Class
 class Config:

@@ -15,9 +15,9 @@ https://spark.apache.org/docs/latest/configuration
 
 # %% libraries
 from .common import make_logging, catch_error
-from .config import Config, secrets_file, is_pc, extraClassPath
+from .config import Config, sql_file, is_pc, extraClassPath, config_path
 
-import os, getpass
+import os
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit
@@ -30,35 +30,14 @@ logger = make_logging(__name__)
 
 
 
+
 # %% Main Class
-class MySession():
+class SparkSession():
     def __init__(self):
         self.app_name = os.path.basename(__file__)
-        self.read_config()
         self.initiate_spark()
+        self.read_sql_config()
 
-
-    @catch_error(logger)
-    def read_config(self):
-        """
-        Read configuration files, username/passwords
-        """
-        defaults = dict(
-            user = None,
-            password = None,
-        )
-
-        self.secrets = Config(file_path=secrets_file, defaults=defaults)
-
-        if not self.secrets.user:
-            if not is_pc:
-                    raise ValueError('Username is missing')
-            self.secrets.user = getpass.getpass('Enter username for SQL Server: ')
-
-        if not self.secrets.password:
-            if not is_pc:
-                    raise ValueError('Password is missing')
-            self.secrets.password = getpass.getpass('Enter password for SQL Server: ')
 
 
     @catch_error(logger)
@@ -82,7 +61,23 @@ class MySession():
         print(f"Hadoop version = {self.sc._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}")
 
 
-    def remove_spaces(self, df):
+
+    @catch_error(logger)
+    def read_sql_config(self):
+        """
+        Read sql configuration file, username/password
+        """
+        defaults = dict(
+            sql_user = None,
+            sql_password = None,
+        )
+
+        sql_file = os.path.join(config_path, "sql.yaml")
+        self.sql_confing = Config(file_path=sql_file, defaults=defaults)
+
+
+
+    def remove_column_spaces(self, df):
         """
         Removes spaces from column names
         """
@@ -104,8 +99,8 @@ class MySession():
                 .format("jdbc")
                 .option("url", url)
                 .option("driver", 'com.microsoft.sqlserver.jdbc.SQLServerDriver')
-                .option("user", self.secrets.user)
-                .option("password", self.secrets.password)
+                .option("user", self.sql_confing.sql_user)
+                .option("password", self.sql_confing.sql_password)
                 .option("dbtable", f"{schema}.{table}")
                 .option("encrypt", "true")
                 .option("hostNameInCertificate", "*.database.windows.net")

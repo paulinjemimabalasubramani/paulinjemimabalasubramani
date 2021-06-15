@@ -20,7 +20,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common import make_logging, catch_error
-from modules.mysession import MySession
+from modules.spark_functions import SparkSession
 from modules.config import get_azure_storage_key_valut
 
 
@@ -54,7 +54,7 @@ partitionBy = 'EXECUTION_DATE'
 
 # %% Create Session
 
-ss = MySession()
+ss = SparkSession()
 
 # %% Get Table and Column Metadata from information_schema
 
@@ -85,7 +85,7 @@ for i, table in enumerate(table_list):
 
     df = ss.read_sql(schema=schema, table=table, database=database, server=server)
     df = ss.to_string(df, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
-    df = ss.remove_spaces(df) # May create "name not matching" problems as we are saving column metadata as well.
+    df = ss.remove_column_spaces(df) # May create "name not matching" problems as we are saving column metadata as well.
     df = ss.add_etl_columns(df=df, execution_date=datetime.now())
 
     ss.save_adls_gen2_sp(df=df,
@@ -105,7 +105,7 @@ for i, table in enumerate(table_list):
     container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
 
     df_meta = df_columns.filter((col('TABLE_NAME') == table) & (col('TABLE_SCHEMA') == schema))
-    df_meta = ss.remove_spaces(df_meta)
+    df_meta = ss.remove_column_spaces(df_meta)
     df_meta = ss.add_etl_columns(df=df_meta, execution_date=datetime.now())
 
     ss.save_adls_gen2_sp(df=df_meta,
