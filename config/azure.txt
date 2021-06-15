@@ -1,1 +1,5 @@
 DefaultEndpointsProtocol=https;AccountName=agfsclakescd;AccountKey=SGILPYErZL2RTSGN8/8fHjBLLlwS6ODMyRUIfts8F0p8UYqxcHxz97ujV9ym4RRCXPDUEoViRcCM8AxpLgsrbA==;EndpointSuffix=core.windows.net
+
+
+DefaultEndpointsProtocol=https;AccountName=agaggrlakescd;AccountKey=22SMBMDagReIFofaEClqhyHzK/lT7GZLlpSc2COP3DZqwXzfJ56KCWXWFcBWUg4vpyt/R6No2o/2jZBn7o5xcQ==;EndpointSuffix=core.windows.net
+

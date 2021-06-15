@@ -14,10 +14,11 @@ https://spark.apache.org/docs/latest/configuration
 """
 
 # %% libraries
+from py4j.java_gateway import DEFAULT_PORT
 from .common import make_logging, catch_error
 from .config import Config, secrets_file, is_pc, extraClassPath
 
-import os, sys, platform
+import os
 import getpass
 
 from pyspark.sql import SparkSession
@@ -83,13 +84,20 @@ class MySession():
         print(f"Hadoop version = {self.sc._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}")
 
 
+    def remove_spaces(self, df):
+        """
+        Removes spaces from column names
+        """
+        new_df = df.select([col(c).alias(c.replace(' ', '_')) for c in df.columns])
+        return new_df
+
 
     @catch_error(logger)
-    def read_sql(self, table:str, database:str='LR', server:str='TSQLOLTP01'):
+    def read_sql(self, schema:str, table:str, database:str, server:str):
         """
         Read a table from SQL server
         """
-        print(f"Reading SQL: server='{server}', database='{database}', table='{table}'")
+        print(f"Reading SQL: server='{server}', database='{database}', table='{schema}.{table}'")
 
         url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
 
@@ -100,7 +108,7 @@ class MySession():
                 .option("driver", 'com.microsoft.sqlserver.jdbc.SQLServerDriver')
                 .option("user", self.secrets.user)
                 .option("password", self.secrets.password)
-                .option("dbtable", table)
+                .option("dbtable", f"{schema}.{table}")
                 .option("encrypt", "true")
                 .option("hostNameInCertificate", "*.database.windows.net")
                 .load()
@@ -151,24 +159,47 @@ class MySession():
 
 
     @catch_error(logger)
-    def save_parquet_adls_gen2(self, df,
+    def save_adls_gen2(self, 
+            df,
             storage_account_name:str,
             storage_account_access_key:str,
             container_name:str,
             container_folder:str,
-            table_name:str):
+            table:str,
+            format:str='delta'):
 
-        codec = self.spark.conf.get("spark.sql.parquet.compression.codec")
-        print(f"Write {table_name} in parquet format with '{codec}' compression")
+        data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder}/{table}"
+        print(f"Write {format} -> {data_path}")
 
-        self.spark.conf.set(
-            key = f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net",
-            value = storage_account_access_key
-            )
+        self.spark.conf.set(f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net", storage_account_access_key)
 
-        data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder}/{table_name}"
+        df.write.save(path=data_path, format=format, mode='overwrite')
+        print(f'Finished Writing {container_folder}/{table}')
 
-        df.write.parquet(path = data_path, mode='overwrite')
-        print(f'Finished Writing {table_name}')
 
+
+    @catch_error(logger)
+    def save_adls_gen2_oauth2(self, 
+            df,
+            storage_account_name:str,
+            azure_tenant_id:str,
+            sp_id:str,
+            sp_pass:str,
+            container_name:str,
+            container_folder:str,
+            table:str,
+            format:str='delta'):
+
+        data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder}/{table}"
+        print(f"Write {format} -> {data_path}")
+
+        self.spark.conf.set(f"fs.azure.account.auth.type.{storage_account_name}.dfs.core.windows.net", "OAuth")
+        self.spark.conf.set(f"fs.azure.account.oauth.provider.type.{storage_account_name}.dfs.core.windows.net",  "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
+        self.spark.conf.set(f"fs.azure.account.oauth2.client.id.{storage_account_name}.dfs.core.windows.net", sp_id)
+        self.spark.conf.set(f"fs.azure.account.oauth2.client.secret.{storage_account_name}.dfs.core.windows.net", sp_pass)
+        self.spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_account_name}.dfs.core.windows.net", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token")
+        self.spark.conf.set("fs.azure.createRemoteFileSystemDuringInitialization", "true")
+
+        df.write.save(path=data_path, format=format, mode='overwrite')
+        print(f'Finished Writing {container_folder}/{table}')
 

@@ -11,6 +11,11 @@ from .common import make_logging, catch_error
 
 import yaml
 
+# %% Azure Libraries
+
+from azure.identity import ClientSecretCredential
+from azure.keyvault.secrets import SecretClient
+
 
 # %% Logging
 logger = make_logging(__name__)
@@ -77,4 +82,34 @@ class Config:
             setattr(self, name, value) # Overwrite defaults from file
 
 
+
+# %% Azure Key Vault
+
+os.environ["AZURE_TENANT_ID"] = str("c1ef4e97-eeff-48b2-b720-0c8480a08061")
+os.environ["AZURE_KV_ID"] = str("d23f5bf8-15a0-4ba7-8ddc-88d131a550e0")
+os.environ["AZURE_KV_SECRET"] = str("n.sruiBdlT9xu7-kg4_3rG22cc_5-Jpq43")
+
+
+
+@catch_error(logger)
+def get_azure_key_vault(storage_name:str):
+    azure_tenant_id = os.environ.get("AZURE_TENANT_ID")
+    azure_client_id = os.environ.get("AZURE_KV_ID")
+    azure_client_secret = os.environ.get("AZURE_KV_SECRET")
+    vault_endpoint = "https://ag-kv-west2-secondary.vault.azure.net/"
+
+    credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
+    client = SecretClient(vault_endpoint, credential)
+    return azure_tenant_id, client
+
+
+
+@catch_error(logger)
+def get_azure_storage_key_valut(storage_name:str):
+    azure_tenant_id, client = get_azure_key_vault(storage_name)
+
+    sp_id = client.get_secret(f"qa-{storage_name}-id").value
+    sp_pass = client.get_secret(f"qa-{storage_name}-pass").value
+
+    return azure_tenant_id, sp_id, sp_pass
 
