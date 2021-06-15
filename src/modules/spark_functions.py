@@ -15,7 +15,7 @@ https://spark.apache.org/docs/latest/configuration
 
 # %% libraries
 from .common import make_logging, catch_error
-from .config import Config, sql_file, is_pc, extraClassPath, config_path
+from .config import Config, is_pc, extraClassPath, config_path
 
 import os
 
@@ -32,7 +32,7 @@ logger = make_logging(__name__)
 
 
 # %% Main Class
-class SparkSession():
+class MySparkSession():
     def __init__(self):
         self.app_name = os.path.basename(__file__)
         self.initiate_spark()

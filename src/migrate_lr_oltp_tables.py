@@ -20,7 +20,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common import make_logging, catch_error
-from modules.spark_functions import SparkSession
+from modules.spark_functions import MySparkSession
 from modules.config import get_azure_storage_key_valut
 
 
@@ -54,7 +54,7 @@ partitionBy = 'EXECUTION_DATE'
 
 # %% Create Session
 
-ss = SparkSession()
+ss = MySparkSession()
 
 # %% Get Table and Column Metadata from information_schema
 

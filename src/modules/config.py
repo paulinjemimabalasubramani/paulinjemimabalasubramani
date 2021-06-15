@@ -83,9 +83,10 @@ class Config:
 
 # %% Azure Key Vault
 
-os.environ["AZURE_TENANT_ID"] = str("c1ef4e97-eeff-48b2-b720-0c8480a08061")
-os.environ["AZURE_KV_ID"] = str("d23f5bf8-15a0-4ba7-8ddc-88d131a550e0")
-os.environ["AZURE_KV_SECRET"] = str("n.sruiBdlT9xu7-kg4_3rG22cc_5-Jpq43")
+if is_pc:
+    os.environ["AZURE_TENANT_ID"] = str("c1ef4e97-eeff-48b2-b720-0c8480a08061")
+    os.environ["AZURE_KV_ID"] = str("d23f5bf8-15a0-4ba7-8ddc-88d131a550e0")
+    os.environ["AZURE_KV_SECRET"] = str("n.sruiBdlT9xu7-kg4_3rG22cc_5-Jpq43")
 
 
 
