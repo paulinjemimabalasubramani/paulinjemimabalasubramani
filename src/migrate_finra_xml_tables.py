@@ -164,7 +164,22 @@ base = {
         },
         'DRPs': None,
         'Dsgntns': None,
-        'EmpHists': None,
+        'EmpHists': { # Manual Input
+            'EmpHist': [{
+                'DtRng': {
+                    '_VALUE': None,
+                    '_fromDt': None,
+                    '_toDt': None,
+                },
+                '_city': None,
+                '_cntryCd': None,
+                '_invRel': None,
+                '_orgNm': None,
+                '_pstnHeld': None,
+                '_seqNb': None,
+                '_state': None,
+            }]
+        },
         'EventFlngHists': {
             'EventFlngHist': [{
                 '_VALUE': None,
@@ -177,8 +192,31 @@ base = {
             }]
         },
         'ExmWvrs': None,
-        'Exms': None,
-        'FngprInfos': None,
+        'Exms': {
+            'Exm': [{
+                'Appts': None,
+                '_exmCd': None,
+                '_exmDt': None,
+                '_exmValidFl': None,
+                '_grd': None,
+                '_nrlmtID': None,
+                '_st': None,
+                '_stDt': None,
+                '_updateTS': None,
+                '_wndwBeginDt': None,
+                '_wndwEndDt': None,
+            }]
+        },
+        'FngprInfos': {
+            'FngprInfo': [{
+                '_VALUE': None,
+                '_barCd': None,
+                '_orgNm': None,
+                '_pstnInFirm': None,
+                '_st': None,
+                '_stDt': None,
+            }]
+        },
         'IAAffltns': None,
         'IdentInfo': {
             'Ht': {
@@ -203,7 +241,32 @@ base = {
                     '_fromDt': None,
                     '_toDt': None,
                 },
-                'EmpLocs': None,
+                'EmpLocs': {
+                    'EmpLoc': [{
+                        'Addr': {
+                            '_VALUE': None,
+                            '_city': None,
+                            '_cntryCd': None,
+                            '_cntryOld': None,
+                            '_postlCd': None,
+                            '_state': None,
+                            '_strt1': None,
+                            '_strt2': None,
+                        },
+                        '_bllngCd': None,
+                        '_brnchPK': None,
+                        '_fromDt': None,
+                        '_lctdFl': None,
+                        '_mainOfcBDFl': None,
+                        '_mainOfcIAFl': None,
+                        '_oldSeqNb': None,
+                        '_prvtRsdnc': None,
+                        '_regdLocFl': None,
+                        '_seqNb': None,
+                        '_sprvdFl': None,
+                        '_toDt': None,
+                    }]
+                },
                 '_empCntxt': None,
                 '_firmAsctnSt': None,
                 '_ndpndCntrcrFl': None,
@@ -215,9 +278,31 @@ base = {
                 '_termRsnAmndtExpln': None,
             }]
         },
-        'OthrBuss': None,
+        'OthrBuss': {
+            'OthrBus': {
+                '_VALUE': None,
+                '_desc': None,
+            }
+        },
         'OthrNms': None,
-        'ResHists': None,
+        'ResHists': {
+            'ResHist': [{
+                'Addr': {
+                    '_VALUE': None,
+                    '_city': None,
+                    '_cntryCd': None,
+                    '_postlCd': None,
+                    '_state': None,
+                    '_strt1': None,
+                },
+                'DtRng': {
+                    '_VALUE': None,
+                    '_fromDt': None,
+                    '_toDt': None,
+                },
+                '_seqNb': None,
+            }]
+        },
     }]
 }
 
