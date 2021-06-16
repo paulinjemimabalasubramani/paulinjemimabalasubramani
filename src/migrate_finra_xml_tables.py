@@ -255,8 +255,29 @@ for df_name, dfx in df_list.items():
         format = format
     )
 
+    # Metadata
+    data_type = 'metadata'
+    container_folder = f"{data_type}/{domain_name}/{database}/{df_main_name}"
 
+    meta_columns = ["column_name", "data_type"]
+    meta_data = dfx.dtypes
+    meta_df = spark.createDataFrame(data=meta_data, schema = meta_columns)
+    meta_df = add_etl_columns(df=meta_df, execution_date=execution_date)
     
+    save_adls_gen2_sp(
+        spark=spark,
+        df=meta_df,
+        storage_account_name = storage_account_name,
+        azure_tenant_id = azure_tenant_id,
+        sp_id = sp_id,
+        sp_pass = sp_pass,
+        container_name = container_name,
+        container_folder = container_folder,
+        table = df_name,
+        partitionBy = partitionBy,
+        format = format
+    )
+
 
 
 
@@ -264,18 +285,11 @@ print('Done')
 
 
 
-# %% Print Number of Columns and Schema
-
-print(len(df.columns))
-df.printSchema()
-
-
-
 # %% Show sample row(s)
 
 #df.show(n=5, truncate=True)
 
-df.limit(1).write.json(r"C:\Users\smammadov\packages\Temp\t.json", mode='overwrite')
+#df.limit(1).write.json(r"C:\Users\smammadov\packages\Temp\t.json", mode='overwrite')
 
 
 # %%
