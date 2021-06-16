@@ -18,26 +18,22 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, _
 # Parameters
 ###############################################
 spark_master = "spark://spark:7077"
-spark_app_name = "Get table List from OLTP"
+spark_app_name = "Put SQL tables into ADLS"
 file_path = "/usr/local/spark/resources/data/airflow.cfg"
 
 
 
 
 
-
-
-
-
 default_args = {
-    'owner': 'JaredF',
+    'owner': 'ShreyaS',
     'depends_on_past': False,
 }
 
 with DAG(
-    'Spark-Get-Table-List',
+    'Spark-Move-SQL-Tables-to-Azure',
     default_args=default_args,
-    description='DAG get a list of Tables from SQL OLTP schema',
+    description='DAG Put SQL tables into ADLS',
     schedule_interval=timedelta(hours=24),
     start_date=days_ago(2),
 ) as dag:
@@ -50,13 +46,13 @@ with DAG(
  #   for firm in firmlist:
     spark_job = SparkSubmitOperator(
          task_id="spark_job",
-         application="/usr/local/spark/app/get-table-list.py",
+         application="/usr/local/spark/app/put_sql_table.py",
          name=spark_app_name,
-         jars="/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/mssql-jdbc_auth-9.2.1.x64.dll",
+         jars="/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars//hadoop-common-3.3.0.jar",
          conn_id="spark_default",
          num_executors=2,
-         executor_cores=3,
-         executor_memory="3G",
+         executor_cores=4,
+         executor_memory="16G",
          verbose=1,
          conf={"spark.master":spark_master},
          application_args=[file_path],

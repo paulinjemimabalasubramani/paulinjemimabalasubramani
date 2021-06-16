@@ -8,12 +8,40 @@ from pyspark.sql.types import *
 import shutil
 import subprocess
 import getpass
+import os
+from datetime import datetime
 from os import listdir
 from azure.storage.blob import BlobClient
 from io import BytesIO
 from pyspark.sql import functions as F
+from azure.identity import ClientSecretCredential
+from azure.keyvault.secrets import SecretClient
 
 
+
+
+
+def connect_to_storage(storage_name):
+        ##grabbing env variables
+        azure_tenant_id = os.environ.get("AZURE_TENANT_ID")
+        #print(azure_tenant_id)
+        azure_client_id = os.environ.get("AZURE_KV_ID")
+        #print(azure_client_id)
+        azure_client_secret = os.environ.get("AZURE_KV_SECRET")
+        vault_endpoint = "https://ag-kv-west2-secondary.vault.azure.net/"
+        #set azure credentials
+        credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
+        #set keyvault credentials
+        client = SecretClient(vault_endpoint, credential)
+        sp_id = client.get_secret(f"qa-{storage_name}-id")
+        sp_pass = client.get_secret(f"qa-{storage_name}-pass")
+        print(sp_id.value)
+        spark.conf.set(f"fs.azure.account.auth.type.{storage_name}.dfs.core.windows.net", "OAuth")
+        spark.conf.set(f"fs.azure.account.oauth.provider.type.{storage_name}.dfs.core.windows.net",  "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
+        spark.conf.set(f"fs.azure.account.oauth2.client.id.{storage_name}.dfs.core.windows.net",sp_id.value )
+        spark.conf.set(f"fs.azure.account.oauth2.client.secret.{storage_name}.dfs.core.windows.net",sp_pass.value)
+        spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_name}.dfs.core.windows.net", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth/token")
+        spark.conf.set("fs.azure.createRemoteFileSystemDuringInitialization", "true")
 
 
 def to_string(df, col_types=['timestamp']):
@@ -53,7 +81,7 @@ schema = "OLTP"
 ##Set Spark Context
 conf = SparkConf()
 #conf.set('spark.jars', '/usr/local/spar/resources/jars/spark-mssql-connector_2.11-1.0.0.jar')
-spark = SparkSession.builder.config("fs.wasbs.impl", "org.apache.hadoop.fs.azure.NativeAzureFileSystem").config("fs.azure.account.key.agaggrlakescd.dfs.core.windows.net","22SMBMDagReIFofaEClqhyHzK/lT7GZLlpSc2COP3DZqwXzfJ56KCWXWFcBWUg4vpyt/R6No2o/2jZBn7o5xcQ==").appName("get-table").getOrCreate()
+spark = SparkSession.builder.config("fs.wasbs.impl", "org.apache.hadoop.fs.azure.NativeAzureFileSystem").appName("get-table").getOrCreate()
 
 
 ##Pull Table from SQL Server
@@ -112,7 +140,7 @@ for table in tablelist_list:
 
 ####Azure Info for Storage
     accountname = "agaggrlakescd"
-    accountkey = "22SMBMDagReIFofaEClqhyHzK/lT7GZLlpSc2COP3DZqwXzfJ56KCWXWFcBWUg4vpyt/R6No2o/2jZBn7o5xcQ=="
+    storage_name = accountname
     containername = "ingress"
     pathname = "data/financial_professional/LR/"
     metapath = "metadata/financial_professional/LR/"
@@ -127,9 +155,38 @@ for table in tablelist_list:
 ##replace timestamp with string
     get_table = to_string(get_table, col_types = ['timestamp'])
     get_table = remove_spaces(get_table)
+    get_table = get_table.withColumn('EXECUTION_DATE', lit(str(datetime.now())))
 ###writes parquet
 #    get_table.write.parquet(path = data_path, mode='overwrite')
 ###writes delta
+###not getting past?
+#    connect_to_storage(accountname)
+
+
+##grabbing env variables
+    azure_tenant_id = os.environ.get("AZURE_TENANT_ID")
+    #print(azure_tenant_id)
+    azure_client_id = os.environ.get("AZURE_KV_ID")
+    #print(azure_client_id)
+    azure_client_secret = os.environ.get("AZURE_KV_SECRET")
+    vault_endpoint = "https://ag-kv-west2-secondary.vault.azure.net/"
+    #set azure credentials
+    credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
+    #set keyvault credentials
+    client = SecretClient(vault_endpoint, credential)
+    sp_id = client.get_secret(f"qa-{storage_name}-id")
+    sp_pass = client.get_secret(f"qa-{storage_name}-pass")
+    print(sp_id.value)
+    spark.conf.set(f"fs.azure.account.auth.type.{storage_name}.dfs.core.windows.net", "OAuth")
+    spark.conf.set(f"fs.azure.account.oauth.provider.type.{storage_name}.dfs.core.windows.net",  "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
+    spark.conf.set(f"fs.azure.account.oauth2.client.id.{storage_name}.dfs.core.windows.net",sp_id.value )
+    spark.conf.set(f"fs.azure.account.oauth2.client.secret.{storage_name}.dfs.core.windows.net",sp_pass.value)
+    spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_name}.dfs.core.windows.net", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token")
+    spark.conf.set("fs.azure.createRemoteFileSystemDuringInitialization", "true")
+
+
+
+
     get_table.write.format("delta").mode("overwrite").save(data_path)
     get_metadata.write.format("delta").mode("overwrite").save(meta_path)
 #########Shows Table

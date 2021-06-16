@@ -1,0 +1,196 @@
+{
+    "Indvl": [{
+        "Comp": {
+            "Nm": {
+                "_VALUE": null,
+                "_first": null,
+                "_last": null,
+                "_mid": null,
+                "_suf": null
+            },
+            "_actvMltry": null,
+            "_bllngCd": null,
+            "_indvlPK": null,
+            "_indvlSSN": null,
+            "_matDiff": null,
+            "_rgstdMult": null,
+            "_rptblDisc": null,
+            "_statDisq": null
+        },
+        "ContEds": {
+            "ContEd": [{
+                "Appts": null,
+                "_begDt": null,
+                "_endDt": null,
+                "_eventDt": null,
+                "_frgnDfrdFl": null,
+                "_mltryDfrdFl": null,
+                "_nrlmtID": null,
+                "_rslt": null,
+                "_sssn": null,
+                "_sssnDt": null,
+                "_sssnReqSt": null,
+                "_sssnSt": null
+            }],
+            "_VALUE": null,
+            "_baseDt": null,
+            "_st": null
+        },
+        "CrntRgstns": {
+            "CrntRgstn":[{
+                "CrntDfcnys": null,
+                "_actvReg": null,
+                "_aprvlDt": null,
+                "_crtnDt": null,
+                "_empStDt": null,
+                "_regAuth": null,
+                "_regCat": null,
+                "_st": null,
+                "_stDt": null,
+                "_trmnnDt": null,
+                "_updateTS": null
+            }]
+        },
+        "DRPs": null,
+        "Dsgntns": null,
+        "EmpHists": {
+            "EmpHist": [{
+                "DtRng": {
+                    "_VALUE": null,
+                    "_fromDt": null,
+                    "_toDt": null
+                },
+                "_city": null,
+                "_cntryCd": null,
+                "_invRel": null,
+                "_orgNm": null,
+                "_pstnHeld": null,
+                "_seqNb": null,
+                "_state": null
+            }]
+        },
+        "EventFlngHists": {
+            "EventFlngHist": [{
+                "_VALUE": null,
+                "_dt": null,
+                "_flngType": null,
+                "_frmType": null,
+                "_id": null,
+                "_src": null,
+                "_type": null
+            }]
+        },
+        "ExmWvrs": null,
+        "Exms": {
+            "Exm": [{
+                "Appts": null,
+                "_exmCd": null,
+                "_exmDt": null,
+                "_exmValidFl": null,
+                "_grd": null,
+                "_nrlmtID": null,
+                "_st": null,
+                "_stDt": null,
+                "_updateTS": null,
+                "_wndwBeginDt": null,
+                "_wndwEndDt": null
+            }]
+        },
+        "FngprInfos": {
+            "FngprInfo": [{
+                "_VALUE": null,
+                "_barCd": null,
+                "_orgNm": null,
+                "_pstnInFirm": null,
+                "_st": null,
+                "_stDt": null
+            }]
+        },
+        "IAAffltns": null,
+        "IdentInfo": {
+            "Ht": {
+                "_VALUE": null,
+                "_ft": null,
+                "_in": null
+            },
+            "_birthCntryCd": null,
+            "_birthCntryOld": null,
+            "_birthPrvnc": null,
+            "_birthStCd": null,
+            "_dob": null,
+            "_eye": null,
+            "_gender": null,
+            "_hair": null,
+            "_wt": null
+        },
+        "OffHists": {
+            "OffHist": [{
+                "DtRng": {
+                    "_VALUE": null,
+                    "_fromDt": null,
+                    "_toDt": null
+                },
+                "EmpLocs": {
+                    "EmpLoc": [{
+                        "Addr": {
+                            "_VALUE": null,
+                            "_city": null,
+                            "_cntryCd": null,
+                            "_cntryOld": null,
+                            "_postlCd": null,
+                            "_state": null,
+                            "_strt1": null,
+                            "_strt2": null
+                        },
+                        "_bllngCd": null,
+                        "_brnchPK": null,
+                        "_fromDt": null,
+                        "_lctdFl": null,
+                        "_mainOfcBDFl": null,
+                        "_mainOfcIAFl": null,
+                        "_oldSeqNb": null,
+                        "_prvtRsdnc": null,
+                        "_regdLocFl": null,
+                        "_seqNb": null,
+                        "_sprvdFl": null,
+                        "_toDt": null
+                    }]
+                },
+                "_empCntxt": null,
+                "_firmAsctnSt": null,
+                "_ndpndCntrcrFl": null,
+                "_orgNm": null,
+                "_orgPK": null,
+                "_termDt": null,
+                "_termExpln": null,
+                "_termRsn": null,
+                "_termRsnAmndtExpln": null
+            }]
+        },
+        "OthrBuss": {
+            "OthrBus": {
+                "_VALUE": null,
+                "_desc": null
+            }
+        },
+        "OthrNms": null,
+        "ResHists": {
+            "ResHist": [{
+                "Addr": {
+                    "_VALUE": null,
+                    "_city": null,
+                    "_cntryCd": null,
+                    "_postlCd": null,
+                    "_state": null,
+                    "_strt1": null
+                },
+                "DtRng": {
+                    "_VALUE": null,
+                    "_fromDt": null,
+                    "_toDt": null
+                },
+                "_seqNb": null
+            }]
+        }
+    }]
+}
