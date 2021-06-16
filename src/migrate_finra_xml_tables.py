@@ -15,6 +15,8 @@ http://10.128.25.82:8282/
 
 import os, sys, tempfile, shutil, json
 
+from datetime import datetime
+
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
@@ -22,6 +24,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
+from modules.azure_functions import get_azure_storage_key_vault, save_adls_gen2_sp
+from modules.data_functions import to_string, remove_column_spaces, add_etl_columns
 
 
 # %% Spark Libraries
@@ -36,6 +40,19 @@ from pyspark.sql import Row, Window
 
 # %% Logging
 logger = make_logging(__name__)
+
+
+# %% Parameters
+
+storage_account_name = "agaggrlakescd"
+azure_tenant_id, sp_id, sp_pass = get_azure_storage_key_vault(storage_name=storage_account_name)
+container_name = "ingress"
+domain_name = 'financial_professional'
+database = 'finra'
+format = 'delta'
+
+partitionBy = 'EXECUTION_DATE'
+execution_date = datetime.now()
 
 
 # %% Initiate Spark
@@ -206,19 +223,44 @@ def flatten_n_divide_df(df, name:str='main'):
 
 
 
-
-df_list = flatten_n_divide_df(df, name='IndividualInformationReport')
+df_main_name = 'IndividualInformationReport'
+df_list = flatten_n_divide_df(df, name=df_main_name)
 
 # %% Count of DF's
 
 print(len(df_list))
 
-# %% Print all schemas
+# %% Write df list to Azure
 
-for df_name, df_flat in df_list.items():
+for df_name, dfx in df_list.items():
     print('\n'+df_name)
-    df_flat.printSchema()
+    dfx.printSchema()
 
+    data_type = 'data'
+    container_folder = f"{data_type}/{domain_name}/{database}/{df_main_name}"
+
+    dfx = add_etl_columns(df=dfx, execution_date=execution_date)
+
+    save_adls_gen2_sp(
+        spark=spark,
+        df=dfx,
+        storage_account_name = storage_account_name,
+        azure_tenant_id = azure_tenant_id,
+        sp_id = sp_id,
+        sp_pass = sp_pass,
+        container_name = container_name,
+        container_folder = container_folder,
+        table = df_name,
+        partitionBy = partitionBy,
+        format = format
+    )
+
+
+    
+
+
+
+print('Done')
 
 
 
@@ -228,33 +270,12 @@ print(len(df.columns))
 df.printSchema()
 
 
-# %% Wrtie to Azure
-
-
-
-
-# %% Write to JSON
-"""
-data_path = os.path.join(data_path_folder, file_name+'.json')
-df.coalesce(1).write.json(path = data_path, mode='overwrite')
-
-
-""";
-
 
 # %% Show sample row(s)
 
 #df.show(n=5, truncate=True)
 
 df.limit(1).write.json(r"C:\Users\smammadov\packages\Temp\t.json", mode='overwrite')
-
-
-# %%
-
-#df.select('Comp_Nm__first').where(lit(14)==F.length(col("Comp_Nm__first"))).collect()
-
-
-#df.select(F.max(F.length(col("Comp_Nm__first"))).alias('maxx')).collect()
 
 
 # %%
