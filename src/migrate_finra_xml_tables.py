@@ -261,7 +261,7 @@ for df_name, dfx in df_list.items():
 
     meta_columns = ["column_name", "data_type"]
     meta_data = dfx.dtypes
-    meta_df = spark.createDataFrame(data=meta_data, schema = meta_columns)
+    meta_df = spark.createDataFrame(data=meta_data, schema=meta_columns)
     meta_df = add_etl_columns(df=meta_df, execution_date=execution_date)
     
     save_adls_gen2_sp(
