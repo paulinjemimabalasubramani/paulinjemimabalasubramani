@@ -53,8 +53,8 @@ with DAG(
          task_id="spark_job_1",
          application="/usr/local/spark/app/spark_sql_connection_sm.py", # mapped to M:\EDIP-Code\src
          name=spark_app_name,
-         jars="/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/mssql-jdbc_auth-9.2.1.x64.dll",
          conn_id="spark_default",
+         jars="/usr/local/spark/resources/fileshare/EDIP-Code/drivers/wildfly-openssl-2.1.4.Final.jar,/usr/local/spark/resources/fileshare/EDIP-Code/drivers/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/fileshare/EDIP-Code/drivers/azure-storage-8.6.6.jar,/usr/local/spark/resources/fileshare/EDIP-Code/drivers/hadoop-azure-3.2.0.jar",
          num_executors=2,
          executor_cores=3,
          executor_memory="3G",
