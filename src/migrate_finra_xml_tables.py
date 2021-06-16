@@ -90,10 +90,10 @@ def base_to_schema(base:dict):
     return StructType(st)
 
 
-with open(os.path.join(schema_path_folder, 'IndividualInformationReport.json'), 'r') as f:
-    base = json.load(f)
+#with open(os.path.join(schema_path_folder, 'IndividualInformationReport.json'), 'r') as f:
+#    base = json.load(f)
 
-schema = base_to_schema(base)
+#schema = base_to_schema(base)
 
 
 
