@@ -65,44 +65,11 @@ print(f'Main Path: {os.path.realpath(os.path.dirname(__file__))}')
 
 if is_pc:
     data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared')
-    temp_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Temp')
 else:
     # /usr/local/spark/resources/fileshare/Shared
     data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared')
-    temp_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Temp')
-
-os.makedirs(data_path_folder, exist_ok=True)
-os.makedirs(temp_path_folder, exist_ok=True)
 
 schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../config/finra')
-
-
-# %% Recursive Unzip
-
-def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', walk:bool=False):
-    zip_files = []
-
-    if walk:
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                if file.endswith('.zip'):
-                    zip_files.append(os.path.join(root, file))
-                else:
-                    pass # Placeholder
-    else:
-        for file in os.listdir(folder_path):
-            if file.endswith('.zip'):
-                zip_files.append(os.path.join(folder_path, file))
-
-    for zip_file in zip_files:
-        with tempfile.TemporaryDirectory(dir=temp_path_folder) as tmpdir:
-            print(f'Extracting {zip_file} to {tmpdir}')
-            shutil.unpack_archive(filename=zip_file, extract_dir=tmpdir)
-            recursive_unzip(tmpdir, temp_path_folder=temp_path_folder, walk=True)
-
-
-# %%
-recursive_unzip(data_path_folder, temp_path_folder)
 
 
 # %% Load Schema
@@ -129,41 +96,24 @@ with open(os.path.join(schema_path_folder, 'IndividualInformationReport.json'), 
 schema = base_to_schema(base)
 
 
-# %% Read XML File
 
-file_name = r'7461_IndividualInformationReport_2021-05-16.iid'
+# %% Name extract
 
-file_path = os.path.join(temp_path_folder, r'2021-05-16\7461_IndividualInformationReport_2021-05-16\7461_IndividualInformationReport_2021-05-16.iid')
-#file_path = os.path.join(data_path_folder, r'test2.xml')
+def extract_data_from_finra_file_name(file_name):
+    basename = os.path.basename(file_name)
+    sp = basename.split("_")
+    ans = {
+        'firm': sp[0],
+        'name': sp[1],
+        'date': sp[2].rsplit('.', 1)[0]
+    }
+    return ans
 
-print(file_path)
+# %% Find rowTags
 
-#df = read_xml(file_path, rowTag="?xml")
-df = read_xml(spark, file_path, rowTag="Indvls", schema=schema)
-
-
-df.printSchema()
-
-df.show(1)
-
-df.schema
-
-# %% Get XML Criteria
-
-def get_xml_criteria(df, criteria_str:str='Criteria'):
-    if df.count()==1 and criteria_str in df.columns:
-        dtype:str = [x[1] for x in df.dtypes if x[0] == criteria_str][0]
-        if dtype.startswith('struct'):
-            return df.select(col(criteria_str)).collect()[0][0].asDict()
-    return {}
-
-criteria = get_xml_criteria(df)
-
-print(criteria)
-# TODO: Track Criteria in metadata
-
-df = df.select([col(c) for c in df.columns if c!='Criteria'])
-
+def find_rowTags(file_path):
+    df = read_xml(spark, file_path, rowTag="?xml")
+    return [c for c in df.columns if c not in ['Criteria']]
 
 
 # %% Flatten XML
@@ -198,12 +148,13 @@ def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
     return dfx
 
 
-#df = flatten_df(df)
-
 
 # %% flatten and divide
 
 def flatten_n_divide_df(df, name:str='main'):
+    if not df.rdd.flatMap(lambda x: x).collect(): # check if df is empty
+        return dict()
+
     df = flatten_df(df)
 
     string_cols = [c[0] for c in df.dtypes if c[1]=='string']
@@ -222,75 +173,118 @@ def flatten_n_divide_df(df, name:str='main'):
 
 
 
-
-df_main_name = 'IndividualInformationReport'
-df_list = flatten_n_divide_df(df, name=df_main_name)
-
-# %% Count of DF's
-
-print(len(df_list))
-
 # %% Write df list to Azure
 
-for df_name, dfx in df_list.items():
-    print('\n'+df_name)
-    dfx.printSchema()
+def write_df_list_to_azure(df_list, df_file_name):
 
-    data_type = 'data'
-    container_folder = f"{data_type}/{domain_name}/{database}/{df_main_name}"
+    for df_name, dfx in df_list.items():
+        print(f'\n Writing {df_name} to Azure...')
+        dfx.printSchema()
 
-    dfx = add_etl_columns(df=dfx, execution_date=execution_date)
+        data_type = 'data'
+        container_folder = f"{data_type}/{domain_name}/{database}/{df_file_name}"
 
-    save_adls_gen2_sp(
-        spark=spark,
-        df=dfx,
-        storage_account_name = storage_account_name,
-        azure_tenant_id = azure_tenant_id,
-        sp_id = sp_id,
-        sp_pass = sp_pass,
-        container_name = container_name,
-        container_folder = container_folder,
-        table = df_name,
-        partitionBy = partitionBy,
-        format = format
-    )
+        dfx = add_etl_columns(df=dfx, execution_date=execution_date)
 
-    # Metadata
-    data_type = 'metadata'
-    container_folder = f"{data_type}/{domain_name}/{database}/{df_main_name}"
+        save_adls_gen2_sp(
+            spark=spark,
+            df=dfx,
+            storage_account_name = storage_account_name,
+            azure_tenant_id = azure_tenant_id,
+            sp_id = sp_id,
+            sp_pass = sp_pass,
+            container_name = container_name,
+            container_folder = container_folder,
+            table = df_name,
+            partitionBy = partitionBy,
+            format = format
+        )
 
-    meta_columns = ["column_name", "data_type"]
-    meta_data = dfx.dtypes
-    meta_df = spark.createDataFrame(data=meta_data, schema=meta_columns)
-    meta_df = add_etl_columns(df=meta_df, execution_date=execution_date)
-    
-    save_adls_gen2_sp(
-        spark=spark,
-        df=meta_df,
-        storage_account_name = storage_account_name,
-        azure_tenant_id = azure_tenant_id,
-        sp_id = sp_id,
-        sp_pass = sp_pass,
-        container_name = container_name,
-        container_folder = container_folder,
-        table = df_name,
-        partitionBy = partitionBy,
-        format = format
-    )
+        # Metadata
+        data_type = 'metadata'
+        container_folder = f"{data_type}/{domain_name}/{database}/{df_file_name}"
 
+        meta_columns = ["column_name", "data_type"]
+        meta_data = dfx.dtypes
+        meta_df = spark.createDataFrame(data=meta_data, schema=meta_columns)
+        meta_df = add_etl_columns(df=meta_df, execution_date=execution_date)
+        
+        save_adls_gen2_sp(
+            spark=spark,
+            df=meta_df,
+            storage_account_name = storage_account_name,
+            azure_tenant_id = azure_tenant_id,
+            sp_id = sp_id,
+            sp_pass = sp_pass,
+            container_name = container_name,
+            container_folder = container_folder,
+            table = df_name,
+            partitionBy = partitionBy,
+            format = format
+        )
 
-
-
-print('Done')
-
+    print('Done writing to Azure')
 
 
-# %% Show sample row(s)
+# %% Main Processing of Finra file
 
-#df.show(n=5, truncate=True)
+def process_finra(root, file):
+    name_data = extract_data_from_finra_file_name(file)
+    print('\n', name_data)
 
-#df.limit(1).write.json(r"C:\Users\smammadov\packages\Temp\t.json", mode='overwrite')
+    file_path = os.path.join(root, file)
+
+    rowTags = find_rowTags(file_path)
+    print(f'rowTags: {rowTags}')
+    rowTag = rowTags[0]
+
+    schema_file = name_data['name']+'.json'
+    schema_path = os.path.join(schema_path_folder, schema_file)
+
+    if os.path.isfile(schema_path):
+        print(f"Loading schema from file: {schema_file}")
+        with open(schema_path, 'r') as f:
+            base = json.load(f)
+        schema = base_to_schema(base)
+        df = read_xml(spark, file_path, rowTag=rowTag, schema=schema)
+    else:
+        print(f"No manual schema defined for {name_data['name']}. Using default schema.")
+        df = read_xml(spark, file_path, rowTag=rowTag)
+
+    df_list = flatten_n_divide_df(df, name=name_data['name'])
+    if not df_list:
+        print(f"No data to write -> {name_data['name']}")
+        return
+
+    write_df_list_to_azure(df_list, name_data['name'])
 
 
-# %%
+
+# %% Recursive Unzip
+
+def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', walk:bool=False):
+    zip_files = []
+
+    if walk:
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                if file.endswith('.zip'):
+                    zip_files.append(os.path.join(root, file))
+                else:
+                    process_finra(root, file)
+    else:
+        for file in os.listdir(folder_path):
+            if file.endswith('.zip'):
+                zip_files.append(os.path.join(folder_path, file))
+
+    for zip_file in zip_files:
+        with tempfile.TemporaryDirectory(dir=temp_path_folder) as tmpdir:
+            print(f'\nExtracting {zip_file} to {tmpdir}')
+            shutil.unpack_archive(filename=zip_file, extract_dir=tmpdir)
+            recursive_unzip(tmpdir, temp_path_folder=temp_path_folder, walk=True)
+
+
+
+recursive_unzip(data_path_folder)
+
 
