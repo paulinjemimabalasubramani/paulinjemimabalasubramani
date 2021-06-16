@@ -1,26 +1,26 @@
-DataTypeTranslationID,DataTypeFrom,DataTypeTo,EngineFrom,EngineTo,IsActive,CreatedDateTime,UpdatedDateTime
-sqlserver_snowflake,bigint,bigint,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,numeric,decimal,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,bit,smallint,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,smallint,smallint,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,decimal,decimal,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,smallmoney,double,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,int,int,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,tinyint,smallint,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,money,double,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,float,float,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,real,double,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,date,date,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,datetime2,datetime,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,smalldatetime,date,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,datetime,datetime,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,time,time,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,char,varchar,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,varchar,varchar,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,text,string,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,nchar,string,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,nvarchar,string,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,ntext,string,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,binary,binary,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,varbinary,varbinary,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
-sqlserver_snowflake,xml,string,sqlserver,snowflake,1,6/3/2021 1:00,6/3/2021 1:00
+DataTypeTranslationID,DataTypeFrom,DataTypeTo,EngineFrom,EngineTo
+sqlserver_snowflake,bigint,bigint,sqlserver,snowflake
+sqlserver_snowflake,numeric,decimal,sqlserver,snowflake
+sqlserver_snowflake,bit,smallint,sqlserver,snowflake
+sqlserver_snowflake,smallint,smallint,sqlserver,snowflake
+sqlserver_snowflake,decimal,decimal,sqlserver,snowflake
+sqlserver_snowflake,smallmoney,double,sqlserver,snowflake
+sqlserver_snowflake,int,int,sqlserver,snowflake
+sqlserver_snowflake,tinyint,smallint,sqlserver,snowflake
+sqlserver_snowflake,money,double,sqlserver,snowflake
+sqlserver_snowflake,float,float,sqlserver,snowflake
+sqlserver_snowflake,real,double,sqlserver,snowflake
+sqlserver_snowflake,date,date,sqlserver,snowflake
+sqlserver_snowflake,datetime2,datetime,sqlserver,snowflake
+sqlserver_snowflake,smalldatetime,date,sqlserver,snowflake
+sqlserver_snowflake,datetime,datetime,sqlserver,snowflake
+sqlserver_snowflake,time,time,sqlserver,snowflake
+sqlserver_snowflake,char,varchar,sqlserver,snowflake
+sqlserver_snowflake,varchar,varchar,sqlserver,snowflake
+sqlserver_snowflake,text,string,sqlserver,snowflake
+sqlserver_snowflake,nchar,string,sqlserver,snowflake
+sqlserver_snowflake,nvarchar,string,sqlserver,snowflake
+sqlserver_snowflake,ntext,string,sqlserver,snowflake
+sqlserver_snowflake,binary,binary,sqlserver,snowflake
+sqlserver_snowflake,varbinary,varbinary,sqlserver,snowflake
+sqlserver_snowflake,xml,string,sqlserver,snowflake
