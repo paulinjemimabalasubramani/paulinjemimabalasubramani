@@ -7,9 +7,10 @@ Library Class for retrieving and storing configuration data
 
 import os, sys, platform
 
-from .common import make_logging, catch_error
+from .common_functions import make_logging, catch_error
 
 import yaml
+
 
 
 # %% Logging
@@ -23,6 +24,8 @@ print(app_info)
 logger.info(app_info)
 
 is_pc = platform.system().lower() == 'windows'
+
+
 
 # %% Config Paths
 
@@ -44,6 +47,10 @@ else:
     config_path = '/usr/local/spark/resources/fileshare/EDIP-Code/config'
     joinstr = ':' # for extraClassPath
 
+
+
+# %% extraClassPath
+
 drivers = []
 for file in os.listdir(drivers_path):
     if file.endswith('.jar'):
@@ -51,10 +58,9 @@ for file in os.listdir(drivers_path):
 extraClassPath = joinstr.join(drivers)
 print(f'extraClassPath: {extraClassPath}')
 
-secrets_file = os.path.join(config_path, "secrets.yaml")
 
 
-# %% Main Class
+# %% Config Class
 class Config:
     """
     Class for retrieving and storing configuration data
@@ -76,5 +82,8 @@ class Config:
         for name, value in contents.items():
             setattr(self, name, value) # Overwrite defaults from file
 
+
+
+# %%
 
 

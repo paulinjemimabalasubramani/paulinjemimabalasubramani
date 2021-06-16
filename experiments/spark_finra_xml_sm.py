@@ -22,6 +22,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common import make_logging, catch_error
 from modules.mysession import MySession
+from modules.config import is_pc
 
 
 # %% Spark Libraries
@@ -44,7 +45,7 @@ if __name__ == '__main__':
 
     print(f'Main Path: {os.path.realpath(os.path.dirname(__file__))}')
 
-    if ss.is_pc:
+    if is_pc:
         data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared')
         temp_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Temp')
     else:
@@ -323,7 +324,7 @@ df.printSchema()
 
 print(os.path.realpath(os.path.dirname(__file__)))
 
-if ss.is_pc:
+if is_pc:
     data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared/Finra')
 else:
     # /usr/local/spark/resources/fileshare/Shared/Finra

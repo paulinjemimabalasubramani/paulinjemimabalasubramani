@@ -1,0 +1,130 @@
+
+"""
+Library for starting a Spark session
+
+
+USEFUL LINKS:
+Download JDBC Driver:
+https://docs.microsoft.com/en-us/sql/connect/jdbc/download-microsoft-jdbc-driver-for-sql-server?view=sql-server-ver15
+
+https://github.com/microsoft/sql-spark-connector
+
+https://spark.apache.org/docs/latest/configuration
+
+"""
+
+# %% libraries
+from .common_functions import make_logging, catch_error
+from .config import Config, is_pc, extraClassPath, config_path
+
+import os
+
+from pyspark.sql import SparkSession
+
+
+# %% Logging
+logger = make_logging(__name__)
+
+
+
+# %% Create Spark
+
+@catch_error(logger)
+def create_spark():
+    """
+    Initiate a new spark session
+    """
+    app_name = os.path.basename(__file__)
+
+    spark = (
+        SparkSession
+        .builder
+        .appName(app_name)
+        .config('spark.driver.extraClassPath', extraClassPath)
+        .config('spark.executor.extraClassPath', extraClassPath)
+        .getOrCreate()
+        )
+
+    spark.getActiveSession()
+
+    print(f"\nSpark version = {spark.version}")
+    print(f"Hadoop version = {spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}")
+
+    return spark
+
+
+
+# %% Read SQL Config
+
+@catch_error(logger)
+def read_sql_config():
+    """
+    Read sql configuration file, username/password
+    """
+    defaults = dict(
+        sql_user = None,
+        sql_password = None,
+    )
+
+    sql_file = os.path.join(config_path, "sql.yaml")
+    sql_confing = Config(file_path=sql_file, defaults=defaults)
+    return sql_confing
+
+
+# %% Read SQL Table
+
+@catch_error(logger)
+def read_sql(spark, user:str, password:str, schema:str, table:str, database:str, server:str):
+    """
+    Read a table from SQL server
+    """
+    print(f"Reading SQL: server='{server}', database='{database}', table='{schema}.{table}'")
+
+    url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
+
+    df = (
+        spark.read
+            .format("jdbc")
+            .option("url", url)
+            .option("driver", 'com.microsoft.sqlserver.jdbc.SQLServerDriver')
+            .option("user", user)
+            .option("password", password)
+            .option("dbtable", f"{schema}.{table}")
+            .option("encrypt", "true")
+            .option("hostNameInCertificate", "*.database.windows.net")
+            .load()
+        )
+    
+    return df
+
+
+
+# %% Read XML File
+
+@catch_error(logger)
+def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
+    """
+    Read XML Files using Spark
+    """
+    df = (spark.read
+        .format("com.databricks.spark.xml")
+        .option("rowTag", rowTag)
+        .option("inferSchema", 'false')
+        .option("excludeAttribute", 'false')
+        .option("ignoreSurroundingSpaces", 'true')
+        .option("mode", "PERMISSIVE")
+    )
+
+    if schema:
+        df = df.schema(schema=schema)
+
+    return df.load(file_path)
+
+
+
+
+# %%
+
+
+
+

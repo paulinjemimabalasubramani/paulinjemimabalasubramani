@@ -9,6 +9,7 @@ import os, logging
 from functools import wraps
 
 
+
 # %% Wrapper/Decorator function for catching errors
 
 def catch_error(logger=None):
@@ -65,6 +66,6 @@ def make_logging(module_name:str):
     return logger
 
 
-# %%
 
+# %%
 
