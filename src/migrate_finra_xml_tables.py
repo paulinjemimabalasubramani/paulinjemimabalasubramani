@@ -13,8 +13,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys
-import tempfile, shutil
+import os, sys, tempfile, shutil, json
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
@@ -31,7 +30,7 @@ import pyspark
 from pyspark.sql.types import StructType, StructField, StringType, TimestampType, BooleanType, DoubleType, IntegerType, FloatType, ArrayType, LongType
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit, split, explode, udf
+from pyspark.sql.functions import array, col, lit, split, explode, udf
 from pyspark.sql import Row, Window
 
 
@@ -58,7 +57,7 @@ else:
 os.makedirs(data_path_folder, exist_ok=True)
 os.makedirs(temp_path_folder, exist_ok=True)
 
-
+schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../config/finra')
 
 
 # %% Recursive Unzip
@@ -89,225 +88,7 @@ def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', w
 recursive_unzip(data_path_folder, temp_path_folder)
 
 
-# %% Create Schema - Test
-
-
-base = {
-    'person': [{
-        '_age':None, 
-        '_height':None, 
-        '_name':None, 
-        'locations':{
-            'loc':[{
-                '_address':None, 
-                '_id':None
-            }]
-        }
-    }]
-}
-
-
-# %% Create Schema
-
-base = {
-    'Indvl': [{
-        'Comp': {
-            'Nm': {
-                '_VALUE': None,
-                '_first': None,
-                '_last': None,
-                '_mid': None,
-                '_suf': None,
-            },
-            '_actvMltry': None,
-            '_bllngCd': None,
-            '_indvlPK': None,
-            '_indvlSSN': None,
-            '_matDiff': None,
-            '_rgstdMult': None,
-            '_rptblDisc': None,
-            '_statDisq': None,
-        },
-        'ContEds': {
-            'ContEd': [{
-                'Appts': None,
-                '_begDt': None,
-                '_endDt': None,
-                '_eventDt': None,
-                '_frgnDfrdFl': None,
-                '_mltryDfrdFl': None,
-                '_nrlmtID': None,
-                '_rslt': None,
-                '_sssn': None,
-                '_sssnDt': None,
-                '_sssnReqSt': None,
-                '_sssnSt': None,
-            }],
-            '_VALUE': None,
-            '_baseDt': None,
-            '_st': None,
-        },
-        'CrntRgstns': { # Manual Input
-            'CrntRgstn':[{
-                'CrntDfcnys': None,
-                '_actvReg': None,
-                '_aprvlDt': None,
-                '_crtnDt': None,
-                '_empStDt': None,
-                '_regAuth': None,
-                '_regCat': None,
-                '_st': None,
-                '_stDt': None,
-                '_trmnnDt': None,
-                '_updateTS': None,
-            }],
-        },
-        'DRPs': None,
-        'Dsgntns': None,
-        'EmpHists': { # Manual Input
-            'EmpHist': [{
-                'DtRng': {
-                    '_VALUE': None,
-                    '_fromDt': None,
-                    '_toDt': None,
-                },
-                '_city': None,
-                '_cntryCd': None,
-                '_invRel': None,
-                '_orgNm': None,
-                '_pstnHeld': None,
-                '_seqNb': None,
-                '_state': None,
-            }]
-        },
-        'EventFlngHists': {
-            'EventFlngHist': [{
-                '_VALUE': None,
-                '_dt': None,
-                '_flngType': None,
-                '_frmType': None,
-                '_id': None,
-                '_src': None,
-                '_type': None,
-            }]
-        },
-        'ExmWvrs': None,
-        'Exms': {
-            'Exm': [{
-                'Appts': None,
-                '_exmCd': None,
-                '_exmDt': None,
-                '_exmValidFl': None,
-                '_grd': None,
-                '_nrlmtID': None,
-                '_st': None,
-                '_stDt': None,
-                '_updateTS': None,
-                '_wndwBeginDt': None,
-                '_wndwEndDt': None,
-            }]
-        },
-        'FngprInfos': {
-            'FngprInfo': [{
-                '_VALUE': None,
-                '_barCd': None,
-                '_orgNm': None,
-                '_pstnInFirm': None,
-                '_st': None,
-                '_stDt': None,
-            }]
-        },
-        'IAAffltns': None,
-        'IdentInfo': {
-            'Ht': {
-                '_VALUE': None,
-                '_ft': None,
-                '_in': None,
-            },
-            '_birthCntryCd': None,
-            '_birthCntryOld': None,
-            '_birthPrvnc': None,
-            '_birthStCd': None,
-            '_dob': None,
-            '_eye': None,
-            '_gender': None,
-            '_hair': None,
-            '_wt': None,
-        },
-        'OffHists': {
-            'OffHist': [{
-                'DtRng': {
-                    '_VALUE': None,
-                    '_fromDt': None,
-                    '_toDt': None,
-                },
-                'EmpLocs': {
-                    'EmpLoc': [{
-                        'Addr': {
-                            '_VALUE': None,
-                            '_city': None,
-                            '_cntryCd': None,
-                            '_cntryOld': None,
-                            '_postlCd': None,
-                            '_state': None,
-                            '_strt1': None,
-                            '_strt2': None,
-                        },
-                        '_bllngCd': None,
-                        '_brnchPK': None,
-                        '_fromDt': None,
-                        '_lctdFl': None,
-                        '_mainOfcBDFl': None,
-                        '_mainOfcIAFl': None,
-                        '_oldSeqNb': None,
-                        '_prvtRsdnc': None,
-                        '_regdLocFl': None,
-                        '_seqNb': None,
-                        '_sprvdFl': None,
-                        '_toDt': None,
-                    }]
-                },
-                '_empCntxt': None,
-                '_firmAsctnSt': None,
-                '_ndpndCntrcrFl': None,
-                '_orgNm': None,
-                '_orgPK': None,
-                '_termDt': None,
-                '_termExpln': None,
-                '_termRsn': None,
-                '_termRsnAmndtExpln': None,
-            }]
-        },
-        'OthrBuss': {
-            'OthrBus': {
-                '_VALUE': None,
-                '_desc': None,
-            }
-        },
-        'OthrNms': None,
-        'ResHists': {
-            'ResHist': [{
-                'Addr': {
-                    '_VALUE': None,
-                    '_city': None,
-                    '_cntryCd': None,
-                    '_postlCd': None,
-                    '_state': None,
-                    '_strt1': None,
-                },
-                'DtRng': {
-                    '_VALUE': None,
-                    '_fromDt': None,
-                    '_toDt': None,
-                },
-                '_seqNb': None,
-            }]
-        },
-    }]
-}
-
-
-
+# %% Load Schema
 
 def base_to_schema(base:dict):
     st = []
@@ -325,9 +106,10 @@ def base_to_schema(base:dict):
     return StructType(st)
 
 
+with open(os.path.join(schema_path_folder, 'IndividualInformationReport.json'), 'r') as f:
+    base = json.load(f)
 
 schema = base_to_schema(base)
-
 
 
 # %% Read XML File
@@ -382,7 +164,7 @@ def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
             nested = True
             if len(df.columns)>1:
                 struct_cols = df.select(c[0]+'.*').columns
-                cols.extend([col(c[0]+'.'+cc).alias(c[0]+'_'+cc) for cc in struct_cols])
+                cols.extend([col(c[0]+'.'+cc).alias(c[0]+('' if cc[0]=='_' else '_')+cc) for cc in struct_cols])
             else:
                 cols.append(c[0]+'.*')
         elif c[1].startswith('array') and expolode_flag:
@@ -399,7 +181,46 @@ def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
     return dfx
 
 
-df = flatten_df(df)
+#df = flatten_df(df)
+
+
+# %% flatten and divide
+
+def flatten_n_divide_df(df, name:str='main'):
+    df = flatten_df(df)
+
+    string_cols = [c[0] for c in df.dtypes if c[1]=='string']
+    array_cols = [c[0] for c in df.dtypes if c[1].startswith('array')]
+
+    if len(array_cols)==0:
+        return {name:df}
+
+    df_list = dict()
+    for array_col in array_cols:
+        colx = string_cols + [array_col]
+        dfx = df.select(*colx)
+        df_list={**df_list, **flatten_n_divide_df(dfx, name=name+'_'+array_col)}
+
+    return df_list
+
+
+
+
+
+df_list = flatten_n_divide_df(df, name='IndividualInformationReport')
+
+# %% Count of DF's
+
+print(len(df_list))
+
+# %% Print all schemas
+
+for df_name, df_flat in df_list.items():
+    print('\n'+df_name)
+    df_flat.printSchema()
+
+
+
 
 # %% Print Number of Columns and Schema
 
@@ -407,24 +228,9 @@ print(len(df.columns))
 df.printSchema()
 
 
-# %% Wrtie to parquet format
+# %% Wrtie to Azure
 
-print(os.path.realpath(os.path.dirname(__file__)))
 
-if is_pc:
-    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared/Finra')
-else:
-    # /usr/local/spark/resources/fileshare/Shared/Finra
-    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared/Finra')
-
-#os.makedirs(data_path_folder, exist_ok=True)
-data_path = os.path.join(data_path_folder, file_name+'.parquet')
-print(f'Data path: {data_path}')
-
-codec = spark.conf.get("spark.sql.parquet.compression.codec")
-print(f"Write data in parquet format with '{codec}' compression")
-
-df.write.parquet(path = data_path, mode='overwrite')
 
 
 # %% Write to JSON
