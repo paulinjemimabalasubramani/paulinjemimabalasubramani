@@ -51,7 +51,7 @@ domain_name = 'financial_professional'
 database = 'finra'
 format = 'delta'
 
-partitionBy = 'EXECUTION_DATE'
+partitionBy = 'RECEPTION_DATE'
 execution_date = datetime.now()
 
 
@@ -175,7 +175,7 @@ def flatten_n_divide_df(df, name:str='main'):
 
 # %% Write df list to Azure
 
-def write_df_list_to_azure(df_list, df_file_name):
+def write_df_list_to_azure(df_list, df_file_name, reception_date):
 
     for df_name, dfx in df_list.items():
         print(f'\n Writing {df_name} to Azure...')
@@ -184,7 +184,7 @@ def write_df_list_to_azure(df_list, df_file_name):
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{df_file_name}"
 
-        dfx = add_etl_columns(df=dfx, execution_date=execution_date)
+        dfx = add_etl_columns(df=dfx, execution_date=execution_date, reception_date=reception_date)
 
         save_adls_gen2_sp(
             spark=spark,
@@ -207,7 +207,7 @@ def write_df_list_to_azure(df_list, df_file_name):
         meta_columns = ["column_name", "data_type"]
         meta_data = dfx.dtypes
         meta_df = spark.createDataFrame(data=meta_data, schema=meta_columns)
-        meta_df = add_etl_columns(df=meta_df, execution_date=execution_date)
+        meta_df = add_etl_columns(df=meta_df, execution_date=execution_date, reception_date=reception_date)
         
         save_adls_gen2_sp(
             spark=spark,
@@ -256,7 +256,7 @@ def process_finra(root, file):
         print(f"No data to write -> {name_data['name']}")
         return
 
-    write_df_list_to_azure(df_list, name_data['name'])
+    write_df_list_to_azure(df_list, name_data['name'], reception_date=name_data['date'])
 
 
 
