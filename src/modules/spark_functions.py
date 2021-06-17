@@ -121,6 +121,21 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     return df.load(file_path)
 
 
+# %% Read CSV File
+
+@catch_error(logger)
+def read_csv(spark, file_path:str):
+    """
+    Read CSV File using Spark
+    """
+    df = (spark.read
+        .format('csv')
+        .option('header', 'true')
+        .load(file_path)
+    )
+
+    return df
+
 
 
 # %%
