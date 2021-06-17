@@ -1,4 +1,5 @@
 # %% Import Libraries
+import logging
 import os, sys
 from datetime import datetime
 
@@ -35,7 +36,7 @@ assert os.path.isfile(table_list_path), f"File not found: {table_list_path}"
 
 data_type_translation_id = 'sqlserver_snowflake'
 
-database = 'LR'
+database = 'LR' # TABLE_CATALOG
 server = 'TSQLOLTP01'
 
 storage_account_name = "agaggrlakescd"
@@ -112,17 +113,45 @@ sql_config = read_sql_config()
 
 # %% Get Table and Column Metadata from information_schema
 
-df_tables = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='tables', database=database, server=server)
-df_tables.printSchema()
+sql_tables = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='tables', database=database, server=server)
+sql_tables.printSchema()
+sql_tables.show(5)
 
-df_columns = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='columns', database=database, server=server)
-df_columns.printSchema()
+sql_columns = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='columns', database=database, server=server)
+sql_columns.printSchema()
+sql_columns.show(5)
 
 
 
 
+# %% Join tables of interest with sql tables
+
+@catch_error(logger)
+def join_table_list_sql_tables(table_list, sql_tables):
+    tables = table_list.join(
+        sql_tables, 
+        (table_list.TABLE_NAME == sql_tables.TABLE_NAME) & (table_list.TABLE_SCHEMA == sql_tables.TABLE_SCHEMA), 
+        how = 'left'
+        ).select(
+            table_list.TABLE_NAME, 
+            table_list.TABLE_SCHEMA,
+            sql_tables.TABLE_NAME.alias('SQL_TABLE_NAME'),
+            sql_tables.TABLE_TYPE,
+            sql_tables.TABLE_CATALOG,
+        )
+
+    tables.printSchema()
+    tables.show(5)
+
+    # Check if there is a table in the table_list that is not in the sql_tables
+    null_rows = tables.filter(col('SQL_TABLE_NAME').isNull()).select(col('TABLE_NAME')).collect()
+    assert not null_rows, f"There are some tables in table_list that are not in sql_tables: {[x[0] for x in null_rows]}"
+
+    return tables
+
+
+tables = join_table_list_sql_tables(table_list, sql_tables)
 
 # %%
 
-df_tables.show(5)
-# %%
+
