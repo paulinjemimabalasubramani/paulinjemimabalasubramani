@@ -46,6 +46,8 @@ domain_name = 'financial_professional'
 format = 'delta'
 
 execution_date = datetime.now()
+created_datetime = execution_date
+modified_datetime = execution_date
 
 # %% Create Session
 
@@ -86,7 +88,7 @@ def get_table_list(table_list_path:str):
     Get List of Tables of interest
     """
     table_list = read_csv(spark, table_list_path)
-    table_list.printSchema()
+    if is_pc: table_list.printSchema()
     table_list = table_list.filter(F.lower(col('Table of Interest')) == lit('yes').cast("string"))
 
     column_map = {
@@ -113,15 +115,21 @@ sql_config = read_sql_config()
 
 # %% Get Table and Column Metadata from information_schema
 
-sql_tables = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='tables', database=database, server=server)
-sql_tables.printSchema()
-sql_tables.show(5)
+sql_tables = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='INFORMATION_SCHEMA', table='TABLES', database=database, server=server)
+if is_pc: sql_tables.printSchema()
+if is_pc: sql_tables.show(5)
 
-sql_columns = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='columns', database=database, server=server)
-sql_columns.printSchema()
-sql_columns.show(5)
+sql_columns = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='INFORMATION_SCHEMA', table='COLUMNS', database=database, server=server)
+if is_pc: sql_columns.printSchema()
+if is_pc: sql_columns.show(5)
 
+sql_table_constraints = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='INFORMATION_SCHEMA', table='TABLE_CONSTRAINTS', database=database, server=server)
+if is_pc: sql_table_constraints.printSchema()
+if is_pc: sql_table_constraints.show(5)
 
+sql_key_column_usage = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='INFORMATION_SCHEMA', table='KEY_COLUMN_USAGE', database=database, server=server)
+if is_pc: sql_key_column_usage.printSchema()
+if is_pc: sql_key_column_usage.show(5)
 
 
 # %% Join tables of interest with sql tables
@@ -141,8 +149,8 @@ def join_table_list_sql_tables(table_list, sql_tables):
             sql_tables.TABLE_CATALOG,
         )
 
-    tables.printSchema()
-    tables.show(5)
+    if is_pc: tables.printSchema()
+    if is_pc: tables.show(5)
 
     # Check if there is a table in the table_list that is not in the sql_tables
     null_rows = tables.filter(col('SQL_TABLE_NAME').isNull()).select(col('TABLE_NAME')).collect()
@@ -155,6 +163,7 @@ tables = join_table_list_sql_tables(table_list, sql_tables)
 
 # %% filter columns by selected tables
 
+@catch_error(logger)
 def filter_columns_by_tables(sql_columns, tables):
     columns = tables.join(
         sql_columns.alias('sql_columns'),
@@ -164,14 +173,105 @@ def filter_columns_by_tables(sql_columns, tables):
         how = 'left'
     ).select('sql_columns.*')
 
-    columns.printSchema()
-
+    if is_pc: columns.printSchema()
     return columns
+
+
 
 columns = filter_columns_by_tables(sql_columns, tables)
 
 
+
+# %% Join with table constraints and column usage
+
+@catch_error(logger)
+def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_usage):
+    columns = columns.alias('columns').join(
+        sql_table_constraints,
+        (columns.TABLE_NAME == sql_table_constraints.TABLE_NAME) &
+        (columns.TABLE_SCHEMA == sql_table_constraints.TABLE_SCHEMA) &
+        (columns.TABLE_CATALOG == sql_table_constraints.TABLE_CATALOG) &
+        (sql_table_constraints.CONSTRAINT_TYPE == 'PRIMARY KEY'),
+        how = 'left'
+        ).select(
+            'columns.*', 
+            sql_table_constraints.CONSTRAINT_TYPE, 
+            sql_table_constraints.CONSTRAINT_NAME
+            )
+    
+    columns = columns.alias('columns').join(
+        sql_key_column_usage,
+        (columns.TABLE_NAME == sql_key_column_usage.TABLE_NAME) &
+        (columns.TABLE_SCHEMA == sql_key_column_usage.TABLE_SCHEMA) &
+        (columns.TABLE_CATALOG == sql_key_column_usage.TABLE_CATALOG) &
+        (columns.COLUMN_NAME == sql_key_column_usage.COLUMN_NAME) &
+        (columns.CONSTRAINT_NAME == sql_key_column_usage.CONSTRAINT_NAME)
+        ,
+        how = 'left'
+        ).select(
+            'columns.*',
+            sql_key_column_usage.COLUMN_NAME.alias('KEY_COLUMN_NAME')
+        )
+    
+    if is_pc: columns.printSchema()
+    return columns
+
+
+
+columns = join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_usage)
+
+
+# %% Rename Columns
+
+@catch_error(logger)
+def rename_columns(columns):
+    column_map = {
+        'TABLE_CATALOG': 'SourceDatabase',
+        'TABLE_SCHEMA' : 'SourceSchema',
+        'TABLE_NAME'   : 'TableName',
+        'COLUMN_NAME'  : 'SourceColumnName',
+        'DATA_TYPE'    : 'SourceDataType',
+        'CHARACTER_MAXIMUM_LENGTH': 'SourceDataLength',
+        'NUMERIC_PRECISION': 'SourceDataPrecision',
+        'NUMERIC_SCALE': 'SourceDataScale',
+        'ORDINAL_POSITION': 'OrdinalPosition',
+    }
+
+    for key, val in column_map.items():
+        columns = columns.withColumnRenamed(key, val)
+    
+    columns = columns.withColumn('IsNullable', F.when(F.upper(col('IS_NULLABLE'))=='YES', lit(1)).otherwise(lit(0)))
+    columns = columns.withColumn('KeyIndicator', F.when((F.upper(col('CONSTRAINT_TYPE'))=='PRIMARY KEY') & (col('SourceColumnName')==col('KEY_COLUMN_NAME')), lit(1)).otherwise(lit(0)))
+    columns = columns.withColumn('CleanType', col('SourceDataType'))
+    columns = columns.withColumn('TargetColumnName', col('SourceColumnName'))
+
+    if is_pc: columns.printSchema()
+    return columns
+
+
+columns = rename_columns(columns)
+
+
+# %% Add TargetDataType
+
+@catch_error(logger)
+def add_TargetDataType(columns, translation):
+    columns = columns.alias('columns').join(
+        translation,
+        columns.CleanType == translation.DataTypeFrom,
+        how = 'left'
+        ).select(
+            'columns.*', translation.DataTypeTo.alias('TargetDataType')
+        )
+
+    if is_pc: columns.printSchema()
+    return columns
+
+
+columns = add_TargetDataType(columns, translation)
+
 # %%
 
 
-# %%
+
+
