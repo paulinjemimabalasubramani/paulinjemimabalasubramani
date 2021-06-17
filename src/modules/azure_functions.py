@@ -78,7 +78,8 @@ def save_adls_gen2_sp(spark,
         container_folder:str,
         table:str,
         partitionBy:str=None,
-        format:str='delta'):
+        format:str='delta',
+        truncate_table:bool=None):
     """
     Save DF to ADLS Gen 2 using 'Service Principals'
     """
@@ -93,7 +94,7 @@ def save_adls_gen2_sp(spark,
     spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_account_name}.dfs.core.windows.net", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token")
     spark.conf.set("fs.azure.createRemoteFileSystemDuringInitialization", "true")
 
-    df.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
+    df.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", truncate = 'true' if truncate_table else 'false')
     print(f'Finished Writing {container_folder}/{table}')
 
 

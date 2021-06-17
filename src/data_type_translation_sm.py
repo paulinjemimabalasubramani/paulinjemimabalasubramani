@@ -64,7 +64,7 @@ def get_translation(data_type_translation_path, data_type_translation_id:str):
     Get DataTypeTranslation table
     """
     translation = read_csv(spark, data_type_translation_path)
-    translation.printSchema()
+    if is_pc: translation.printSchema()
     translation = translation.filter(
                         (col('DataTypeTranslationID') == lit(data_type_translation_id).cast("string")) & 
                         (col('IsActive') == lit(1))
@@ -77,7 +77,7 @@ def get_translation(data_type_translation_path, data_type_translation_id:str):
 
 translation = get_translation(data_type_translation_path, data_type_translation_id)
 
-translation.show(5)
+if is_pc: translation.show(5)
 
 
 
@@ -107,7 +107,7 @@ def get_table_list(table_list_path:str):
 
 table_list = get_table_list(table_list_path)
 
-table_list.show(5)
+if is_pc: table_list.show(5)
 
 # %% Read SQL Config
 
@@ -345,7 +345,8 @@ def save_table_info_to_adls_gen2(columns):
             container_folder = container_folder,
             table = 'metadata.TableInfo',
             partitionBy = partitionBy,
-            format = format
+            format = format,
+            truncate_table = True,
         )
 
 
