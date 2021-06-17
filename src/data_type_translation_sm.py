@@ -45,9 +45,10 @@ container_name = "ingress"
 domain_name = 'financial_professional'
 format = 'delta'
 
+strftime = "%Y-%m-%d %H:%M:%S"  # http://strftime.org/
 execution_date = datetime.now()
-created_datetime = execution_date
-modified_datetime = execution_date
+created_datetime = execution_date.strftime(strftime)
+modified_datetime = execution_date.strftime(strftime)
 
 # %% Create Session
 
@@ -244,6 +245,9 @@ def rename_columns(columns):
     columns = columns.withColumn('KeyIndicator', F.when((F.upper(col('CONSTRAINT_TYPE'))=='PRIMARY KEY') & (col('SourceColumnName')==col('KEY_COLUMN_NAME')), lit(1)).otherwise(lit(0)))
     columns = columns.withColumn('CleanType', col('SourceDataType'))
     columns = columns.withColumn('TargetColumnName', col('SourceColumnName'))
+    columns = columns.withColumn('IsActive', lit(1))
+    columns = columns.withColumn('CreatedDateTime', lit(created_datetime))
+    columns = columns.withColumn('ModifiedDateTime', lit(modified_datetime))
 
     if is_pc: columns.printSchema()
     return columns
@@ -261,7 +265,8 @@ def add_TargetDataType(columns, translation):
         columns.CleanType == translation.DataTypeFrom,
         how = 'left'
         ).select(
-            'columns.*', translation.DataTypeTo.alias('TargetDataType')
+            'columns.*', 
+            translation.DataTypeTo.alias('TargetDataType')
         )
 
     if is_pc: columns.printSchema()
@@ -269,6 +274,7 @@ def add_TargetDataType(columns, translation):
 
 
 columns = add_TargetDataType(columns, translation)
+
 
 # %% Add Precision
 
@@ -283,6 +289,41 @@ def add_precision(columns):
 
 
 columns = add_precision(columns)
+
+
+# %% Select Columns and Order the Data
+
+@catch_error(logger)
+def select_columns(columns):
+    columns = columns.select(
+        columns.SourceDatabase,
+        columns.SourceSchema,
+        columns.TableName,
+        columns.SourceColumnName,
+        columns.SourceDataType,
+        columns.SourceDataLength,
+        columns.SourceDataPrecision,
+        columns.SourceDataScale,
+        columns.OrdinalPosition,
+        columns.CleanType,
+        columns.TargetColumnName,
+        columns.TargetDataType,
+        columns.IsNullable,
+        columns.KeyIndicator,
+        columns.IsActive,
+        columns.CreatedDateTime,
+        columns.ModifiedDateTime,
+    ).orderBy(
+        columns.SourceDatabase,
+        columns.SourceSchema,
+        columns.TableName,
+    )
+
+    if is_pc: columns.printSchema()
+    return columns
+
+
+columns = select_columns(columns)
 
 
 # %%
