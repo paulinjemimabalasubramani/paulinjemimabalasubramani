@@ -129,8 +129,9 @@ sql_columns.show(5)
 @catch_error(logger)
 def join_table_list_sql_tables(table_list, sql_tables):
     tables = table_list.join(
-        sql_tables, 
-        (table_list.TABLE_NAME == sql_tables.TABLE_NAME) & (table_list.TABLE_SCHEMA == sql_tables.TABLE_SCHEMA), 
+        sql_tables,
+        (table_list.TABLE_NAME == sql_tables.TABLE_NAME) &
+        (table_list.TABLE_SCHEMA == sql_tables.TABLE_SCHEMA),
         how = 'left'
         ).select(
             table_list.TABLE_NAME, 
@@ -152,6 +153,25 @@ def join_table_list_sql_tables(table_list, sql_tables):
 
 tables = join_table_list_sql_tables(table_list, sql_tables)
 
+# %% filter columns by selected tables
+
+def filter_columns_by_tables(sql_columns, tables):
+    columns = tables.join(
+        sql_columns.alias('sql_columns'),
+        (tables.TABLE_NAME == sql_columns.TABLE_NAME) &
+        (tables.TABLE_SCHEMA == sql_columns.TABLE_SCHEMA) &
+        (tables.TABLE_CATALOG == sql_columns.TABLE_CATALOG),
+        how = 'left'
+    ).select('sql_columns.*')
+
+    columns.printSchema()
+
+    return columns
+
+columns = filter_columns_by_tables(sql_columns, tables)
+
+
 # %%
 
 
+# %%
