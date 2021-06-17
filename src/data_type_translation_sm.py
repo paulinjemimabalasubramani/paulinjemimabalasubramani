@@ -9,7 +9,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
-from modules.spark_functions import create_spark, read_csv
+from modules.spark_functions import create_spark, read_csv, read_sql, read_sql_config
 from modules.azure_functions import get_azure_storage_key_vault, save_adls_gen2_sp
 
 
@@ -28,10 +28,23 @@ logger = make_logging(__name__)
 
 # %% Parameters
 data_type_translation_path = os.path.realpath(os.path.dirname(__file__)+'/../metadata_source_files/DataTypeTranslation.csv')
-assert os.path.isfile(data_type_translation_path)
+assert os.path.isfile(data_type_translation_path), f"File not found: {data_type_translation_path}"
+
+table_list_path = os.path.realpath(os.path.dirname(__file__)+'/../config/LNR_Tables.csv')
+assert os.path.isfile(table_list_path), f"File not found: {table_list_path}"
 
 data_type_translation_id = 'sqlserver_snowflake'
 
+database = 'LR'
+server = 'TSQLOLTP01'
+
+storage_account_name = "agaggrlakescd"
+azure_tenant_id, sp_id, sp_pass = get_azure_storage_key_vault(storage_name=storage_account_name)
+container_name = "ingress"
+domain_name = 'financial_professional'
+format = 'delta'
+
+execution_date = datetime.now()
 
 # %% Create Session
 
@@ -42,7 +55,10 @@ spark = create_spark()
 # %% Get DataTypeTranslation table
 
 @catch_error(logger)
-def get_translation(data_type_translation_id:str):
+def get_translation(data_type_translation_path, data_type_translation_id:str):
+    """
+    Get DataTypeTranslation table
+    """
     translation = read_csv(spark, data_type_translation_path)
     translation.printSchema()
     translation = translation.filter(
@@ -55,11 +71,58 @@ def get_translation(data_type_translation_id:str):
 
 
 
-translation = get_translation(data_type_translation_id)
+translation = get_translation(data_type_translation_path, data_type_translation_id)
+
+translation.show(5)
+
+
+
+# %% Get List of Tables of interest
+
+@catch_error(logger)
+def get_table_list(table_list_path:str):
+    """
+    Get List of Tables of interest
+    """
+    table_list = read_csv(spark, table_list_path)
+    table_list.printSchema()
+    table_list = table_list.filter(F.lower(col('Table of Interest')) == lit('yes').cast("string"))
+
+    column_map = {
+        'TableName': 'TABLE_NAME',
+        'SchemaName' : 'TABLE_SCHEMA',
+    }
+
+    for key, val in column_map.items():
+        table_list = table_list.withColumnRenamed(key, val)
+
+    table_list.createOrReplaceTempView('table_list')
+    return table_list
+
+
+
+table_list = get_table_list(table_list_path)
+
+table_list.show(5)
+
+# %% Read SQL Config
+
+sql_config = read_sql_config()
+
+
+# %% Get Table and Column Metadata from information_schema
+
+df_tables = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='tables', database=database, server=server)
+df_tables.printSchema()
+
+df_columns = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='columns', database=database, server=server)
+df_columns.printSchema()
+
+
+
+
 
 # %%
 
-
-
-
-
+df_tables.show(5)
+# %%
