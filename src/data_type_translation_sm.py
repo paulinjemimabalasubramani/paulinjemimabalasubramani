@@ -326,4 +326,32 @@ def select_columns(columns):
 columns = select_columns(columns)
 
 
+# %% Save Master Ingest List to ADLS Gen 2
+
+@catch_error(logger)
+def save_table_info_to_adls_gen2(columns):
+
+    container_folder = 'metadata'
+    partitionBy = 'ModifiedDateTime'
+
+    save_adls_gen2_sp(
+            spark=spark,
+            df=columns,
+            storage_account_name = storage_account_name,
+            azure_tenant_id = azure_tenant_id,
+            sp_id = sp_id,
+            sp_pass = sp_pass,
+            container_name = container_name,
+            container_folder = container_folder,
+            table = 'metadata.TableInfo',
+            partitionBy = partitionBy,
+            format = format
+        )
+
+
+
+save_table_info_to_adls_gen2(columns)
+
+
+
 # %%
