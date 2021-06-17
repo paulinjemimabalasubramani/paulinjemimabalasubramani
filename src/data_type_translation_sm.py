@@ -19,7 +19,7 @@ from modules.azure_functions import get_azure_storage_key_vault, save_adls_gen2_
 from pyspark.sql.types import StructType, StructField, StringType, TimestampType, BooleanType, DoubleType, IntegerType, FloatType
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit, split, explode, udf
+from pyspark.sql.functions import col, lit, split, explode, udf, expr
 from pyspark.sql import Row, Window
 
 
@@ -270,8 +270,19 @@ def add_TargetDataType(columns, translation):
 
 columns = add_TargetDataType(columns, translation)
 
+# %% Add Precision
+
+@catch_error(logger)
+def add_precision(columns):
+    columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['varchar'])) & (col('SourceDataLength')>0) & (col('SourceDataLength')<=255), F.concat(lit('varchar('), col('SourceDataLength'), lit(')'))).otherwise(col('TargetDataType')))
+    columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['decimal'])) & (col('SourceDataPrecision')>0), F.concat(lit('decimal('), col('SourceDataPrecision'), lit(','), col('SourceDataScale'), lit(')'))).otherwise(col('TargetDataType')))
+
+    if is_pc: columns.printSchema()
+    return columns
+    
+
+
+columns = add_precision(columns)
+
+
 # %%
-
-
-
-
