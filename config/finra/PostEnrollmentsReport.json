@@ -1,0 +1,20 @@
+{
+	"Enrollments": [{
+		"Enrollment": {
+			"billingCode": null,
+			"examCode": null,
+			"individualCRDNumber": null,
+			"individualSSN": null,
+			"nrlmtID": null,
+			"windowBeginDate": null,
+			"windowEndDate": null,
+			"Name": {
+				"_last": null,
+				"_first": null,
+				"_middle": null,
+				"_suffix": null,
+				"_VALUE": null
+			}
+		}
+	}]
+}
