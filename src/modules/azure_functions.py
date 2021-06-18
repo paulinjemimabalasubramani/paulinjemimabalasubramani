@@ -76,7 +76,11 @@ def save_adls_gen2(
     data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder}/{table}"
     print(f"Write {format} -> {data_path}")
 
-    df.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
+    if format == 'text':
+        df.coalesce(1).write.save(path=data_path, format=format, mode='overwrite', header='false')
+    else:
+        df.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
+
     print(f'Finished Writing {container_folder}/{table}')
 
 
