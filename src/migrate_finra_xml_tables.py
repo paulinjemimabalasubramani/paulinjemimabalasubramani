@@ -24,8 +24,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
-from modules.azure_functions import get_azure_storage_key_vault, save_adls_gen2_sp
-from modules.data_functions import to_string, remove_column_spaces, add_etl_columns
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2
+from modules.data_functions import  add_etl_columns
 
 
 # %% Spark Libraries
@@ -45,10 +45,11 @@ logger = make_logging(__name__)
 # %% Parameters
 
 storage_account_name = "agaggrlakescd"
-azure_tenant_id, sp_id, sp_pass = get_azure_storage_key_vault(storage_name=storage_account_name)
+#storage_account_name = "agfsclakescd"
+
 container_name = "ingress"
 domain_name = 'financial_professional'
-database = 'finra'
+database = 'FINRA'
 format = 'delta'
 
 partitionBy = 'RECEPTION_DATE'
@@ -57,6 +58,11 @@ execution_date = datetime.now()
 
 # %% Initiate Spark
 spark = create_spark()
+
+
+# %% Setup spark to ADLS Gen2 connection
+
+setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 
 # %% Get Paths
@@ -74,6 +80,7 @@ schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../config/finr
 
 # %% Load Schema
 
+@catch_error(logger)
 def base_to_schema(base:dict):
     st = []
     for key, val in base.items():
@@ -99,6 +106,7 @@ def base_to_schema(base:dict):
 
 # %% Name extract
 
+@catch_error(logger)
 def extract_data_from_finra_file_name(file_name):
     basename = os.path.basename(file_name)
     sp = basename.split("_")
@@ -111,6 +119,7 @@ def extract_data_from_finra_file_name(file_name):
 
 # %% Find rowTags
 
+@catch_error(logger)
 def find_rowTags(file_path):
     df = read_xml(spark, file_path, rowTag="?xml")
     return [c for c in df.columns if c not in ['Criteria']]
@@ -118,7 +127,7 @@ def find_rowTags(file_path):
 
 # %% Flatten XML
 
-
+@catch_error(logger)
 def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
     cols = []
     nested = False
@@ -142,7 +151,7 @@ def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
 
     dfx = df.select(cols)
     if nested:
-        print('\n' ,dfx.columns)
+        if is_pc: print('\n' ,dfx.columns)
         dfx = flatten_df(dfx)
 
     return dfx
@@ -151,6 +160,7 @@ def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
 
 # %% flatten and divide
 
+@catch_error(logger)
 def flatten_n_divide_df(df, name:str='main'):
     if not df.rdd.flatMap(lambda x: x).collect(): # check if df is empty
         return dict()
@@ -175,24 +185,21 @@ def flatten_n_divide_df(df, name:str='main'):
 
 # %% Write df list to Azure
 
+@catch_error(logger)
 def write_df_list_to_azure(df_list, df_file_name, reception_date):
 
     for df_name, dfx in df_list.items():
         print(f'\n Writing {df_name} to Azure...')
-        dfx.printSchema()
+        if is_pc: dfx.printSchema()
 
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{df_file_name}"
 
         dfx = add_etl_columns(df=dfx, execution_date=execution_date, reception_date=reception_date)
 
-        save_adls_gen2_sp(
-            spark=spark,
+        save_adls_gen2(
             df=dfx,
             storage_account_name = storage_account_name,
-            azure_tenant_id = azure_tenant_id,
-            sp_id = sp_id,
-            sp_pass = sp_pass,
             container_name = container_name,
             container_folder = container_folder,
             table = df_name,
@@ -209,13 +216,9 @@ def write_df_list_to_azure(df_list, df_file_name, reception_date):
         meta_df = spark.createDataFrame(data=meta_data, schema=meta_columns)
         meta_df = add_etl_columns(df=meta_df, execution_date=execution_date, reception_date=reception_date)
         
-        save_adls_gen2_sp(
-            spark=spark,
+        save_adls_gen2(
             df=meta_df,
             storage_account_name = storage_account_name,
-            azure_tenant_id = azure_tenant_id,
-            sp_id = sp_id,
-            sp_pass = sp_pass,
             container_name = container_name,
             container_folder = container_folder,
             table = df_name,
@@ -228,6 +231,7 @@ def write_df_list_to_azure(df_list, df_file_name, reception_date):
 
 # %% Main Processing of Finra file
 
+@catch_error(logger)
 def process_finra(root, file):
     name_data = extract_data_from_finra_file_name(file)
     print('\n', name_data)
@@ -256,12 +260,17 @@ def process_finra(root, file):
         print(f"No data to write -> {name_data['name']}")
         return
 
-    write_df_list_to_azure(df_list, name_data['name'], reception_date=name_data['date'])
+    write_df_list_to_azure(
+        df_list = df_list,
+        df_file_name = name_data['name'],
+        reception_date = name_data['date']
+        )
 
 
 
 # %% Recursive Unzip
 
+@catch_error(logger)
 def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', walk:bool=False):
     zip_files = []
 

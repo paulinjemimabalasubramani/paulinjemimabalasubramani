@@ -42,13 +42,15 @@ def create_spark():
         .appName(app_name)
         .config('spark.driver.extraClassPath', extraClassPath)
         .config('spark.executor.extraClassPath', extraClassPath)
+        .config('spark.executor.heartbeatInterval', '3600s')
+        .config('spark.network.timeout',  '3601s')
         .getOrCreate()
         )
 
     spark.getActiveSession()
 
     print(f"\nSpark version = {spark.version}")
-    print(f"Hadoop version = {spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}")
+    print(f"Hadoop version = {spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}\n")
 
     return spark
 
@@ -120,6 +122,21 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
 
     return df.load(file_path)
 
+
+# %% Read CSV File
+
+@catch_error(logger)
+def read_csv(spark, file_path:str):
+    """
+    Read CSV File using Spark
+    """
+    df = (spark.read
+        .format('csv')
+        .option('header', 'true')
+        .load(file_path)
+    )
+
+    return df
 
 
 
