@@ -21,7 +21,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
-from modules.spark_functions import create_spark, read_sql, read_sql_config
+from modules.spark_functions import create_spark, read_sql, read_sql_config, read_csv
 from modules.azure_functions import get_azure_storage_key_vault, save_adls_gen2_sp
 from modules.data_functions import to_string, remove_column_spaces, add_etl_columns
 
@@ -42,9 +42,11 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-schema = 'OLTP'
 database = 'LR'
 server = 'TSQLOLTP01'
+
+table_list_path = os.path.realpath(os.path.dirname(__file__)+'/../config/LNR_Tables.csv')
+assert os.path.isfile(table_list_path), f"File not found: {table_list_path}"
 
 storage_account_name = "agaggrlakescd"
 azure_tenant_id, sp_id, sp_pass = get_azure_storage_key_vault(storage_name=storage_account_name)
@@ -59,6 +61,36 @@ execution_date = datetime.now()
 # %% Create Session
 
 spark = create_spark()
+
+
+# %% Get List of Tables of interest
+
+@catch_error(logger)
+def get_table_list(table_list_path:str):
+    """
+    Get List of Tables of interest
+    """
+    table_list = read_csv(spark, table_list_path)
+    if is_pc: table_list.printSchema()
+    table_list = table_list.filter(F.lower(col('Table of Interest')) == lit('yes').cast("string"))
+
+    column_map = {
+        'TableName': 'TABLE_NAME',
+        'SchemaName' : 'TABLE_SCHEMA',
+    }
+
+    for key, val in column_map.items():
+        table_list = table_list.withColumnRenamed(key, val)
+
+    table_list.createOrReplaceTempView('table_list')
+    return table_list
+
+
+
+table_list = get_table_list(table_list_path)
+
+if is_pc: table_list.show(5)
+
 
 
 # %% Read SQL Config
@@ -76,19 +108,20 @@ df_columns.printSchema()
 
 # %% Filter Tables for Schema
 
-df_tables = df_tables.filter(f"TABLE_TYPE == 'BASE TABLE' and  TABLE_SCHEMA = '{schema}'")
-table_list = df_tables.select("TABLE_NAME").rdd.flatMap(lambda x: x).collect()
+table_list = table_list.select(col('TABLE_NAME'), col('TABLE_SCHEMA')).collect()
 
 table_count = len(table_list)
-print(f"{table_count} tables in {schema}")
+print(f"{table_count} tables total")
 
 # %% Loop over all selected tables
 
-for i, table in enumerate(table_list):
-    if is_pc and i>0: # for testing
-        break
+for i, r in enumerate(table_list):
+    table = r['TABLE_NAME']
+    schema = r['TABLE_SCHEMA']
+    #if is_pc and i>0: # for testing
+    #    break
 
-    print(f'\nTable {i+1} of {table_count}: {table}')
+    print(f"\nTable {i+1} of {table_count}: {schema}.{table}")
 
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
