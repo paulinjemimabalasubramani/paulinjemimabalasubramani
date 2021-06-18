@@ -175,14 +175,14 @@ def flatten_n_divide_df(df, name:str='main'):
 
 # %% Write df list to Azure
 
-def write_df_list_to_azure(df_list, df_file_name, reception_date):
+def write_df_list_to_azure(df_list, firm_name, df_file_name, reception_date):
 
     for df_name, dfx in df_list.items():
         print(f'\n Writing {df_name} to Azure...')
         dfx.printSchema()
 
         data_type = 'data'
-        container_folder = f"{data_type}/{domain_name}/{database}/{df_file_name}"
+        container_folder = f"{data_type}/{domain_name}/{database}/{firm_name}/{df_file_name}"
 
         dfx = add_etl_columns(df=dfx, execution_date=execution_date, reception_date=reception_date)
 
@@ -202,7 +202,7 @@ def write_df_list_to_azure(df_list, df_file_name, reception_date):
 
         # Metadata
         data_type = 'metadata'
-        container_folder = f"{data_type}/{domain_name}/{database}/{df_file_name}"
+        container_folder = f"{data_type}/{domain_name}/{database}/{firm_name}/{df_file_name}"
 
         meta_columns = ["column_name", "data_type"]
         meta_data = dfx.dtypes
@@ -256,7 +256,12 @@ def process_finra(root, file):
         print(f"No data to write -> {name_data['name']}")
         return
 
-    write_df_list_to_azure(df_list, name_data['name'], reception_date=name_data['date'])
+    write_df_list_to_azure(
+        df_list = df_list,
+        firm_name = name_data['firm'],
+        df_file_name = name_data['name'],
+        reception_date = name_data['date']
+        )
 
 
 
