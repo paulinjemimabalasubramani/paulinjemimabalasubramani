@@ -42,6 +42,7 @@ def create_spark():
         .appName(app_name)
         .config('spark.driver.extraClassPath', extraClassPath)
         .config('spark.executor.extraClassPath', extraClassPath)
+        .config('spark.executor.heartbeatInterval', '3600')
         .getOrCreate()
         )
 
