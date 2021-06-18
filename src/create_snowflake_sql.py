@@ -54,7 +54,7 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 # %% Read metadata.TableInfo
 
-df = read_adls_gen2(
+tableinfo = read_adls_gen2(
     spark = spark,
     storage_account_name = storage_account_name,
     container_name = container_name,
@@ -63,6 +63,28 @@ df = read_adls_gen2(
     format = format
 )
 
+tableinfo = tableinfo.filter(col('IsActive')==lit(1))
+
+
+# %% Create unique list of tables
+
+table_list = tableinfo.select(
+    col('SourceDatabase'),
+    col('SourceSchema'),
+    col('TableName')
+    ).distinct()
+
+if is_pc: table_list.show(5)
+
+table_rows = table_list.collect()
+print(f'Number of Tables in {tableinfo_name} is {len(table_rows)}')
+
+# %% Iterate over tables
+
+table = table_rows[0]
+
 
 # %%
+
+
 
