@@ -81,5 +81,28 @@ def save_adls_gen2(
 
 
 
-# %%
+# %% Read table from ADLS Gen 2
 
+@catch_error(logger)
+def read_adls_gen2(spark,
+        storage_account_name:str,
+        container_name:str,
+        container_folder:str,
+        table:str,
+        format:str='delta'):
+    """
+    Read table from ADLS Gen 2
+    """
+    data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder}/{table}"
+
+    print(f'Reading -> {data_path}')
+
+    df = (spark.read
+        .format(format)
+        .load(data_path)
+        )
+    
+    if is_pc: df.printSchema()
+    if is_pc: df.show(5)
+
+    return df
