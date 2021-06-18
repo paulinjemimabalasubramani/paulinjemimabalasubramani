@@ -69,6 +69,7 @@ tableinfo = read_adls_gen2(
 )
 
 tableinfo = tableinfo.filter(col('IsActive')==lit(1))
+tableinfo.persist()
 
 
 # %% Create unique list of tables
@@ -82,23 +83,8 @@ table_list = tableinfo.select(
 if is_pc: table_list.show(5)
 
 table_rows = table_list.collect()
-print(f'Number of Tables in {tableinfo_name} is {len(table_rows)}')
-
-# %% Iterate over tables
-
-table = table_rows[0]
-table_name = table['TableName']
-schema_name = table['SourceSchema']
-source_system = table['SourceDatabase']
-
-
-# %% Get Table Columns
-column_names = tableinfo.filter(
-    (col('TableName') == table_name) &
-    (col('SourceSchema') == schema_name) &
-    (col('SourceDatabase') == source_system)
-    ).select('SourceColumnName').rdd.flatMap(lambda x: x).collect()
-
+n_tables = len(table_rows)
+print(f'Number of Tables in {tableinfo_name} is {n_tables}')
 
 
 # %% Create Step 1
@@ -124,8 +110,6 @@ def step1(source_system, schema_name, table_name, column_names):
         format = 'text'
     )
 
-
-step1(source_system, schema_name, table_name, column_names)
 
 
 # %% Create Step 2
@@ -215,8 +199,6 @@ FROM TABLE(validate({schema_name}.{table_name}, job_id => '_last'));
     )
 
 
-step2(source_system, schema_name, table_name, column_names)
-
 
 
 # %% Create Step 3
@@ -239,10 +221,27 @@ def step3(source_system, schema_name, table_name, column_names):
     )
 
 
-step3(source_system, schema_name, table_name, column_names)
+
+
+# %% Iterate Over Steps for all tables
+for i, table in enumerate(table_rows):
+    table_name = table['TableName']
+    schema_name = table['SourceSchema']
+    source_system = table['SourceDatabase']
+    print(f'\nProcessing table {i} of {n_tables}: {source_system}/{schema_name}/{table_name}')
+
+    # Get Table Columns
+    column_names = tableinfo.filter(
+        (col('TableName') == table_name) &
+        (col('SourceSchema') == schema_name) &
+        (col('SourceDatabase') == source_system)
+        ).select('SourceColumnName').rdd.flatMap(lambda x: x).collect()
+
+    step1(source_system, schema_name, table_name, column_names)
+    step2(source_system, schema_name, table_name, column_names)
+    step3(source_system, schema_name, table_name, column_names)
 
 
 
-# %%
-
+print('Done')
 
