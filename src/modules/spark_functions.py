@@ -42,14 +42,15 @@ def create_spark():
         .appName(app_name)
         .config('spark.driver.extraClassPath', extraClassPath)
         .config('spark.executor.extraClassPath', extraClassPath)
-        .config('spark.executor.heartbeatInterval', '3600')
+        .config('spark.executor.heartbeatInterval', '3600s')
+        .config('spark.network.timeout',  '3601s')
         .getOrCreate()
         )
 
     spark.getActiveSession()
 
     print(f"\nSpark version = {spark.version}")
-    print(f"Hadoop version = {spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}")
+    print(f"Hadoop version = {spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}\n")
 
     return spark
 

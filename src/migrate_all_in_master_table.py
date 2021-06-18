@@ -21,9 +21,9 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
-from modules.spark_functions import create_spark, read_sql, read_sql_config, read_csv
-from modules.azure_functions import get_azure_storage_key_vault, save_adls_gen2_sp
-from modules.data_functions import to_string, remove_column_spaces, add_etl_columns
+from modules.spark_functions import create_spark, read_sql, read_sql_config
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2
+from modules.data_functions import to_string, remove_column_spaces, add_etl_columns, get_table_list
 
 
 # %% Spark Libraries
@@ -49,7 +49,6 @@ table_list_path = os.path.realpath(os.path.dirname(__file__)+'/../config/LNR_Tab
 assert os.path.isfile(table_list_path), f"File not found: {table_list_path}"
 
 storage_account_name = "agaggrlakescd"
-azure_tenant_id, sp_id, sp_pass = get_azure_storage_key_vault(storage_name=storage_account_name)
 container_name = "ingress"
 domain_name = 'financial_professional'
 format = 'delta'
@@ -63,34 +62,16 @@ execution_date = datetime.now()
 spark = create_spark()
 
 
+# %% Setup spark to ADLS Gen2 connection
+
+setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+
 # %% Get List of Tables of interest
 
-@catch_error(logger)
-def get_table_list(table_list_path:str):
-    """
-    Get List of Tables of interest
-    """
-    table_list = read_csv(spark, table_list_path)
-    if is_pc: table_list.printSchema()
-    table_list = table_list.filter(F.lower(col('Table of Interest')) == lit('yes').cast("string"))
-
-    column_map = {
-        'TableName': 'TABLE_NAME',
-        'SchemaName' : 'TABLE_SCHEMA',
-    }
-
-    for key, val in column_map.items():
-        table_list = table_list.withColumnRenamed(key, val)
-
-    table_list.createOrReplaceTempView('table_list')
-    return table_list
-
-
-
-table_list = get_table_list(table_list_path)
+table_list = get_table_list(spark, table_list_path)
 
 if is_pc: table_list.show(5)
-
 
 
 # %% Read SQL Config
@@ -101,10 +82,10 @@ sql_config = read_sql_config()
 # %% Get Table and Column Metadata from information_schema
 
 df_tables = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='tables', database=database, server=server)
-df_tables.printSchema()
+if is_pc: df_tables.printSchema()
 
 df_columns = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='columns', database=database, server=server)
-df_columns.printSchema()
+if is_pc: df_columns.printSchema()
 
 # %% Filter Tables for Schema
 
@@ -131,13 +112,9 @@ for i, r in enumerate(table_list):
     df = remove_column_spaces(df) # May create "name not matching" problems as we are saving column metadata as well.
     df = add_etl_columns(df=df, execution_date=execution_date)
 
-    save_adls_gen2_sp(
-        spark=spark,
+    save_adls_gen2(
         df=df,
         storage_account_name = storage_account_name,
-        azure_tenant_id = azure_tenant_id,
-        sp_id = sp_id,
-        sp_pass = sp_pass,
         container_name = container_name,
         container_folder = container_folder,
         table = table,
@@ -153,13 +130,9 @@ for i, r in enumerate(table_list):
     df_meta = remove_column_spaces(df_meta)
     df_meta = add_etl_columns(df=df_meta, execution_date=execution_date)
 
-    save_adls_gen2_sp(
-        spark=spark,
+    save_adls_gen2(
         df=df_meta,
         storage_account_name = storage_account_name,
-        azure_tenant_id = azure_tenant_id,
-        sp_id = sp_id,
-        sp_pass = sp_pass,
         container_name = container_name,
         container_folder = container_folder,
         table = table,

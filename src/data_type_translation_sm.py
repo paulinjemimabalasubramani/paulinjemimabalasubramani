@@ -11,7 +11,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_csv, read_sql, read_sql_config
-from modules.azure_functions import get_azure_storage_key_vault, save_adls_gen2_sp
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2
+from modules.data_functions import get_table_list
 
 
 # %% Spark Libraries
@@ -40,7 +41,6 @@ database = 'LR' # TABLE_CATALOG
 server = 'TSQLOLTP01'
 
 storage_account_name = "agaggrlakescd"
-azure_tenant_id, sp_id, sp_pass = get_azure_storage_key_vault(storage_name=storage_account_name)
 container_name = "ingress"
 domain_name = 'financial_professional'
 format = 'delta'
@@ -54,6 +54,22 @@ modified_datetime = execution_date.strftime(strftime)
 
 spark = create_spark()
 
+
+# %% Setup spark to ADLS Gen2 connection
+
+setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+
+# %% Get List of Tables of interest
+
+table_list = get_table_list(spark, table_list_path)
+
+if is_pc: table_list.show(5)
+
+
+# %% Read SQL Config
+
+sql_config = read_sql_config()
 
 
 # %% Get DataTypeTranslation table
@@ -79,39 +95,6 @@ translation = get_translation(data_type_translation_path, data_type_translation_
 
 if is_pc: translation.show(5)
 
-
-
-# %% Get List of Tables of interest
-
-@catch_error(logger)
-def get_table_list(table_list_path:str):
-    """
-    Get List of Tables of interest
-    """
-    table_list = read_csv(spark, table_list_path)
-    if is_pc: table_list.printSchema()
-    table_list = table_list.filter(F.lower(col('Table of Interest')) == lit('yes').cast("string"))
-
-    column_map = {
-        'TableName': 'TABLE_NAME',
-        'SchemaName' : 'TABLE_SCHEMA',
-    }
-
-    for key, val in column_map.items():
-        table_list = table_list.withColumnRenamed(key, val)
-
-    table_list.createOrReplaceTempView('table_list')
-    return table_list
-
-
-
-table_list = get_table_list(table_list_path)
-
-if is_pc: table_list.show(5)
-
-# %% Read SQL Config
-
-sql_config = read_sql_config()
 
 
 # %% Get Table and Column Metadata from information_schema
@@ -334,19 +317,14 @@ def save_table_info_to_adls_gen2(columns):
     container_folder = 'metadata'
     partitionBy = 'ModifiedDateTime'
 
-    save_adls_gen2_sp(
-            spark=spark,
+    save_adls_gen2(
             df=columns,
             storage_account_name = storage_account_name,
-            azure_tenant_id = azure_tenant_id,
-            sp_id = sp_id,
-            sp_pass = sp_pass,
             container_name = container_name,
             container_folder = container_folder,
             table = 'metadata.TableInfo',
             partitionBy = partitionBy,
             format = format,
-            truncate_table = True,
         )
 
 
