@@ -22,8 +22,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_sql, read_sql_config
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2
-from modules.data_functions import to_string, remove_column_spaces, add_etl_columns, get_table_list
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv
+from modules.data_functions import to_string, remove_column_spaces, add_etl_columns
 
 
 # %% Spark Libraries
@@ -69,7 +69,7 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 # %% Get List of Tables of interest
 
-table_list = get_table_list(spark, table_list_path)
+table_list = get_master_ingest_list_csv(spark, table_list_path)
 
 if is_pc: table_list.show(5)
 

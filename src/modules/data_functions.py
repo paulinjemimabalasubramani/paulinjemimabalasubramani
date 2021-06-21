@@ -1,7 +1,6 @@
 # %% Import Libraries
 
 from .common_functions import make_logging, catch_error
-from .spark_functions import read_csv
 from .config import is_pc
 
 from pyspark.sql.functions import col, lit
@@ -57,30 +56,6 @@ def add_etl_columns(df, reception_date=None, execution_date=None, source:str=Non
         df = df.withColumn('SOURCE', lit(str(source)))
 
     return df
-
-
-
-# %% Get List of Tables of interest
-
-@catch_error(logger)
-def get_table_list(spark, table_list_path:str):
-    """
-    Get List of Tables of interest
-    """
-    table_list = read_csv(spark, table_list_path)
-    if is_pc: table_list.printSchema()
-    table_list = table_list.filter(F.lower(col('Table of Interest')) == lit('yes').cast("string"))
-
-    column_map = {
-        'TableName': 'TABLE_NAME',
-        'SchemaName' : 'TABLE_SCHEMA',
-    }
-
-    for key, val in column_map.items():
-        table_list = table_list.withColumnRenamed(key, val)
-
-    table_list.createOrReplaceTempView('table_list')
-    return table_list
 
 
 

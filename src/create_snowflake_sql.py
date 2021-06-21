@@ -11,7 +11,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_adls_gen2
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo
 
 
 # %% Spark Libraries
@@ -31,14 +31,14 @@ logger = make_logging(__name__)
 
 storage_account_name = "agaggrlakescd"
 container_name = "ingress"
-tableinfo_folder = 'metadata'
-tableinfo_name = 'metadata.TableInfo'
+domain_name = 'financial_professional'
 format = 'delta'
-file_format = 'delta'
-wild_card = '*.parquet'
+
+file_format = 'PARQUET'
+wild_card = '.*.parquet'
 stream_suffix = '_STREAM'
 
-ddl_folder = 'DDL'
+ddl_folder = f'metadata/{domain_name}/DDL'
 
 strftime = "%Y-%m-%d %H:%M:%S"  # http://strftime.org/
 execution_date = datetime.now()
@@ -51,52 +51,39 @@ modified_datetime = execution_date.strftime(strftime)
 
 spark = create_spark()
 
+# %% Read metadata.TableInfo
+
+tableinfo, table_rows = read_tableinfo(spark)
+
 
 # %% Setup spark to ADLS Gen2 connection
 
 setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 
-# %% Read metadata.TableInfo
+# %% base sqlstr
 
-catch_error(logger)
-def read_tableinfo():
-    tableinfo = read_adls_gen2(
-        spark = spark,
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = tableinfo_folder,
-        table = tableinfo_name,
-        format = format
-    )
+@catch_error(logger)
+def base_sqlstr(source_system):
+    sqlstr = f"""USE ROLE AD_SNOWFLAKE_QA_DBA;
+USE WAREHOUSE QA_INGEST_WH;
+USE DATABASE QA_RAW_FP;
+USE SCHEMA {source_system};
 
-    tableinfo = tableinfo.filter(col('IsActive')==lit(1))
-    tableinfo.persist()
 
-    # Create unique list of tables
-    table_list = tableinfo.select(
-        col('SourceDatabase'),
-        col('SourceSchema'),
-        col('TableName')
-        ).distinct()
-
-    if is_pc: table_list.show(5)
-
-    table_rows = table_list.collect()
-    print(f'\nNumber of Tables in {tableinfo_name} is {len(table_rows)}')
-
-    return tableinfo, table_rows
-
+"""
+    return sqlstr
 
 
 
 # %% Create Step 1
 
 @catch_error(logger)
-def step1(source_system, schema_name, table_name, column_names):
+def step1(base_sqlstr, source_system, schema_name, table_name, column_names):
     step = 1
 
-    sqlstr = f'CREATE OR REPLACE TABLE {schema_name}.{table_name} \n(\n'
+    sqlstr = base_sqlstr
+    sqlstr += f'CREATE OR REPLACE TABLE {source_system}.{table_name} \n(\n'
     cols = [f'{c} string \n' for c in column_names]
     cols[0] = '  '+cols[0]
     sqlstr += '  ,'.join(cols)
@@ -118,10 +105,11 @@ def step1(source_system, schema_name, table_name, column_names):
 # %% Create Step 2
 
 @catch_error(logger)
-def step2(source_system, schema_name, table_name, column_names):
+def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
     step = 2
 
-    sqlstr = f'COPY INTO {schema_name}.{table_name} \nFROM (\nSELECT \n'
+    sqlstr = base_sqlstr
+    sqlstr += f'COPY INTO {source_system}.{table_name} \nFROM (\nSELECT \n'
     cols = [f'$1:"{c}"::string AS {c} \n' for c in column_names]
     cols[0] = '  '+cols[0]
     sqlstr += '  ,'.join(cols)
@@ -187,7 +175,7 @@ SELECT
   ,ROW_START_LINE
   ,REJECTED_RECORD
 
-FROM TABLE(validate({schema_name}.{table_name}, job_id => '_last')); 
+FROM TABLE(validate({source_system}.{table_name}, job_id => '_last')); 
 """
 
     if is_pc: print(f'\n{sqlstr}\n')
@@ -207,10 +195,11 @@ FROM TABLE(validate({schema_name}.{table_name}, job_id => '_last'));
 # %% Create Step 3
 
 @catch_error(logger)
-def step3(source_system, schema_name, table_name, column_names):
+def step3(base_sqlstr, source_system, schema_name, table_name, column_names):
     step = 3
 
-    sqlstr =f"CREATE OR REPLACE STREAM {schema_name}.{table_name}{stream_suffix} ON TABLE {schema_name}.{table_name};"
+    sqlstr = base_sqlstr
+    sqlstr += f"CREATE OR REPLACE STREAM {source_system}.{table_name}{stream_suffix} ON TABLE {source_system}.{table_name};"
 
     if is_pc: print(f'\n{sqlstr}\n')
 
@@ -229,8 +218,7 @@ def step3(source_system, schema_name, table_name, column_names):
 # %% Iterate Over Steps for all tables
 
 @catch_error(logger)
-def iterate_over_all_tables():
-    tableinfo, table_rows = read_tableinfo()
+def iterate_over_all_tables(tableinfo, table_rows):
     n_tables = len(table_rows)
 
     for i, table in enumerate(table_rows):
@@ -246,14 +234,15 @@ def iterate_over_all_tables():
             (col('SourceDatabase') == source_system)
             ).select('SourceColumnName').rdd.flatMap(lambda x: x).collect()
 
-        step1(source_system, schema_name, table_name, column_names)
-        step2(source_system, schema_name, table_name, column_names)
-        step3(source_system, schema_name, table_name, column_names)
+        base_sqlstr1 = base_sqlstr(source_system)
+        step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
+        step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
+        step3(base_sqlstr1, source_system, schema_name, table_name, column_names)
 
     print('Finished Iterating over all tables')
 
 
-iterate_over_all_tables()
+iterate_over_all_tables(tableinfo, table_rows)
 
 
 # %%
