@@ -113,18 +113,21 @@ def get_execution_date(source_system, schema_name, table_name):
         format = format
     )
 
-    EXECUTION_DATE = df.limit(1).collect()[0]['EXECUTION_DATE']
-    return EXECUTION_DATE.replace(' ', '%20').replace(':', '%3A')
+    EXECUTION_DATE_LIST = df.limit(1).collect()
+    if EXECUTION_DATE_LIST:
+        EXECUTION_DATE = EXECUTION_DATE_LIST[0]['EXECUTION_DATE']
+        return EXECUTION_DATE.replace(' ', '%20').replace(':', '%3A')
+    else:
+        print(f'{container_folder}/{table_name} is EMPTY - SKIPPING')
+        return None
 
 
 
 # %% Create Step 2
 
 @catch_error(logger)
-def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
+def step2(base_sqlstr, source_system, schema_name, table_name, column_names, EXECUTION_DATE):
     step = 2
-
-    EXECUTION_DATE = get_execution_date(source_system, schema_name, table_name)
 
     sqlstr = base_sqlstr
     sqlstr += f'COPY INTO {source_system}.{table_name} \nFROM (\nSELECT \n'
@@ -210,10 +213,12 @@ def iterate_over_all_tables(tableinfo, table_rows):
 
         column_names += elt_auto_columns
 
-        base_sqlstr1 = base_sqlstr(source_system)
-        step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
-        step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
-        step3(base_sqlstr1, source_system, schema_name, table_name, column_names)
+        EXECUTION_DATE = get_execution_date(source_system, schema_name, table_name)
+        if EXECUTION_DATE:
+            base_sqlstr1 = base_sqlstr(source_system)
+            step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
+            step2(base_sqlstr1, source_system, schema_name, table_name, column_names, EXECUTION_DATE)
+            step3(base_sqlstr1, source_system, schema_name, table_name, column_names)
 
     print('Finished Iterating over all tables')
 
