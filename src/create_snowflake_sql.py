@@ -59,32 +59,35 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 # %% Read metadata.TableInfo
 
-tableinfo = read_adls_gen2(
-    spark = spark,
-    storage_account_name = storage_account_name,
-    container_name = container_name,
-    container_folder = tableinfo_folder,
-    table = tableinfo_name,
-    format = format
-)
+catch_error(logger)
+def read_tableinfo():
+    tableinfo = read_adls_gen2(
+        spark = spark,
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = tableinfo_folder,
+        table = tableinfo_name,
+        format = format
+    )
 
-tableinfo = tableinfo.filter(col('IsActive')==lit(1))
-tableinfo.persist()
+    tableinfo = tableinfo.filter(col('IsActive')==lit(1))
+    tableinfo.persist()
+
+    # Create unique list of tables
+    table_list = tableinfo.select(
+        col('SourceDatabase'),
+        col('SourceSchema'),
+        col('TableName')
+        ).distinct()
+
+    if is_pc: table_list.show(5)
+
+    table_rows = table_list.collect()
+    print(f'\nNumber of Tables in {tableinfo_name} is {len(table_rows)}')
+
+    return tableinfo, table_rows
 
 
-# %% Create unique list of tables
-
-table_list = tableinfo.select(
-    col('SourceDatabase'),
-    col('SourceSchema'),
-    col('TableName')
-    ).distinct()
-
-if is_pc: table_list.show(5)
-
-table_rows = table_list.collect()
-n_tables = len(table_rows)
-print(f'Number of Tables in {tableinfo_name} is {n_tables}')
 
 
 # %% Create Step 1
@@ -224,24 +227,36 @@ def step3(source_system, schema_name, table_name, column_names):
 
 
 # %% Iterate Over Steps for all tables
-for i, table in enumerate(table_rows):
-    table_name = table['TableName']
-    schema_name = table['SourceSchema']
-    source_system = table['SourceDatabase']
-    print(f'\nProcessing table {i} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
-    # Get Table Columns
-    column_names = tableinfo.filter(
-        (col('TableName') == table_name) &
-        (col('SourceSchema') == schema_name) &
-        (col('SourceDatabase') == source_system)
-        ).select('SourceColumnName').rdd.flatMap(lambda x: x).collect()
+@catch_error(logger)
+def iterate_over_all_tables():
+    tableinfo, table_rows = read_tableinfo()
+    n_tables = len(table_rows)
 
-    step1(source_system, schema_name, table_name, column_names)
-    step2(source_system, schema_name, table_name, column_names)
-    step3(source_system, schema_name, table_name, column_names)
+    for i, table in enumerate(table_rows):
+        table_name = table['TableName']
+        schema_name = table['SourceSchema']
+        source_system = table['SourceDatabase']
+        print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
+
+        # Get Table Columns
+        column_names = tableinfo.filter(
+            (col('TableName') == table_name) &
+            (col('SourceSchema') == schema_name) &
+            (col('SourceDatabase') == source_system)
+            ).select('SourceColumnName').rdd.flatMap(lambda x: x).collect()
+
+        step1(source_system, schema_name, table_name, column_names)
+        step2(source_system, schema_name, table_name, column_names)
+        step3(source_system, schema_name, table_name, column_names)
+
+    print('Finished Iterating over all tables')
 
 
+iterate_over_all_tables()
 
-print('Done')
+
+# %%
+
+
 
