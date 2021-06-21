@@ -1,5 +1,4 @@
 # %% Import Libraries
-import logging
 import os, sys
 from datetime import datetime
 
@@ -11,8 +10,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_csv, read_sql, read_sql_config
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2
-from modules.data_functions import get_table_list
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name
+from modules.data_functions import execution_date
 
 
 # %% Spark Libraries
@@ -41,18 +40,31 @@ database = 'LR' # TABLE_CATALOG
 server = 'TSQLOLTP01'
 
 storage_account_name = "agaggrlakescd"
-container_name = "ingress"
-domain_name = 'financial_professional'
+container_name = "tables"
 format = 'delta'
 
-strftime = "%Y-%m-%d %H:%M:%S"  # http://strftime.org/
-execution_date = datetime.now()
-created_datetime = execution_date.strftime(strftime)
-modified_datetime = execution_date.strftime(strftime)
+created_datetime = execution_date
+modified_datetime = execution_date
+partitionBy = 'ModifiedDateTime'
+
 
 # %% Create Session
 
 spark = create_spark()
+
+
+# %% Get Master Ingest List
+
+table_list = get_master_ingest_list_csv(
+    spark = spark,
+    table_list_path = table_list_path,
+    created_datetime = created_datetime,
+    modified_datetime = modified_datetime,
+    save_to_adls = True
+    )
+
+if is_pc: table_list.show(5)
+
 
 
 # %% Setup spark to ADLS Gen2 connection
@@ -60,41 +72,49 @@ spark = create_spark()
 setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 
-# %% Get List of Tables of interest
-
-table_list = get_table_list(spark, table_list_path)
-
-if is_pc: table_list.show(5)
-
-
-# %% Read SQL Config
-
-sql_config = read_sql_config()
-
-
 # %% Get DataTypeTranslation table
 
 @catch_error(logger)
-def get_translation(data_type_translation_path, data_type_translation_id:str):
+def get_translation(data_type_translation_path, data_type_translation_id:str, save_to_adls:bool=False):
     """
     Get DataTypeTranslation table
     """
     translation = read_csv(spark, data_type_translation_path)
     if is_pc: translation.printSchema()
+
+    translation = translation.withColumn('IsActive', lit(1))
+    translation = translation.withColumn('CreatedDateTime', lit(created_datetime))
+    translation = translation.withColumn('ModifiedDateTime', lit(modified_datetime))
+
+    if save_to_adls: # Save DataTypeTranslation to ADLS Gen 2 - before filtering
+        save_adls_gen2(
+                df=translation,
+                storage_account_name = storage_account_name,
+                container_name = container_name,
+                container_folder = '',
+                table = 'metadata.DataTypeTranslation',
+                partitionBy = partitionBy,
+                format = format,
+            )
+
+    # Filter the DataTypeTranslation for current use
     translation = translation.filter(
                         (col('DataTypeTranslationID') == lit(data_type_translation_id).cast("string")) & 
                         (col('IsActive') == lit(1))
                         )
 
-    translation.createOrReplaceTempView('translation')
     return translation
 
 
-
-translation = get_translation(data_type_translation_path, data_type_translation_id)
+translation = get_translation(data_type_translation_path, data_type_translation_id, save_to_adls=True)
 
 if is_pc: translation.show(5)
 
+
+
+# %% Read SQL Config
+
+sql_config = read_sql_config()
 
 
 # %% Get Table and Column Metadata from information_schema
@@ -309,24 +329,21 @@ def select_columns(columns):
 columns = select_columns(columns)
 
 
-# %% Save Master Ingest List to ADLS Gen 2
+# %% Table Info to ADLS Gen 2
 
 @catch_error(logger)
 def save_table_info_to_adls_gen2(columns):
-
-    container_folder = 'metadata'
-    partitionBy = 'ModifiedDateTime'
+    container_folder = ''
 
     save_adls_gen2(
             df=columns,
             storage_account_name = storage_account_name,
             container_name = container_name,
-            container_folder = container_folder,
-            table = 'metadata.TableInfo',
+            container_folder = '',
+            table = tableinfo_name,
             partitionBy = partitionBy,
             format = format,
         )
-
 
 
 save_table_info_to_adls_gen2(columns)
@@ -334,3 +351,6 @@ save_table_info_to_adls_gen2(columns)
 
 
 # %%
+
+
+

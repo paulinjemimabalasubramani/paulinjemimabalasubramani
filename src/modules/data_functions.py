@@ -1,7 +1,8 @@
 # %% Import Libraries
 
+from datetime import datetime
+
 from .common_functions import make_logging, catch_error
-from .spark_functions import read_csv
 from .config import is_pc
 
 from pyspark.sql.functions import col, lit
@@ -10,6 +11,12 @@ from pyspark.sql import functions as F
 
 # %% Logging
 logger = make_logging(__name__)
+
+
+# %% Parameters
+
+strftime = "%Y-%m-%d %H:%M:%S"  # http://strftime.org/
+execution_date = datetime.now().strftime(strftime)
 
 
 # %% Remove Column Spaces
@@ -43,7 +50,7 @@ def to_string(df, col_types=['timestamp']):
 # %% Add ETL Temporary Columns
 
 @catch_error(logger)
-def add_etl_columns(df, reception_date=None, execution_date=None, source:str=None):
+def add_elt_columns(df, reception_date:str=None, execution_date:str=None, source:str=None):
     """
     Add ETL Temporary Columns
     """
@@ -60,27 +67,7 @@ def add_etl_columns(df, reception_date=None, execution_date=None, source:str=Non
 
 
 
-# %% Get List of Tables of interest
-
-@catch_error(logger)
-def get_table_list(spark, table_list_path:str):
-    """
-    Get List of Tables of interest
-    """
-    table_list = read_csv(spark, table_list_path)
-    if is_pc: table_list.printSchema()
-    table_list = table_list.filter(F.lower(col('Table of Interest')) == lit('yes').cast("string"))
-
-    column_map = {
-        'TableName': 'TABLE_NAME',
-        'SchemaName' : 'TABLE_SCHEMA',
-    }
-
-    for key, val in column_map.items():
-        table_list = table_list.withColumnRenamed(key, val)
-
-    table_list.createOrReplaceTempView('table_list')
-    return table_list
+elt_auto_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE']
 
 
 

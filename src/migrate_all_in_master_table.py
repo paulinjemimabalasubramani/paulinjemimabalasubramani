@@ -22,8 +22,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_sql, read_sql_config
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2
-from modules.data_functions import to_string, remove_column_spaces, add_etl_columns, get_table_list
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv
+from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date
 
 
 # %% Spark Libraries
@@ -54,7 +54,8 @@ domain_name = 'financial_professional'
 format = 'delta'
 
 partitionBy = 'EXECUTION_DATE'
-execution_date = datetime.now()
+reception_date = execution_date
+source = 'SQL_Server'
 
 
 # %% Create Session
@@ -69,7 +70,7 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 # %% Get List of Tables of interest
 
-table_list = get_table_list(spark, table_list_path)
+table_list = get_master_ingest_list_csv(spark, table_list_path)
 
 if is_pc: table_list.show(5)
 
@@ -110,7 +111,7 @@ for i, r in enumerate(table_list):
     df = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema=schema, table=table, database=database, server=server)
     df = to_string(df, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
     df = remove_column_spaces(df) # May create "name not matching" problems as we are saving column metadata as well.
-    df = add_etl_columns(df=df, execution_date=execution_date)
+    df = add_elt_columns(df=df, reception_date=reception_date, execution_date=execution_date, source=source)
 
     save_adls_gen2(
         df=df,
@@ -122,13 +123,14 @@ for i, r in enumerate(table_list):
         format = format
     )
 
+    """
     # Metadata
     data_type = 'metadata'
     container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
 
     df_meta = df_columns.filter((col('TABLE_NAME') == table) & (col('TABLE_SCHEMA') == schema))
     df_meta = remove_column_spaces(df_meta)
-    df_meta = add_etl_columns(df=df_meta, execution_date=execution_date)
+    df_meta = add_elt_columns(df=df_meta, reception_date=reception_date, execution_date=execution_date, source=source)
 
     save_adls_gen2(
         df=df_meta,
@@ -139,6 +141,7 @@ for i, r in enumerate(table_list):
         partitionBy = partitionBy,
         format = format
     )
+    """
 
 
 #ss.spark.stop()
