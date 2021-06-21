@@ -81,7 +81,7 @@ def step1(base_sqlstr, source_system, schema_name, table_name, column_names):
     sqlstr = base_sqlstr
     sqlstr += f'CREATE OR REPLACE TABLE {source_system}.{table_name} \n(\n'
     cols = [f'{c} string \n' for c in column_names]
-    cols[0] = '  '+cols[0]
+    cols[0] = '   '+cols[0]
     sqlstr += '  ,'.join(cols)
     sqlstr +=');'
 
@@ -129,7 +129,7 @@ def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
     sqlstr = base_sqlstr
     sqlstr += f'COPY INTO {source_system}.{table_name} \nFROM (\nSELECT \n'
     cols = [f'$1:"{c}"::string AS {c} \n' for c in column_names]
-    cols[0] = '  '+cols[0]
+    cols[0] = '   '+cols[0]
     sqlstr += '  ,'.join(cols)
     sqlstr += f"FROM @ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/EXECUTION_DATE={EXECUTION_DATE}/\n) \n"
     sqlstr += f"FILE_FORMAT = (type='{file_format}') \n"
