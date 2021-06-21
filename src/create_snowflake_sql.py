@@ -33,16 +33,12 @@ logger = make_logging(__name__)
 storage_account_name = "agaggrlakescd"
 container_name = "ingress"
 domain_name = 'financial_professional'
-format = 'delta'
 
 file_format = 'PARQUET'
 wild_card = '.*.parquet'
 stream_suffix = '_STREAM'
 
 ddl_folder = f'metadata/{domain_name}/DDL'
-
-created_datetime = execution_date
-modified_datetime = execution_date
 
 
 
@@ -112,7 +108,7 @@ def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
     cols = [f'$1:"{c}"::string AS {c} \n' for c in column_names]
     cols[0] = '  '+cols[0]
     sqlstr += '  ,'.join(cols)
-    sqlstr += f'FROM @ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/\n) \n'
+    sqlstr += f"FROM @ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/EXECUTION_DATE={execution_date.replace(' ', '%20').replace(':', '%3A')}/\n) \n"
     sqlstr += f"FILE_FORMAT = (type='{file_format}') \n"
     sqlstr += f"PATTERN = '{wild_card}' \n"
     sqlstr +='ON_ERROR = CONTINUE; \n'
