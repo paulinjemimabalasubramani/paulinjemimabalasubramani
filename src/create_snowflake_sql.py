@@ -9,6 +9,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import make_logging, catch_error
+from modules.data_functions import elt_auto_columns, execution_date
 from modules.config import is_pc
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo
@@ -40,10 +41,8 @@ stream_suffix = '_STREAM'
 
 ddl_folder = f'metadata/{domain_name}/DDL'
 
-strftime = "%Y-%m-%d %H:%M:%S"  # http://strftime.org/
-execution_date = datetime.now()
-created_datetime = execution_date.strftime(strftime)
-modified_datetime = execution_date.strftime(strftime)
+created_datetime = execution_date
+modified_datetime = execution_date
 
 
 
@@ -234,6 +233,8 @@ def iterate_over_all_tables(tableinfo, table_rows):
             (col('SourceDatabase') == source_system)
             ).select('SourceColumnName').rdd.flatMap(lambda x: x).collect()
 
+        column_names += elt_auto_columns
+
         base_sqlstr1 = base_sqlstr(source_system)
         step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
         step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
@@ -246,6 +247,3 @@ iterate_over_all_tables(tableinfo, table_rows)
 
 
 # %%
-
-
-

@@ -11,6 +11,7 @@ from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_csv, read_sql, read_sql_config
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name
+from modules.data_functions import execution_date
 
 
 # %% Spark Libraries
@@ -42,10 +43,8 @@ storage_account_name = "agaggrlakescd"
 container_name = "tables"
 format = 'delta'
 
-strftime = "%Y-%m-%d %H:%M:%S"  # http://strftime.org/
-execution_date = datetime.now()
-created_datetime = execution_date.strftime(strftime)
-modified_datetime = execution_date.strftime(strftime)
+created_datetime = execution_date
+modified_datetime = execution_date
 partitionBy = 'ModifiedDateTime'
 
 
