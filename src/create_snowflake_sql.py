@@ -9,10 +9,10 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import make_logging, catch_error
-from modules.data_functions import elt_auto_columns, execution_date
+from modules.data_functions import elt_auto_columns
 from modules.config import is_pc
 from modules.spark_functions import create_spark
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, read_adls_gen2
 
 
 # %% Spark Libraries
@@ -33,6 +33,7 @@ logger = make_logging(__name__)
 storage_account_name = "agaggrlakescd"
 container_name = "ingress"
 domain_name = 'financial_professional'
+format = 'delta'
 
 file_format = 'PARQUET'
 wild_card = '.*.parquet'
@@ -96,6 +97,26 @@ def step1(base_sqlstr, source_system, schema_name, table_name, column_names):
     )
 
 
+# %% Get Execution Date for a Table
+
+@catch_error(logger)
+def get_execution_date(source_system, schema_name, table_name):
+    data_type = 'data'
+    container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
+
+    df = read_adls_gen2(
+        spark = spark,
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = container_folder,
+        table = table_name,
+        format = format
+    )
+
+    EXECUTION_DATE = df.limit(1).collect()[0]['EXECUTION_DATE']
+    return EXECUTION_DATE.replace(' ', '%20').replace(':', '%3A')
+
+
 
 # %% Create Step 2
 
@@ -103,12 +124,14 @@ def step1(base_sqlstr, source_system, schema_name, table_name, column_names):
 def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
     step = 2
 
+    EXECUTION_DATE = get_execution_date(source_system, schema_name, table_name)
+
     sqlstr = base_sqlstr
     sqlstr += f'COPY INTO {source_system}.{table_name} \nFROM (\nSELECT \n'
     cols = [f'$1:"{c}"::string AS {c} \n' for c in column_names]
     cols[0] = '  '+cols[0]
     sqlstr += '  ,'.join(cols)
-    sqlstr += f"FROM @ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/EXECUTION_DATE={execution_date.replace(' ', '%20').replace(':', '%3A')}/\n) \n"
+    sqlstr += f"FROM @ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/EXECUTION_DATE={EXECUTION_DATE}/\n) \n"
     sqlstr += f"FILE_FORMAT = (type='{file_format}') \n"
     sqlstr += f"PATTERN = '{wild_card}' \n"
     sqlstr +='ON_ERROR = CONTINUE; \n'
