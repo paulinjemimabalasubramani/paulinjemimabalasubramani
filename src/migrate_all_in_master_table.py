@@ -23,7 +23,7 @@ from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_sql, read_sql_config
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo
-from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date
+from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy
 
 
 # %% Spark Libraries
@@ -49,7 +49,6 @@ container_name = "ingress"
 domain_name = 'financial_professional'
 format = 'delta'
 
-partitionBy = 'EXECUTION_DATE'
 reception_date = execution_date
 source = 'SQL_Server'
 

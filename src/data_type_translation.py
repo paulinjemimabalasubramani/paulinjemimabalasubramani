@@ -247,7 +247,7 @@ def rename_columns(columns):
     columns = columns.withColumn('IsNullable', F.when(F.upper(col('IS_NULLABLE'))=='YES', lit(1)).otherwise(lit(0)))
     columns = columns.withColumn('KeyIndicator', F.when((F.upper(col('CONSTRAINT_TYPE'))=='PRIMARY KEY') & (col('SourceColumnName')==col('KEY_COLUMN_NAME')), lit(1)).otherwise(lit(0)))
     columns = columns.withColumn('CleanType', col('SourceDataType'))
-    columns = columns.withColumn('TargetColumnName', col('SourceColumnName'))
+    columns = columns.withColumn('TargetColumnName', F.regexp_replace(col('SourceColumnName'), r'\s+', '_'))
     columns = columns.withColumn('IsActive', lit(1))
     columns = columns.withColumn('CreatedDateTime', lit(created_datetime))
     columns = columns.withColumn('ModifiedDateTime', lit(modified_datetime))

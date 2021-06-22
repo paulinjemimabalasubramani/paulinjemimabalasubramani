@@ -9,7 +9,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import make_logging, catch_error
-from modules.data_functions import elt_auto_columns
+from modules.data_functions import elt_auto_columns, partitionBy
 from modules.config import is_pc
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, read_adls_gen2
@@ -119,7 +119,7 @@ def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
 # %% Get Execution Date for a Table
 
 @catch_error(logger)
-def get_execution_date(source_system, schema_name, table_name):
+def get_partition(source_system, schema_name, table_name):
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
 
@@ -132,10 +132,10 @@ def get_execution_date(source_system, schema_name, table_name):
         format = format
     )
 
-    EXECUTION_DATE_LIST = df.limit(1).collect()
-    if EXECUTION_DATE_LIST:
-        EXECUTION_DATE = EXECUTION_DATE_LIST[0]['EXECUTION_DATE']
-        return EXECUTION_DATE.replace(' ', '%20').replace(':', '%3A')
+    PARTITION_LIST = df.select(F.max(col(partitionBy)).alias('part')).collect()
+    if PARTITION_LIST:
+        PARTITION = PARTITION_LIST[0]['part']
+        return PARTITION.replace(' ', '%20').replace(':', '%3A')
     else:
         print(f'{container_folder}/{table_name} is EMPTY - SKIPPING')
         return None
@@ -145,7 +145,7 @@ def get_execution_date(source_system, schema_name, table_name):
 # %% Create Step 3
 
 @catch_error(logger)
-def step3(base_sqlstr, source_system, schema_name, table_name, column_names, EXECUTION_DATE):
+def step3(base_sqlstr, source_system, schema_name, table_name, column_names, PARTITION):
     step = 3
 
     sqlstr = base_sqlstr
@@ -153,7 +153,7 @@ def step3(base_sqlstr, source_system, schema_name, table_name, column_names, EXE
     cols = [f'$1:"{c}"::string AS {c} \n' for c in column_names]
     cols[0] = '   '+cols[0]
     sqlstr += '  ,'.join(cols)
-    sqlstr += f"FROM @ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/EXECUTION_DATE={EXECUTION_DATE}/\n) \n"
+    sqlstr += f"FROM @ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/\n) \n"
     sqlstr += f"FILE_FORMAT = (type='{file_format}') \n"
     sqlstr += f"PATTERN = '{wild_card}' \n"
     sqlstr +='ON_ERROR = CONTINUE; \n'
@@ -206,12 +206,12 @@ def iterate_over_all_tables(tableinfo, table_rows):
 
         column_names += elt_auto_columns
 
-        EXECUTION_DATE = get_execution_date(source_system, schema_name, table_name)
-        if EXECUTION_DATE:
+        PARTITION = get_partition(source_system, schema_name, table_name)
+        if PARTITION:
             base_sqlstr1 = base_sqlstr(source_system)
             step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
             step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
-            step3(base_sqlstr1, source_system, schema_name, table_name, column_names, EXECUTION_DATE)
+            step3(base_sqlstr1, source_system, schema_name, table_name, column_names, PARTITION)
 
     print('Finished Iterating over all tables')
 

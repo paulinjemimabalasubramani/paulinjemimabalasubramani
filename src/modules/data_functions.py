@@ -59,7 +59,7 @@ def add_elt_columns(df, reception_date:str=None, execution_date:str=None, source
     
     if execution_date:
         df = df.withColumn('EXECUTION_DATE', lit(str(execution_date)))
-        df = df.withColumn('ELT_EXECUTION_DATE', lit(str(execution_date)))
+        df = df.withColumn('PARTITION_DATE', lit(str(execution_date)))
     
     if source:
         df = df.withColumn('SOURCE', lit(str(source)))
@@ -68,8 +68,8 @@ def add_elt_columns(df, reception_date:str=None, execution_date:str=None, source
 
 
 
-elt_auto_columns = ['RECEPTION_DATE', 'ELT_EXECUTION_DATE', 'SOURCE']
-
+elt_auto_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE']
+partitionBy = 'PARTITION_DATE'
 
 
 # %%
