@@ -85,8 +85,6 @@ def step1(base_sqlstr, source_system, schema_name, table_name, column_names):
     sqlstr += '  ,'.join(cols)
     sqlstr +=');'
 
-    if is_pc: print(f'\n{sqlstr}\n')
-
     save_adls_gen2(
         df = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
@@ -95,6 +93,7 @@ def step1(base_sqlstr, source_system, schema_name, table_name, column_names):
         table = table_name,
         format = 'text'
     )
+
 
 
 # %% Create Step 2
@@ -106,8 +105,6 @@ def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
     sqlstr = base_sqlstr
     sqlstr += f"CREATE OR REPLACE STREAM {source_system}.{table_name}{stream_suffix} ON TABLE {source_system}.{table_name};"
 
-    if is_pc: print(f'\n{sqlstr}\n')
-
     save_adls_gen2(
         df = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
@@ -116,8 +113,6 @@ def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
         table = table_name,
         format = 'text'
     )
-
-
 
 
 
@@ -178,8 +173,6 @@ SELECT $EXECEPTION_CREATED_BY_USER;
 SELECT $EXECEPTION_CREATED_BY_ROLE;
 SELECT $EXCEPTION_SESSION;
 """
-
-    if is_pc: print(f'\n{sqlstr}\n')
 
     save_adls_gen2(
         df = spark.createDataFrame([sqlstr], StringType()),
