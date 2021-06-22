@@ -185,8 +185,6 @@ SELECT $EXCEPTION_SESSION;
 
 
 
-
-
 # %% Iterate Over Steps for all tables
 
 @catch_error(logger)
@@ -222,3 +220,4 @@ iterate_over_all_tables(tableinfo, table_rows)
 
 
 # %%
+
