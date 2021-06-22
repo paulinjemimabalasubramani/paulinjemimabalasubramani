@@ -52,13 +52,14 @@ def to_string(df, col_types=['timestamp']):
 @catch_error(logger)
 def add_elt_columns(df, reception_date:str=None, execution_date:str=None, source:str=None):
     """
-    Add ETL Temporary Columns
+    Add ELT Temporary Columns
     """
     if reception_date:
         df = df.withColumn('RECEPTION_DATE', lit(str(reception_date)))
     
     if execution_date:
         df = df.withColumn('EXECUTION_DATE', lit(str(execution_date)))
+        df = df.withColumn('ELT_EXECUTION_DATE', lit(str(execution_date)))
     
     if source:
         df = df.withColumn('SOURCE', lit(str(source)))
@@ -67,7 +68,7 @@ def add_elt_columns(df, reception_date:str=None, execution_date:str=None, source
 
 
 
-elt_auto_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE']
+elt_auto_columns = ['RECEPTION_DATE', 'ELT_EXECUTION_DATE', 'SOURCE']
 
 
 

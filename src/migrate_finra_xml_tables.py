@@ -1,5 +1,5 @@
 """
-Test Spark - SQL connection
+Flatten all XML files and migrate them to ADLS Gen 2 
 
 Spark Web UI:
 http://10.128.25.82:8181/
