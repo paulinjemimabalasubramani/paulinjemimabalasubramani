@@ -62,7 +62,7 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 @catch_error(logger)
 def base_sqlstr(source_system):
     sqlstr = f"""USE ROLE AD_SNOWFLAKE_QA_DBA;
-USE WAREHOUSE QA_INGEST_WH;
+USE WAREHOUSE QA_RAW_WH;
 USE DATABASE QA_RAW_FP;
 USE SCHEMA {source_system};
 
@@ -133,8 +133,8 @@ def get_partition(source_system, schema_name, table_name):
     )
 
     PARTITION_LIST = df.select(F.max(col(partitionBy)).alias('part')).collect()
-    if PARTITION_LIST:
-        PARTITION = PARTITION_LIST[0]['part']
+    PARTITION = PARTITION_LIST[0]['part']
+    if PARTITION:
         return PARTITION.replace(' ', '%20').replace(':', '%3A')
     else:
         print(f'{container_folder}/{table_name} is EMPTY - SKIPPING')
