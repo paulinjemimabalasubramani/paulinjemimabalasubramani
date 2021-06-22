@@ -97,6 +97,30 @@ def step1(base_sqlstr, source_system, schema_name, table_name, column_names):
     )
 
 
+# %% Create Step 2
+
+@catch_error(logger)
+def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
+    step = 2
+
+    sqlstr = base_sqlstr
+    sqlstr += f"CREATE OR REPLACE STREAM {source_system}.{table_name}{stream_suffix} ON TABLE {source_system}.{table_name};"
+
+    if is_pc: print(f'\n{sqlstr}\n')
+
+    save_adls_gen2(
+        df = spark.createDataFrame([sqlstr], StringType()),
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
+        table = table_name,
+        format = 'text'
+    )
+
+
+
+
+
 # %% Get Execution Date for a Table
 
 @catch_error(logger)
@@ -123,11 +147,11 @@ def get_execution_date(source_system, schema_name, table_name):
 
 
 
-# %% Create Step 2
+# %% Create Step 3
 
 @catch_error(logger)
-def step2(base_sqlstr, source_system, schema_name, table_name, column_names, EXECUTION_DATE):
-    step = 2
+def step3(base_sqlstr, source_system, schema_name, table_name, column_names, EXECUTION_DATE):
+    step = 3
 
     sqlstr = base_sqlstr
     sqlstr += f'COPY INTO {source_system}.{table_name} \nFROM (\nSELECT \n'
@@ -169,28 +193,6 @@ SELECT $EXCEPTION_SESSION;
 
 
 
-# %% Create Step 3
-
-@catch_error(logger)
-def step3(base_sqlstr, source_system, schema_name, table_name, column_names):
-    step = 3
-
-    sqlstr = base_sqlstr
-    sqlstr += f"CREATE OR REPLACE STREAM {source_system}.{table_name}{stream_suffix} ON TABLE {source_system}.{table_name};"
-
-    if is_pc: print(f'\n{sqlstr}\n')
-
-    save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
-
-
-
 
 # %% Iterate Over Steps for all tables
 
@@ -217,8 +219,8 @@ def iterate_over_all_tables(tableinfo, table_rows):
         if EXECUTION_DATE:
             base_sqlstr1 = base_sqlstr(source_system)
             step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
-            step2(base_sqlstr1, source_system, schema_name, table_name, column_names, EXECUTION_DATE)
-            step3(base_sqlstr1, source_system, schema_name, table_name, column_names)
+            step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
+            step3(base_sqlstr1, source_system, schema_name, table_name, column_names, EXECUTION_DATE)
 
     print('Finished Iterating over all tables')
 
