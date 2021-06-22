@@ -253,7 +253,14 @@ WHERE
 )
 WHERE top_slice = 1 ;
 """
-    return sqlstr
+    save_adls_gen2(
+        df = spark.createDataFrame([sqlstr], StringType()),
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
+        table = table_name,
+        format = 'text'
+    )
 
 
 
@@ -270,9 +277,7 @@ print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{t
 
 column_names, pk_column_names = get_column_names(tableinfo, source_system, schema_name, table_name)
 
-sqlstr = step4(base_sqlstr, source_system, schema_name, table_name, column_names, pk_column_names)
-
-print(sqlstr)
+step4(base_sqlstr, source_system, schema_name, table_name, column_names, pk_column_names)
 
 """
 
