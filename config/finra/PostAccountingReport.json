@@ -1,5 +1,21 @@
 {
 	"AccountTransactions": {
-		"controlTotal": null
+		"_controlTotal": null,
+		"AccountTransaction": [{
+			"_transactionNumber": null,
+			"_transactionType": null,
+			"_feeType": null,
+			"_accountType": null,
+			"_recipientOfFunds": null,
+			"_amountInDollars": null,
+			"_individualCRDNumber": null,
+			"_individualSSN": null,
+			"_transactionDescription": null,
+			"Name": {
+				"_first": null,
+				"_middle": null,
+				"_last": null
+			}
+		}]
 	}
 }

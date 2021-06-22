@@ -1,13 +1,13 @@
 {
 	"PendingRegistrations": [{
 		"PendingRegistration": {
-			"billingCode": null,
-			"individualCRDNumber": null,
-			"individualSSN": null,
-			"u4FilingDate": null,
-			"regulatorCode": null,
-			"registrationCategoryCode": null,
-			"updateTS": null,
+			"_billingCode": null,
+			"_individualCRDNumber": null,
+			"_individualSSN": null,
+			"_u4FilingDate": null,
+			"_regulatorCode": null,
+			"_registrationCategoryCode": null,
+			"_updateTS": null,
 			"Name": {
 				"_last": null,
 				"_first": null,

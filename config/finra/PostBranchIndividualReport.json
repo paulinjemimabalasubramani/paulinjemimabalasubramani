@@ -1,10 +1,10 @@
 {
 	"BrnchOfcs": [{
 		"BrnchOfc": {
-			"bllngCd": null,
-			"brnchPK": null,
-			"dstrtPK": null,
-			"oprnlStCd": null,
+			"_bllngCd": null,
+			"_brnchPK": null,
+			"_dstrtPK": null,
+			"_oprnlStCd": null,
 			"Addr": {
 				"_strt1": null,
 				"_strt2": null,
@@ -22,9 +22,9 @@
 			},
 			"AsctdIndvls": {
 				"AsctdIndvl": [{
-					"indvlPK": null,
-					"ndpndCntrcrFl": null,
-					"sprvPICFl": null,
+					"_indvlPK": null,
+					"_ndpndCntrcrFl": null,
+					"_sprvPICFl": null,
 					"Nm": {
 						"_first": null,
 						"_mid": null,

@@ -1,9 +1,9 @@
 {
 	"Org": {
-		"orgPK": null,
-		"orgNm": null,
-		"SECNb": null,
-		"dstrtPK": null,
+		"_orgPK": null,
+		"_orgNm": null,
+		"_SECNb": null,
+		"_dstrtPK": null,
 		"Addr": {
 			"_strt1": null,
 			"_strt2": null,
@@ -15,12 +15,12 @@
 		},
 		"BrnchOfcs": {
 			"BrnchOfc": [{
-				"bllngCd": null,
-				"brnchPK": null,
-				"brnchPhone": null,
-				"prvtRsdnc": null,
-				"dstrtPK": null,
-				"oprnlStCd": null,
+				"_bllngCd": null,
+				"_brnchPK": null,
+				"_brnchPhone": null,
+				"_prvtRsdnc": null,
+				"_dstrtPK": null,
+				"_oprnlStCd": null,
 				"Addr": {
 					"_strt1": null,
 					"_strt2": null,
@@ -77,9 +77,9 @@
 				},
 				"SprvgOSJs": {
 					"SprvgOSJ": [{
-						"sprvgOSJBrnchPK": null,
-						"sprvgOSJIndvlPK": null,
-						"sprvgOSJBllngCd": null,
+						"_sprvgOSJBrnchPK": null,
+						"_sprvgOSJIndvlPK": null,
+						"_sprvgOSJBllngCd": null,
 						"Nm": {
 							"_first": null,
 							"_mid": null,
