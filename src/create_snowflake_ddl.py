@@ -230,7 +230,7 @@ def step4(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
     column_list_with_alias = '\n  ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
     MD5_columns = "MD5(CONCAT(" + "\n  ,".join([f"COALESCE({c},'N/A')" for c in column_names]) + ")) AS MD5_HASH"
 
-    sqlstr = base_sqlstr(source_system)
+    sqlstr = base_sqlstr
     sqlstr += f"""
 CREATE OR REPLACE VIEW {schema_name}.{view_prefix}{table_name}
 AS
@@ -276,8 +276,8 @@ source_system = table['SourceDatabase']
 print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
 column_names, pk_column_names = get_column_names(tableinfo, source_system, schema_name, table_name)
-
-step4(base_sqlstr, source_system, schema_name, table_name, column_names, pk_column_names)
+base_sqlstr1 = base_sqlstr(source_system)
+step4(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
 
 """
 
