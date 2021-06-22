@@ -75,11 +75,11 @@ USE SCHEMA {source_system};
 # %% Create Step 1
 
 @catch_error(logger)
-def step1(base_sqlstr, source_system, schema_name, table_name, column_names):
+def step1(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
     step = 1
 
     sqlstr = base_sqlstr
-    sqlstr += f'CREATE OR REPLACE TABLE {source_system}.{table_name} \n(\n'
+    sqlstr += f'CREATE OR REPLACE TABLE {source_system.upper()}.{schema_name.upper()}_{table_name.upper()} \n(\n'
     cols = [f'{c} string \n' for c in column_names]
     cols[0] = '   '+cols[0]
     sqlstr += '  ,'.join(cols)
@@ -99,11 +99,11 @@ def step1(base_sqlstr, source_system, schema_name, table_name, column_names):
 # %% Create Step 2
 
 @catch_error(logger)
-def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
+def step2(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
     step = 2
 
     sqlstr = base_sqlstr
-    sqlstr += f"CREATE OR REPLACE STREAM {source_system}.{table_name}{stream_suffix} ON TABLE {source_system}.{table_name};"
+    sqlstr += f"CREATE OR REPLACE STREAM {source_system.upper()}.{schema_name.upper()}_{table_name.upper()}{stream_suffix} ON TABLE {source_system.upper()}.{schema_name.upper()}_{table_name.upper()};"
 
     save_adls_gen2(
         df = spark.createDataFrame([sqlstr], StringType()),
@@ -119,7 +119,7 @@ def step2(base_sqlstr, source_system, schema_name, table_name, column_names):
 # %% Get Execution Date for a Table
 
 @catch_error(logger)
-def get_partition(source_system, schema_name, table_name):
+def get_partition(source_system:str, schema_name:str, table_name:str):
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
 
@@ -145,11 +145,11 @@ def get_partition(source_system, schema_name, table_name):
 # %% Create Step 3
 
 @catch_error(logger)
-def step3(base_sqlstr, source_system, schema_name, table_name, column_names, PARTITION):
+def step3(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
     step = 3
 
     sqlstr = base_sqlstr
-    sqlstr += f'COPY INTO {source_system}.{table_name} \nFROM (\nSELECT \n'
+    sqlstr += f'COPY INTO {source_system.upper()}.{schema_name.upper()}_{table_name.upper()} \nFROM (\nSELECT \n'
     cols = [f'$1:"{c}"::string AS {c} \n' for c in column_names]
     cols[0] = '   '+cols[0]
     sqlstr += '  ,'.join(cols)
@@ -159,8 +159,8 @@ def step3(base_sqlstr, source_system, schema_name, table_name, column_names, PAR
     sqlstr +='ON_ERROR = CONTINUE; \n'
 
     sqlstr +=f"""
-SET SOURCE_SYSTEM = '{source_system}';
-SET TARGET_TABLE = '{table_name}';
+SET SOURCE_SYSTEM = '{source_system.upper()}';
+SET TARGET_TABLE = '{schema_name.upper()}_{table_name.upper()}';
 SET EXCEPTION_DATE_TIME = CURRENT_TIMESTAMP();
 SET EXECEPTION_CREATED_BY_USER = CURRENT_USER();
 SET EXECEPTION_CREATED_BY_ROLE = CURRENT_ROLE();
