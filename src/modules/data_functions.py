@@ -68,7 +68,7 @@ def add_elt_columns(df, reception_date:str=None, execution_date:str=None, source
 
 
 
-elt_auto_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE']
+elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE']
 partitionBy = 'PARTITION_DATE'
 
 
