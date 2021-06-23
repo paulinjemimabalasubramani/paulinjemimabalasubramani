@@ -139,7 +139,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
 
 
 # %% Manual Iteration
-manual_iteration = True
+manual_iteration = False
 
 if not is_pc:
     manual_iteration = False
@@ -476,7 +476,65 @@ if manual_iteration:
     step7(base_sqlstr1, source_system, schema_name, table_name, column_names, data_types_dict)
 
 
+# %% Create Step 8
 
+@catch_error(logger)
+def step8(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
+    step = 8
+    SCHEMA_NAME = source_system.upper()
+    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    column_list = '\n    ,'.join(column_names+elt_audit_columns)
+    merge_update_columns = '\n    ,'.join([f'{tgt_alias}.{c} = {src_alias}.{c}' for c in column_names+elt_audit_columns])
+    column_list_with_alias = '\n    ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
+
+    sqlstr = f"""{base_sqlstr}
+MERGE INTO {snowflake_transformed_database}.{SCHEMA_NAME}.{view_prefix} {tgt_alias}
+USING (
+    SELECT * 
+    FROM {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}
+) {src_alias}
+ON (
+TRIM(COALESCE({src_alias}.{integration_id},'N/A')) = TRIM(COALESCE({tgt_alias}.{integration_id},'N/A'))
+)
+WHEN MATCHED
+AND TRIM({src_alias}.{hash_column_name}) != TRIM({tgt_alias}.{hash_column_name})
+THEN
+  UPDATE
+  SET
+     {merge_update_columns}
+    ,{tgt_alias}.{hash_column_name} = {src_alias}.{hash_column_name}
+
+WHEN NOT MATCHED 
+THEN
+  INSERT
+  (
+     {integration_id}
+    ,{column_list}
+    ,{hash_column_name}
+  )
+  VALUES
+  (
+     {src_alias}.{integration_id}
+    ,{column_list_with_alias}
+    ,{src_alias}.{hash_column_name}
+  );
+"""
+
+    if manual_iteration:
+        print(sqlstr)
+
+    save_adls_gen2(
+        df = spark.createDataFrame([sqlstr], StringType()),
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
+        table = table_name,
+        format = 'text'
+    )
+
+
+if manual_iteration:
+    step8(base_sqlstr1, source_system, schema_name, table_name, column_names)
 
 
 # %% Iterate Over Steps for all tables
@@ -503,6 +561,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step5(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
             step6(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
             step7(base_sqlstr1, source_system, schema_name, table_name, column_names, data_types_dict)
+            step8(base_sqlstr1, source_system, schema_name, table_name, column_names)
 
     print('Finished Iterating over all tables')
 
