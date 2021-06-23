@@ -351,12 +351,12 @@ if manual_iteration:
 # %% Create Step 5
 
 @catch_error(logger)
-def step5(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:list):
+def step5(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
     step = 5
     SCHEMA_NAME = source_system.upper()
     TABLE_NAME = f'{schema_name}_{table_name}'.upper()
     column_list_src = '\n  ,'.join(
-        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict] +
+        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
