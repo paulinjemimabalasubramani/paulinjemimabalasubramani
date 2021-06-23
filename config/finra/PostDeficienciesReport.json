@@ -1,0 +1,22 @@
+{
+	"Deficiencies": [{
+		"Deficiency": {
+			"_billingCode": null,
+			"_examCode": null,
+			"_deficiencyCode": null,
+			"_individualCRDNumber": null,
+			"_individualSSN": null,
+			"_regulatorName": null,
+			"_registrationCategoryCode": null,
+			"_createDate": null,
+			"_updateTS": null,
+			"Name": {
+				"_last": null,
+				"_first": null,
+				"_middle": null,
+				"_suffix": null,
+				"_VALUE": null
+			}
+		}
+	}]
+}

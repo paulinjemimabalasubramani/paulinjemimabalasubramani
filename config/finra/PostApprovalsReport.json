@@ -1,0 +1,20 @@
+{
+	"Regulators": {
+		"Regulator": [{
+			"_billingCode": null,
+			"_individualCRDNumber": null,
+			"_individualSSN": null,
+			"_registrationStatus": null,
+			"_regulatorName": null,
+			"_registrationCategory": null,
+			"_registrationStatusDate": null,
+			"_approvalDate": null,
+			"_updateTS": null,
+			"Name": {
+				"_first": null,
+				"_last": null,
+				"_middle": null
+			}
+		}]
+	}
+}

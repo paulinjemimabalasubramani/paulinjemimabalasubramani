@@ -1,0 +1,20 @@
+{
+	"PendingRegistrations": [{
+		"PendingRegistration": {
+			"_billingCode": null,
+			"_individualCRDNumber": null,
+			"_individualSSN": null,
+			"_u4FilingDate": null,
+			"_regulatorCode": null,
+			"_registrationCategoryCode": null,
+			"_updateTS": null,
+			"Name": {
+				"_last": null,
+				"_first": null,
+				"_middle": null,
+				"_suffix": null,
+				"_VALUE": null
+			}
+		}
+	}]
+}

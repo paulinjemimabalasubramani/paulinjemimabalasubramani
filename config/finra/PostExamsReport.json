@@ -1,0 +1,21 @@
+{
+	"Exams": {
+		"Exam": [{
+			"_nrlmtID": null,
+			"_billingCode": null,
+			"_individualCRDNumber": null,
+			"_individualSSN": null,
+			"_examCode": null,
+			"_grade": null,
+			"_examDate": null,
+			"_examStatus": null,
+			"_statusDate": null,
+			"_updateTS": null,
+			"Name": {
+				"_first": null,
+				"_last": null,
+				"_middle": null
+			}
+		}]
+	}
+}
