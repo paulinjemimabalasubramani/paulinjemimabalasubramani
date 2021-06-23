@@ -136,7 +136,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
 
 
 # %% Manual Iteration
-manual_iteration = False
+manual_iteration = True
 
 if not is_pc:
     manual_iteration = False
@@ -384,19 +384,21 @@ if manual_iteration:
     step5(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
 
 
-# %% Create Step 4x
+# %% Create Step 6
 
 @catch_error(logger)
-def step4x(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
-    step = 4
+def step6(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
+    step = 6
+    SCHEMA_NAME = source_system.upper()
+    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
 
     column_list_with_business_key = '\n  ,'.join(column_names+elt_audit_columns)
     column_list_with_alias = '\n  ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
-    MD5_columns = "MD5(CONCAT(" + "\n  ,".join([f"COALESCE({c},'N/A')" for c in column_names]) + ")) AS MD5_HASH"
+    MD5_columns = "MD5(CONCAT(\n       " + "\n      ,".join([f"COALESCE({c},'N/A')" for c in column_names]) + "\n      ))"
+    integration_id = "TRIM(CONCAT(" + ', '.join([f"COALESCE({c},'N/A')" for c in pk_column_names]) + "))"
 
-    sqlstr = base_sqlstr
-    sqlstr += f"""
-CREATE OR REPLACE VIEW {schema_name}.{view_prefix}{table_name}
+    sqlstr = f"""{base_sqlstr}
+CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}
 AS
 SELECT  
    INTEGRATION_ID
@@ -405,18 +407,20 @@ SELECT
 FROM
 (
 
-SELECT TRIM(CONCAT({', '.join(pk_column_names)})) as INTEGRATION_ID
+SELECT {integration_id} as INTEGRATION_ID
   ,{column_list_with_alias}
-  ,{MD5_columns}
+  ,{MD5_columns} AS MD5_HASH
   ,ROW_NUMBER() OVER (PARTITION BY {src_alias}.INTEGRATION_ID ORDER BY {src_alias}.INTEGRATION_ID, {src_alias}.{execution_date_str} DESC) AS top_slice
-FROM {snowflake_raw_database}.{schema_name}.{table_name}{stream_suffix} {stream_alias}
-LEFT OUTER JOIN {snowflake_raw_database}.{schema_name}.{table_name} {src_alias}
-    ON {src_alias}.INTEGRATION_ID = {stream_alias}.INTEGRATION_ID                            
-WHERE
-    TRIM({stream_alias}.INTEGRATION_ID) IS NOT NULL
+FROM {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}{stream_suffix} {stream_alias}
+INNER JOIN {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label} {src_alias}
+    ON {src_alias}.INTEGRATION_ID = {stream_alias}.INTEGRATION_ID
 )
-WHERE top_slice = 1 ;
+WHERE top_slice = 1;
 """
+
+    if manual_iteration:
+        print(sqlstr)
+
     save_adls_gen2(
         df = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
@@ -425,6 +429,10 @@ WHERE top_slice = 1 ;
         table = table_name,
         format = 'text'
     )
+
+
+if manual_iteration:
+    step6(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
 
 
 
@@ -450,6 +458,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step3(base_sqlstr1, source_system, schema_name, table_name, column_names, PARTITION)
             step4(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
             step5(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
+            step6(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
 
     print('Finished Iterating over all tables')
 
