@@ -161,7 +161,7 @@ if manual_iteration:
 def step1(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
     step = 1
     SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name.upper()}_{table_name.upper()}'
+    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
 
     sqlstr = base_sqlstr
     sqlstr += f'CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME} \n(\n   '
@@ -196,10 +196,13 @@ if manual_iteration:
 def step2(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
     step = 2
     SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name.upper()}_{table_name.upper()}'
+    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
 
     sqlstr = base_sqlstr
-    sqlstr += f"CREATE OR REPLACE STREAM {source_system.upper()}.{schema_name.upper()}_{table_name.upper()}{stream_suffix} ON TABLE {source_system.upper()}.{schema_name.upper()}_{table_name.upper()};"
+    sqlstr += f"CREATE OR REPLACE STREAM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix} ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};\n"
+
+    if manual_iteration:
+        print(sqlstr)
 
     save_adls_gen2(
         df = spark.createDataFrame([sqlstr], StringType()),
@@ -210,6 +213,8 @@ def step2(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
         format = 'text'
     )
 
+if manual_iteration:
+    step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
 
 
 # %% Create Step 3
@@ -217,20 +222,18 @@ def step2(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
 @catch_error(logger)
 def step3(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
     step = 3
+    SCHEMA_NAME = source_system.upper()
+    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
 
     sqlstr = base_sqlstr
-    sqlstr += f'COPY INTO {source_system.upper()}.{schema_name.upper()}_{table_name.upper()} \nFROM (\nSELECT \n'
-    cols = [f'$1:"{c}"::string AS {c} \n' for c in column_names+elt_audit_columns]
-    cols[0] = '   '+cols[0]
-    sqlstr += '  ,'.join(cols)
-    sqlstr += f"FROM @ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/\n) \n"
-    sqlstr += f"FILE_FORMAT = (type='{file_format}') \n"
-    sqlstr += f"PATTERN = '{wild_card}' \n"
-    sqlstr +='ON_ERROR = CONTINUE; \n'
+    sqlstr += f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
+FROM @ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/
+FILE_FORMAT = (type='{file_format}')
+PATTERN = '{wild_card}'
+ON_ERROR = CONTINUE;
 
-    sqlstr +=f"""
-SET SOURCE_SYSTEM = '{source_system.upper()}';
-SET TARGET_TABLE = '{schema_name.upper()}_{table_name.upper()}';
+SET SOURCE_SYSTEM = '{SCHEMA_NAME}';
+SET TARGET_TABLE = '{TABLE_NAME}{variant_label}';
 SET EXCEPTION_DATE_TIME = CURRENT_TIMESTAMP();
 SET EXECEPTION_CREATED_BY_USER = CURRENT_USER();
 SET EXECEPTION_CREATED_BY_ROLE = CURRENT_ROLE();
@@ -242,7 +245,52 @@ SELECT $EXCEPTION_DATE_TIME;
 SELECT $EXECEPTION_CREATED_BY_USER;
 SELECT $EXECEPTION_CREATED_BY_ROLE;
 SELECT $EXCEPTION_SESSION;
+
+INSERT INTO ELT_STAGE.ELT_COPY_EXCEPTION
+(
+   SOURCE_SYSTEM
+  ,TARGET_TABLE
+  ,EXCEPTION_DATE_TIME
+  ,EXECEPTION_CREATED_BY_USER
+  ,EXECEPTION_CREATED_BY_ROLE
+  ,EXCEPTION_SESSION
+  ,ERROR
+  ,FILE
+  ,LINE
+  ,CHARACTER
+  ,BYTE_OFFSET
+  ,CATEGORY
+  ,CODE
+  ,SQL_STATE
+  ,COLUMN_NAME
+  ,ROW_NUMBER
+  ,ROW_START_LINE
+  ,REJECTED_RECORD
+)
+SELECT
+   $SOURCE_SYSTEM
+  ,$TARGET_TABLE
+  ,$EXCEPTION_DATE_TIME
+  ,$EXECEPTION_CREATED_BY_USER
+  ,$EXECEPTION_CREATED_BY_ROLE
+  ,$EXCEPTION_SESSION
+  ,ERROR
+  ,FILE
+  ,LINE
+  ,CHARACTER
+  ,BYTE_OFFSET
+  ,CATEGORY
+  ,CODE
+  ,SQL_STATE
+  ,COLUMN_NAME
+  ,ROW_NUMBER
+  ,ROW_START_LINE
+  ,REJECTED_RECORD
+FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{variant_label}, job_id => '_last'));
 """
+
+    if manual_iteration:
+        print(sqlstr)
 
     save_adls_gen2(
         df = spark.createDataFrame([sqlstr], StringType()),
@@ -253,6 +301,8 @@ SELECT $EXCEPTION_SESSION;
         format = 'text'
     )
 
+if manual_iteration:
+    step3(base_sqlstr1, source_system, schema_name, table_name, column_names, PARTITION)
 
 
 # %% Create Step 4
@@ -323,8 +373,8 @@ def iterate_over_all_tables(tableinfo, table_rows):
 
     print('Finished Iterating over all tables')
 
-
-iterate_over_all_tables(tableinfo, table_rows)
+if not manual_iteration:
+    iterate_over_all_tables(tableinfo, table_rows)
 
 
 # %%
