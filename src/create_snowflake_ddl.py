@@ -39,6 +39,9 @@ format = 'delta'
 ddl_folder = f'metadata/{domain_name}/DDL'
 
 # Steps 1-3 parameters:
+variant_label = '_VARIANT'
+variant_alias = 'SRC'
+
 file_format = 'PARQUET'
 wild_card = '.*.parquet'
 stream_suffix = '_STREAM'
@@ -105,52 +108,7 @@ USE SCHEMA {source_system};
     return sqlstr
 
 
-
-# %% Create Step 1
-
-@catch_error(logger)
-def step1(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
-    step = 1
-
-    sqlstr = base_sqlstr
-    sqlstr += f'CREATE OR REPLACE TABLE {source_system.upper()}.{schema_name.upper()}_{table_name.upper()} \n(\n'
-    cols = [f'{c} string \n' for c in column_names+elt_audit_columns]
-    cols[0] = '   '+cols[0]
-    sqlstr += '  ,'.join(cols)
-    sqlstr +=');'
-
-    save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
-
-
-
-# %% Create Step 2
-
-@catch_error(logger)
-def step2(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
-    step = 2
-
-    sqlstr = base_sqlstr
-    sqlstr += f"CREATE OR REPLACE STREAM {source_system.upper()}.{schema_name.upper()}_{table_name.upper()}{stream_suffix} ON TABLE {source_system.upper()}.{schema_name.upper()}_{table_name.upper()};"
-
-    save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
-
-
-
-# %% Get Execution Date for a Table
+# %% Get partition string for a Table
 
 @catch_error(logger)
 def get_partition(source_system:str, schema_name:str, table_name:str):
@@ -173,6 +131,84 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
     else:
         print(f'{container_folder}/{table_name} is EMPTY - SKIPPING')
         return None
+
+
+
+
+# %% Manual Iteration
+manual_iteration = True
+
+if manual_iteration:
+    i = 0
+    n_tables = len(table_rows)
+
+    table = table_rows[i]
+    table_name = table['TableName']
+    schema_name = table['SourceSchema']
+    source_system = table['SourceDatabase']
+    print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
+
+    column_names, pk_column_names = get_column_names(tableinfo, source_system, schema_name, table_name)
+    base_sqlstr1 = base_sqlstr(source_system)
+    PARTITION = get_partition(source_system, schema_name, table_name)
+
+
+
+
+# %% Create Step 1
+
+@catch_error(logger)
+def step1(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
+    step = 1
+    SCHEMA_NAME = source_system.upper()
+    TABLE_NAME = f'{schema_name.upper()}_{table_name.upper()}'
+
+    sqlstr = base_sqlstr
+    sqlstr += f'CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME} \n(\n   '
+    sqlstr += '  ,'.join([f'{c} string \n' for c in column_names+elt_audit_columns])
+    sqlstr += f""");
+
+CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
+(
+  {variant_alias} VARIANT
+);
+"""
+
+    if manual_iteration:
+        print(sqlstr)
+    
+    save_adls_gen2(
+        df = spark.createDataFrame([sqlstr], StringType()),
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
+        table = table_name,
+        format = 'text'
+    )
+
+if manual_iteration:
+    step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
+
+
+# %% Create Step 2
+
+@catch_error(logger)
+def step2(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
+    step = 2
+    SCHEMA_NAME = source_system.upper()
+    TABLE_NAME = f'{schema_name.upper()}_{table_name.upper()}'
+
+    sqlstr = base_sqlstr
+    sqlstr += f"CREATE OR REPLACE STREAM {source_system.upper()}.{schema_name.upper()}_{table_name.upper()}{stream_suffix} ON TABLE {source_system.upper()}.{schema_name.upper()}_{table_name.upper()};"
+
+    save_adls_gen2(
+        df = spark.createDataFrame([sqlstr], StringType()),
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
+        table = table_name,
+        format = 'text'
+    )
 
 
 
@@ -262,23 +298,6 @@ WHERE top_slice = 1 ;
     )
 
 
-
-"""
-
-i = 0
-n_tables = len(table_rows)
-
-table = table_rows[i]
-table_name = table['TableName']
-schema_name = table['SourceSchema']
-source_system = table['SourceDatabase']
-print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
-
-column_names, pk_column_names = get_column_names(tableinfo, source_system, schema_name, table_name)
-base_sqlstr1 = base_sqlstr(source_system)
-step4(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
-
-"""
 
 # %% Iterate Over Steps for all tables
 
