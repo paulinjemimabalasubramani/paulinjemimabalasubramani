@@ -101,7 +101,6 @@ USE WAREHOUSE QA_RAW_WH;
 USE DATABASE QA_RAW_FP;
 USE SCHEMA {source_system};
 
-
 """
     return sqlstr
 
