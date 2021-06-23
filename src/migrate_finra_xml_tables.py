@@ -226,6 +226,9 @@ def write_df_list_to_azure(df_list, df_file_name, reception_date):
             format = format
         )
 
+        dfx.unpersist()
+        meta_df.unpersist()
+
     print('Done writing to Azure')
 
 
@@ -265,6 +268,8 @@ def process_finra(root, file):
         df_file_name = name_data['name'],
         reception_date = name_data['date']
         )
+
+    df.unpersist()
 
 
 
