@@ -54,6 +54,7 @@ snowflake_transformed_database = f'{environment}_PERSISTENT_FP'
 src_alias = 'src' # Driver Table I.E. Non-Stream
 tgt_alias = 'tgt'
 hash_column_name = 'MD5_HASH'
+integration_id = 'INTEGRATION_ID'
 stream_alias = 'src_strm' # Stream object
 view_prefix = 'VW_'
 execution_date_str = 'EXECUTION_DATE'
@@ -87,12 +88,14 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
     column_names = filtered_tableinfo.select('TargetColumnName').rdd.flatMap(lambda x: x).collect()
     src_column_names = filtered_tableinfo.select('TargetColumnName', 'SourceColumnName').collect()
     src_column_dict = {c['TargetColumnName']:c['SourceColumnName'] for c in src_column_names}
+    data_types = filtered_tableinfo.select('TargetColumnName', 'TargetDataType').collect()
+    data_types_dict = {c['TargetColumnName']:c['TargetDataType'] for c in data_types}
 
     pk_column_names = filtered_tableinfo.filter(
         (col('KeyIndicator') == lit(1))
         ).select('TargetColumnName').rdd.flatMap(lambda x: x).collect()
 
-    return column_names, pk_column_names, src_column_dict
+    return column_names, pk_column_names, src_column_dict, data_types_dict
 
 
 
@@ -151,7 +154,7 @@ if manual_iteration:
     source_system = table['SourceDatabase']
     print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
-    column_names, pk_column_names, src_column_dict = get_column_names(tableinfo, source_system, schema_name, table_name)
+    column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo, source_system, schema_name, table_name)
     base_sqlstr1 = base_sqlstr(source_system)
     PARTITION = get_partition(source_system, schema_name, table_name)
 
@@ -392,28 +395,28 @@ def step6(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
     SCHEMA_NAME = source_system.upper()
     TABLE_NAME = f'{schema_name}_{table_name}'.upper()
 
-    column_list_with_business_key = '\n  ,'.join(column_names+elt_audit_columns)
+    column_list = '\n  ,'.join(column_names+elt_audit_columns)
     column_list_with_alias = '\n  ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
-    MD5_columns = "MD5(CONCAT(\n       " + "\n      ,".join([f"COALESCE({c},'N/A')" for c in column_names]) + "\n      ))"
-    integration_id = "TRIM(CONCAT(" + ', '.join([f"COALESCE({c},'N/A')" for c in pk_column_names]) + "))"
+    hash_columns = "MD5(CONCAT(\n       " + "\n      ,".join([f"COALESCE({c},'N/A')" for c in column_names]) + "\n      ))"
+    INTEGRATION_ID = "TRIM(CONCAT(" + ', '.join([f"COALESCE({c},'N/A')" for c in pk_column_names]) + "))"
 
     sqlstr = f"""{base_sqlstr}
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}
 AS
 SELECT  
-   INTEGRATION_ID
-  ,{column_list_with_business_key}
+   {integration_id}
+  ,{column_list}
   ,{hash_column_name}
 FROM
 (
 
-SELECT {integration_id} as INTEGRATION_ID
+SELECT {INTEGRATION_ID} as {integration_id}
   ,{column_list_with_alias}
-  ,{MD5_columns} AS MD5_HASH
-  ,ROW_NUMBER() OVER (PARTITION BY {src_alias}.INTEGRATION_ID ORDER BY {src_alias}.INTEGRATION_ID, {src_alias}.{execution_date_str} DESC) AS top_slice
+  ,{hash_columns} AS {hash_column_name}
+  ,ROW_NUMBER() OVER (PARTITION BY {src_alias}.{integration_id} ORDER BY {src_alias}.{integration_id}, {src_alias}.{execution_date_str} DESC) AS top_slice
 FROM {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}{stream_suffix} {stream_alias}
 INNER JOIN {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label} {src_alias}
-    ON {src_alias}.INTEGRATION_ID = {stream_alias}.INTEGRATION_ID
+    ON {src_alias}.{integration_id} = {stream_alias}.{integration_id}
 )
 WHERE top_slice = 1;
 """
@@ -435,6 +438,46 @@ if manual_iteration:
     step6(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
 
 
+# %% Create Step 7
+
+@catch_error(logger)
+def step7(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
+    step = 7
+    SCHEMA_NAME = source_system.upper()
+    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    column_list_types = '\n  ,'.join(
+        [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in data_types_dict.items()] +
+        [f'{c} VARCHAR(50)' for c in elt_audit_columns]
+        )
+
+    sqlstr = f"""{base_sqlstr}
+CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
+(
+   {integration_id} VARCHAR(1000)
+  ,{column_list_types}
+  ,{hash_column_name} VARCHAR(100)
+);
+"""
+
+    if manual_iteration:
+        print(sqlstr)
+
+    save_adls_gen2(
+        df = spark.createDataFrame([sqlstr], StringType()),
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
+        table = table_name,
+        format = 'text'
+    )
+
+
+if manual_iteration:
+    step7(base_sqlstr1, source_system, schema_name, table_name, column_names, data_types_dict)
+
+
+
+
 
 # %% Iterate Over Steps for all tables
 
@@ -448,7 +491,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
         source_system = table['SourceDatabase']
         print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
-        column_names, pk_column_names, src_column_dict = get_column_names(tableinfo, source_system, schema_name, table_name)
+        column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo, source_system, schema_name, table_name)
 
         PARTITION = get_partition(source_system, schema_name, table_name)
         if PARTITION:
@@ -459,6 +502,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step4(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
             step5(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
             step6(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
+            step7(base_sqlstr1, source_system, schema_name, table_name, column_names, data_types_dict)
 
     print('Finished Iterating over all tables')
 
