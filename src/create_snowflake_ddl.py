@@ -487,6 +487,14 @@ def step8(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
     column_list_with_alias = '\n    ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
 
     sqlstr = f"""{base_sqlstr}
+CREATE OR REPLACE PROCEDURE {snowflake_transformed_database}.{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE()
+RETURNS STRING
+LANGUAGE JAVASCRIPT
+EXECUTE AS CALLER
+AS 
+$$
+var sql_command = 
+`
 MERGE INTO {snowflake_transformed_database}.{SCHEMA_NAME}.{TABLE_NAME} {tgt_alias}
 USING (
     SELECT * 
@@ -517,6 +525,17 @@ THEN
     ,{column_list_with_alias}
     ,{src_alias}.{hash_column_name}
   );
+`""" + """
+try {
+    snowflake.execute (
+        {sqlText: sql_command}
+        );
+    return "Succeeded.";
+    }
+catch (err)  {
+    return "Failed: " + err;
+    }
+$$
 """
 
     if manual_iteration:
