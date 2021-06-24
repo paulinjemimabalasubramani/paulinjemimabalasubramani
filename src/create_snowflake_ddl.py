@@ -102,10 +102,10 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
 # %% base sqlstr
 
 @catch_error(logger)
-def base_sqlstr(source_system):
+def base_sqlstr(source_system, use:str):
     sqlstr = f"""USE ROLE AD_SNOWFLAKE_QA_DBA;
-USE WAREHOUSE QA_RAW_WH;
-USE DATABASE QA_RAW_FP;
+USE WAREHOUSE QA_{use}_WH;
+USE DATABASE QA_{use}_FP;
 USE SCHEMA {source_system};
 """
     return sqlstr
@@ -130,7 +130,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
     PARTITION_LIST = df.select(F.max(col(partitionBy)).alias('part')).collect()
     PARTITION = PARTITION_LIST[0]['part']
     if PARTITION:
-        return PARTITION.replace(' ', '%20').replace(':', '%3A')
+        return PARTITION.replace(':', '%3A') #.replace(' ', '%20')
     else:
         print(f'{container_folder}/{table_name} is EMPTY - SKIPPING')
         return None
@@ -139,7 +139,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
 
 
 # %% Manual Iteration
-manual_iteration = False
+manual_iteration = True
 
 if not is_pc:
     manual_iteration = False
@@ -150,12 +150,13 @@ if manual_iteration:
 
     table = table_rows[i]
     table_name = table['TableName']
+    table_name = 'Appointment'
     schema_name = table['SourceSchema']
     source_system = table['SourceDatabase']
     print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
     column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo, source_system, schema_name, table_name)
-    base_sqlstr1 = base_sqlstr(source_system)
+    base_sqlstr1 = base_sqlstr(source_system, use='RAW')
     PARTITION = get_partition(source_system, schema_name, table_name)
 
 
@@ -168,13 +169,9 @@ def step1(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
     step = 1
     SCHEMA_NAME = source_system.upper()
     TABLE_NAME = f'{schema_name}_{table_name}'.upper()
-    column_list_string = '  ,'.join([f'{c} string\n' for c in column_names+elt_audit_columns])
+    #column_list_string = '  ,'.join([f'{c} string\n' for c in column_names+elt_audit_columns])
 
     sqlstr = f"""{base_sqlstr}
-CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}
-(
-   {column_list_string});
-
 CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
 (
   {variant_alias} VARIANT
@@ -236,7 +233,7 @@ def step3(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
 
     sqlstr = f"""{base_sqlstr}
 COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
-FROM @ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/
+FROM '@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
 FILE_FORMAT = (type='{file_format}')
 PATTERN = '{wild_card}'
 ON_ERROR = CONTINUE;
@@ -328,7 +325,7 @@ def step4(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
         )
 
     sqlstr = f"""{base_sqlstr}
-CREATE OR REPLACE {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}
+CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}
 AS
 SELECT
    {column_list_src}
@@ -364,7 +361,7 @@ def step5(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
         )
 
     sqlstr = f"""{base_sqlstr}
-CREATE OR REPLACE {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}{stream_suffix}
+CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}{stream_suffix}
 AS
 SELECT
    {column_list_src}
@@ -394,16 +391,18 @@ def step6(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
     step = 6
     SCHEMA_NAME = source_system.upper()
     TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
 
     column_list = '\n  ,'.join(column_names+elt_audit_columns)
     column_list_with_alias = '\n  ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
-    hash_columns = "MD5(CONCAT(\n       " + "\n      ,".join([f"COALESCE({c},'N/A')" for c in column_names]) + "\n      ))"
-    INTEGRATION_ID = "TRIM(CONCAT(" + ', '.join([f"COALESCE({c},'N/A')" for c in pk_column_names]) + "))"
+    hash_columns = "MD5(CONCAT(\n       " + "\n      ,".join([f"COALESCE({c},'N/A')" for c in column_names_ex_pk]) + "\n      ))"
+    INTEGRATION_ID = "TRIM(CONCAT(" + ', '.join([f"COALESCE({src_alias}.{c},'N/A')" for c in pk_column_names]) + "))"
+    pk_column_with_alias = ', '.join([f"COALESCE({src_alias}.{c},'N/A')" for c in pk_column_names])
 
     sqlstr = f"""{base_sqlstr}
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}
 AS
-SELECT  
+SELECT
    {integration_id}
   ,{column_list}
   ,{hash_column_name}
@@ -413,10 +412,8 @@ FROM
 SELECT {INTEGRATION_ID} as {integration_id}
   ,{column_list_with_alias}
   ,{hash_columns} AS {hash_column_name}
-  ,ROW_NUMBER() OVER (PARTITION BY {src_alias}.{integration_id} ORDER BY {src_alias}.{integration_id}, {src_alias}.{execution_date_str} DESC) AS top_slice
-FROM {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}{stream_suffix} {stream_alias}
-INNER JOIN {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label} {src_alias}
-    ON {src_alias}.{integration_id} = {stream_alias}.{integration_id}
+  ,ROW_NUMBER() OVER (PARTITION BY {pk_column_with_alias} ORDER BY {pk_column_with_alias}, {src_alias}.{execution_date_str} DESC) AS top_slice
+FROM {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}{stream_suffix} {src_alias}
 )
 WHERE top_slice = 1;
 """
@@ -453,9 +450,10 @@ def step7(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
     sqlstr = f"""{base_sqlstr}
 CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
 (
-   {integration_id} VARCHAR(1000)
+   {integration_id} VARCHAR(1000) NOT NULL
   ,{column_list_types}
   ,{hash_column_name} VARCHAR(100)
+  ,CONSTRAINT PK_{SCHEMA_NAME}_{TABLE_NAME} PRIMARY KEY ({integration_id}) NOT ENFORCED
 );
 """
 
@@ -473,6 +471,7 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
 
 
 if manual_iteration:
+    base_sqlstr1 = base_sqlstr(source_system, use='PERSISTENT')
     step7(base_sqlstr1, source_system, schema_name, table_name, column_names, data_types_dict)
 
 
@@ -488,7 +487,7 @@ def step8(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, c
     column_list_with_alias = '\n    ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
 
     sqlstr = f"""{base_sqlstr}
-MERGE INTO {snowflake_transformed_database}.{SCHEMA_NAME}.{view_prefix} {tgt_alias}
+MERGE INTO {snowflake_transformed_database}.{SCHEMA_NAME}.{TABLE_NAME} {tgt_alias}
 USING (
     SELECT * 
     FROM {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}
@@ -497,7 +496,7 @@ ON (
 TRIM(COALESCE({src_alias}.{integration_id},'N/A')) = TRIM(COALESCE({tgt_alias}.{integration_id},'N/A'))
 )
 WHEN MATCHED
-AND TRIM({src_alias}.{hash_column_name}) != TRIM({tgt_alias}.{hash_column_name})
+AND TRIM(COALESCE({src_alias}.{hash_column_name},'N/A')) != TRIM(COALESCE({tgt_alias}.{hash_column_name},'N/A'))
 THEN
   UPDATE
   SET
@@ -553,13 +552,14 @@ def iterate_over_all_tables(tableinfo, table_rows):
 
         PARTITION = get_partition(source_system, schema_name, table_name)
         if PARTITION:
-            base_sqlstr1 = base_sqlstr(source_system)
+            base_sqlstr1 = base_sqlstr(source_system, use='RAW')
             step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
             step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
             step3(base_sqlstr1, source_system, schema_name, table_name, column_names, PARTITION)
             step4(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
             step5(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
             step6(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
+            base_sqlstr1 = base_sqlstr(source_system, use='PERSISTENT')
             step7(base_sqlstr1, source_system, schema_name, table_name, column_names, data_types_dict)
             step8(base_sqlstr1, source_system, schema_name, table_name, column_names)
 
