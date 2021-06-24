@@ -40,13 +40,13 @@ def create_spark():
         SparkSession
         .builder
         .appName(app_name)
-        .config('spark.driver.extraClassPath', extraClassPath)
-        .config('spark.executor.extraClassPath', extraClassPath)
-        .config('spark.executor.heartbeatInterval', '3600s')
-        .config('spark.network.timeout',  '3601s')
-        .getOrCreate()
+        .config('fs.wasbs.impl', 'org.apache.hadoop.fs.azure.NativeAzureFileSystem')
         )
 
+    if is_pc:
+        spark = spark.config('spark.driver.extraClassPath', extraClassPath)
+
+    spark = spark.getOrCreate()
     spark.getActiveSession()
 
     print(f"\nSpark version = {spark.version}")

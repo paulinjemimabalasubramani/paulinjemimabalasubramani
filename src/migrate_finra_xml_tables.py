@@ -25,7 +25,7 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2
-from modules.data_functions import  add_etl_columns
+from modules.data_functions import  add_elt_columns
 
 
 # %% Spark Libraries
@@ -195,7 +195,7 @@ def write_df_list_to_azure(df_list, df_file_name, reception_date):
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{df_file_name}"
 
-        dfx = add_etl_columns(df=dfx, execution_date=execution_date, reception_date=reception_date)
+        dfx = add_elt_columns(df=dfx, execution_date=execution_date, reception_date=reception_date)
 
         save_adls_gen2(
             df=dfx,
@@ -214,7 +214,7 @@ def write_df_list_to_azure(df_list, df_file_name, reception_date):
         meta_columns = ["column_name", "data_type"]
         meta_data = dfx.dtypes
         meta_df = spark.createDataFrame(data=meta_data, schema=meta_columns)
-        meta_df = add_etl_columns(df=meta_df, execution_date=execution_date, reception_date=reception_date)
+        meta_df = add_elt_columns(df=meta_df, execution_date=execution_date, reception_date=reception_date)
         
         save_adls_gen2(
             df=meta_df,
@@ -225,6 +225,9 @@ def write_df_list_to_azure(df_list, df_file_name, reception_date):
             partitionBy = partitionBy,
             format = format
         )
+
+        dfx.unpersist()
+        meta_df.unpersist()
 
     print('Done writing to Azure')
 
@@ -265,6 +268,8 @@ def process_finra(root, file):
         df_file_name = name_data['name'],
         reception_date = name_data['date']
         )
+
+    df.unpersist()
 
 
 

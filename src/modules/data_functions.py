@@ -49,6 +49,10 @@ def to_string(df, col_types=['timestamp']):
 
 # %% Add ETL Temporary Columns
 
+elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE']
+partitionBy = 'PARTITION_DATE'
+
+
 @catch_error(logger)
 def add_elt_columns(df, reception_date:str=None, execution_date:str=None, source:str=None):
     """
@@ -58,18 +62,15 @@ def add_elt_columns(df, reception_date:str=None, execution_date:str=None, source
         df = df.withColumn('RECEPTION_DATE', lit(str(reception_date)))
     
     if execution_date:
+        partition_date = execution_date.replace(' ', '_').replace(':', '-')
         df = df.withColumn('EXECUTION_DATE', lit(str(execution_date)))
-        df = df.withColumn('PARTITION_DATE', lit(str(execution_date)))
+        df = df.withColumn(partitionBy, lit(str(partition_date)))
     
     if source:
         df = df.withColumn('SOURCE', lit(str(source)))
 
     return df
 
-
-
-elt_auto_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE']
-partitionBy = 'PARTITION_DATE'
 
 
 # %%

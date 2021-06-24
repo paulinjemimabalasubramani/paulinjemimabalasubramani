@@ -91,7 +91,7 @@ def iterate_over_all_tables(table_rows):
 
         df = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema=schema, table=table, database=database, server=server)
         df = to_string(df, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
-        df = remove_column_spaces(df) # May create "name not matching" problems as we are saving column metadata as well.
+        df = remove_column_spaces(df)
         df = add_elt_columns(df=df, reception_date=reception_date, execution_date=execution_date, source=source)
 
         save_adls_gen2(
