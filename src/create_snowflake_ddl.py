@@ -48,7 +48,7 @@ stream_suffix = '_STREAM'
 # Steps 4-6 parameters:
 environment = 'QA'
 snowflake_raw_database = f'{environment}_RAW_FP'
-snowflake_transformed_database = f'{environment}_PERSISTENT_FP'
+snowflake_transformed_database = f'{environment}_FP'
 
 src_alias = 'src' # Driver Table I.E. Non-Stream
 tgt_alias = 'tgt'
@@ -101,13 +101,17 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
 # %% base sqlstr
 
 @catch_error(logger)
-def base_sqlstr(source_system, use:str):
+def base_sqlstr(schema_name, table_name, source_system, layer:str):
+    LAYER = f'_{layer}' if layer else ''
+    SCHEMA_NAME = f'{source_system}{LAYER}'.upper()
+    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+
     sqlstr = f"""USE ROLE AD_SNOWFLAKE_QA_DBA;
-USE WAREHOUSE QA_{use}_WH;
-USE DATABASE QA_{use}_FP;
-USE SCHEMA {source_system};
+USE WAREHOUSE QA_RAW_WH;
+USE DATABASE QA_RAW_FP;
+USE SCHEMA {source_system}{LAYER};
 """
-    return sqlstr
+    return SCHEMA_NAME, TABLE_NAME, sqlstr
 
 
 # %% Get partition string for a Table
@@ -138,7 +142,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
 
 
 # %% Manual Iteration
-manual_iteration = False
+manual_iteration = True
 
 if not is_pc:
     manual_iteration = False
@@ -155,7 +159,7 @@ if manual_iteration:
     print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
     column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo, source_system, schema_name, table_name)
-    base_sqlstr1 = base_sqlstr(source_system, use='RAW')
+    layer = 'RAW'
     PARTITION = get_partition(source_system, schema_name, table_name)
 
 
@@ -164,13 +168,11 @@ if manual_iteration:
 # %% Create Step 1
 
 @catch_error(logger)
-def step1(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
+def step1(layer:str, source_system:str, schema_name:str, table_name:str, column_names:list):
     step = 1
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
-    #column_list_string = '  ,'.join([f'{c} string\n' for c in column_names+elt_audit_columns])
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
 (
   {variant_alias} VARIANT
@@ -190,18 +192,17 @@ CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
     )
 
 if manual_iteration:
-    step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
+    step1(layer, source_system, schema_name, table_name, column_names)
 
 
 # %% Create Step 2
 
 @catch_error(logger)
-def step2(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
+def step2(layer:str, source_system:str, schema_name:str, table_name:str, column_names:list):
     step = 2
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE STREAM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix}
 ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
 """
@@ -219,18 +220,17 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
     )
 
 if manual_iteration:
-    step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
+    step2(layer, source_system, schema_name, table_name, column_names)
 
 
 # %% Create Step 3
 
 @catch_error(logger)
-def step3(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
+def step3(layer:str, source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
     step = 3
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
 FROM '@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
 FILE_FORMAT = (type='{file_format}')
@@ -238,7 +238,7 @@ PATTERN = '{wild_card}'
 ON_ERROR = CONTINUE;
 
 SET SOURCE_SYSTEM = '{SCHEMA_NAME}';
-SET TARGET_TABLE = '{TABLE_NAME}{variant_label}';
+SET TARGET_TABLE = '{SCHEMA_NAME}.{TABLE_NAME}{variant_label}';
 SET EXCEPTION_DATE_TIME = CURRENT_TIMESTAMP();
 SET EXECEPTION_CREATED_BY_USER = CURRENT_USER();
 SET EXECEPTION_CREATED_BY_ROLE = CURRENT_ROLE();
@@ -307,23 +307,23 @@ FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{variant_label}, job_id => '_last'
     )
 
 if manual_iteration:
-    step3(base_sqlstr1, source_system, schema_name, table_name, column_names, PARTITION)
+    step3(layer, source_system, schema_name, table_name, column_names, PARTITION)
 
 
 
 # %% Create Step 4
 
 @catch_error(logger)
-def step4(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
+def step4(layer:str, source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
     step = 4
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
     column_list_src = '\n  ,'.join(
         [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}
 AS
 SELECT
@@ -344,22 +344,22 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
     )
 
 if manual_iteration:
-    step4(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
+    step4(layer, source_system, schema_name, table_name, column_names, src_column_dict)
 
 
 # %% Create Step 5
 
 @catch_error(logger)
-def step5(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
+def step5(layer:str, source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
     step = 5
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
     column_list_src = '\n  ,'.join(
         [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}{stream_suffix}
 AS
 SELECT
@@ -380,25 +380,24 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix};
     )
 
 if manual_iteration:
-    step5(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
+    step5(layer, source_system, schema_name, table_name, column_names, src_column_dict)
 
 
 # %% Create Step 6
 
 @catch_error(logger)
-def step6(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
+def step6(layer:str, source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
     step = 6
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
-    column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
+    column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
     column_list = '\n  ,'.join(column_names+elt_audit_columns)
     column_list_with_alias = '\n  ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
     hash_columns = "MD5(CONCAT(\n       " + "\n      ,".join([f"COALESCE({c},'N/A')" for c in column_names_ex_pk]) + "\n      ))"
     INTEGRATION_ID = "TRIM(CONCAT(" + ', '.join([f"COALESCE({src_alias}.{c},'N/A')" for c in pk_column_names]) + "))"
     pk_column_with_alias = ', '.join([f"COALESCE({src_alias}.{c},'N/A')" for c in pk_column_names])
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}
 AS
 SELECT
@@ -407,8 +406,8 @@ SELECT
   ,{hash_column_name}
 FROM
 (
-
-SELECT {INTEGRATION_ID} as {integration_id}
+SELECT
+   {INTEGRATION_ID} as {integration_id}
   ,{column_list_with_alias}
   ,{hash_columns} AS {hash_column_name}
   ,ROW_NUMBER() OVER (PARTITION BY {pk_column_with_alias} ORDER BY {pk_column_with_alias}, {src_alias}.{execution_date_str} DESC) AS top_slice
@@ -431,22 +430,22 @@ WHERE top_slice = 1;
 
 
 if manual_iteration:
-    step6(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
+    step6(layer, source_system, schema_name, table_name, column_names, pk_column_names)
 
 
 # %% Create Step 7
 
 @catch_error(logger)
-def step7(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
+def step7(layer:str, source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
     step = 7
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
     column_list_types = '\n  ,'.join(
         [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in data_types_dict.items()] +
         [f'{c} VARCHAR(50)' for c in elt_audit_columns]
         )
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
 (
    {integration_id} VARCHAR(1000) NOT NULL
@@ -470,22 +469,22 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
 
 
 if manual_iteration:
-    base_sqlstr1 = base_sqlstr(source_system, use='PERSISTENT')
-    step7(base_sqlstr1, source_system, schema_name, table_name, column_names, data_types_dict)
+    layer = ''
+    step7(layer, source_system, schema_name, table_name, column_names, data_types_dict)
 
 
 # %% Create Step 8
 
 @catch_error(logger)
-def step8(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
+def step8(layer:str, source_system:str, schema_name:str, table_name:str, column_names:list):
     step = 8
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
     column_list = '\n    ,'.join(column_names+elt_audit_columns)
     merge_update_columns = '\n    ,'.join([f'{tgt_alias}.{c} = {src_alias}.{c}' for c in column_names+elt_audit_columns])
     column_list_with_alias = '\n    ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE PROCEDURE {snowflake_transformed_database}.{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE()
 RETURNS STRING
 LANGUAGE JAVASCRIPT
@@ -551,7 +550,7 @@ $$
 
 
 if manual_iteration:
-    step8(base_sqlstr1, source_system, schema_name, table_name, column_names)
+    step8(layer, source_system, schema_name, table_name, column_names)
 
 
 # %% Iterate Over Steps for all tables
@@ -570,16 +569,16 @@ def iterate_over_all_tables(tableinfo, table_rows):
 
         PARTITION = get_partition(source_system, schema_name, table_name)
         if PARTITION:
-            base_sqlstr1 = base_sqlstr(source_system, use='RAW')
-            step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
-            step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
-            step3(base_sqlstr1, source_system, schema_name, table_name, column_names, PARTITION)
-            step4(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
-            step5(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
-            step6(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
-            base_sqlstr1 = base_sqlstr(source_system, use='PERSISTENT')
-            step7(base_sqlstr1, source_system, schema_name, table_name, column_names, data_types_dict)
-            step8(base_sqlstr1, source_system, schema_name, table_name, column_names)
+            layer = 'RAW'
+            step1(layer, source_system, schema_name, table_name, column_names)
+            step2(layer, source_system, schema_name, table_name, column_names)
+            step3(layer, source_system, schema_name, table_name, column_names, PARTITION)
+            step4(layer, source_system, schema_name, table_name, column_names, src_column_dict)
+            step5(layer, source_system, schema_name, table_name, column_names, src_column_dict)
+            step6(layer, source_system, schema_name, table_name, column_names, pk_column_names)
+            layer = ''
+            step7(layer, source_system, schema_name, table_name, column_names, data_types_dict)
+            step8(layer, source_system, schema_name, table_name, column_names)
 
     print('Finished Iterating over all tables')
 

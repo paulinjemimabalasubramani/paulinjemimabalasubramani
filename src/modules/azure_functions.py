@@ -41,10 +41,10 @@ def get_azure_key_vault():
 
 
 
-# %% Get Azure Storage Key Valut
+# %% Get Azure Service Principals
 
 @catch_error(logger)
-def get_azure_storage_key_vault(storage_account_name:str):
+def get_azure_sp(storage_account_name:str):
     azure_tenant_id, client = get_azure_key_vault()
 
     sp_id = client.get_secret(f"qa-{storage_account_name}-id").value
@@ -57,7 +57,7 @@ def get_azure_storage_key_vault(storage_account_name:str):
 
 @catch_error(logger)
 def setup_spark_adls_gen2_connection(spark, storage_account_name):
-    azure_tenant_id, sp_id, sp_pass = get_azure_storage_key_vault(storage_account_name)
+    azure_tenant_id, sp_id, sp_pass = get_azure_sp(storage_account_name)
 
     #spark.conf.set(f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net", storage_account_access_key)
 

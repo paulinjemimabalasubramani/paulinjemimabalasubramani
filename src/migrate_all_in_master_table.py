@@ -50,7 +50,7 @@ domain_name = 'financial_professional'
 format = 'delta'
 
 reception_date = execution_date
-source = 'SQL_Server'
+source = 'LR'
 
 
 # %% Create Session
