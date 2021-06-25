@@ -440,7 +440,7 @@ if manual_iteration:
 @catch_error(logger)
 def step7(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
     step = 7
-    layer = 'RAW'
+    layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
     column_list_types = '\n  ,'.join(
@@ -564,11 +564,11 @@ def step9(source_system:str, schema_name:str, table_name:str, column_names:list)
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
     
-    envionment = 'DEV'
-    warehouse = f'{envionment.upper()}_RAW_FP'
+    envionment = 'QA'
+    warehouse = f'{envionment.upper()}_RAW_WH'
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
     task_suffix = '_MERGE_TASK'
-    task_name = f'{table_name}{task_suffix}'
+    task_name = f'{TABLE_NAME}{task_suffix}'.upper()
     stream_name = f'{SCHEMA_NAME}_RAW.{TABLE_NAME}{variant_label}{stream_suffix}'
     snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'
 
