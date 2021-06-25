@@ -136,7 +136,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
 
 
 # %% Manual Iteration
-manual_iteration = True
+manual_iteration = False
 
 if not is_pc:
     manual_iteration = False
