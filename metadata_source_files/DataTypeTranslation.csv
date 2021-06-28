@@ -23,4 +23,4 @@ sqlserver_snowflake,nvarchar,string,sqlserver,snowflake
 sqlserver_snowflake,ntext,string,sqlserver,snowflake
 sqlserver_snowflake,binary,binary,sqlserver,snowflake
 sqlserver_snowflake,varbinary,varbinary,sqlserver,snowflake
-sqlserver_snowflake,xml,string,sqlserver,snowflake
+sqlserver_snowflake,xml,variant,sqlserver,snowflake
