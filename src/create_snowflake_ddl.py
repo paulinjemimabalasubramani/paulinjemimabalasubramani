@@ -37,7 +37,6 @@ format = 'delta'
 
 ddl_folder = f'metadata/{domain_name}/DDL'
 
-# Steps 1-3 parameters:
 variant_label = '_VARIANT'
 variant_alias = 'SRC'
 
@@ -45,16 +44,11 @@ file_format = 'PARQUET'
 wild_card = '.*.parquet'
 stream_suffix = '_STREAM'
 
-# Steps 4-6 parameters:
-environment = 'QA'
-snowflake_raw_database = f'{environment}_RAW_FP'
-snowflake_transformed_database = f'{environment}_PERSISTENT_FP'
-
-src_alias = 'src' # Driver Table I.E. Non-Stream
+src_alias = 'src'
 tgt_alias = 'tgt'
 hash_column_name = 'MD5_HASH'
 integration_id = 'INTEGRATION_ID'
-stream_alias = 'src_strm' # Stream object
+stream_alias = 'src_strm'
 view_prefix = 'VW_'
 execution_date_str = 'EXECUTION_DATE'
 
@@ -101,13 +95,17 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
 # %% base sqlstr
 
 @catch_error(logger)
-def base_sqlstr(source_system, use:str):
+def base_sqlstr(schema_name, table_name, source_system, layer:str):
+    LAYER = f'_{layer}' if layer else ''
+    SCHEMA_NAME = f'{source_system}{LAYER}'.upper()
+    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+
     sqlstr = f"""USE ROLE AD_SNOWFLAKE_QA_DBA;
-USE WAREHOUSE QA_{use}_WH;
-USE DATABASE QA_{use}_FP;
-USE SCHEMA {source_system};
+USE WAREHOUSE QA_RAW_WH;
+USE DATABASE QA_RAW_FP;
+USE SCHEMA {source_system}{LAYER};
 """
-    return sqlstr
+    return SCHEMA_NAME, TABLE_NAME, sqlstr
 
 
 # %% Get partition string for a Table
@@ -117,7 +115,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
 
-    df = read_adls_gen2(
+    table_for_paritition = read_adls_gen2(
         spark = spark,
         storage_account_name = storage_account_name,
         container_name = container_name,
@@ -126,7 +124,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
         format = format
     )
 
-    PARTITION_LIST = df.select(F.max(col(partitionBy)).alias('part')).collect()
+    PARTITION_LIST = table_for_paritition.select(F.max(col(partitionBy)).alias('part')).collect()
     PARTITION = PARTITION_LIST[0]['part']
     if PARTITION:
         return PARTITION.replace(':', '%3A') #.replace(' ', '%20')
@@ -155,7 +153,6 @@ if manual_iteration:
     print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
     column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo, source_system, schema_name, table_name)
-    base_sqlstr1 = base_sqlstr(source_system, use='RAW')
     PARTITION = get_partition(source_system, schema_name, table_name)
 
 
@@ -164,13 +161,12 @@ if manual_iteration:
 # %% Create Step 1
 
 @catch_error(logger)
-def step1(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
+def step1(source_system:str, schema_name:str, table_name:str, column_names:list):
     step = 1
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
-    #column_list_string = '  ,'.join([f'{c} string\n' for c in column_names+elt_audit_columns])
+    layer = 'RAW'
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
 (
   {variant_alias} VARIANT
@@ -181,7 +177,7 @@ CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
         print(sqlstr)
     
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -190,18 +186,18 @@ CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
     )
 
 if manual_iteration:
-    step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
+    step1(source_system, schema_name, table_name, column_names)
 
 
 # %% Create Step 2
 
 @catch_error(logger)
-def step2(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
+def step2(source_system:str, schema_name:str, table_name:str, column_names:list):
     step = 2
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    layer = 'RAW'
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE STREAM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix}
 ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
 """
@@ -210,7 +206,7 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -219,18 +215,18 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
     )
 
 if manual_iteration:
-    step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
+    step2(source_system, schema_name, table_name, column_names)
 
 
 # %% Create Step 3
 
 @catch_error(logger)
-def step3(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
+def step3(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
     step = 3
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    layer = 'RAW'
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
 FROM '@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
 FILE_FORMAT = (type='{file_format}')
@@ -238,7 +234,7 @@ PATTERN = '{wild_card}'
 ON_ERROR = CONTINUE;
 
 SET SOURCE_SYSTEM = '{SCHEMA_NAME}';
-SET TARGET_TABLE = '{TABLE_NAME}{variant_label}';
+SET TARGET_TABLE = '{SCHEMA_NAME}.{TABLE_NAME}{variant_label}';
 SET EXCEPTION_DATE_TIME = CURRENT_TIMESTAMP();
 SET EXECEPTION_CREATED_BY_USER = CURRENT_USER();
 SET EXECEPTION_CREATED_BY_ROLE = CURRENT_ROLE();
@@ -298,7 +294,7 @@ FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{variant_label}, job_id => '_last'
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -307,23 +303,24 @@ FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{variant_label}, job_id => '_last'
     )
 
 if manual_iteration:
-    step3(base_sqlstr1, source_system, schema_name, table_name, column_names, PARTITION)
+    step3(source_system, schema_name, table_name, column_names, PARTITION)
 
 
 
 # %% Create Step 4
 
 @catch_error(logger)
-def step4(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
+def step4(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
     step = 4
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    layer = 'RAW'
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
     column_list_src = '\n  ,'.join(
         [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}
 AS
 SELECT
@@ -335,7 +332,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -344,22 +341,23 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
     )
 
 if manual_iteration:
-    step4(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
+    step4(source_system, schema_name, table_name, column_names, src_column_dict)
 
 
 # %% Create Step 5
 
 @catch_error(logger)
-def step5(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
+def step5(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
     step = 5
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    layer = 'RAW'
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
     column_list_src = '\n  ,'.join(
         [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}{stream_suffix}
 AS
 SELECT
@@ -371,7 +369,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix};
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -380,25 +378,28 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix};
     )
 
 if manual_iteration:
-    step5(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
+    step5(source_system, schema_name, table_name, column_names, src_column_dict)
 
 
 # %% Create Step 6
 
 @catch_error(logger)
-def step6(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
+def step6(source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
     step = 6
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
-    column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
+    layer = 'RAW'
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
+    environment = 'QA'
+    snowflake_raw_database = f'{environment}_RAW_FP'
+
+    column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
     column_list = '\n  ,'.join(column_names+elt_audit_columns)
     column_list_with_alias = '\n  ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
     hash_columns = "MD5(CONCAT(\n       " + "\n      ,".join([f"COALESCE({c},'N/A')" for c in column_names_ex_pk]) + "\n      ))"
     INTEGRATION_ID = "TRIM(CONCAT(" + ', '.join([f"COALESCE({src_alias}.{c},'N/A')" for c in pk_column_names]) + "))"
     pk_column_with_alias = ', '.join([f"COALESCE({src_alias}.{c},'N/A')" for c in pk_column_names])
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}
 AS
 SELECT
@@ -407,8 +408,8 @@ SELECT
   ,{hash_column_name}
 FROM
 (
-
-SELECT {INTEGRATION_ID} as {integration_id}
+SELECT
+   {INTEGRATION_ID} as {integration_id}
   ,{column_list_with_alias}
   ,{hash_columns} AS {hash_column_name}
   ,ROW_NUMBER() OVER (PARTITION BY {pk_column_with_alias} ORDER BY {pk_column_with_alias}, {src_alias}.{execution_date_str} DESC) AS top_slice
@@ -421,7 +422,7 @@ WHERE top_slice = 1;
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -431,22 +432,23 @@ WHERE top_slice = 1;
 
 
 if manual_iteration:
-    step6(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
+    step6(source_system, schema_name, table_name, column_names, pk_column_names)
 
 
 # %% Create Step 7
 
 @catch_error(logger)
-def step7(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
+def step7(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
     step = 7
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    layer = ''
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
     column_list_types = '\n  ,'.join(
         [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in data_types_dict.items()] +
         [f'{c} VARCHAR(50)' for c in elt_audit_columns]
         )
 
-    sqlstr = f"""{base_sqlstr}
+    sqlstr += f"""
 CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
 (
    {integration_id} VARCHAR(1000) NOT NULL
@@ -460,7 +462,7 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -470,23 +472,23 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
 
 
 if manual_iteration:
-    base_sqlstr1 = base_sqlstr(source_system, use='PERSISTENT')
-    step7(base_sqlstr1, source_system, schema_name, table_name, column_names, data_types_dict)
+    step7(source_system, schema_name, table_name, column_names, data_types_dict)
 
 
 # %% Create Step 8
 
 @catch_error(logger)
-def step8(base_sqlstr:str, source_system:str, schema_name:str, table_name:str, column_names:list):
+def step8(source_system:str, schema_name:str, table_name:str, column_names:list):
     step = 8
-    SCHEMA_NAME = source_system.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    layer = ''
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
     column_list = '\n    ,'.join(column_names+elt_audit_columns)
     merge_update_columns = '\n    ,'.join([f'{tgt_alias}.{c} = {src_alias}.{c}' for c in column_names+elt_audit_columns])
     column_list_with_alias = '\n    ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
 
-    sqlstr = f"""{base_sqlstr}
-CREATE OR REPLACE PROCEDURE {snowflake_transformed_database}.{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE()
+    sqlstr += f"""
+CREATE OR REPLACE PROCEDURE {SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE()
 RETURNS STRING
 LANGUAGE JAVASCRIPT
 EXECUTE AS CALLER
@@ -494,10 +496,10 @@ AS
 $$
 var sql_command = 
 `
-MERGE INTO {snowflake_transformed_database}.{SCHEMA_NAME}.{TABLE_NAME} {tgt_alias}
+MERGE INTO {SCHEMA_NAME}.{TABLE_NAME} {tgt_alias}
 USING (
     SELECT * 
-    FROM {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}
+    FROM {SCHEMA_NAME}_RAW.{view_prefix}{TABLE_NAME}
 ) {src_alias}
 ON (
 TRIM(COALESCE({src_alias}.{integration_id},'N/A')) = TRIM(COALESCE({tgt_alias}.{integration_id},'N/A'))
@@ -541,7 +543,7 @@ $$
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -551,7 +553,63 @@ $$
 
 
 if manual_iteration:
-    step8(base_sqlstr1, source_system, schema_name, table_name, column_names)
+    step8(source_system, schema_name, table_name, column_names)
+
+
+# %% Create Step 9
+
+@catch_error(logger)
+def step9(source_system:str, schema_name:str, table_name:str, column_names:list):
+    step = 9
+    layer = ''
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+    
+    envionment = 'QA'
+    warehouse = f'{envionment.upper()}_RAW_WH'
+    stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
+    task_suffix = '_MERGE_TASK'
+    task_name = f'{TABLE_NAME}{task_suffix}'.upper()
+    stream_name = f'{SCHEMA_NAME}_RAW.{TABLE_NAME}{variant_label}{stream_suffix}'
+    snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'
+
+    sqlstr = f"""
+USE ROLE AD_SNOWFLAKE_QA_DBA;
+USE WAREHOUSE {warehouse};
+USE DATABASE QA_RAW_FP;
+USE SCHEMA {SCHEMA_NAME};
+
+CREATE OR REPLACE TASK {task_name}
+WAREHOUSE = {warehouse}
+SCHEDULE = '1 minute'
+WHEN
+SYSTEM$STREAM_HAS_DATA('{stream_name}')
+AS
+    CALL {stored_procedure}();
+
+USE ROLE ACCOUNTADMIN;
+GRANT EXECUTE TASK ON ACCOUNT TO ROLE SYSADMIN;
+GRANT EXECUTE TASK ON ACCOUNT TO ROLE {snowflake_role};
+
+USE ROLE {snowflake_role};
+ALTER TASK {task_name} RESUME;
+"""
+
+    if manual_iteration:
+        print(sqlstr)
+
+    save_adls_gen2(
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
+        table = table_name,
+        format = 'text'
+    )
+
+
+if manual_iteration:
+    step9(source_system, schema_name, table_name, column_names)
+
 
 
 # %% Iterate Over Steps for all tables
@@ -561,6 +619,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
     n_tables = len(table_rows)
 
     for i, table in enumerate(table_rows):
+        #if i>0 and is_pc: break
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
@@ -570,16 +629,15 @@ def iterate_over_all_tables(tableinfo, table_rows):
 
         PARTITION = get_partition(source_system, schema_name, table_name)
         if PARTITION:
-            base_sqlstr1 = base_sqlstr(source_system, use='RAW')
-            step1(base_sqlstr1, source_system, schema_name, table_name, column_names)
-            step2(base_sqlstr1, source_system, schema_name, table_name, column_names)
-            step3(base_sqlstr1, source_system, schema_name, table_name, column_names, PARTITION)
-            step4(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
-            step5(base_sqlstr1, source_system, schema_name, table_name, column_names, src_column_dict)
-            step6(base_sqlstr1, source_system, schema_name, table_name, column_names, pk_column_names)
-            base_sqlstr1 = base_sqlstr(source_system, use='PERSISTENT')
-            step7(base_sqlstr1, source_system, schema_name, table_name, column_names, data_types_dict)
-            step8(base_sqlstr1, source_system, schema_name, table_name, column_names)
+            step1(source_system, schema_name, table_name, column_names)
+            step2(source_system, schema_name, table_name, column_names)
+            step3(source_system, schema_name, table_name, column_names, PARTITION)
+            step4(source_system, schema_name, table_name, column_names, src_column_dict)
+            step5(source_system, schema_name, table_name, column_names, src_column_dict)
+            step6(source_system, schema_name, table_name, column_names, pk_column_names)
+            step7(source_system, schema_name, table_name, column_names, data_types_dict)
+            step8(source_system, schema_name, table_name, column_names)
+            step9(source_system, schema_name, table_name, column_names)
 
     print('Finished Iterating over all tables')
 

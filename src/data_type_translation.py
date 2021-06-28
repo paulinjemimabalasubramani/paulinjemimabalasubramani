@@ -88,7 +88,7 @@ def get_translation(data_type_translation_path, data_type_translation_id:str, sa
 
     if save_to_adls: # Save DataTypeTranslation to ADLS Gen 2 - before filtering
         save_adls_gen2(
-                df=translation,
+                table_to_save=translation,
                 storage_account_name = storage_account_name,
                 container_name = container_name,
                 container_folder = '',
@@ -336,7 +336,7 @@ def save_table_info_to_adls_gen2(columns):
     container_folder = ''
 
     save_adls_gen2(
-            df=columns,
+            table_to_save=columns,
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = '',

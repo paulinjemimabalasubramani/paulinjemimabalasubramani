@@ -121,25 +121,25 @@ def extract_data_from_finra_file_name(file_name):
 
 @catch_error(logger)
 def find_rowTags(file_path):
-    df = read_xml(spark, file_path, rowTag="?xml")
-    return [c for c in df.columns if c not in ['Criteria']]
+    xml_table = read_xml(spark, file_path, rowTag="?xml")
+    return [c for c in xml_table.columns if c not in ['Criteria']]
 
 
 # %% Flatten XML
 
 @catch_error(logger)
-def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
+def flatten_df(xml_table) -> pyspark.sql.dataframe.DataFrame:
     cols = []
     nested = False
 
     # to ensure not to have more than 1 explosion in a table
-    expolode_flag = len([c[0] for c in df.dtypes if c[1].startswith('array')]) <= 1
+    expolode_flag = len([c[0] for c in xml_table.dtypes if c[1].startswith('array')]) <= 1
 
-    for c in df.dtypes:
+    for c in xml_table.dtypes:
         if c[1].startswith('struct'):
             nested = True
-            if len(df.columns)>1:
-                struct_cols = df.select(c[0]+'.*').columns
+            if len(xml_table.columns)>1:
+                struct_cols = xml_table.select(c[0]+'.*').columns
                 cols.extend([col(c[0]+'.'+cc).alias(c[0]+('' if cc[0]=='_' else '_')+cc) for cc in struct_cols])
             else:
                 cols.append(c[0]+'.*')
@@ -149,56 +149,56 @@ def flatten_df(df) -> pyspark.sql.dataframe.DataFrame:
         else:
             cols.append(c[0])
 
-    dfx = df.select(cols)
+    xml_table_select = xml_table.select(cols)
     if nested:
-        if is_pc: print('\n' ,dfx.columns)
-        dfx = flatten_df(dfx)
+        if is_pc: print('\n' ,xml_table_select.columns)
+        xml_table_select = flatten_df(xml_table_select)
 
-    return dfx
+    return xml_table_select
 
 
 
 # %% flatten and divide
 
 @catch_error(logger)
-def flatten_n_divide_df(df, name:str='main'):
-    if not df.rdd.flatMap(lambda x: x).collect(): # check if df is empty
+def flatten_n_divide_df(xml_table, name:str='main'):
+    if not xml_table.rdd.flatMap(lambda x: x).collect(): # check if xml_table is empty
         return dict()
 
-    df = flatten_df(df)
+    xml_table = flatten_df(xml_table)
 
-    string_cols = [c[0] for c in df.dtypes if c[1]=='string']
-    array_cols = [c[0] for c in df.dtypes if c[1].startswith('array')]
+    string_cols = [c[0] for c in xml_table.dtypes if c[1]=='string']
+    array_cols = [c[0] for c in xml_table.dtypes if c[1].startswith('array')]
 
     if len(array_cols)==0:
-        return {name:df}
+        return {name:xml_table}
 
     df_list = dict()
     for array_col in array_cols:
         colx = string_cols + [array_col]
-        dfx = df.select(*colx)
-        df_list={**df_list, **flatten_n_divide_df(dfx, name=name+'_'+array_col)}
+        xml_table_select = xml_table.select(*colx)
+        df_list={**df_list, **flatten_n_divide_df(xml_table_select, name=name+'_'+array_col)}
 
     return df_list
 
 
 
-# %% Write df list to Azure
+# %% Write xml table list to Azure
 
 @catch_error(logger)
-def write_df_list_to_azure(df_list, df_file_name, reception_date):
+def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date):
 
-    for df_name, dfx in df_list.items():
+    for df_name, xml_table_select in xml_table_list.items():
         print(f'\n Writing {df_name} to Azure...')
-        if is_pc: dfx.printSchema()
+        if is_pc: xml_table_select.printSchema()
 
         data_type = 'data'
-        container_folder = f"{data_type}/{domain_name}/{database}/{df_file_name}"
+        container_folder = f"{data_type}/{domain_name}/{database}/{file_name}"
 
-        dfx = add_elt_columns(df=dfx, execution_date=execution_date, reception_date=reception_date)
+        xml_table_select = add_elt_columns(table_to_add=xml_table_select, execution_date=execution_date, reception_date=reception_date)
 
         save_adls_gen2(
-            df=dfx,
+            table_to_save=xml_table_select,
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = container_folder,
@@ -209,15 +209,15 @@ def write_df_list_to_azure(df_list, df_file_name, reception_date):
 
         # Metadata
         data_type = 'metadata'
-        container_folder = f"{data_type}/{domain_name}/{database}/{df_file_name}"
+        container_folder = f"{data_type}/{domain_name}/{database}/{file_name}"
 
         meta_columns = ["column_name", "data_type"]
-        meta_data = dfx.dtypes
-        meta_df = spark.createDataFrame(data=meta_data, schema=meta_columns)
-        meta_df = add_elt_columns(df=meta_df, execution_date=execution_date, reception_date=reception_date)
+        meta_data = xml_table_select.dtypes
+        meta_xml_table = spark.createDataFrame(data=meta_data, schema=meta_columns)
+        meta_xml_table = add_elt_columns(table_to_add=meta_xml_table, execution_date=execution_date, reception_date=reception_date)
         
         save_adls_gen2(
-            df=meta_df,
+            table_to_save=meta_xml_table,
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = container_folder,
@@ -226,8 +226,8 @@ def write_df_list_to_azure(df_list, df_file_name, reception_date):
             format = format
         )
 
-        dfx.unpersist()
-        meta_df.unpersist()
+        xml_table_select.unpersist()
+        meta_xml_table.unpersist()
 
     print('Done writing to Azure')
 
@@ -253,23 +253,23 @@ def process_finra(root, file):
         with open(schema_path, 'r') as f:
             base = json.load(f)
         schema = base_to_schema(base)
-        df = read_xml(spark, file_path, rowTag=rowTag, schema=schema)
+        xml_table = read_xml(spark, file_path, rowTag=rowTag, schema=schema)
     else:
         print(f"No manual schema defined for {name_data['name']}. Using default schema.")
-        df = read_xml(spark, file_path, rowTag=rowTag)
+        xml_table = read_xml(spark, file_path, rowTag=rowTag)
 
-    df_list = flatten_n_divide_df(df, name=name_data['name'])
-    if not df_list:
+    xml_table_list = flatten_n_divide_df(xml_table, name=name_data['name'])
+    if not xml_table_list:
         print(f"No data to write -> {name_data['name']}")
         return
 
-    write_df_list_to_azure(
-        df_list = df_list,
-        df_file_name = name_data['name'],
+    write_xml_table_list_to_azure(
+        xml_table_list= xml_table_list,
+        file_name = name_data['name'],
         reception_date = name_data['date']
         )
 
-    df.unpersist()
+    xml_table.unpersist()
 
 
 

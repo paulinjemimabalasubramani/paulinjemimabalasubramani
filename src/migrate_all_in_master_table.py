@@ -50,7 +50,7 @@ domain_name = 'financial_professional'
 format = 'delta'
 
 reception_date = execution_date
-source = 'SQL_Server'
+source = 'LR'
 
 
 # %% Create Session
@@ -89,13 +89,13 @@ def iterate_over_all_tables(table_rows):
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
 
-        df = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema=schema, table=table, database=database, server=server)
-        df = to_string(df, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
-        df = remove_column_spaces(df)
-        df = add_elt_columns(df=df, reception_date=reception_date, execution_date=execution_date, source=source)
+        sql_table = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema=schema, table=table, database=database, server=server)
+        sql_table = to_string(sql_table, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
+        sql_table = remove_column_spaces(sql_table)
+        sql_table = add_elt_columns(table_to_add=sql_table, reception_date=reception_date, execution_date=execution_date, source=source)
 
         save_adls_gen2(
-            df=df,
+            table_to_save=sql_table,
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = container_folder,
