@@ -9,8 +9,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
-from modules.spark_functions import create_spark, read_csv, read_sql, read_sql_config
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name
+from modules.spark_functions import create_spark, read_csv, read_sql
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name, get_azure_sp
 from modules.data_functions import execution_date
 
 
@@ -114,24 +114,24 @@ if is_pc: translation.show(5)
 
 # %% Read SQL Config
 
-sql_config = read_sql_config()
+_, sql_id, sql_pass = get_azure_sp(server.lower())
 
 
 # %% Get Table and Column Metadata from information_schema
 
-sql_tables = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='INFORMATION_SCHEMA', table='TABLES', database=database, server=server)
+sql_tables = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='TABLES', database=database, server=server)
 if is_pc: sql_tables.printSchema()
 if is_pc: sql_tables.show(5)
 
-sql_columns = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='INFORMATION_SCHEMA', table='COLUMNS', database=database, server=server)
+sql_columns = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='COLUMNS', database=database, server=server)
 if is_pc: sql_columns.printSchema()
 if is_pc: sql_columns.show(5)
 
-sql_table_constraints = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='INFORMATION_SCHEMA', table='TABLE_CONSTRAINTS', database=database, server=server)
+sql_table_constraints = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='TABLE_CONSTRAINTS', database=database, server=server)
 if is_pc: sql_table_constraints.printSchema()
 if is_pc: sql_table_constraints.show(5)
 
-sql_key_column_usage = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='INFORMATION_SCHEMA', table='KEY_COLUMN_USAGE', database=database, server=server)
+sql_key_column_usage = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='KEY_COLUMN_USAGE', database=database, server=server)
 if is_pc: sql_key_column_usage.printSchema()
 if is_pc: sql_key_column_usage.show(5)
 
