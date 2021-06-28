@@ -71,11 +71,11 @@ def setup_spark_adls_gen2_connection(spark, storage_account_name):
 
 
 
-# %% Save DF to ADLS Gen 2 using 'Service Principals'
+# %% Save table_to_save to ADLS Gen 2 using 'Service Principals'
 
 @catch_error(logger)
 def save_adls_gen2(
-        df,
+        table_to_save,
         storage_account_name:str,
         container_name:str,
         container_folder:str,
@@ -83,15 +83,15 @@ def save_adls_gen2(
         partitionBy:str=None,
         format:str='delta'):
     """
-    Save DF to ADLS Gen 2
+    Save table_to_save to ADLS Gen 2
     """
     data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table}"
     print(f"Write {format} -> {data_path}")
 
     if format == 'text':
-        df.coalesce(1).write.save(path=data_path, format=format, mode='overwrite', header='false')
+        table_to_save.coalesce(1).write.save(path=data_path, format=format, mode='overwrite', header='false')
     else:
-        df.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
+        table_to_save.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
 
     print(f'Finished Writing {container_folder}/{table}')
 
@@ -113,15 +113,15 @@ def read_adls_gen2(spark,
 
     print(f'Reading -> {data_path}')
 
-    df = (spark.read
+    table_read = (spark.read
         .format(format)
         .load(data_path)
         )
     
-    if is_pc: df.printSchema()
-    if is_pc: df.show(5)
+    if is_pc: table_read.printSchema()
+    if is_pc: table_read.show(5)
 
-    return df
+    return table_read
 
 
 
@@ -156,7 +156,7 @@ def get_master_ingest_list_csv(spark, table_list_path:str, created_datetime:str=
 
         partitionBy = 'ModifiedDateTime'
         save_adls_gen2(
-                df=table_list,
+                table_to_save=table_list,
                 storage_account_name = storage_account_name,
                 container_name = container_name,
                 container_folder = '',

@@ -84,7 +84,7 @@ def read_sql(spark, user:str, password:str, schema:str, table:str, database:str,
 
     url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
 
-    df = (
+    sql_table = (
         spark.read
             .format("jdbc")
             .option("url", url)
@@ -97,7 +97,7 @@ def read_sql(spark, user:str, password:str, schema:str, table:str, database:str,
             .load()
         )
     
-    return df
+    return sql_table
 
 
 
@@ -108,7 +108,7 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     """
     Read XML Files using Spark
     """
-    df = (spark.read
+    xml_table = (spark.read
         .format("com.databricks.spark.xml")
         .option("rowTag", rowTag)
         .option("inferSchema", 'false')
@@ -118,9 +118,9 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     )
 
     if schema:
-        df = df.schema(schema=schema)
+        xml_table = xml_table.schema(schema=schema)
 
-    return df.load(file_path)
+    return xml_table.load(file_path)
 
 
 # %% Read CSV File
@@ -130,13 +130,13 @@ def read_csv(spark, file_path:str):
     """
     Read CSV File using Spark
     """
-    df = (spark.read
+    csv_table = (spark.read
         .format('csv')
         .option('header', 'true')
         .load(file_path)
     )
 
-    return df
+    return csv_table
 
 
 

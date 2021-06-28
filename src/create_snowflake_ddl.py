@@ -115,7 +115,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
 
-    df = read_adls_gen2(
+    table_for_paritition = read_adls_gen2(
         spark = spark,
         storage_account_name = storage_account_name,
         container_name = container_name,
@@ -124,7 +124,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
         format = format
     )
 
-    PARTITION_LIST = df.select(F.max(col(partitionBy)).alias('part')).collect()
+    PARTITION_LIST = table_for_paritition.select(F.max(col(partitionBy)).alias('part')).collect()
     PARTITION = PARTITION_LIST[0]['part']
     if PARTITION:
         return PARTITION.replace(':', '%3A') #.replace(' ', '%20')
@@ -177,7 +177,7 @@ CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
         print(sqlstr)
     
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -206,7 +206,7 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -294,7 +294,7 @@ FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{variant_label}, job_id => '_last'
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -332,7 +332,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -369,7 +369,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix};
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -422,7 +422,7 @@ WHERE top_slice = 1;
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -462,7 +462,7 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -543,7 +543,7 @@ $$
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -598,7 +598,7 @@ ALTER TASK {task_name} RESUME;
         print(sqlstr)
 
     save_adls_gen2(
-        df = spark.createDataFrame([sqlstr], StringType()),
+        table_to_save = spark.createDataFrame([sqlstr], StringType()),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
@@ -619,6 +619,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
     n_tables = len(table_rows)
 
     for i, table in enumerate(table_rows):
+        #if i>0 and is_pc: break
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
