@@ -90,6 +90,10 @@ def save_adls_gen2(
 
     if format == 'text':
         table_to_save.coalesce(1).write.save(path=data_path, format=format, mode='overwrite', header='false')
+    elif format == 'json':
+        table_to_save.coalesce(1).write.json(path=data_path, mode='overwrite')
+    elif format == 'csv':
+        table_to_save.coalesce(1).write.csv(path=data_path, header='true', mode='overwrite')
     else:
         table_to_save.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
 
