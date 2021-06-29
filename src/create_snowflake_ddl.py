@@ -1,19 +1,22 @@
 # %% Import Libraries
 import os, sys
-from datetime import datetime
-
-from pyspark import sql
+from functools import wraps
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
-
 from modules.common_functions import make_logging, catch_error
 from modules.data_functions import elt_audit_columns, partitionBy
 from modules.config import is_pc
 from modules.spark_functions import create_spark
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, read_adls_gen2
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, read_adls_gen2, get_azure_sp
+
+
+# %% Import Snowflake
+
+import contextlib
+from snowflake.connector import connect as snowflake_connect
 
 
 # %% Spark Libraries
@@ -30,6 +33,15 @@ logger = make_logging(__name__)
 
 
 # %% Parameters
+save_to_adls = False
+execute_at_snowflake = True
+
+manual_iteration = False
+if not is_pc:
+    manual_iteration = False
+
+snowflake_account = 'advisorgroup-edip'
+
 storage_account_name = "agaggrlakescd"
 container_name = "ingress"
 domain_name = 'financial_professional'
@@ -66,6 +78,36 @@ tableinfo, table_rows = read_tableinfo(spark)
 # %% Setup spark to ADLS Gen2 connection
 
 setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+
+# %% Connect to SnowFlake
+
+@catch_error(logger)
+def connect_to_snowflake(
+        snowflake_account:str=snowflake_account,
+        key_vault_account:str='snowflake',
+        snowflake_database:str=None, 
+        snowflake_warehouse:str=None,
+        snowflake_role:str=None,
+        ):
+
+    _, snowflake_user, snowflake_pass = get_azure_sp(key_vault_account)
+
+    snowflake_connection = snowflake_connect(
+        user = snowflake_user,
+        password = snowflake_pass,
+        account = snowflake_account,
+        database = snowflake_database,
+        warehouse = snowflake_warehouse,
+        role = snowflake_role,
+        autocommit = True,
+    )
+
+    return snowflake_connection
+
+
+snowflake_connection = connect_to_snowflake()
+
 
 
 # %% Get Column Names
@@ -133,13 +175,37 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
         return None
 
 
+# %% Action Step
+
+def action_step(step:int):
+    def outer(step_fn):
+        @wraps(step_fn)
+        def inner(*args, **kwargs):
+            sqlstr = step_fn(*args, **kwargs)
+
+            if manual_iteration:
+                print(sqlstr)
+            
+            if save_to_adls:
+                save_adls_gen2(
+                    table_to_save = spark.createDataFrame([sqlstr], StringType()),
+                    storage_account_name = storage_account_name,
+                    container_name = container_name,
+                    container_folder = f"{ddl_folder}/{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}",
+                    table = kwargs['table_name'],
+                    format = 'text'
+                )
+
+            if execute_at_snowflake:
+                print('Executing Snowflake SQL String')
+                exec_status = snowflake_connection.execute_string(sql_text=sqlstr)
+
+        return inner
+    return outer
+
 
 
 # %% Manual Iteration
-manual_iteration = False
-
-if not is_pc:
-    manual_iteration = False
 
 if manual_iteration:
     i = 0
@@ -161,8 +227,8 @@ if manual_iteration:
 # %% Create Step 1
 
 @catch_error(logger)
+@action_step(1)
 def step1(source_system:str, schema_name:str, table_name:str, column_names:list):
-    step = 1
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -172,18 +238,8 @@ CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
   {variant_alias} VARIANT
 );
 """
+    return sqlstr
 
-    if manual_iteration:
-        print(sqlstr)
-    
-    save_adls_gen2(
-        table_to_save = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
 
 if manual_iteration:
     step1(source_system, schema_name, table_name, column_names)
@@ -192,8 +248,8 @@ if manual_iteration:
 # %% Create Step 2
 
 @catch_error(logger)
+@action_step(2)
 def step2(source_system:str, schema_name:str, table_name:str, column_names:list):
-    step = 2
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -201,18 +257,8 @@ def step2(source_system:str, schema_name:str, table_name:str, column_names:list)
 CREATE OR REPLACE STREAM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix}
 ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
 """
+    return sqlstr
 
-    if manual_iteration:
-        print(sqlstr)
-
-    save_adls_gen2(
-        table_to_save = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
 
 if manual_iteration:
     step2(source_system, schema_name, table_name, column_names)
@@ -221,8 +267,8 @@ if manual_iteration:
 # %% Create Step 3
 
 @catch_error(logger)
+@action_step(3)
 def step3(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
-    step = 3
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -289,18 +335,8 @@ SELECT
   ,REJECTED_RECORD
 FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{variant_label}, job_id => '_last'));
 """
+    return sqlstr
 
-    if manual_iteration:
-        print(sqlstr)
-
-    save_adls_gen2(
-        table_to_save = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
 
 if manual_iteration:
     step3(source_system, schema_name, table_name, column_names, PARTITION)
@@ -310,8 +346,8 @@ if manual_iteration:
 # %% Create Step 4
 
 @catch_error(logger)
+@action_step(4)
 def step4(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
-    step = 4
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -327,18 +363,8 @@ SELECT
    {column_list_src}
 FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
 """
+    return sqlstr
 
-    if manual_iteration:
-        print(sqlstr)
-
-    save_adls_gen2(
-        table_to_save = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
 
 if manual_iteration:
     step4(source_system, schema_name, table_name, column_names, src_column_dict)
@@ -347,8 +373,8 @@ if manual_iteration:
 # %% Create Step 5
 
 @catch_error(logger)
+@action_step(5)
 def step5(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
-    step = 5
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -364,18 +390,8 @@ SELECT
    {column_list_src}
 FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix};
 """
+    return sqlstr
 
-    if manual_iteration:
-        print(sqlstr)
-
-    save_adls_gen2(
-        table_to_save = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
 
 if manual_iteration:
     step5(source_system, schema_name, table_name, column_names, src_column_dict)
@@ -384,8 +400,8 @@ if manual_iteration:
 # %% Create Step 6
 
 @catch_error(logger)
+@action_step(6)
 def step6(source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
-    step = 6
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -417,18 +433,7 @@ FROM {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_la
 )
 WHERE top_slice = 1;
 """
-
-    if manual_iteration:
-        print(sqlstr)
-
-    save_adls_gen2(
-        table_to_save = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
+    return sqlstr
 
 
 if manual_iteration:
@@ -438,8 +443,8 @@ if manual_iteration:
 # %% Create Step 7
 
 @catch_error(logger)
+@action_step(7)
 def step7(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
-    step = 7
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -457,18 +462,7 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
   ,CONSTRAINT PK_{SCHEMA_NAME}_{TABLE_NAME} PRIMARY KEY ({integration_id}) NOT ENFORCED
 );
 """
-
-    if manual_iteration:
-        print(sqlstr)
-
-    save_adls_gen2(
-        table_to_save = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
+    return sqlstr
 
 
 if manual_iteration:
@@ -478,8 +472,8 @@ if manual_iteration:
 # %% Create Step 8
 
 @catch_error(logger)
+@action_step(8)
 def step8(source_system:str, schema_name:str, table_name:str, column_names:list):
-    step = 8
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -538,18 +532,7 @@ catch (err)  {
     }
 $$
 """
-
-    if manual_iteration:
-        print(sqlstr)
-
-    save_adls_gen2(
-        table_to_save = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
+    return sqlstr
 
 
 if manual_iteration:
@@ -559,8 +542,8 @@ if manual_iteration:
 # %% Create Step 9
 
 @catch_error(logger)
+@action_step(9)
 def step9(source_system:str, schema_name:str, table_name:str, column_names:list):
-    step = 9
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
     
@@ -593,18 +576,7 @@ GRANT EXECUTE TASK ON ACCOUNT TO ROLE {snowflake_role};
 USE ROLE {snowflake_role};
 ALTER TASK {task_name} RESUME;
 """
-
-    if manual_iteration:
-        print(sqlstr)
-
-    save_adls_gen2(
-        table_to_save = spark.createDataFrame([sqlstr], StringType()),
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = f'{ddl_folder}/{source_system}/step_{step}/{schema_name}',
-        table = table_name,
-        format = 'text'
-    )
+    return sqlstr
 
 
 if manual_iteration:
@@ -619,7 +591,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
     n_tables = len(table_rows)
 
     for i, table in enumerate(table_rows):
-        #if i>0 and is_pc: break
+        if i>0 and is_pc: break
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
@@ -639,6 +611,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step8(source_system, schema_name, table_name, column_names)
             step9(source_system, schema_name, table_name, column_names)
 
+    snowflake_connection.close()
     print('Finished Iterating over all tables')
 
 if not manual_iteration:
