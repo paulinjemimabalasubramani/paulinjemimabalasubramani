@@ -1,6 +1,7 @@
 # %% Import Libraries
 
 from datetime import datetime
+import re
 
 from .common_functions import make_logging, catch_error
 from .config import is_pc
@@ -18,6 +19,7 @@ logger = make_logging(__name__)
 strftime = "%Y-%m-%d %H:%M:%S"  # http://strftime.org/
 execution_date = datetime.now().strftime(strftime)
 
+column_regex = r'[\W]+'
 
 # %% Remove Column Spaces
 
@@ -26,9 +28,8 @@ def remove_column_spaces(table_to_remove):
     """
     Removes spaces from column names
     """
-    new_table_to_remove = table_to_remove.select([col(c).alias(c.replace(' ', '_')) for c in table_to_remove.columns])
+    new_table_to_remove = table_to_remove.select([col(c).alias(re.sub(column_regex, '_', c)) for c in table_to_remove.columns])
     return new_table_to_remove
-
 
 
 # %% Convert timestamp's or other types to string

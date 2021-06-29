@@ -11,7 +11,7 @@ from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_csv, read_sql
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name, get_azure_sp
-from modules.data_functions import execution_date
+from modules.data_functions import execution_date, column_regex
 
 
 # %% Spark Libraries
@@ -247,7 +247,7 @@ def rename_columns(columns):
     columns = columns.withColumn('IsNullable', F.when(F.upper(col('IS_NULLABLE'))=='YES', lit(1)).otherwise(lit(0)))
     columns = columns.withColumn('KeyIndicator', F.when((F.upper(col('CONSTRAINT_TYPE'))=='PRIMARY KEY') & (col('SourceColumnName')==col('KEY_COLUMN_NAME')), lit(1)).otherwise(lit(0)))
     columns = columns.withColumn('CleanType', col('SourceDataType'))
-    columns = columns.withColumn('TargetColumnName', F.regexp_replace(col('SourceColumnName'), r'\s+', '_'))
+    columns = columns.withColumn('TargetColumnName', F.regexp_replace(col('SourceColumnName'), column_regex, '_'))
     columns = columns.withColumn('IsActive', lit(1))
     columns = columns.withColumn('CreatedDateTime', lit(created_datetime))
     columns = columns.withColumn('ModifiedDateTime', lit(modified_datetime))
