@@ -44,7 +44,12 @@ def create_spark():
         )
 
     if is_pc:
-        spark = spark.config('spark.driver.extraClassPath', extraClassPath)
+        spark = (spark
+        .config('spark.driver.extraClassPath', extraClassPath)
+        .config('spark.dynamicAllocation.schedulerBacklogTimeout', '20s')
+        .config('spark.executor.memory', '2g')
+        .config('spark.python.worker.memory', '1g')
+        )
 
     spark = spark.getOrCreate()
     spark.getActiveSession()
