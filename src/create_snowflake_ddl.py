@@ -33,7 +33,7 @@ logger = make_logging(__name__)
 
 
 # %% Parameters
-save_to_adls = False
+save_to_adls = True
 execute_at_snowflake = True
 
 manual_iteration = False
@@ -182,6 +182,7 @@ def action_step(step:int):
         @wraps(step_fn)
         def inner(*args, **kwargs):
             sqlstr = step_fn(*args, **kwargs)
+            print(kwargs)
 
             if manual_iteration:
                 print(sqlstr)
@@ -242,7 +243,7 @@ CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
 
 
 if manual_iteration:
-    step1(source_system, schema_name, table_name, column_names)
+    step1(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
 
 
 # %% Create Step 2
@@ -261,7 +262,7 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
 
 
 if manual_iteration:
-    step2(source_system, schema_name, table_name, column_names)
+    step2(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
 
 
 # %% Create Step 3
@@ -339,7 +340,7 @@ FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{variant_label}, job_id => '_last'
 
 
 if manual_iteration:
-    step3(source_system, schema_name, table_name, column_names, PARTITION)
+    step3(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
 
 
 
@@ -367,7 +368,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
 
 
 if manual_iteration:
-    step4(source_system, schema_name, table_name, column_names, src_column_dict)
+    step4(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
 
 
 # %% Create Step 5
@@ -394,7 +395,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix};
 
 
 if manual_iteration:
-    step5(source_system, schema_name, table_name, column_names, src_column_dict)
+    step5(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
 
 
 # %% Create Step 6
@@ -437,7 +438,7 @@ WHERE top_slice = 1;
 
 
 if manual_iteration:
-    step6(source_system, schema_name, table_name, column_names, pk_column_names)
+    step6(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, pk_column_names=pk_column_names)
 
 
 # %% Create Step 7
@@ -466,7 +467,7 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
 
 
 if manual_iteration:
-    step7(source_system, schema_name, table_name, column_names, data_types_dict)
+    step7(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
 
 
 # %% Create Step 8
@@ -536,7 +537,7 @@ $$
 
 
 if manual_iteration:
-    step8(source_system, schema_name, table_name, column_names)
+    step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
 
 
 # %% Create Step 9
@@ -580,7 +581,7 @@ ALTER TASK {task_name} RESUME;
 
 
 if manual_iteration:
-    step9(source_system, schema_name, table_name, column_names)
+    step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
 
 
 
@@ -601,15 +602,15 @@ def iterate_over_all_tables(tableinfo, table_rows):
 
         PARTITION = get_partition(source_system, schema_name, table_name)
         if PARTITION:
-            step1(source_system, schema_name, table_name, column_names)
-            step2(source_system, schema_name, table_name, column_names)
-            step3(source_system, schema_name, table_name, column_names, PARTITION)
-            step4(source_system, schema_name, table_name, column_names, src_column_dict)
-            step5(source_system, schema_name, table_name, column_names, src_column_dict)
-            step6(source_system, schema_name, table_name, column_names, pk_column_names)
-            step7(source_system, schema_name, table_name, column_names, data_types_dict)
-            step8(source_system, schema_name, table_name, column_names)
-            step9(source_system, schema_name, table_name, column_names)
+            step1(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
+            step2(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
+            step3(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
+            step4(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
+            step5(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
+            step6(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, pk_column_names=pk_column_names)
+            step7(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
+            step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
+            step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
 
     print('Finished Iterating over all tables')
 
