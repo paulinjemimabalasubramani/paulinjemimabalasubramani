@@ -182,7 +182,6 @@ def action_step(step:int):
         @wraps(step_fn)
         def inner(*args, **kwargs):
             sqlstr = step_fn(*args, **kwargs)
-            print(kwargs)
 
             if manual_iteration:
                 print(sqlstr)
