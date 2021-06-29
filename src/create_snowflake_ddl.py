@@ -591,7 +591,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
     n_tables = len(table_rows)
 
     for i, table in enumerate(table_rows):
-        if i>0 and is_pc: break
+        # if i>0 and is_pc: break
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
@@ -611,12 +611,17 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step8(source_system, schema_name, table_name, column_names)
             step9(source_system, schema_name, table_name, column_names)
 
-    snowflake_connection.close()
     print('Finished Iterating over all tables')
 
 if not manual_iteration:
     iterate_over_all_tables(tableinfo, table_rows)
 
 
+# %% Close Showflake connection
+
+snowflake_connection.close()
+
+
 # %%
+
 
