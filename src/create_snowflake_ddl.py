@@ -197,7 +197,7 @@ def action_step(step:int):
                 )
 
             if execute_at_snowflake:
-                print('Executing Snowflake SQL String')
+                print(f"Executing Snowflake SQL String: {kwargs['source_system']}/step_{step}/{kwargs['schema_name']}")
                 exec_status = snowflake_connection.execute_string(sql_text=sqlstr)
 
         return inner
