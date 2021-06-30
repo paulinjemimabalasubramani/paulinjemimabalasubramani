@@ -73,14 +73,6 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 _, sql_id, sql_pass = get_azure_sp(server.lower())
 
 
-# %% Create Spark Json Schema
-
-spark_json_schema = StructType([
-    StructField("INGEST_STAGE_NAME", StringType(), True),
-    StructField("EXECUTION_DATE", StringType(), True),
-    StructField("FULL_OBJECT_NAME", StringType(), True),
-])
-
 
 # %% Loop over all tables
 
@@ -111,23 +103,6 @@ def iterate_over_all_tables(table_rows):
             table = table,
             partitionBy = partitionBy,
             format = format
-        )
-
-        # Metadata
-        data_type = 'metadata'
-        container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
-
-        ingest_data = [(f'{container_folder}/{table}', execution_date, f'{schema}_{table}'.upper())]
-        json_table = spark.createDataFrame(data=ingest_data, schema=spark_json_schema)
-
-        save_adls_gen2(
-            table_to_save = json_table,
-            storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = container_folder,
-            table = table,
-            partitionBy = partitionBy,
-            format = 'json'
         )
     
     print('Finished Migrating All Tables')
