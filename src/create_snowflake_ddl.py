@@ -33,11 +33,11 @@ logger = make_logging(__name__)
 
 
 # %% Parameters
-save_to_adls = False
-execute_at_snowflake = False
+save_to_adls = True
+execute_at_snowflake = True
 write_jsons = True
 
-manual_iteration = True
+manual_iteration = False
 if not is_pc:
     manual_iteration = False
 
@@ -239,7 +239,7 @@ spark_json_schema = StructType([
 # %% Create Json Files
 
 @catch_error(logger)
-def create_json_adls(source_system:str, schema_name:str, table_name:str, column_names:list):
+def create_json_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -269,7 +269,7 @@ def create_json_adls(source_system:str, schema_name:str, table_name:str, column_
 
 
 if manual_iteration:
-    ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
+    ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
     print(ingest_data)
 
 
@@ -682,7 +682,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step7(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
-            ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
+            ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
             ingest_data_list.extend(ingest_data)
 
     create_json_list_adls(source_system=source_system, ingest_data_list=ingest_data_list)
