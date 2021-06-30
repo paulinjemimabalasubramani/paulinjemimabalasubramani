@@ -15,8 +15,6 @@ http://10.128.25.82:8282/
 
 import os, sys, tempfile, shutil, json
 
-from datetime import datetime
-
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
@@ -25,7 +23,7 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2
-from modules.data_functions import  add_elt_columns
+from modules.data_functions import  add_elt_columns, execution_date
 
 
 # %% Spark Libraries
@@ -53,7 +51,6 @@ database = 'FINRA'
 format = 'delta'
 
 partitionBy = 'RECEPTION_DATE'
-execution_date = datetime.now()
 
 
 # %% Initiate Spark
@@ -197,6 +194,10 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date):
 
         xml_table_select = add_elt_columns(table_to_add=xml_table_select, execution_date=execution_date, reception_date=reception_date)
 
+        if is_pc and True:
+            print(fr'Save to local {database}\{file_name}\{df_name}')
+            xml_table_select.coalesce(1).write.csv(fr'C:\temp\{database}\{file_name}\{df_name}', header='true', mode='overwrite')
+
         save_adls_gen2(
             table_to_save=xml_table_select,
             storage_account_name = storage_account_name,
@@ -206,28 +207,6 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date):
             partitionBy = partitionBy,
             format = format
         )
-
-        # Metadata
-        data_type = 'metadata'
-        container_folder = f"{data_type}/{domain_name}/{database}/{file_name}"
-
-        meta_columns = ["column_name", "data_type"]
-        meta_data = xml_table_select.dtypes
-        meta_xml_table = spark.createDataFrame(data=meta_data, schema=meta_columns)
-        meta_xml_table = add_elt_columns(table_to_add=meta_xml_table, execution_date=execution_date, reception_date=reception_date)
-        
-        save_adls_gen2(
-            table_to_save=meta_xml_table,
-            storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = container_folder,
-            table = df_name,
-            partitionBy = partitionBy,
-            format = format
-        )
-
-        xml_table_select.unpersist()
-        meta_xml_table.unpersist()
 
     print('Done writing to Azure')
 
@@ -269,7 +248,6 @@ def process_finra(root, file):
         reception_date = name_data['date']
         )
 
-    xml_table.unpersist()
 
 
 

@@ -44,7 +44,12 @@ def create_spark():
         )
 
     if is_pc:
-        spark = spark.config('spark.driver.extraClassPath', extraClassPath)
+        spark = (spark
+        .config('spark.driver.extraClassPath', extraClassPath)
+        .config('spark.dynamicAllocation.schedulerBacklogTimeout', '20s')
+        .config('spark.executor.memory', '2g')
+        .config('spark.python.worker.memory', '1g')
+        )
 
     spark = spark.getOrCreate()
     spark.getActiveSession()
@@ -54,23 +59,6 @@ def create_spark():
 
     return spark
 
-
-
-# %% Read SQL Config
-
-@catch_error(logger)
-def read_sql_config():
-    """
-    Read sql configuration file, username/password
-    """
-    defaults = dict(
-        sql_user = None,
-        sql_password = None,
-    )
-
-    sql_file = os.path.join(config_path, "sql.yaml")
-    sql_confing = Config(file_path=sql_file, defaults=defaults)
-    return sql_confing
 
 
 # %% Read SQL Table
