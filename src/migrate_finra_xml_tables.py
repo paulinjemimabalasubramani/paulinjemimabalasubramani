@@ -52,6 +52,13 @@ format = 'delta'
 
 partitionBy = 'RECEPTION_DATE'
 
+firms = [
+    {'firm_name': 'FSC', 'firm_number': '7461' , 'folder': 'FSC_FINRA'},
+    {'firm_name': 'RAA', 'firm_number': '23131', 'folder': 'RAA_FINRA'},
+]
+
+firm_number_to_name = {firm['firm_number']:firm['firm_name'] for firm in firms}
+
 
 # %% Initiate Spark
 spark = create_spark()
@@ -94,12 +101,6 @@ def base_to_schema(base:dict):
     return StructType(st)
 
 
-#with open(os.path.join(schema_path_folder, 'IndividualInformationReport.json'), 'r') as f:
-#    base = json.load(f)
-
-#schema = base_to_schema(base)
-
-
 
 # %% Name extract
 
@@ -108,11 +109,13 @@ def extract_data_from_finra_file_name(file_name):
     basename = os.path.basename(file_name)
     sp = basename.split("_")
     ans = {
-        'firm': sp[0],
-        'name': sp[1],
+        'firm_number': sp[0],
+        'table_name': sp[1],
         'date': sp[2].rsplit('.', 1)[0]
     }
     return ans
+
+
 
 # %% Find rowTags
 
@@ -120,6 +123,7 @@ def extract_data_from_finra_file_name(file_name):
 def find_rowTags(file_path):
     xml_table = read_xml(spark, file_path, rowTag="?xml")
     return [c for c in xml_table.columns if c not in ['Criteria']]
+
 
 
 # %% Flatten XML
@@ -185,21 +189,23 @@ def flatten_n_divide_df(xml_table, name:str='main'):
 @catch_error(logger)
 def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date):
 
-    for df_name, xml_table_select in xml_table_list.items():
+    for df_name, xml_table in xml_table_list.items():
         print(f'\n Writing {df_name} to Azure...')
-        if is_pc: xml_table_select.printSchema()
+        if is_pc: xml_table.printSchema()
 
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{file_name}"
 
-        xml_table_select = add_elt_columns(table_to_add=xml_table_select, execution_date=execution_date, reception_date=reception_date)
+        xml_table = add_elt_columns(table_to_add=xml_table, execution_date=execution_date, reception_date=reception_date)
 
         if is_pc and True:
             print(fr'Save to local {database}\{file_name}\{df_name}')
-            xml_table_select.coalesce(1).write.csv(fr'C:\temp\{database}\{file_name}\{df_name}', header='true', mode='overwrite')
+            temp_path = os.path.join(data_path_folder, 'temp')
+            xml_table.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
+            xml_table.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
 
         save_adls_gen2(
-            table_to_save=xml_table_select,
+            table_to_save=xml_table,
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = container_folder,
@@ -224,7 +230,7 @@ def process_finra(root, file):
     print(f'rowTags: {rowTags}')
     rowTag = rowTags[0]
 
-    schema_file = name_data['name']+'.json'
+    schema_file = name_data['table_name']+'.json'
     schema_path = os.path.join(schema_path_folder, schema_file)
 
     if os.path.isfile(schema_path):
@@ -234,17 +240,19 @@ def process_finra(root, file):
         schema = base_to_schema(base)
         xml_table = read_xml(spark, file_path, rowTag=rowTag, schema=schema)
     else:
-        print(f"No manual schema defined for {name_data['name']}. Using default schema.")
+        print(f"No manual schema defined for {name_data['table_name']}. Using default schema.")
         xml_table = read_xml(spark, file_path, rowTag=rowTag)
 
-    xml_table_list = flatten_n_divide_df(xml_table, name=name_data['name'])
+    if is_pc: xml_table.printSchema()
+
+    xml_table_list = flatten_n_divide_df(xml_table, name=name_data['table_name'])
     if not xml_table_list:
-        print(f"No data to write -> {name_data['name']}")
+        print(f"No data to write -> {name_data['table_name']}")
         return
 
     write_xml_table_list_to_azure(
         xml_table_list= xml_table_list,
-        file_name = name_data['name'],
+        file_name = name_data['table_name'],
         reception_date = name_data['date']
         )
 
@@ -277,6 +285,45 @@ def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', w
 
 
 
-recursive_unzip(data_path_folder)
+#recursive_unzip(data_path_folder)
 
 
+
+# %% Manual Iteration
+
+manual_iteration = True
+
+if manual_iteration:
+    firm = firms[0]
+    firm_folder = firm['folder']
+    folder_path = os.path.join(data_path_folder, firm_folder)
+
+    root = r"C:\Users\smammadov\packages\Shared\FSC_FINRA\2021-05-16"
+    file = r"7461_BranchInformationReport_2021-05-16.xml"
+    process_finra(root=root, file=file)
+
+
+
+# %% Process all files
+
+
+for firm in firms:
+    firm_folder = firm['folder']
+    folder_path = os.path.join(data_path_folder, firm_folder)
+    print(f"Firm: {firm['firm_name']}\n")
+
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            print(os.path.join(root, file), '\n')
+
+            if manual_iteration:
+                print(root, file, '\n', sep='\n')
+            
+            if not manual_iteration:
+                process_finra(root=root, file=file)
+
+
+
+
+
+# %%

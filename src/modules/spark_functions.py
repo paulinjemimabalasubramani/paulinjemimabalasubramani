@@ -47,8 +47,15 @@ def create_spark():
         spark = (spark
         .config('spark.driver.extraClassPath', extraClassPath)
         .config('spark.dynamicAllocation.schedulerBacklogTimeout', '20s')
-        .config('spark.executor.memory', '2g')
-        .config('spark.python.worker.memory', '1g')
+        .config('spark.executor.memory', '4g')
+        .config('spark.python.worker.memory', '2g')
+        .config('spark.reducer.maxSizeInFlight', '256m')
+        .config('spark.shuffle.file.buffer', '128k')
+        .config('spark.shuffle.registration.timeout', '5s')
+        .config('spark.eventLog.buffer.kb', '500k')
+        .config('spark.serializer.objectStreamReset', '20')
+        .config('spark.streaming.backpressure.enabled', 'true')
+        .config('spark.streaming.blockInterval', '600ms')
         )
 
     spark = spark.getOrCreate()
