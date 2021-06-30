@@ -48,8 +48,10 @@ with DAG(
         task_id='Start_Pipe',
         bash_command='echo "Start Pipeline"'
     )
+    ##Create SQLoperator to check schema drift
+    ##if schema run data_type_translation.py
 
-    sparkjob = SparkSubmitOperator(
+    migratelrdata = SparkSubmitOperator(
          task_id="spark_job_1",
          application="/usr/local/spark/app/migrate_all_in_master_table.py", # mapped to M:\EDIP-Code\src
          name=spark_app_name,
@@ -63,6 +65,19 @@ with DAG(
          application_args=[file_path],
          dag=dag)
 
+    createsaverunsql = SparkSubmitOperator(
+         task_id="spark_job_2",
+         application="/usr/local/spark/app/create_snowflake_ddl.py", # mapped to M:\EDIP-Code\src
+         name=spark_app_name,
+         jars="/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar",
+         conn_id="spark_default",
+         num_executors=2,
+         executor_cores=4,
+         executor_memory="16G",
+         verbose=1,
+         conf={"spark.master":spark_master},
+         application_args=[file_path],
+         dag=dag)
 
 
-    startpipe >> [sparkjob]
+    startpipe >> [migratelrdata] >> createsaverunsql 
