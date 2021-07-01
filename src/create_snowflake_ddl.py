@@ -7,7 +7,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import make_logging, catch_error
-from modules.data_functions import elt_audit_columns, partitionBy
+from modules.data_functions import elt_audit_columns, partitionBy, execution_date
 from modules.config import is_pc
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, read_adls_gen2, get_azure_sp
@@ -35,6 +35,7 @@ logger = make_logging(__name__)
 # %% Parameters
 save_to_adls = True
 execute_at_snowflake = True
+write_jsons = True
 
 manual_iteration = False
 if not is_pc:
@@ -222,6 +223,76 @@ if manual_iteration:
     PARTITION = get_partition(source_system, schema_name, table_name)
 
 
+
+
+# %% Create Spark Json Schema
+
+spark_json_schema = StructType([
+    StructField("INGEST_STAGE_NAME", StringType(), True),
+    StructField("EXECUTION_DATE", StringType(), True),
+    StructField("FULL_OBJECT_NAME", StringType(), True),
+    StructField("COPY_COMMAND", StringType(), True),
+    StructField("SCHEMA", StringType(), True),
+])
+
+
+# %% Create Json Files
+
+@catch_error(logger)
+def create_json_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
+    layer = 'RAW'
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
+    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label} FROM '@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{file_format}') PATTERN = '{wild_card}' ON_ERROR = CONTINUE;"""
+
+    ingest_data = [(
+        f'@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
+        execution_date,
+        TABLE_NAME,
+        sqlstr,
+        SCHEMA_NAME,
+        )]
+    
+    json_table = spark.createDataFrame(data=ingest_data, schema=spark_json_schema)
+
+    if write_jsons:
+        save_adls_gen2(
+            table_to_save = json_table,
+            storage_account_name = storage_account_name,
+            container_name = container_name,
+            container_folder = f"metadata/{domain_name}/{source_system}/{schema_name}",
+            table = table_name,
+            format = 'json'
+        )
+
+    return ingest_data
+
+
+if manual_iteration:
+    ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
+    print(ingest_data)
+
+
+# %% Create Json List File
+
+@catch_error(logger)
+def create_json_list_adls(source_system:str, ingest_data_list:list):
+    json_table = spark.createDataFrame(data=ingest_data_list, schema=spark_json_schema)
+
+    if write_jsons:
+        save_adls_gen2(
+            table_to_save = json_table,
+            storage_account_name = storage_account_name,
+            container_name = container_name,
+            container_folder = f"metadata/{domain_name}/{source_system}",
+            table = 'ingest_data',
+            format = 'json'
+        )
+
+
+if manual_iteration:
+    ingest_data_list = ingest_data
+    create_json_list_adls(source_system=source_system, ingest_data_list=ingest_data_list)
 
 
 # %% Create Step 1
@@ -589,6 +660,7 @@ if manual_iteration:
 @catch_error(logger)
 def iterate_over_all_tables(tableinfo, table_rows):
     n_tables = len(table_rows)
+    ingest_data_list = []
 
     for i, table in enumerate(table_rows):
         # if i>0 and is_pc: break
@@ -610,7 +682,10 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step7(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
+            ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
+            ingest_data_list.extend(ingest_data)
 
+    create_json_list_adls(source_system=source_system, ingest_data_list=ingest_data_list)
     print('Finished Iterating over all tables')
 
 if not manual_iteration:
