@@ -305,7 +305,7 @@ if manual_iteration:
     folder_path = os.path.join(data_path_folder, firm_folder)
 
     root = r"C:\Users\smammadov\packages\Shared\FSC_FINRA\2021-05-16"
-    file = r"7461_BranchInformationReport_2021-05-16.xml"
+    file = r"7461_PostBranchIndividualReport_2021-05-16.xml"
     process_finra(root=root, file=file)
 
 
