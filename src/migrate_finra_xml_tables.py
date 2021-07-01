@@ -304,8 +304,8 @@ if manual_iteration:
     firm_folder = firm['folder']
     folder_path = os.path.join(data_path_folder, firm_folder)
 
-    root = r"C:\Users\smammadov\packages\Shared\FSC_FINRA\2021-05-16"
-    file = r"7461_PostDeficienciesReport_2021-05-16.def"
+    root = r"C:\Users\smammadov\packages\Shared\RAA_FINRA\2021-06-20"
+    file = r"23131_PostAccountingReport_2021-06-19.acc"
     process_finra(root=root, file=file)
 
 
