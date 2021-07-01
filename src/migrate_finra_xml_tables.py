@@ -3,6 +3,8 @@ Flatten all XML files and migrate them to ADLS Gen 2
 
 https://www.finra.org/filing-reporting/web-crd/web-eft-schema-documentation-and-schema-files
 
+Ingestion Path:
+CRD Number > Files (2 of them are zip) get the latest dates
 
 Spark Web UI:
 http://10.128.25.82:8181/
@@ -204,18 +206,19 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date):
         if is_pc and True:
             print(fr'Save to local {database}\{file_name}\{df_name}')
             temp_path = os.path.join(data_path_folder, 'temp')
-            xml_table.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
+            #xml_table.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
             xml_table.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
 
-        save_adls_gen2(
-            table_to_save=xml_table,
-            storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = container_folder,
-            table = df_name,
-            partitionBy = partitionBy,
-            format = format
-        )
+        if False:
+            save_adls_gen2(
+                table_to_save=xml_table,
+                storage_account_name = storage_account_name,
+                container_name = container_name,
+                container_folder = container_folder,
+                table = df_name,
+                partitionBy = partitionBy,
+                format = format
+            )
 
     print('Done writing to Azure')
 
