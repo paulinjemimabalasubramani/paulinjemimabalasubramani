@@ -1,6 +1,9 @@
 """
 Flatten all XML files and migrate them to ADLS Gen 2 
 
+https://www.finra.org/filing-reporting/web-crd/web-eft-schema-documentation-and-schema-files
+
+
 Spark Web UI:
 http://10.128.25.82:8181/
 
@@ -227,7 +230,7 @@ def process_finra(root, file):
     file_path = os.path.join(root, file)
 
     rowTags = find_rowTags(file_path)
-    print(f'rowTags: {rowTags}')
+    print(f'\nrowTags: {rowTags}\n')
     rowTag = rowTags[0]
 
     schema_file = name_data['table_name']+'.json'
@@ -306,24 +309,26 @@ if manual_iteration:
 
 # %% Process all files
 
+@catch_error(logger)
+def process_all_files():
+    for firm in firms:
+        firm_folder = firm['folder']
+        folder_path = os.path.join(data_path_folder, firm_folder)
+        print(f"Firm: {firm['firm_name']}\n")
 
-for firm in firms:
-    firm_folder = firm['folder']
-    folder_path = os.path.join(data_path_folder, firm_folder)
-    print(f"Firm: {firm['firm_name']}\n")
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                print(os.path.join(root, file), '\n')
 
-    for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            print(os.path.join(root, file), '\n')
-
-            if manual_iteration:
-                print(root, file, '\n', sep='\n')
-            
-            if not manual_iteration:
-                process_finra(root=root, file=file)
+                if manual_iteration:
+                    print(root, file, '\n', sep='\n')
+                
+                if not manual_iteration:
+                    process_finra(root=root, file=file)
 
 
 
+process_all_files()
 
 
 # %%
