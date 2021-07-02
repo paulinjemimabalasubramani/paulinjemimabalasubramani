@@ -233,9 +233,9 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{firm}"
 
-        sql_table = to_string(sql_table, col_types = []) # Convert all columns to string
-        sql_table = remove_column_spaces(sql_table)
-        xml_table1 = xml_table.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table.columns))) # add HASH column for key indicator
+        xml_table1 = to_string(xml_table, col_types = []) # Convert all columns to string
+        xml_table1 = remove_column_spaces(xml_table1)
+        xml_table1 = xml_table1.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table1.columns))) # add HASH column for key indicator
         add_table_to_tableinfo(xml_table=xml_table1, firm=firm, table_name = df_name)
         xml_table1 = add_elt_columns(table_to_add=xml_table1, execution_date=execution_date, reception_date=reception_date)
 
