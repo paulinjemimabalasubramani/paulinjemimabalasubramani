@@ -29,7 +29,7 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name
-from modules.data_functions import  add_elt_columns, execution_date, column_regex, partitionBy
+from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy
 
 
 # %% Spark Libraries
@@ -49,6 +49,9 @@ logger = make_logging(__name__)
 
 
 # %% Parameters
+
+manual_iteration = False
+save_xml_to_adls_flag = True
 
 storage_account_name = "agaggrlakescd"
 #storage_account_name = "agfsclakescd"
@@ -230,19 +233,21 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{firm}"
 
-        xml_table.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table.columns))) # add HASH column for key indicator
+        sql_table = to_string(sql_table, col_types = []) # Convert all columns to string
+        sql_table = remove_column_spaces(sql_table)
+        xml_table1 = xml_table.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table.columns))) # add HASH column for key indicator
+        add_table_to_tableinfo(xml_table=xml_table1, firm=firm, table_name = df_name)
+        xml_table1 = add_elt_columns(table_to_add=xml_table1, execution_date=execution_date, reception_date=reception_date)
 
-        xml_table = add_elt_columns(table_to_add=xml_table, execution_date=execution_date, reception_date=reception_date, partition_date=reception_date)
-
-        if is_pc and False:
+        if is_pc and manual_iteration:
             print(fr'Save to local {database}\{file_name}\{df_name}')
             temp_path = os.path.join(data_path_folder, 'temp')
-            #xml_table.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
-            xml_table.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
+            #xml_table1.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
+            xml_table1.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
 
-        if True:
+        if save_xml_to_adls_flag:
             save_adls_gen2(
-                table_to_save = xml_table,
+                table_to_save = xml_table1,
                 storage_account_name = storage_account_name,
                 container_name = container_name,
                 container_folder = container_folder,
@@ -251,7 +256,7 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
                 format = format
             )
         
-        add_table_to_tableinfo(xml_table=xml_table, firm=firm, table_name = df_name)
+        
 
 
     print('Done writing to Azure')
@@ -331,8 +336,6 @@ def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', w
 
 # %% Manual Iteration
 
-manual_iteration = False
-
 if manual_iteration:
     firm = firms[0]
     firm_folder = firm['folder']
@@ -375,51 +378,55 @@ process_all_files()
 
 # %% Save Tableinfo
 
-tableinfo_keys = list(tableinfo.keys())
-tableinfo_values = list(tableinfo.values())
+@catch_error(logger)
+def save_tableinfo():
+    tableinfo_values = list(tableinfo.values())
 
-list_of_dict = []
-for vi in range(len(tableinfo_values[0])):
-    list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
+    list_of_dict = []
+    for vi in range(len(tableinfo_values[0])):
+        list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
 
-meta_tableinfo = spark.createDataFrame(list_of_dict)
+    meta_tableinfo = spark.createDataFrame(list_of_dict)
 
-meta_tableinfo = meta_tableinfo.select(
-    meta_tableinfo.SourceDatabase,
-    meta_tableinfo.SourceSchema,
-    meta_tableinfo.TableName,
-    meta_tableinfo.SourceColumnName,
-    meta_tableinfo.SourceDataType,
-    meta_tableinfo.SourceDataLength,
-    meta_tableinfo.SourceDataPrecision,
-    meta_tableinfo.SourceDataScale,
-    meta_tableinfo.OrdinalPosition,
-    meta_tableinfo.CleanType,
-    meta_tableinfo.TargetColumnName,
-    meta_tableinfo.TargetDataType,
-    meta_tableinfo.IsNullable,
-    meta_tableinfo.KeyIndicator,
-    meta_tableinfo.IsActive,
-    meta_tableinfo.CreatedDateTime,
-    meta_tableinfo.ModifiedDateTime,
-).orderBy(
-    meta_tableinfo.SourceDatabase,
-    meta_tableinfo.SourceSchema,
-    meta_tableinfo.TableName,
-)
-
-if is_pc: meta_tableinfo.printSchema()
-
-save_adls_gen2(
-        table_to_save = meta_tableinfo,
-        storage_account_name = storage_account_name,
-        container_name = 'tables',
-        container_folder = '',
-        table = f'{tableinfo_name}_{database}',
-        partitionBy = 'ModifiedDateTime',
-        format = format,
+    meta_tableinfo = meta_tableinfo.select(
+        meta_tableinfo.SourceDatabase,
+        meta_tableinfo.SourceSchema,
+        meta_tableinfo.TableName,
+        meta_tableinfo.SourceColumnName,
+        meta_tableinfo.SourceDataType,
+        meta_tableinfo.SourceDataLength,
+        meta_tableinfo.SourceDataPrecision,
+        meta_tableinfo.SourceDataScale,
+        meta_tableinfo.OrdinalPosition,
+        meta_tableinfo.CleanType,
+        meta_tableinfo.TargetColumnName,
+        meta_tableinfo.TargetDataType,
+        meta_tableinfo.IsNullable,
+        meta_tableinfo.KeyIndicator,
+        meta_tableinfo.IsActive,
+        meta_tableinfo.CreatedDateTime,
+        meta_tableinfo.ModifiedDateTime,
+    ).orderBy(
+        meta_tableinfo.SourceDatabase,
+        meta_tableinfo.SourceSchema,
+        meta_tableinfo.TableName,
     )
 
+    if is_pc: meta_tableinfo.printSchema()
+
+    save_adls_gen2(
+            table_to_save = meta_tableinfo,
+            storage_account_name = storage_account_name,
+            container_name = 'tables',
+            container_folder = '',
+            table = f'{tableinfo_name}_{database}',
+            partitionBy = 'ModifiedDateTime',
+            format = format,
+        )
+
+
+
+save_tableinfo()
 
 
 # %%

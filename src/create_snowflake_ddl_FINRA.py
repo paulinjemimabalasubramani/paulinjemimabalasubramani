@@ -217,7 +217,6 @@ if manual_iteration:
 
     table = table_rows[i]
     table_name = table['TableName']
-    table_name = 'Appointment'
     schema_name = table['SourceSchema']
     source_system = table['SourceDatabase']
     print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
