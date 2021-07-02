@@ -29,7 +29,7 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name
-from modules.data_functions import  add_elt_columns, execution_date, column_regex
+from modules.data_functions import  add_elt_columns, execution_date, column_regex, partitionBy
 
 
 # %% Spark Libraries
@@ -57,8 +57,6 @@ container_name = "ingress"
 domain_name = 'financial_professional'
 database = 'FINRA'
 format = 'delta'
-
-partitionBy = 'RECEPTION_DATE'
 
 firms = [
     {'firm_name': 'FSC', 'firm_number': '7461' },
@@ -234,7 +232,7 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
 
         xml_table.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table.columns))) # add HASH column for key indicator
 
-        xml_table = add_elt_columns(table_to_add=xml_table, execution_date=execution_date, reception_date=reception_date)
+        xml_table = add_elt_columns(table_to_add=xml_table, execution_date=execution_date, reception_date=reception_date, partition_date=reception_date)
 
         if is_pc and False:
             print(fr'Save to local {database}\{file_name}\{df_name}')
@@ -242,7 +240,7 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
             #xml_table.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
             xml_table.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
 
-        if False:
+        if True:
             save_adls_gen2(
                 table_to_save = xml_table,
                 storage_account_name = storage_account_name,

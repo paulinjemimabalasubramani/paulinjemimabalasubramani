@@ -178,7 +178,7 @@ def get_master_ingest_list_csv(spark, table_list_path:str, created_datetime:str=
 # %% Read metadata.TableInfo
 
 catch_error(logger)
-def read_tableinfo(spark):
+def read_tableinfo(spark, tableinfo_name:str=tableinfo_name):
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     tableinfo = read_adls_gen2(
