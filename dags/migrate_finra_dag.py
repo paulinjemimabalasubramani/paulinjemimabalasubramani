@@ -19,9 +19,9 @@ import os
 # Parameters
 ###############################################
 spark_master = "spark://spark:7077"
-spark_app_name = "Migrate LR OLTP Tables"
-airflow_app_name = "pull-data-from-oltp-individual"
-description_DAG='Migrate all LR OLTP Tables using Azure Key Vault'
+spark_app_name = "Migrate FINRA Tables"
+airflow_app_name = "migrate_finra"
+description_DAG='Migrate FINRA Tables'
 file_path = "/usr/local/spark/resources/data/airflow.cfg"
 
 
@@ -29,7 +29,7 @@ file_path = "/usr/local/spark/resources/data/airflow.cfg"
 
 
 default_args = {
-    'owner': 'S',
+    'owner': 'Seymur',
     'depends_on_past': False,
 }
 
@@ -52,8 +52,8 @@ with DAG(
     ##if schema run data_type_translation.py
 
     migratelrdata = SparkSubmitOperator(
-         task_id="spark_job_1",
-         application="/usr/local/spark/app/migrate_all_in_master_table.py", # mapped to M:\EDIP-Code\src
+         task_id="migrate_finra",
+         application="/usr/local/spark/app/migrate_finra.py", # mapped to M:\EDIP-Code\src
          name=spark_app_name,
          jars="/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar",
          conn_id="spark_default",
@@ -66,8 +66,8 @@ with DAG(
          dag=dag)
 
     createsaverunsql = SparkSubmitOperator(
-         task_id="spark_job_2",
-         application="/usr/local/spark/app/create_snowflake_ddl.py", # mapped to M:\EDIP-Code\src
+         task_id="snowflake_ddl_finra",
+         application="/usr/local/spark/app/snowflake_ddl_finra.py", # mapped to M:\EDIP-Code\src
          name=spark_app_name,
          jars="/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar",
          conn_id="spark_default",
