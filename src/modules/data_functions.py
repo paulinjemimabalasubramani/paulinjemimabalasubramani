@@ -55,7 +55,7 @@ partitionBy = 'PARTITION_DATE'
 
 
 @catch_error(logger)
-def add_elt_columns(table_to_add, reception_date:str=None, execution_date:str=None, source:str=None, partition_date:str=None):
+def add_elt_columns(table_to_add, reception_date:str=None, execution_date:str=None, source:str=None):
     """
     Add ELT Temporary Columns
     """
@@ -63,13 +63,9 @@ def add_elt_columns(table_to_add, reception_date:str=None, execution_date:str=No
         table_to_add = table_to_add.withColumn('RECEPTION_DATE', lit(str(reception_date)))
     
     if execution_date:
-        if not partition_date:
-            partition_date1 = execution_date
-        else:
-            partition_date1 = partition_date
-
+        partition_date = execution_date.replace(' ', '_').replace(':', '-')
         table_to_add = table_to_add.withColumn('EXECUTION_DATE', lit(str(execution_date)))
-        table_to_add = table_to_add.withColumn(partitionBy, lit(str(partition_date1.replace(' ', '_').replace(':', '-'))))
+        table_to_add = table_to_add.withColumn(partitionBy, lit(str(partition_date)))
     
     if source:
         table_to_add = table_to_add.withColumn('SOURCE', lit(str(source)))
