@@ -220,7 +220,6 @@ def add_table_to_tableinfo(xml_table, firm, table_name):
 
 
 
-
 # %% Write xml table list to Azure
 
 @catch_error(logger)
@@ -255,11 +254,10 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
                 partitionBy = partitionBy,
                 format = format
             )
-        
-        
-
 
     print('Done writing to Azure')
+
+
 
 
 # %% Main Processing of Finra file
@@ -369,7 +367,8 @@ def process_all_files():
                         pass
                     else:
                         process_finra(root=root, file=file, firm=firm['firm_name'])
-        break
+        if is_pc:
+            break
 
 
 
