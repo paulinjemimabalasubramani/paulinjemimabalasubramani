@@ -58,8 +58,8 @@ format = 'delta'
 partitionBy = 'RECEPTION_DATE'
 
 firms = [
-    {'firm_name': 'FSC', 'firm_number': '7461' , 'folder': 'FSC_FINRA'},
-    {'firm_name': 'RAA', 'firm_number': '23131', 'folder': 'RAA_FINRA'},
+    {'firm_name': 'FSC', 'firm_number': '7461' },
+    {'firm_name': 'RAA', 'firm_number': '23131'},
 ]
 
 firm_number_to_name = {firm['firm_number']:firm['firm_name'] for firm in firms}
@@ -297,7 +297,7 @@ def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', w
 
 # %% Manual Iteration
 
-manual_iteration = True
+manual_iteration = False
 
 if manual_iteration:
     firm = firms[0]
@@ -305,7 +305,7 @@ if manual_iteration:
     folder_path = os.path.join(data_path_folder, firm_folder)
 
     root = r"C:\Users\smammadov\packages\Shared\RAA_FINRA\2021-06-20"
-    file = r"23131_PostAccountingReport_2021-06-19.acc"
+    file = r"23131_PostExamsReport_2021-06-19.exm"
     process_finra(root=root, file=file)
 
 
@@ -315,7 +315,7 @@ if manual_iteration:
 @catch_error(logger)
 def process_all_files():
     for firm in firms:
-        firm_folder = firm['folder']
+        firm_folder = firm['firm_number']
         folder_path = os.path.join(data_path_folder, firm_folder)
         print(f"Firm: {firm['firm_name']}\n")
 
@@ -327,7 +327,10 @@ def process_all_files():
                     print(root, file, '\n', sep='\n')
                 
                 if not manual_iteration:
-                    process_finra(root=root, file=file)
+                    if file.endswith('.zip'):
+                        pass
+                    else:
+                        process_finra(root=root, file=file)
 
 
 
