@@ -18,7 +18,8 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys, tempfile, shutil, json
+import os, sys, tempfile, shutil, json, re
+from collections import defaultdict
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
@@ -27,8 +28,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2
-from modules.data_functions import  add_elt_columns, execution_date
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name
+from modules.data_functions import  add_elt_columns, execution_date, column_regex
 
 
 # %% Spark Libraries
@@ -39,6 +40,8 @@ from pyspark.sql.types import StructType, StructField, StringType, TimestampType
 from pyspark.sql import functions as F
 from pyspark.sql.functions import array, col, lit, split, explode, udf
 from pyspark.sql import Row, Window
+
+from pyspark.sql.functions import md5, concat_ws
 
 
 # %% Logging
@@ -63,6 +66,8 @@ firms = [
 ]
 
 firm_number_to_name = {firm['firm_number']:firm['firm_name'] for firm in firms}
+
+KeyIndicator = 'MD5_KEY'
 
 
 # %% Initiate Spark
@@ -188,30 +193,58 @@ def flatten_n_divide_df(xml_table, name:str='main'):
     return df_list
 
 
+# %% Create tableinfo
+
+tableinfo = defaultdict(list)
+
+def add_table_to_tableinfo(xml_table, firm, table_name):
+    for ix, (col_name, col_type) in enumerate(xml_table.dtypes):
+        tableinfo['SourceDatabase'].append(database)
+        tableinfo['SourceSchema'].append(firm)
+        tableinfo['TableName'].append(table_name)
+        tableinfo['SourceColumnName'].append(col_name)
+        tableinfo['SourceDataType'].append(col_type)
+        tableinfo['SourceDataLength'].append(None)
+        tableinfo['SourceDataPrecision'].append(None)
+        tableinfo['SourceDataScale'].append(None)
+        tableinfo['OrdinalPosition'].append(ix+1)
+        tableinfo['CleanType'].append(col_type)
+        tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
+        tableinfo['TargetDataType'].append('string')
+        tableinfo['IsNullable'].append(0 if col_name==KeyIndicator else 1)
+        tableinfo['KeyIndicator'].append(1 if col_name==KeyIndicator else 0)
+        tableinfo['IsActive'].append(1)
+        tableinfo['CreatedDateTime'].append(execution_date)
+        tableinfo['ModifiedDateTime'].append(execution_date)
+
+
+
 
 # %% Write xml table list to Azure
 
 @catch_error(logger)
-def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date):
+def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, firm):
 
     for df_name, xml_table in xml_table_list.items():
         print(f'\n Writing {df_name} to Azure...')
         if is_pc: xml_table.printSchema()
 
         data_type = 'data'
-        container_folder = f"{data_type}/{domain_name}/{database}/{file_name}"
+        container_folder = f"{data_type}/{domain_name}/{database}/{firm}"
+
+        xml_table.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table.columns))) # add HASH column for key indicator
 
         xml_table = add_elt_columns(table_to_add=xml_table, execution_date=execution_date, reception_date=reception_date)
 
-        if is_pc and True:
+        if is_pc and False:
             print(fr'Save to local {database}\{file_name}\{df_name}')
             temp_path = os.path.join(data_path_folder, 'temp')
             #xml_table.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
             xml_table.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
 
-        if False:
+        if True:
             save_adls_gen2(
-                table_to_save=xml_table,
+                table_to_save = xml_table,
                 storage_account_name = storage_account_name,
                 container_name = container_name,
                 container_folder = container_folder,
@@ -219,6 +252,9 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date):
                 partitionBy = partitionBy,
                 format = format
             )
+        
+        add_table_to_tableinfo(xml_table=xml_table, firm=firm, table_name = df_name)
+
 
     print('Done writing to Azure')
 
@@ -226,7 +262,7 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date):
 # %% Main Processing of Finra file
 
 @catch_error(logger)
-def process_finra(root, file):
+def process_finra(root, file, firm):
     name_data = extract_data_from_finra_file_name(file)
     print('\n', name_data)
 
@@ -259,7 +295,8 @@ def process_finra(root, file):
     write_xml_table_list_to_azure(
         xml_table_list= xml_table_list,
         file_name = name_data['table_name'],
-        reception_date = name_data['date']
+        reception_date = name_data['date'],
+        firm = firm,
         )
 
 
@@ -288,7 +325,6 @@ def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', w
             print(f'\nExtracting {zip_file} to {tmpdir}')
             shutil.unpack_archive(filename=zip_file, extract_dir=tmpdir)
             recursive_unzip(tmpdir, temp_path_folder=temp_path_folder, walk=True)
-
 
 
 #recursive_unzip(data_path_folder)
@@ -328,13 +364,31 @@ def process_all_files():
                 
                 if not manual_iteration:
                     if file.endswith('.zip'):
+                        print('PLACEHOLDER FOR ZIP FILES')
                         pass
                     else:
-                        process_finra(root=root, file=file)
+                        process_finra(root=root, file=file, firm=firm['firm_name'])
 
 
 
 process_all_files()
 
 
+# %% Save Tableinfo
+
+meta_tableinfo = spark.createDataFrame(list(tableinfo.values()), list(tableinfo.keys()))
+
+save_adls_gen2(
+        table_to_save = meta_tableinfo,
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = '',
+        table = f'{tableinfo_name}_{database}',
+        partitionBy = 'ModifiedDateTime',
+        format = format,
+    )
+
+
+
 # %%
+

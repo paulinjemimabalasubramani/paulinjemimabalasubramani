@@ -333,8 +333,6 @@ columns = select_columns(columns)
 
 @catch_error(logger)
 def save_table_info_to_adls_gen2(columns):
-    container_folder = ''
-
     save_adls_gen2(
             table_to_save=columns,
             storage_account_name = storage_account_name,
