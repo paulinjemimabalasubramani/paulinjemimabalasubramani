@@ -1,6 +1,8 @@
 # %% Import Libraries
-import os, sys
+import os, sys, json
 from functools import wraps
+from collections import defaultdict
+
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
@@ -15,13 +17,12 @@ from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_
 
 # %% Import Snowflake
 
-import contextlib
 from snowflake.connector import connect as snowflake_connect
 
 
 # %% Spark Libraries
 
-from pyspark.sql.types import StructType, StructField, StringType, TimestampType, BooleanType, DoubleType, IntegerType, FloatType
+from pyspark.sql.types import StructType, StructField, StringType, TimestampType, BooleanType, DoubleType, IntegerType, FloatType, ArrayType
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit, split, explode, udf, expr
@@ -224,18 +225,6 @@ if manual_iteration:
 
 
 
-
-# %% Create Spark Json Schema
-
-spark_json_schema = StructType([
-    StructField("INGEST_STAGE_NAME", StringType(), True),
-    StructField("EXECUTION_DATE", StringType(), True),
-    StructField("FULL_OBJECT_NAME", StringType(), True),
-    StructField("COPY_COMMAND", StringType(), True),
-    StructField("SCHEMA", StringType(), True),
-])
-
-
 # %% Create Json Files
 
 @catch_error(logger)
@@ -245,24 +234,24 @@ def create_json_adls(source_system:str, schema_name:str, table_name:str, column_
 
     sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label} FROM '@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{file_format}') PATTERN = '{wild_card}' ON_ERROR = CONTINUE;"""
 
-    ingest_data = [(
-        f'@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
-        execution_date,
-        TABLE_NAME,
-        sqlstr,
-        SCHEMA_NAME,
-        )]
+    ingest_data = {
+        "INGEST_STAGE_NAME": f'@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
+        "EXECUTION_DATE": execution_date,
+        "FULL_OBJECT_NAME": TABLE_NAME,
+        "COPY_COMMAND": sqlstr,
+        "SCHEMA": SCHEMA_NAME,
+    }
     
-    json_table = spark.createDataFrame(data=ingest_data, schema=spark_json_schema)
+    json_string = json.dumps(ingest_data)
 
     if write_jsons:
         save_adls_gen2(
-            table_to_save = json_table,
+            table_to_save = spark.createDataFrame([json_string], StringType()),
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = f"metadata/{domain_name}/{source_system}/{schema_name}",
             table = table_name,
-            format = 'json'
+            format = 'text'
         )
 
     return ingest_data
@@ -276,23 +265,25 @@ if manual_iteration:
 # %% Create Json List File
 
 @catch_error(logger)
-def create_json_list_adls(source_system:str, ingest_data_list:list):
-    json_table = spark.createDataFrame(data=ingest_data_list, schema=spark_json_schema)
+def create_json_list_adls(ingest_data_list:defaultdict):
+    for source_system, ingest_data_per_source_system in ingest_data_list.items():
+        json_string = json.dumps(ingest_data_per_source_system)
 
-    if write_jsons:
-        save_adls_gen2(
-            table_to_save = json_table,
-            storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = f"metadata/{domain_name}/{source_system}",
-            table = 'ingest_data',
-            format = 'json'
-        )
+        if write_jsons:
+            save_adls_gen2(
+                table_to_save = spark.createDataFrame([json_string], StringType()),
+                storage_account_name = storage_account_name,
+                container_name = container_name,
+                container_folder = f"metadata/{domain_name}/{source_system}",
+                table = 'ingest_data',
+                format = 'text'
+            )
 
 
 if manual_iteration:
-    ingest_data_list = ingest_data
-    create_json_list_adls(source_system=source_system, ingest_data_list=ingest_data_list)
+    ingest_data_list = defaultdict(list)
+    ingest_data_list[source_system].append(ingest_data)
+    create_json_list_adls(ingest_data_list=ingest_data_list)
 
 
 # %% Create Step 1
@@ -660,10 +651,10 @@ if manual_iteration:
 @catch_error(logger)
 def iterate_over_all_tables(tableinfo, table_rows):
     n_tables = len(table_rows)
-    ingest_data_list = []
+    ingest_data_list = defaultdict(list)
 
     for i, table in enumerate(table_rows):
-        # if i>0 and is_pc: break
+        #if i>2 and is_pc: break
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
@@ -683,10 +674,11 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
-            ingest_data_list.extend(ingest_data)
+            ingest_data_list[source_system].append(ingest_data)
 
-    create_json_list_adls(source_system=source_system, ingest_data_list=ingest_data_list)
+    create_json_list_adls(ingest_data_list=ingest_data_list)
     print('Finished Iterating over all tables')
+
 
 if not manual_iteration:
     iterate_over_all_tables(tableinfo, table_rows)

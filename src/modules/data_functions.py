@@ -39,10 +39,11 @@ def to_string(table_to_convert_columns, col_types=['timestamp']):
     """
     Convert timestamp's or other types to string - as it cause errors otherwise.
     """
+    string_type = 'string'
     for col_name, col_type in table_to_convert_columns.dtypes:
-        if not col_types or col_type in col_types:
+        if (not col_types or col_type in col_types) and (col_type != string_type):
             print(f"Converting {col_name} from '{col_type}' to 'string' type")
-            table_to_convert_columns = table_to_convert_columns.withColumn(col_name, col(col_name).cast('string'))
+            table_to_convert_columns = table_to_convert_columns.withColumn(col_name, col(col_name).cast(string_type))
     
     return table_to_convert_columns
 

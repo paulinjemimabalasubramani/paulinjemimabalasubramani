@@ -1,0 +1,37 @@
+{
+    "Indvl": [{
+        "Exms": {
+            "Exm": [{
+                "Appts": {
+                    "Appt": [{
+                        "_VALUE": null,
+                        "_apptDt": null,
+                        "_apptID": null,
+                        "_apptSt": null,
+                        "_cntrCity": null,
+                        "_cntrCntry": null,
+                        "_cntrID": null,
+                        "_cntrSt": null,
+                        "_updtTS": null,
+                        "_vndrCnfrtNb": null,
+                        "_vndrNm": null
+                    }]
+                },
+                "_exmCd": null,
+                "_nrlmtID": null,
+                "_updtTS": null,
+                "_wndwBeginDt": null,
+                "_wndwEndDt": null
+            }]
+        },
+        "Nm": {
+            "_VALUE": null,
+            "_first": null,
+            "_last": null,
+            "_mid": null
+        },
+        "_bllngCd": null,
+        "_indvlPK": null,
+        "_indvlSSN": null
+    }]
+}

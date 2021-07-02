@@ -19,7 +19,18 @@
         },
         "ContEds": {
             "ContEd": [{
-                "Appts": null,
+                "Appts": {
+                    "Appt": [{
+                        "_VALUE": null,
+                        "_apptID": null,
+                        "_apptSt": null,
+                        "_apptDt": null,
+                        "_vndrNm": null,
+                        "_vndrCnfrtNb": null,
+                        "_cntrID": null,
+                        "_updtTS": null
+                    }]
+                },
                 "_begDt": null,
                 "_endDt": null,
                 "_eventDt": null,
@@ -38,7 +49,14 @@
         },
         "CrntRgstns": {
             "CrntRgstn":[{
-                "CrntDfcnys": null,
+                "CrntDfcnys": {
+                    "CrntDfcny": [{
+                        "_VALUE": null,
+                        "_dfcnyCd": null,
+                        "_exmCd": null,
+                        "_createDt": null
+                    }]
+                },
                 "_actvReg": null,
                 "_aprvlDt": null,
                 "_crtnDt": null,
@@ -51,8 +69,45 @@
                 "_updateTS": null
             }]
         },
-        "DRPs": null,
-        "Dsgntns": null,
+        "DRPs": {
+            "OcrnInfo": [{
+                "CustCmplt-102005": {
+                    "_VALUE": null,
+                    "_drpVer": null,
+                    "_dsclrPK": null,
+                    "_amndFl": null,
+                    "_cstmrNm": null,
+                    "_empOrg": null,
+                    "_dtCmplnt": null,
+                    "_allgtns": null,
+                    "_compDmg": null,
+                    "_crntPend": null,
+                    "_stArbtn": null,
+                    "_stClsdNoActn": null,
+                    "_stDnd": null,
+                    "_stLtgtn": null,
+                    "_stSttld": null,
+                    "_stWthdn": null,
+                    "_cmmnt": null
+                },
+                "_ocrn": null,
+                "_dsclrType": null,
+                "_pblcDscl": null,
+                "_rptbl": null,
+                "_frm": null,
+                "_rcvdDt": null,
+                "_src": null,
+                "_frmVer": null
+            }]
+        },
+        "Dsgntns": {
+            "Dsgntn": [{
+                "_VALUE": null,
+                "_cd": null,
+                "_auth": null,
+                "_flngDt": null
+            }]
+        },
         "EmpHists": {
             "EmpHist": [{
                 "DtRng": {
@@ -80,7 +135,15 @@
                 "_type": null
             }]
         },
-        "ExmWvrs": null,
+        "ExmWvrs": {
+            "ExmWvr": [{
+                "_VALUE": null,
+                "_nrlmtID": null,
+                "_exmCd": null,
+                "_regAuth": null,
+                "_efctvDt": null
+            }]
+        },
         "Exms": {
             "Exm": [{
                 "Appts": null,
@@ -106,7 +169,22 @@
                 "_stDt": null
             }]
         },
-        "IAAffltns": null,
+        "IAAffltns": {
+            "IAAffltn": [{
+                "Addr": {
+                    "_VALUE": null,
+                    "_strt1": null,
+                    "_city": null,
+                    "_state": null,
+                    "_postlCd": null,
+                    "_cntryCd": null,
+                    "_cntryOld": null
+                },
+                "_orgPk": null,
+                "_orgNm": null,
+                "_iaAffltnCtgry": null
+            }]
+        },
         "IdentInfo": {
             "Ht": {
                 "_VALUE": null,
@@ -168,12 +246,22 @@
             }]
         },
         "OthrBuss": {
-            "OthrBus": {
+            "OthrBus": [{
                 "_VALUE": null,
                 "_desc": null
-            }
+            }]
         },
-        "OthrNms": null,
+        "OthrNms": {
+            "OthrNm": [{
+                "Nm": {
+                    "_VALUE": null,
+                    "_last": null,
+                    "_first": null,
+                    "_mid": null
+                },
+                "_seqNb": null
+            }]
+        },
         "ResHists": {
             "ResHist": [{
                 "Addr": {

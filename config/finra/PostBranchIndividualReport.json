@@ -1,0 +1,38 @@
+{
+    "BrnchOfc": [{
+        "Addr": {
+            "_VALUE": null,
+            "_city": null,
+            "_cntry": null,
+            "_postlCd": null,
+            "_state": null,
+            "_strt1": null,
+            "_strt2": null
+        },
+        "AsctdIndvls": {
+            "AsctdIndvl": [{
+                "Nm": {
+                    "_VALUE": null,
+                    "_first": null,
+                    "_last": null,
+                    "_mid": null,
+                    "_suf": null
+                },
+                "_indvlPK": null,
+                "_ndpndCntrcrFl": null,
+                "_sprvPICFl": null
+            }]
+        },
+        "OthrNms": {
+            "OthrNm": [{
+                "_VALUE": null,
+                "_Nm": null
+            }]
+        },
+        "_bllngCd": null,
+        "_brnchCdNb": null,
+        "_brnchPK": null,
+        "_dstrtPK": null,
+        "_oprnlStCd": null
+    }]
+}
