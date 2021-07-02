@@ -204,9 +204,9 @@ def add_table_to_tableinfo(xml_table, firm, table_name):
         tableinfo['TableName'].append(table_name)
         tableinfo['SourceColumnName'].append(col_name)
         tableinfo['SourceDataType'].append(col_type)
-        tableinfo['SourceDataLength'].append(None)
-        tableinfo['SourceDataPrecision'].append(None)
-        tableinfo['SourceDataScale'].append(None)
+        tableinfo['SourceDataLength'].append(0)
+        tableinfo['SourceDataPrecision'].append(0)
+        tableinfo['SourceDataScale'].append(0)
         tableinfo['OrdinalPosition'].append(ix+1)
         tableinfo['CleanType'].append(col_type)
         tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
@@ -242,7 +242,7 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
             #xml_table.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
             xml_table.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
 
-        if True:
+        if False:
             save_adls_gen2(
                 table_to_save = xml_table,
                 storage_account_name = storage_account_name,
@@ -368,6 +368,7 @@ def process_all_files():
                         pass
                     else:
                         process_finra(root=root, file=file, firm=firm['firm_name'])
+        break
 
 
 
@@ -376,12 +377,45 @@ process_all_files()
 
 # %% Save Tableinfo
 
-meta_tableinfo = spark.createDataFrame(list(tableinfo.values()), list(tableinfo.keys()))
+tableinfo_keys = list(tableinfo.keys())
+tableinfo_values = list(tableinfo.values())
+
+list_of_dict = []
+for vi in range(len(tableinfo_values[0])):
+    list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
+
+meta_tableinfo = spark.createDataFrame(list_of_dict)
+
+meta_tableinfo = meta_tableinfo.select(
+    meta_tableinfo.SourceDatabase,
+    meta_tableinfo.SourceSchema,
+    meta_tableinfo.TableName,
+    meta_tableinfo.SourceColumnName,
+    meta_tableinfo.SourceDataType,
+    meta_tableinfo.SourceDataLength,
+    meta_tableinfo.SourceDataPrecision,
+    meta_tableinfo.SourceDataScale,
+    meta_tableinfo.OrdinalPosition,
+    meta_tableinfo.CleanType,
+    meta_tableinfo.TargetColumnName,
+    meta_tableinfo.TargetDataType,
+    meta_tableinfo.IsNullable,
+    meta_tableinfo.KeyIndicator,
+    meta_tableinfo.IsActive,
+    meta_tableinfo.CreatedDateTime,
+    meta_tableinfo.ModifiedDateTime,
+).orderBy(
+    meta_tableinfo.SourceDatabase,
+    meta_tableinfo.SourceSchema,
+    meta_tableinfo.TableName,
+)
+
+if is_pc: meta_tableinfo.printSchema()
 
 save_adls_gen2(
         table_to_save = meta_tableinfo,
         storage_account_name = storage_account_name,
-        container_name = container_name,
+        container_name = 'tables',
         container_folder = '',
         table = f'{tableinfo_name}_{database}',
         partitionBy = 'ModifiedDateTime',
