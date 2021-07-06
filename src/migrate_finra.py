@@ -305,14 +305,35 @@ if manual_iteration:
     process_finra_file(root=root, file=file, firm_name=firm_name)
 
 
+# %% Get Maximum Date from file names:
+
+@catch_error(logger)
+def get_max_date(folder_path):
+    max_date:str=None
+
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            name_data = extract_data_from_finra_file_name(file)
+            if not max_date or max_date<name_data['date']:
+                max_date = name_data['date']
+
+    print(f'\nMax Date: {max_date}\n')
+    return max_date
+
+
+
 
 # %% Process Single File
 
+@catch_error(logger)
 def process_one_file(root:str, file:str, firm_name:str):
+    file_path = os.path.join(root, file)
+    print(f'\nProcessing {file_path}')
+
     if file.endswith('.zip'):
         with tempfile.TemporaryDirectory() as tmpdir:
             print(f'\nExtracting {file} to {tmpdir}')
-            shutil.unpack_archive(filename=os.path.join(root, file), extract_dir=tmpdir)
+            shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
             for root1, dirs1, files1 in os.walk(tmpdir):
                 for file1 in files1:
                     process_one_file(root=root1, file=file1, firm_name=firm_name)
@@ -334,12 +355,13 @@ def process_all_files():
             print(f'Path does not exist: {folder_path}   -> SKIPPING')
             continue
 
+        max_date = get_max_date(folder_path=folder_path)
+
         for root, dirs, files in os.walk(folder_path):
             for file in files:
-                print(os.path.join(root, file), '\n')
-
-                if manual_iteration:
-                    print(root, file, '\n', sep='\n')
+                if max_date not in file:
+                    print(f'Not Max Date {max_date}. Skipping file {os.path.join(root, file)}')
+                    continue
                 
                 if not manual_iteration:
                     process_one_file(root=root, file=file, firm_name=firm['firm_name'])
