@@ -34,13 +34,16 @@ logger = make_logging(__name__)
 
 
 # %% Parameters
-save_to_adls = True
-execute_at_snowflake = True
-write_jsons = True
+save_to_adls = False
+execute_at_snowflake = False
+write_jsons = False
 
 manual_iteration = False
 if not is_pc:
     manual_iteration = False
+    save_to_adls = True
+    execute_at_snowflake = True
+    write_jsons = True
 
 snowflake_account = 'advisorgroup-edip'
 
@@ -278,6 +281,16 @@ def create_json_list_adls(ingest_data_list:defaultdict):
                 table = 'ingest_data',
                 format = 'text'
             )
+        
+        save_adls_gen2(
+            table_to_save = spark.read.json(spark.sparkContext.parallelize([json_string])).coalesce(1),
+            storage_account_name = storage_account_name,
+            container_name = container_name,
+            container_folder = f"metadata/{domain_name}/{source_system}",
+            table = 'metadata_config_test_sm',
+            format = 'parquet'
+        )
+
 
 
 if manual_iteration:
@@ -654,7 +667,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
     ingest_data_list = defaultdict(list)
 
     for i, table in enumerate(table_rows):
-        #if i>2 and is_pc: break
+        if i>3 and is_pc: break
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
@@ -676,12 +689,18 @@ def iterate_over_all_tables(tableinfo, table_rows):
             ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
             ingest_data_list[source_system].append(ingest_data)
 
-    create_json_list_adls(ingest_data_list=ingest_data_list)
     print('Finished Iterating over all tables')
+    return ingest_data_list
 
 
 if not manual_iteration:
-    iterate_over_all_tables(tableinfo, table_rows)
+    ingest_data_list = iterate_over_all_tables(tableinfo, table_rows)
+
+
+# %% Write Ingest Data
+
+if not manual_iteration:
+    create_json_list_adls(ingest_data_list=ingest_data_list)
 
 
 # %% Close Showflake connection
