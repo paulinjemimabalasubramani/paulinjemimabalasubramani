@@ -6,6 +6,9 @@
 trigger:
 - master
 
+pool:
+  name:EDC_Agents
+
 steps:
 - script: echo Hello, world!
   displayName: 'Run a one-line script'
