@@ -22,7 +22,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_sql
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, get_azure_sp
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, get_azure_sp, container_name, file_format, to_storage_account_name
 from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy
 
 
@@ -42,12 +42,10 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-server = 'TSQLOLTP01'
+sql_server = 'TSQLOLTP01'
 
-storage_account_name = "agaggrlakescd"
-container_name = "ingress"
+storage_account_name = to_storage_account_name()
 domain_name = 'financial_professional'
-format = 'delta'
 
 reception_date = execution_date
 source = 'LR'
@@ -70,7 +68,7 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 # %% Read SQL Config
 
-_, sql_id, sql_pass = get_azure_sp(server.lower())
+_, sql_id, sql_pass = get_azure_sp(sql_server.lower())
 
 
 
@@ -90,7 +88,7 @@ def iterate_over_all_tables(table_rows):
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
 
-        sql_table = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=schema, table=table, database=database, server=server)
+        sql_table = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=schema, table=table, database=database, server=sql_server)
         sql_table = to_string(sql_table, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
         sql_table = remove_column_spaces(sql_table)
         sql_table = add_elt_columns(table_to_add=sql_table, reception_date=reception_date, execution_date=execution_date, source=source)
@@ -102,7 +100,7 @@ def iterate_over_all_tables(table_rows):
             container_folder = container_folder,
             table = table,
             partitionBy = partitionBy,
-            format = format
+            file_format = file_format
         )
     
     print('Finished Migrating All Tables')

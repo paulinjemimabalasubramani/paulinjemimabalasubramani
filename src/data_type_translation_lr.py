@@ -10,8 +10,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_csv, read_sql
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name, get_azure_sp
-from modules.data_functions import execution_date, column_regex
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name, get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name
+from modules.data_functions import execution_date, column_regex, tableinfo_partitionBy
 
 
 # %% Spark Libraries
@@ -37,15 +37,12 @@ assert os.path.isfile(table_list_path), f"File not found: {table_list_path}"
 data_type_translation_id = 'sqlserver_snowflake'
 
 database = 'LR' # TABLE_CATALOG
-server = 'TSQLOLTP01'
+sql_server = 'TSQLOLTP01'
 
-storage_account_name = "agaggrlakescd"
-container_name = "tables"
-format = 'delta'
+storage_account_name = to_storage_account_name()
 
 created_datetime = execution_date
 modified_datetime = execution_date
-partitionBy = 'ModifiedDateTime'
 
 
 # %% Create Session
@@ -90,11 +87,11 @@ def get_translation(data_type_translation_path, data_type_translation_id:str, sa
         save_adls_gen2(
                 table_to_save=translation,
                 storage_account_name = storage_account_name,
-                container_name = container_name,
+                container_name = tableinfo_container_name,
                 container_folder = '',
                 table = 'metadata.DataTypeTranslation',
-                partitionBy = partitionBy,
-                format = format,
+                partitionBy = tableinfo_partitionBy,
+                file_format = file_format,
             )
 
     # Filter the DataTypeTranslation for current use
@@ -114,24 +111,24 @@ if is_pc: translation.show(5)
 
 # %% Read SQL Config
 
-_, sql_id, sql_pass = get_azure_sp(server.lower())
+_, sql_id, sql_pass = get_azure_sp(sql_server.lower())
 
 
 # %% Get Table and Column Metadata from information_schema
 
-sql_tables = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='TABLES', database=database, server=server)
+sql_tables = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='TABLES', database=database, server=sql_server)
 if is_pc: sql_tables.printSchema()
 if is_pc: sql_tables.show(5)
 
-sql_columns = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='COLUMNS', database=database, server=server)
+sql_columns = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='COLUMNS', database=database, server=sql_server)
 if is_pc: sql_columns.printSchema()
 if is_pc: sql_columns.show(5)
 
-sql_table_constraints = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='TABLE_CONSTRAINTS', database=database, server=server)
+sql_table_constraints = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='TABLE_CONSTRAINTS', database=database, server=sql_server)
 if is_pc: sql_table_constraints.printSchema()
 if is_pc: sql_table_constraints.show(5)
 
-sql_key_column_usage = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='KEY_COLUMN_USAGE', database=database, server=server)
+sql_key_column_usage = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='KEY_COLUMN_USAGE', database=database, server=sql_server)
 if is_pc: sql_key_column_usage.printSchema()
 if is_pc: sql_key_column_usage.show(5)
 
@@ -336,11 +333,11 @@ def save_table_info_to_adls_gen2(columns):
     save_adls_gen2(
             table_to_save=columns,
             storage_account_name = storage_account_name,
-            container_name = container_name,
+            container_name = tableinfo_container_name,
             container_folder = '',
             table = tableinfo_name,
-            partitionBy = partitionBy,
-            format = format,
+            partitionBy = tableinfo_partitionBy,
+            file_format = file_format,
         )
 
 

@@ -28,8 +28,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name
-from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, to_storage_account_name
+from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, firms
 
 
 # %% Spark Libraries
@@ -53,20 +53,10 @@ logger = make_logging(__name__)
 manual_iteration = False
 save_xml_to_adls_flag = True
 
-storage_account_name = "agaggrlakescd"
-#storage_account_name = "agfsclakescd"
+storage_account_name = to_storage_account_name()
 
-container_name = "ingress"
 domain_name = 'financial_professional'
 database = 'FINRA'
-format = 'delta'
-
-firms = [
-    {'firm_name': 'FSC', 'firm_number': '7461' },
-    {'firm_name': 'RAA', 'firm_number': '23131'},
-]
-
-firm_number_to_name = {firm['firm_number']:firm['firm_name'] for firm in firms}
 
 KeyIndicator = 'MD5_KEY'
 
@@ -252,7 +242,7 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
                 container_folder = container_folder,
                 table = df_name,
                 partitionBy = partitionBy,
-                format = format
+                file_format = file_format
             )
 
     print('Done writing to Azure')
@@ -420,7 +410,7 @@ def save_tableinfo():
             container_folder = '',
             table = f'{tableinfo_name}_{database}',
             partitionBy = 'ModifiedDateTime',
-            format = format,
+            file_format = file_format,
         )
 
 
