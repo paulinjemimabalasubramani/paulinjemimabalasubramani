@@ -53,8 +53,6 @@ logger = make_logging(__name__)
 manual_iteration = False
 save_xml_to_adls_flag = True
 
-storage_account_name = to_storage_account_name()
-
 domain_name = 'financial_professional'
 database = 'FINRA'
 
@@ -63,11 +61,6 @@ KeyIndicator = 'MD5_KEY'
 
 # %% Initiate Spark
 spark = create_spark()
-
-
-# %% Setup spark to ADLS Gen2 connection
-
-setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 
 # %% Get Paths
@@ -234,6 +227,9 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
             #xml_table1.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
             xml_table1.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
 
+        storage_account_name = to_storage_account_name(firm_name=firm_name)
+        setup_spark_adls_gen2_connection(spark, storage_account_name)
+
         if save_xml_to_adls_flag:
             save_adls_gen2(
                 table_to_save = xml_table1,
@@ -386,6 +382,9 @@ def save_tableinfo():
 
     meta_tableinfo = spark.createDataFrame(list_of_dict)
     meta_tableinfo = select_tableinfo_columns(tableinfo=meta_tableinfo)
+
+    storage_account_name = to_storage_account_name() # keep default storage account name for tableinfo
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     save_adls_gen2(
             table_to_save = meta_tableinfo,
