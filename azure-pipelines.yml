@@ -7,7 +7,7 @@ trigger:
 - master
 
 pool:
-  name:EDC_Agents
+  name: EDC_Agents
 
 steps:
 - script: echo Hello, world!
