@@ -209,7 +209,7 @@ def add_table_to_tableinfo(xml_table, firm_name, table_name):
 def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, firm_name, storage_account_name):
 
     for df_name, xml_table in xml_table_list.items():
-        print(f'\n Writing {df_name} to Azure...')
+        print(f'\nWriting {df_name} to Azure...')
         if is_pc: xml_table.printSchema()
 
         data_type = 'data'
