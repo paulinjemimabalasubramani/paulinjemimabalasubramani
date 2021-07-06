@@ -34,9 +34,9 @@ logger = make_logging(__name__)
 
 
 # %% Parameters
-save_to_adls = False
-execute_at_snowflake = False
-write_jsons = False
+save_to_adls = True
+execute_at_snowflake = True
+write_jsons = True
 
 manual_iteration = False
 if not is_pc:
