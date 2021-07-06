@@ -343,7 +343,8 @@ def process_all_files():
     for firm in firms:
         firm_folder = firm['firm_number']
         folder_path = os.path.join(data_path_folder, firm_folder)
-        print(f"Firm: {firm['firm_name']}, Firm Number: {firm['firm_number']}\n")
+        firm_name = firm['firm_name']
+        print(f"Firm: {firm_name}, Firm Number: {firm['firm_number']}\n")
 
         if not os.path.isdir(folder_path):
             print(f'Path does not exist: {folder_path}   -> SKIPPING')
@@ -359,12 +360,13 @@ def process_all_files():
                 if max_date not in file:
                     print(f'Not Max Date {max_date}. Skipping file {os.path.join(root, file)}')
                     continue
+
+                if is_pc and 'IndividualInformationReport' in file:
+                    continue
                 
                 if not manual_iteration:
-                    process_one_file(root=root, file=file, firm_name=firm['firm_name'], storage_account_name=storage_account_name)
+                    process_one_file(root=root, file=file, firm_name=firm_name, storage_account_name=storage_account_name)
 
-        if is_pc:
-            break
 
 
 
