@@ -40,7 +40,45 @@ storage_account_name = to_storage_account_name() # Default Storage Account Name
 tableinfo_container_name = "tables"
 container_name = "ingress" # Default Container Name
 tableinfo_name = 'metadata.TableInfo'
+tableinfo_partitionBy = 'ModifiedDateTime'
 file_format = 'delta' # Default File Format
+
+
+
+# %% Select TableInfo Columns
+
+@catch_error(logger)
+def select_tableinfo_columns(tableinfo):
+    column_names = [
+        'SourceDatabase',
+        'SourceSchema',
+        'TableName',
+        'SourceColumnName',
+        'SourceDataType',
+        'SourceDataLength',
+        'SourceDataPrecision',
+        'SourceDataScale',
+        'OrdinalPosition',
+        'CleanType',
+        'TargetColumnName',
+        'TargetDataType',
+        'IsNullable',
+        'KeyIndicator',
+        'IsActive',
+        'CreatedDateTime',
+        'ModifiedDateTime',
+        ]
+
+    column_orderby = [
+        'SourceDatabase',
+        'SourceSchema',
+        'TableName',
+    ]
+
+    selected_tableinfo = tableinfo.select(*column_names).orderBy(*column_orderby)
+
+    if is_pc: selected_tableinfo.printSchema()
+    return selected_tableinfo
 
 
 

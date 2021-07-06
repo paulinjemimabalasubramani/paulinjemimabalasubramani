@@ -67,7 +67,6 @@ def to_string(table_to_convert_columns, col_types=['timestamp']):
 
 elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE']
 partitionBy = 'PARTITION_DATE'
-tableinfo_partitionBy = 'ModifiedDateTime'
 
 
 @catch_error(logger)

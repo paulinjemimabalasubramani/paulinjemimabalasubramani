@@ -28,7 +28,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, to_storage_account_name
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, to_storage_account_name, select_tableinfo_columns, tableinfo_partitionBy, tableinfo_container_name
 from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, firms
 
 
@@ -342,7 +342,7 @@ def process_all_files():
     for firm in firms:
         firm_folder = firm['firm_number']
         folder_path = os.path.join(data_path_folder, firm_folder)
-        print(f"Firm: {firm['firm_name']}\n")
+        print(f"Firm: {firm['firm_name']}, Firm Number: {firm['firm_number']}\n")
 
         for root, dirs, files in os.walk(folder_path):
             for file in files:
@@ -376,40 +376,15 @@ def save_tableinfo():
         list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
 
     meta_tableinfo = spark.createDataFrame(list_of_dict)
-
-    meta_tableinfo = meta_tableinfo.select(
-        meta_tableinfo.SourceDatabase,
-        meta_tableinfo.SourceSchema,
-        meta_tableinfo.TableName,
-        meta_tableinfo.SourceColumnName,
-        meta_tableinfo.SourceDataType,
-        meta_tableinfo.SourceDataLength,
-        meta_tableinfo.SourceDataPrecision,
-        meta_tableinfo.SourceDataScale,
-        meta_tableinfo.OrdinalPosition,
-        meta_tableinfo.CleanType,
-        meta_tableinfo.TargetColumnName,
-        meta_tableinfo.TargetDataType,
-        meta_tableinfo.IsNullable,
-        meta_tableinfo.KeyIndicator,
-        meta_tableinfo.IsActive,
-        meta_tableinfo.CreatedDateTime,
-        meta_tableinfo.ModifiedDateTime,
-    ).orderBy(
-        meta_tableinfo.SourceDatabase,
-        meta_tableinfo.SourceSchema,
-        meta_tableinfo.TableName,
-    )
-
-    if is_pc: meta_tableinfo.printSchema()
+    meta_tableinfo = select_tableinfo_columns(tableinfo=meta_tableinfo)
 
     save_adls_gen2(
             table_to_save = meta_tableinfo,
             storage_account_name = storage_account_name,
-            container_name = 'tables',
+            container_name = tableinfo_container_name,
             container_folder = '',
             table = f'{tableinfo_name}_{database}',
-            partitionBy = 'ModifiedDateTime',
+            partitionBy = tableinfo_partitionBy,
             file_format = file_format,
         )
 

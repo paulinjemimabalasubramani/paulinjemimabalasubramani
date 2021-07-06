@@ -10,8 +10,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_csv, read_sql
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name, get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name
-from modules.data_functions import execution_date, column_regex, tableinfo_partitionBy
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name, get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, tableinfo_partitionBy, select_tableinfo_columns
+from modules.data_functions import execution_date, column_regex
 
 
 # %% Spark Libraries
@@ -289,41 +289,7 @@ def add_precision(columns):
 
 
 columns = add_precision(columns)
-
-
-# %% Select Columns and Order the Data
-
-@catch_error(logger)
-def select_columns(columns):
-    columns = columns.select(
-        columns.SourceDatabase,
-        columns.SourceSchema,
-        columns.TableName,
-        columns.SourceColumnName,
-        columns.SourceDataType,
-        columns.SourceDataLength,
-        columns.SourceDataPrecision,
-        columns.SourceDataScale,
-        columns.OrdinalPosition,
-        columns.CleanType,
-        columns.TargetColumnName,
-        columns.TargetDataType,
-        columns.IsNullable,
-        columns.KeyIndicator,
-        columns.IsActive,
-        columns.CreatedDateTime,
-        columns.ModifiedDateTime,
-    ).orderBy(
-        columns.SourceDatabase,
-        columns.SourceSchema,
-        columns.TableName,
-    )
-
-    if is_pc: columns.printSchema()
-    return columns
-
-
-columns = select_columns(columns)
+columns = select_tableinfo_columns(columns)
 
 
 # %% Table Info to ADLS Gen 2
