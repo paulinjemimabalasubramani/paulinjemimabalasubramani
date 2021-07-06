@@ -206,7 +206,7 @@ def add_table_to_tableinfo(xml_table, firm_name, table_name):
 # %% Write xml table list to Azure
 
 @catch_error(logger)
-def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, firm_name):
+def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, firm_name, storage_account_name):
 
     for df_name, xml_table in xml_table_list.items():
         print(f'\n Writing {df_name} to Azure...')
@@ -227,9 +227,6 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
             #xml_table1.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
             xml_table1.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
 
-        storage_account_name = to_storage_account_name(firm_name=firm_name)
-        setup_spark_adls_gen2_connection(spark, storage_account_name)
-
         if save_xml_to_adls_flag:
             save_adls_gen2(
                 table_to_save = xml_table1,
@@ -249,7 +246,7 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
 # %% Main Processing of Finra file
 
 @catch_error(logger)
-def process_finra_file(root, file, firm_name):
+def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:str):
     name_data = extract_data_from_finra_file_name(file)
     print('\n', name_data)
 
@@ -284,6 +281,7 @@ def process_finra_file(root, file, firm_name):
         file_name = name_data['table_name'],
         reception_date = name_data['date'],
         firm_name = firm_name,
+        storage_account_name = storage_account_name,
         )
 
 
@@ -322,7 +320,7 @@ def get_max_date(folder_path):
 # %% Process Single File
 
 @catch_error(logger)
-def process_one_file(root:str, file:str, firm_name:str):
+def process_one_file(root:str, file:str, firm_name:str, storage_account_name:str):
     file_path = os.path.join(root, file)
     print(f'\nProcessing {file_path}')
 
@@ -332,9 +330,9 @@ def process_one_file(root:str, file:str, firm_name:str):
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
             for root1, dirs1, files1 in os.walk(tmpdir):
                 for file1 in files1:
-                    process_one_file(root=root1, file=file1, firm_name=firm_name)
+                    process_one_file(root=root1, file=file1, firm_name=firm_name, storage_account_name=storage_account_name)
     else:
-        process_finra_file(root=root, file=file, firm_name=firm_name)
+        process_finra_file(root=root, file=file, firm_name=firm_name, storage_account_name=storage_account_name)
 
 
 
@@ -351,6 +349,9 @@ def process_all_files():
             print(f'Path does not exist: {folder_path}   -> SKIPPING')
             continue
 
+        storage_account_name = to_storage_account_name(firm_name=firm_name)
+        setup_spark_adls_gen2_connection(spark, storage_account_name)
+
         max_date = get_max_date(folder_path=folder_path)
 
         for root, dirs, files in os.walk(folder_path):
@@ -360,7 +361,7 @@ def process_all_files():
                     continue
                 
                 if not manual_iteration:
-                    process_one_file(root=root, file=file, firm_name=firm['firm_name'])
+                    process_one_file(root=root, file=file, firm_name=firm['firm_name'], storage_account_name=storage_account_name)
 
         if is_pc:
             break
