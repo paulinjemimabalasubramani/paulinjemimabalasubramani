@@ -10,15 +10,10 @@ pool:
   name: EDC_Agents
 
 steps:
-- script: echo Hello, world!
+- script: dir
   displayName: 'Run a one-line script'
 
 - script: |
     echo Add other tasks to build, test, and deploy your project.
     echo See https://aka.ms/yaml
   displayName: 'Run a multi-line script'
-- task: CopyFiles@2
-  inputs:
-    SourceFolder: '/src/'
-    Contents: '**'
-    TargetFolder: '$(build.artifactstagingdirectory)'
