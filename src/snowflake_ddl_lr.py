@@ -12,7 +12,7 @@ from modules.common_functions import make_logging, catch_error
 from modules.data_functions import elt_audit_columns, partitionBy, execution_date
 from modules.config import is_pc
 from modules.spark_functions import create_spark
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, read_adls_gen2, get_azure_sp
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, read_adls_gen2, get_azure_sp, file_format, container_name, to_storage_account_name
 
 
 # %% Import Snowflake
@@ -41,20 +41,21 @@ write_jsons = True
 manual_iteration = False
 if not is_pc:
     manual_iteration = False
+    save_to_adls = True
+    execute_at_snowflake = True
+    write_jsons = True
 
 snowflake_account = 'advisorgroup-edip'
 
-storage_account_name = "agaggrlakescd"
-container_name = "ingress"
+storage_account_name = to_storage_account_name()
 domain_name = 'financial_professional'
-format = 'delta'
 
 ddl_folder = f'metadata/{domain_name}/DDL'
 
 variant_label = '_VARIANT'
 variant_alias = 'SRC'
 
-file_format = 'PARQUET'
+FILE_FORMAT = 'PARQUET'
 wild_card = '.*.parquet'
 stream_suffix = '_STREAM'
 
@@ -165,7 +166,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
         container_name = container_name,
         container_folder = container_folder,
         table = table_name,
-        format = format
+        file_format = file_format
     )
 
     PARTITION_LIST = table_for_paritition.select(F.max(col(partitionBy)).alias('part')).collect()
@@ -195,7 +196,7 @@ def action_step(step:int):
                     container_name = container_name,
                     container_folder = f"{ddl_folder}/{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}",
                     table = kwargs['table_name'],
-                    format = 'text'
+                    file_format = 'text'
                 )
 
             if execute_at_snowflake:
@@ -232,7 +233,7 @@ def create_json_adls(source_system:str, schema_name:str, table_name:str, column_
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label} FROM '@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{file_format}') PATTERN = '{wild_card}' ON_ERROR = CONTINUE;"""
+    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label} FROM '@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{FILE_FORMAT}') PATTERN = '{wild_card}' ON_ERROR = CONTINUE;"""
 
     ingest_data = {
         "INGEST_STAGE_NAME": f'@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
@@ -251,7 +252,7 @@ def create_json_adls(source_system:str, schema_name:str, table_name:str, column_
             container_name = container_name,
             container_folder = f"metadata/{domain_name}/{source_system}/{schema_name}",
             table = table_name,
-            format = 'text'
+            file_format = 'text'
         )
 
     return ingest_data
@@ -276,8 +277,18 @@ def create_json_list_adls(ingest_data_list:defaultdict):
                 container_name = container_name,
                 container_folder = f"metadata/{domain_name}/{source_system}",
                 table = 'ingest_data',
-                format = 'text'
+                file_format = 'text'
             )
+        
+        save_adls_gen2(
+            table_to_save = spark.read.json(spark.sparkContext.parallelize([json_string])).coalesce(1),
+            storage_account_name = storage_account_name,
+            container_name = container_name,
+            container_folder = f"metadata/{domain_name}/{source_system}",
+            table = 'metadata_config_test_sm',
+            file_format = 'parquet'
+        )
+
 
 
 if manual_iteration:
@@ -337,7 +348,7 @@ def step3(source_system:str, schema_name:str, table_name:str, column_names:list,
     sqlstr += f"""
 COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
 FROM '@ELT_STAGE.AGGR_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
-FILE_FORMAT = (type='{file_format}')
+FILE_FORMAT = (type='{FILE_FORMAT}')
 PATTERN = '{wild_card}'
 ON_ERROR = CONTINUE;
 
@@ -654,7 +665,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
     ingest_data_list = defaultdict(list)
 
     for i, table in enumerate(table_rows):
-        #if i>2 and is_pc: break
+        if i>3 and is_pc: break
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
@@ -676,12 +687,18 @@ def iterate_over_all_tables(tableinfo, table_rows):
             ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
             ingest_data_list[source_system].append(ingest_data)
 
-    create_json_list_adls(ingest_data_list=ingest_data_list)
     print('Finished Iterating over all tables')
+    return ingest_data_list
 
 
 if not manual_iteration:
-    iterate_over_all_tables(tableinfo, table_rows)
+    ingest_data_list = iterate_over_all_tables(tableinfo, table_rows)
+
+
+# %% Write Ingest Data
+
+if not manual_iteration:
+    create_json_list_adls(ingest_data_list=ingest_data_list)
 
 
 # %% Close Showflake connection

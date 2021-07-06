@@ -28,8 +28,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name
-from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, to_storage_account_name, select_tableinfo_columns, tableinfo_partitionBy, tableinfo_container_name
+from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, firms
 
 
 # %% Spark Libraries
@@ -53,31 +53,14 @@ logger = make_logging(__name__)
 manual_iteration = False
 save_xml_to_adls_flag = True
 
-storage_account_name = "agaggrlakescd"
-#storage_account_name = "agfsclakescd"
-
-container_name = "ingress"
 domain_name = 'financial_professional'
 database = 'FINRA'
-format = 'delta'
-
-firms = [
-    {'firm_name': 'FSC', 'firm_number': '7461' },
-    {'firm_name': 'RAA', 'firm_number': '23131'},
-]
-
-firm_number_to_name = {firm['firm_number']:firm['firm_name'] for firm in firms}
 
 KeyIndicator = 'MD5_KEY'
 
 
 # %% Initiate Spark
 spark = create_spark()
-
-
-# %% Setup spark to ADLS Gen2 connection
-
-setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 
 # %% Get Paths
@@ -198,10 +181,10 @@ def flatten_n_divide_df(xml_table, name:str='main'):
 
 tableinfo = defaultdict(list)
 
-def add_table_to_tableinfo(xml_table, firm, table_name):
+def add_table_to_tableinfo(xml_table, firm_name, table_name):
     for ix, (col_name, col_type) in enumerate(xml_table.dtypes):
         tableinfo['SourceDatabase'].append(database)
-        tableinfo['SourceSchema'].append(firm)
+        tableinfo['SourceSchema'].append(firm_name)
         tableinfo['TableName'].append(table_name)
         tableinfo['SourceColumnName'].append(col_name)
         tableinfo['SourceDataType'].append(col_type)
@@ -223,19 +206,19 @@ def add_table_to_tableinfo(xml_table, firm, table_name):
 # %% Write xml table list to Azure
 
 @catch_error(logger)
-def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, firm):
+def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, firm_name, storage_account_name):
 
     for df_name, xml_table in xml_table_list.items():
-        print(f'\n Writing {df_name} to Azure...')
+        print(f'\nWriting {df_name} to Azure...')
         if is_pc: xml_table.printSchema()
 
         data_type = 'data'
-        container_folder = f"{data_type}/{domain_name}/{database}/{firm}"
+        container_folder = f"{data_type}/{domain_name}/{database}/{firm_name}"
 
         xml_table1 = to_string(xml_table, col_types = []) # Convert all columns to string
         xml_table1 = remove_column_spaces(xml_table1)
         xml_table1 = xml_table1.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table1.columns))) # add HASH column for key indicator
-        add_table_to_tableinfo(xml_table=xml_table1, firm=firm, table_name = df_name)
+        add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name = df_name)
         xml_table1 = add_elt_columns(table_to_add=xml_table1, execution_date=execution_date, reception_date=reception_date)
 
         if is_pc and manual_iteration:
@@ -252,7 +235,7 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
                 container_folder = container_folder,
                 table = df_name,
                 partitionBy = partitionBy,
-                format = format
+                file_format = file_format
             )
 
     print('Done writing to Azure')
@@ -263,7 +246,7 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
 # %% Main Processing of Finra file
 
 @catch_error(logger)
-def process_finra(root, file, firm):
+def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:str):
     name_data = extract_data_from_finra_file_name(file)
     print('\n', name_data)
 
@@ -297,38 +280,9 @@ def process_finra(root, file, firm):
         xml_table_list= xml_table_list,
         file_name = name_data['table_name'],
         reception_date = name_data['date'],
-        firm = firm,
+        firm_name = firm_name,
+        storage_account_name = storage_account_name,
         )
-
-
-
-
-# %% Recursive Unzip
-
-@catch_error(logger)
-def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', walk:bool=False):
-    zip_files = []
-
-    if walk:
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                if file.endswith('.zip'):
-                    zip_files.append(os.path.join(root, file))
-                else:
-                    process_finra(root, file)
-    else:
-        for file in os.listdir(folder_path):
-            if file.endswith('.zip'):
-                zip_files.append(os.path.join(folder_path, file))
-
-    for zip_file in zip_files:
-        with tempfile.TemporaryDirectory(dir=temp_path_folder) as tmpdir:
-            print(f'\nExtracting {zip_file} to {tmpdir}')
-            shutil.unpack_archive(filename=zip_file, extract_dir=tmpdir)
-            recursive_unzip(tmpdir, temp_path_folder=temp_path_folder, walk=True)
-
-
-#recursive_unzip(data_path_folder)
 
 
 
@@ -337,11 +291,48 @@ def recursive_unzip(folder_path:str, temp_path_folder:str=None, parent:str='', w
 if manual_iteration:
     firm = firms[0]
     firm_folder = firm['folder']
+    firm_name = firm['firm_name']
     folder_path = os.path.join(data_path_folder, firm_folder)
 
     root = r"C:\Users\smammadov\packages\Shared\RAA_FINRA\2021-06-20"
     file = r"23131_PostExamsReport_2021-06-19.exm"
-    process_finra(root=root, file=file)
+    process_finra_file(root=root, file=file, firm_name=firm_name)
+
+
+# %% Get Maximum Date from file names:
+
+@catch_error(logger)
+def get_max_date(folder_path):
+    max_date:str=None
+
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            name_data = extract_data_from_finra_file_name(file)
+            if not max_date or max_date<name_data['date']:
+                max_date = name_data['date']
+
+    print(f'\nMax Date: {max_date}\n')
+    return max_date
+
+
+
+
+# %% Process Single File
+
+@catch_error(logger)
+def process_one_file(root:str, file:str, firm_name:str, storage_account_name:str):
+    file_path = os.path.join(root, file)
+    print(f'\nProcessing {file_path}')
+
+    if file.endswith('.zip'):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            print(f'\nExtracting {file} to {tmpdir}')
+            shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
+            for root1, dirs1, files1 in os.walk(tmpdir):
+                for file1 in files1:
+                    process_one_file(root=root1, file=file1, firm_name=firm_name, storage_account_name=storage_account_name)
+    else:
+        process_finra_file(root=root, file=file, firm_name=firm_name, storage_account_name=storage_account_name)
 
 
 
@@ -352,23 +343,30 @@ def process_all_files():
     for firm in firms:
         firm_folder = firm['firm_number']
         folder_path = os.path.join(data_path_folder, firm_folder)
-        print(f"Firm: {firm['firm_name']}\n")
+        firm_name = firm['firm_name']
+        print(f"Firm: {firm_name}, Firm Number: {firm['firm_number']}\n")
+
+        if not os.path.isdir(folder_path):
+            print(f'Path does not exist: {folder_path}   -> SKIPPING')
+            continue
+
+        storage_account_name = to_storage_account_name(firm_name=firm_name)
+        setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+        max_date = get_max_date(folder_path=folder_path)
 
         for root, dirs, files in os.walk(folder_path):
             for file in files:
-                print(os.path.join(root, file), '\n')
+                if max_date not in file:
+                    print(f'Not Max Date {max_date}. Skipping file {os.path.join(root, file)}')
+                    continue
 
-                if manual_iteration:
-                    print(root, file, '\n', sep='\n')
+                if is_pc and 'IndividualInformationReport' in file:
+                    continue
                 
                 if not manual_iteration:
-                    if file.endswith('.zip'):
-                        print('PLACEHOLDER FOR ZIP FILES')
-                        pass
-                    else:
-                        process_finra(root=root, file=file, firm=firm['firm_name'])
-        if is_pc:
-            break
+                    process_one_file(root=root, file=file, firm_name=firm_name, storage_account_name=storage_account_name)
+
 
 
 
@@ -386,41 +384,19 @@ def save_tableinfo():
         list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
 
     meta_tableinfo = spark.createDataFrame(list_of_dict)
+    meta_tableinfo = select_tableinfo_columns(tableinfo=meta_tableinfo)
 
-    meta_tableinfo = meta_tableinfo.select(
-        meta_tableinfo.SourceDatabase,
-        meta_tableinfo.SourceSchema,
-        meta_tableinfo.TableName,
-        meta_tableinfo.SourceColumnName,
-        meta_tableinfo.SourceDataType,
-        meta_tableinfo.SourceDataLength,
-        meta_tableinfo.SourceDataPrecision,
-        meta_tableinfo.SourceDataScale,
-        meta_tableinfo.OrdinalPosition,
-        meta_tableinfo.CleanType,
-        meta_tableinfo.TargetColumnName,
-        meta_tableinfo.TargetDataType,
-        meta_tableinfo.IsNullable,
-        meta_tableinfo.KeyIndicator,
-        meta_tableinfo.IsActive,
-        meta_tableinfo.CreatedDateTime,
-        meta_tableinfo.ModifiedDateTime,
-    ).orderBy(
-        meta_tableinfo.SourceDatabase,
-        meta_tableinfo.SourceSchema,
-        meta_tableinfo.TableName,
-    )
-
-    if is_pc: meta_tableinfo.printSchema()
+    storage_account_name = to_storage_account_name() # keep default storage account name for tableinfo
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     save_adls_gen2(
             table_to_save = meta_tableinfo,
             storage_account_name = storage_account_name,
-            container_name = 'tables',
+            container_name = tableinfo_container_name,
             container_folder = '',
             table = f'{tableinfo_name}_{database}',
-            partitionBy = 'ModifiedDateTime',
-            format = format,
+            partitionBy = tableinfo_partitionBy,
+            file_format = file_format,
         )
 
 

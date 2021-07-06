@@ -18,12 +18,68 @@ from pyspark.sql import functions as F
 logger = make_logging(__name__)
 
 
+# %% firm_name to storage_account_name
+
+@catch_error(logger)
+def to_storage_account_name(firm_name:str=None):
+    """
+    Converts firm_name to storage_account_name
+    """
+    if firm_name:
+        account = firm_name
+    else:
+        account = 'aggr' # Default Aggregate Account
+    
+    return f"ag{account}lakescd".lower()
+
+
+
 # %% Parameters
 
-storage_account_name = "agaggrlakescd"
-container_name = "tables"
+storage_account_name = to_storage_account_name() # Default Storage Account Name
+tableinfo_container_name = "tables"
+container_name = "ingress" # Default Container Name
 tableinfo_name = 'metadata.TableInfo'
-format = 'delta'
+tableinfo_partitionBy = 'ModifiedDateTime'
+file_format = 'delta' # Default File Format
+
+
+
+# %% Select TableInfo Columns
+
+@catch_error(logger)
+def select_tableinfo_columns(tableinfo):
+    column_names = [
+        'SourceDatabase',
+        'SourceSchema',
+        'TableName',
+        'SourceColumnName',
+        'SourceDataType',
+        'SourceDataLength',
+        'SourceDataPrecision',
+        'SourceDataScale',
+        'OrdinalPosition',
+        'CleanType',
+        'TargetColumnName',
+        'TargetDataType',
+        'IsNullable',
+        'KeyIndicator',
+        'IsActive',
+        'CreatedDateTime',
+        'ModifiedDateTime',
+        ]
+
+    column_orderby = [
+        'SourceDatabase',
+        'SourceSchema',
+        'TableName',
+    ]
+
+    selected_tableinfo = tableinfo.select(*column_names).orderBy(*column_orderby)
+
+    if is_pc: selected_tableinfo.printSchema()
+    return selected_tableinfo
+
 
 
 # %% Get Azure Key Vault
@@ -70,7 +126,6 @@ def setup_spark_adls_gen2_connection(spark, storage_account_name):
 
 
 
-
 # %% Save table_to_save to ADLS Gen 2 using 'Service Principals'
 
 @catch_error(logger)
@@ -81,21 +136,21 @@ def save_adls_gen2(
         container_folder:str,
         table:str,
         partitionBy:str=None,
-        format:str='delta'):
+        file_format:str=file_format):
     """
     Save table_to_save to ADLS Gen 2
     """
     data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table}"
-    print(f"Write {format} -> {data_path}")
+    print(f"Write {file_format} -> {data_path}")
 
-    if format == 'text':
-        table_to_save.coalesce(1).write.save(path=data_path, format=format, mode='overwrite', header='false')
-    elif format == 'json':
+    if file_format == 'text':
+        table_to_save.coalesce(1).write.save(path=data_path, format=file_format, mode='overwrite', header='false')
+    elif file_format == 'json':
         table_to_save.coalesce(1).write.json(path=data_path, mode='overwrite')
-    elif format == 'csv':
+    elif file_format == 'csv':
         table_to_save.coalesce(1).write.csv(path=data_path, header='true', mode='overwrite')
     else:
-        table_to_save.write.save(path=data_path, format=format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
+        table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
 
     print(f'Finished Writing {container_folder}/{table}')
 
@@ -109,7 +164,7 @@ def read_adls_gen2(spark,
         container_name:str,
         container_folder:str,
         table:str,
-        format:str='delta'):
+        file_format:str=file_format):
     """
     Read table from ADLS Gen 2
     """
@@ -118,7 +173,7 @@ def read_adls_gen2(spark,
     print(f'Reading -> {data_path}')
 
     table_read = (spark.read
-        .format(format)
+        .format(file_format)
         .load(data_path)
         )
     
@@ -162,11 +217,11 @@ def get_master_ingest_list_csv(spark, table_list_path:str, created_datetime:str=
         save_adls_gen2(
                 table_to_save=table_list,
                 storage_account_name = storage_account_name,
-                container_name = container_name,
+                container_name = tableinfo_container_name,
                 container_folder = '',
                 table = 'metadata.MasterIngestList',
                 partitionBy = partitionBy,
-                format = format,
+                file_format = file_format,
             )
 
     table_list = table_list.filter(col('IsActive')==lit(1))
@@ -184,10 +239,10 @@ def read_tableinfo(spark, tableinfo_name:str=tableinfo_name):
     tableinfo = read_adls_gen2(
         spark = spark,
         storage_account_name = storage_account_name,
-        container_name = container_name,
+        container_name = tableinfo_container_name,
         container_folder = '',
         table = tableinfo_name,
-        format = format
+        file_format = file_format
     )
 
     tableinfo = tableinfo.filter(col('IsActive')==lit(1))
