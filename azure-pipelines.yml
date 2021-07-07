@@ -13,13 +13,6 @@ steps:
 - script: dir
   displayName: 'Run a one-line script'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+- script: scp fake.txt jfields@ql1sqledip04.ibddomain.net:/mnt/FileServer/Shared
+  displayName: 'Copy SRC'
 
-- task: CopyFiles@2
-  inputs:
-    SourceFolder: '/src'
-    Contents: '**'
-    TargetFolder: '$(build.artifactstagingdirectory)'
