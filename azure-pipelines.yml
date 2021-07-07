@@ -11,8 +11,9 @@ pool:
 
 steps:
 - task: CopyFiles@2
+  displayName: "Copy SRC Files"
   inputs:
-    SourceFolder: '$(agent.builddirectory)'
+    SourceFolder: '$(agent.builddirectory)/src'
     Contents: '**'
-    TargetFolder: '$(build.artifactstagingdirectory)'
+    TargetFolder: '$(build.artifactstagingdirectory)/src'
 
