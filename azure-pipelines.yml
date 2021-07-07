@@ -10,9 +10,9 @@ pool:
   name: EDC_Agents
 
 steps:
-- script: dir
-  displayName: 'Run a one-line script'
-
-- script: scp requirements.txt jfields@ql1sqledip04.ibddomain.net:/mnt/FileServer/Shared
-  displayName: 'Copy SRC'
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(agent.builddirectory)'
+    Contents: '**'
+    TargetFolder: '$(build.artifactstagingdirectory)'
 
