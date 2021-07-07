@@ -27,57 +27,58 @@ logger = make_logging(__name__)
 
 
 # %% Parameters
-save_to_adls = True
-execute_at_snowflake = True
-write_jsons = True
-
-if not is_pc:
+class module_params_class:
     save_to_adls = True
     execute_at_snowflake = True
     write_jsons = True
 
-snowflake_account = 'advisorgroup-edip'
-domain_name = 'financial_professional'
-envionment = 'QA'
-snowflake_raw_warehouse = f'{envionment}_RAW_WH'.upper()
-snowflake_raw_database = f'{envionment}_RAW_FP'.upper()
+    snowflake_account = 'advisorgroup-edip'
+    domain_name = 'financial_professional'
+    envionment = 'QA'
+    snowflake_raw_warehouse = f'{envionment}_RAW_WH'.upper()
+    snowflake_raw_database = f'{envionment}_RAW_FP'.upper()
 
-snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'.upper()
-engineer_role = f"AD_SNOWFLAKE_{envionment}_ENGINEER".upper()
+    snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'.upper()
+    engineer_role = f"AD_SNOWFLAKE_{envionment}_ENGINEER".upper()
 
-ddl_folder = f'metadata/{domain_name}/DDL'
+    ddl_folder = f'metadata/{domain_name}/DDL'
 
-variant_label = '_VARIANT'
-variant_alias = 'SRC'
+    variant_label = '_VARIANT'
+    variant_alias = 'SRC'
 
-FILE_FORMAT = 'PARQUET'
-wild_card = '.*.parquet'
-stream_suffix = '_STREAM'
+    FILE_FORMAT = 'PARQUET'
+    wild_card = '.*.parquet'
+    stream_suffix = '_STREAM'
 
-src_alias = 'src'
-tgt_alias = 'tgt'
-hash_column_name = 'MD5_HASH'
-integration_id = 'INTEGRATION_ID'
-stream_alias = 'src_strm'
-view_prefix = 'VW_'
-execution_date_str = 'EXECUTION_DATE'
+    src_alias = 'src'
+    tgt_alias = 'tgt'
+    hash_column_name = 'MD5_HASH'
+    integration_id = 'INTEGRATION_ID'
+    stream_alias = 'src_strm'
+    view_prefix = 'VW_'
+    execution_date_str = 'EXECUTION_DATE'
 
-
-# %% Module Parameters Class
-
-class module_params_class:
     spark = None
     snowflake_connection = None
 
 
-snowflake_ddl_params = module_params_class()
+
+wid = module_params_class()
+snowflake_ddl_params = wid
+
+
+if not is_pc:
+    wid.save_to_adls = True
+    wid.execute_at_snowflake = True
+    wid.write_jsons = True
+
 
 
 # %% Connect to SnowFlake
 
 @catch_error(logger)
 def connect_to_snowflake(
-        snowflake_account:str=snowflake_account,
+        snowflake_account:str=wid.snowflake_account,
         key_vault_account:str='snowflake',
         snowflake_database:str=None, 
         snowflake_warehouse:str=None,
@@ -132,9 +133,9 @@ def base_sqlstr(schema_name, table_name, source_system, layer:str):
     SCHEMA_NAME = f'{source_system}{LAYER}'.upper()
     TABLE_NAME = f'{schema_name}_{table_name}'.upper()
 
-    sqlstr = f"""USE ROLE {snowflake_role};
-USE WAREHOUSE {snowflake_raw_warehouse};
-USE DATABASE {snowflake_raw_database};
+    sqlstr = f"""USE ROLE {wid.snowflake_role};
+USE WAREHOUSE {wid.snowflake_raw_warehouse};
+USE DATABASE {wid.snowflake_raw_database};
 USE SCHEMA {source_system}{LAYER};
 """
     return SCHEMA_NAME, TABLE_NAME, sqlstr
@@ -144,15 +145,14 @@ USE SCHEMA {source_system}{LAYER};
 
 @catch_error(logger)
 def get_partition(source_system:str, schema_name:str, table_name:str):
-    spark = snowflake_ddl_params.spark
     data_type = 'data'
-    container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
+    container_folder = f"{data_type}/{wid.domain_name}/{source_system}/{schema_name}"
 
     storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
+    setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
 
     table_for_paritition = read_adls_gen2(
-        spark = spark,
+        spark = wid.spark,
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = container_folder,
@@ -175,30 +175,27 @@ def action_step(step:int):
     def outer(step_fn):
         @wraps(step_fn)
         def inner(*args, **kwargs):
-            spark = snowflake_ddl_params.spark
-            snowflake_connection = snowflake_ddl_params.snowflake_connection
-
             sqlstr = step_fn(*args, **kwargs)
 
             if is_pc and False:
                 print(sqlstr)
             
-            if save_to_adls:
+            if wid.save_to_adls:
                 storage_account_name = to_storage_account_name(firm_name=kwargs['schema_name'], source_system=kwargs['source_system'])
-                setup_spark_adls_gen2_connection(spark, storage_account_name)
+                setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
 
                 save_adls_gen2(
-                    table_to_save = spark.createDataFrame([sqlstr], StringType()),
+                    table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
                     storage_account_name = storage_account_name,
                     container_name = container_name,
-                    container_folder = f"{ddl_folder}/{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}",
+                    container_folder = f"{wid.ddl_folder}/{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}",
                     table = kwargs['table_name'],
                     file_format = 'text'
                 )
 
-            if execute_at_snowflake:
+            if wid.execute_at_snowflake:
                 print(f"Executing Snowflake SQL String: {kwargs['source_system']}/step_{step}/{kwargs['schema_name']}/{kwargs['table_name']}")
-                exec_status = snowflake_connection.execute_string(sql_text=sqlstr)
+                exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
 
         return inner
     return outer
@@ -209,7 +206,6 @@ def action_step(step:int):
 
 @catch_error(logger)
 def create_ingest_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
-    spark = snowflake_ddl_params.spark
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -218,7 +214,7 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
     else:
         elt_stage_name = schema_name.upper()
 
-    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label} FROM '@ELT_STAGE.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{FILE_FORMAT}') PATTERN = '{wild_card}' ON_ERROR = CONTINUE;"""
+    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '@ELT_STAGE.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
 
     ingest_data = {
         "INGEST_STAGE_NAME": f'@ELT_STAGE.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
@@ -231,14 +227,14 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
     json_string = json.dumps(ingest_data)
 
     storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
+    setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
 
-    if write_jsons:
+    if wid.write_jsons:
         save_adls_gen2(
-            table_to_save = spark.createDataFrame([json_string], StringType()),
+            table_to_save = wid.spark.createDataFrame([json_string], StringType()),
             storage_account_name = storage_account_name,
             container_name = container_name,
-            container_folder = f"metadata/{domain_name}/{source_system}/{schema_name}",
+            container_folder = f"metadata/{wid.domain_name}/{source_system}/{schema_name}",
             table = table_name,
             file_format = 'text'
         )
@@ -251,69 +247,66 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
 
 @catch_error(logger)
 def create_ingest_list_adls(ingest_data_list:defaultdict):
-    spark = snowflake_ddl_params.spark
-    snowflake_connection = snowflake_ddl_params.snowflake_connection
-
     for source_system_plus_schema_name, ingest_data_per_source_system in ingest_data_list.items():
         json_string = json.dumps(ingest_data_per_source_system)
 
         source_system, schema_name = source_system_plus_schema_name
 
         storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
-        setup_spark_adls_gen2_connection(spark, storage_account_name)
+        setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
 
-        if write_jsons:
+        if wid.write_jsons:
             save_adls_gen2(
-                table_to_save = spark.createDataFrame([json_string], StringType()),
+                table_to_save = wid.spark.createDataFrame([json_string], StringType()),
                 storage_account_name = storage_account_name,
                 container_name = container_name,
-                container_folder = f"metadata/{domain_name}/{source_system}",
+                container_folder = f"metadata/{wid.domain_name}/{source_system}",
                 table = 'ingest_data',
                 file_format = 'text'
             )
         
         save_adls_gen2(
-            table_to_save = spark.read.json(spark.sparkContext.parallelize([json_string])).coalesce(1),
+            table_to_save = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
             storage_account_name = storage_account_name,
             container_name = container_name,
-            container_folder = f"metadata/{domain_name}/{source_system}",
+            container_folder = f"metadata/{wid.domain_name}/{source_system}",
             table = 'metadata_config_test_sm',
             file_format = 'parquet'
         )
 
         # Grant Permissions
-        sqlstr = f"""USE ROLE {snowflake_role};
+        sqlstr = f"""USE ROLE {wid.snowflake_role};
 
-GRANT USAGE ON DATABASE {snowflake_raw_database} TO ROLE {engineer_role};
+GRANT USAGE ON DATABASE {wid.snowflake_raw_database} TO ROLE {wid.engineer_role};
 
-GRANT USAGE ON SCHEMA {snowflake_raw_database}.{source_system}_RAW TO ROLE {engineer_role};
-GRANT USAGE ON SCHEMA {snowflake_raw_database}.{source_system} TO ROLE {engineer_role};
-GRANT USAGE ON SCHEMA {snowflake_raw_database}.ELT_STAGE TO ROLE {engineer_role};
+GRANT USAGE ON SCHEMA {wid.nowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
+GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
+GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.ELT_STAGE TO ROLE {wid.engineer_role};
 
-GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {snowflake_raw_database}.{source_system}_RAW TO ROLE {engineer_role};
-GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {snowflake_raw_database}.{source_system} TO ROLE {engineer_role};
-GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {snowflake_raw_database}.ELT_STAGE TO ROLE {engineer_role};
+GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {wid.snowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
+GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
+GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {wid.snowflake_raw_database}.ELT_STAGE TO ROLE {wid.engineer_role};
 
-GRANT SELECT ON ALL VIEWS IN SCHEMA {snowflake_raw_database}.{source_system}_RAW TO ROLE {engineer_role};
-GRANT SELECT ON ALL VIEWS IN SCHEMA {snowflake_raw_database}.{source_system} TO ROLE {engineer_role};
-GRANT SELECT ON ALL VIEWS IN SCHEMA {snowflake_raw_database}.ELT_STAGE TO ROLE {engineer_role};
+GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
+GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
+GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.ELT_STAGE TO ROLE {wid.engineer_role};
 """
         
         table_name = 'grant_permissions'
 
-        if save_to_adls:
+        if wid.save_to_adls:
             save_adls_gen2(
-                table_to_save = spark.createDataFrame([sqlstr], StringType()),
+                table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
                 storage_account_name = storage_account_name,
                 container_name = container_name,
-                container_folder = f"{ddl_folder}/{source_system}",
+                container_folder = f"{wid.ddl_folder}/{source_system}",
                 table = table_name,
                 file_format = 'text'
             )
 
-        if execute_at_snowflake:
-            print(f"Executing Snowflake SQL String: {ddl_folder}/{source_system}/{table_name}")
-            exec_status = snowflake_connection.execute_string(sql_text=sqlstr)
+        if wid.execute_at_snowflake:
+            print(f"Executing Snowflake SQL String: {wid.ddl_folder}/{source_system}/{table_name}")
+            exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
 
 
 
@@ -327,9 +320,9 @@ def step1(source_system:str, schema_name:str, table_name:str, column_names:list)
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
     sqlstr += f"""
-CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
+CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
 (
-  {variant_alias} VARIANT
+  {wid.variant_alias} VARIANT
 );
 """
     return sqlstr
@@ -345,8 +338,8 @@ def step2(source_system:str, schema_name:str, table_name:str, column_names:list)
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
     sqlstr += f"""
-CREATE OR REPLACE STREAM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix}
-ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
+CREATE OR REPLACE STREAM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}
+ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 """
     return sqlstr
 
@@ -366,14 +359,14 @@ def step3(source_system:str, schema_name:str, table_name:str, column_names:list,
         elt_stage_name = schema_name.upper()
 
     sqlstr += f"""
-COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
+COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
 FROM '@ELT_STAGE.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
-FILE_FORMAT = (type='{FILE_FORMAT}')
-PATTERN = '{wild_card}'
+FILE_FORMAT = (type='{wid.FILE_FORMAT}')
+PATTERN = '{wid.wild_card}'
 ON_ERROR = CONTINUE;
 
 SET SOURCE_SYSTEM = '{SCHEMA_NAME}';
-SET TARGET_TABLE = '{SCHEMA_NAME}.{TABLE_NAME}{variant_label}';
+SET TARGET_TABLE = '{SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}';
 SET EXCEPTION_DATE_TIME = CURRENT_TIMESTAMP();
 SET EXECEPTION_CREATED_BY_USER = CURRENT_USER();
 SET EXECEPTION_CREATED_BY_ROLE = CURRENT_ROLE();
@@ -426,7 +419,7 @@ SELECT
   ,ROW_NUMBER
   ,ROW_START_LINE
   ,REJECTED_RECORD
-FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{variant_label}, job_id => '_last'));
+FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}, job_id => '_last'));
 """
     return sqlstr
 
@@ -447,11 +440,11 @@ def step4(source_system:str, schema_name:str, table_name:str, column_names:list,
         )
 
     sqlstr += f"""
-CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}
+CREATE OR REPLACE VIEW {SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}{wid.variant_label}
 AS
 SELECT
    {column_list_src}
-FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
+FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 """
     return sqlstr
 
@@ -471,11 +464,11 @@ def step5(source_system:str, schema_name:str, table_name:str, column_names:list,
         )
 
     sqlstr += f"""
-CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}{stream_suffix}
+CREATE OR REPLACE VIEW {SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}
 AS
 SELECT
    {column_list_src}
-FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix};
+FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix};
 """
     return sqlstr
 
@@ -491,26 +484,26 @@ def step6(source_system:str, schema_name:str, table_name:str, column_names:list,
 
     column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
     column_list = '\n  ,'.join(column_names+elt_audit_columns)
-    column_list_with_alias = '\n  ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
+    column_list_with_alias = '\n  ,'.join([f'{wid.src_alias}.{c}' for c in column_names+elt_audit_columns])
     hash_columns = "MD5(CONCAT(\n       " + "\n      ,".join([f"COALESCE({c},'N/A')" for c in column_names_ex_pk]) + "\n      ))"
-    INTEGRATION_ID = "TRIM(CONCAT(" + ', '.join([f"COALESCE({src_alias}.{c},'N/A')" for c in pk_column_names]) + "))"
-    pk_column_with_alias = ', '.join([f"COALESCE({src_alias}.{c},'N/A')" for c in pk_column_names])
+    INTEGRATION_ID = "TRIM(CONCAT(" + ', '.join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in pk_column_names]) + "))"
+    pk_column_with_alias = ', '.join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in pk_column_names])
 
     sqlstr += f"""
-CREATE OR REPLACE VIEW {SCHEMA_NAME}.{view_prefix}{TABLE_NAME}
+CREATE OR REPLACE VIEW {SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}
 AS
 SELECT
-   {integration_id}
+   {wid.integration_id}
   ,{column_list}
-  ,{hash_column_name}
+  ,{wid.hash_column_name}
 FROM
 (
 SELECT
-   {INTEGRATION_ID} as {integration_id}
+   {INTEGRATION_ID} as {wid.integration_id}
   ,{column_list_with_alias}
-  ,{hash_columns} AS {hash_column_name}
-  ,ROW_NUMBER() OVER (PARTITION BY {pk_column_with_alias} ORDER BY {pk_column_with_alias}, {src_alias}.{execution_date_str} DESC) AS top_slice
-FROM {snowflake_raw_database}.{SCHEMA_NAME}.{view_prefix}{TABLE_NAME}{variant_label}{stream_suffix} {src_alias}
+  ,{hash_columns} AS {wid.hash_column_name}
+  ,ROW_NUMBER() OVER (PARTITION BY {pk_column_with_alias} ORDER BY {pk_column_with_alias}, {wid.src_alias}.{wid.execution_date_str} DESC) AS top_slice
+FROM {wid.snowflake_raw_database}.{SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}{wid.variant_label}{wid.stream_suffix} {wid.src_alias}
 )
 WHERE top_slice = 1;
 """
@@ -534,10 +527,10 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
     sqlstr += f"""
 CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
 (
-   {integration_id} VARCHAR(1000) NOT NULL
+   {wid.integration_id} VARCHAR(1000) NOT NULL
   ,{column_list_types}
-  ,{hash_column_name} VARCHAR(100)
-  ,CONSTRAINT PK_{SCHEMA_NAME}_{TABLE_NAME} PRIMARY KEY ({integration_id}) NOT ENFORCED
+  ,{wid.hash_column_name} VARCHAR(100)
+  ,CONSTRAINT PK_{SCHEMA_NAME}_{TABLE_NAME} PRIMARY KEY ({wid.integration_id}) NOT ENFORCED
 );
 """
     return sqlstr
@@ -554,8 +547,8 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list)
 
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
     column_list = '\n    ,'.join(column_names+elt_audit_columns)
-    merge_update_columns = '\n    ,'.join([f'{tgt_alias}.{c} = {src_alias}.{c}' for c in column_names+elt_audit_columns])
-    column_list_with_alias = '\n    ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
+    merge_update_columns = '\n    ,'.join([f'{wid.tgt_alias}.{c} = {wid.src_alias}.{c}' for c in column_names+elt_audit_columns])
+    column_list_with_alias = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in column_names+elt_audit_columns])
 
     sqlstr += f"""
 CREATE OR REPLACE PROCEDURE {stored_procedure}()
@@ -566,35 +559,35 @@ AS
 $$
 var sql_command = 
 `
-MERGE INTO {SCHEMA_NAME}.{TABLE_NAME} {tgt_alias}
+MERGE INTO {SCHEMA_NAME}.{TABLE_NAME} {wid.tgt_alias}
 USING (
     SELECT * 
-    FROM {SCHEMA_NAME}_RAW.{view_prefix}{TABLE_NAME}
-) {src_alias}
+    FROM {SCHEMA_NAME}_RAW.{wid.view_prefix}{TABLE_NAME}
+) {wid.src_alias}
 ON (
-TRIM(COALESCE({src_alias}.{integration_id},'N/A')) = TRIM(COALESCE({tgt_alias}.{integration_id},'N/A'))
+TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) = TRIM(COALESCE({wid.tgt_alias}.{wid.integration_id},'N/A'))
 )
 WHEN MATCHED
-AND TRIM(COALESCE({src_alias}.{hash_column_name},'N/A')) != TRIM(COALESCE({tgt_alias}.{hash_column_name},'N/A'))
+AND TRIM(COALESCE({wid.src_alias}.{wid.hash_column_name},'N/A')) != TRIM(COALESCE({wid.tgt_alias}.{wid.hash_column_name},'N/A'))
 THEN
   UPDATE
   SET
      {merge_update_columns}
-    ,{tgt_alias}.{hash_column_name} = {src_alias}.{hash_column_name}
+    ,{wid.tgt_alias}.{wid.hash_column_name} = {wid.src_alias}.{wid.hash_column_name}
 
 WHEN NOT MATCHED 
 THEN
   INSERT
   (
-     {integration_id}
+     {wid.integration_id}
     ,{column_list}
-    ,{hash_column_name}
+    ,{wid.hash_column_name}
   )
   VALUES
   (
-     {src_alias}.{integration_id}
+     {wid.src_alias}.{wid.integration_id}
     ,{column_list_with_alias}
-    ,{src_alias}.{hash_column_name}
+    ,{wid.src_alias}.{wid.hash_column_name}
   );
 `""" + """
 try {
@@ -623,11 +616,11 @@ def step9(source_system:str, schema_name:str, table_name:str, column_names:list)
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
     task_suffix = '_MERGE_TASK'
     task_name = f'{TABLE_NAME}{task_suffix}'.upper()
-    stream_name = f'{SCHEMA_NAME}_RAW.{TABLE_NAME}{variant_label}{stream_suffix}'
+    stream_name = f'{SCHEMA_NAME}_RAW.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}'
 
     sqlstr += f"""
 CREATE OR REPLACE TASK {task_name}
-WAREHOUSE = {snowflake_raw_warehouse}
+WAREHOUSE = {wid.snowflake_raw_warehouse}
 SCHEDULE = '1 minute'
 WHEN
 SYSTEM$STREAM_HAS_DATA('{stream_name}')
@@ -636,9 +629,9 @@ AS
 
 USE ROLE ACCOUNTADMIN;
 GRANT EXECUTE TASK ON ACCOUNT TO ROLE SYSADMIN;
-GRANT EXECUTE TASK ON ACCOUNT TO ROLE {snowflake_role};
+GRANT EXECUTE TASK ON ACCOUNT TO ROLE {wid.snowflake_role};
 
-USE ROLE {snowflake_role};
+USE ROLE {wid.snowflake_role};
 ALTER TASK {task_name} RESUME;
 """
     return sqlstr
