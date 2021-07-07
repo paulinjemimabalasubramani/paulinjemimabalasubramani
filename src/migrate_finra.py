@@ -55,6 +55,7 @@ save_xml_to_adls_flag = True
 
 domain_name = 'financial_professional'
 database = 'FINRA'
+tableinfo_source = database
 
 KeyIndicator = 'MD5_KEY'
 
@@ -394,7 +395,7 @@ def save_tableinfo():
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = '',
-            table = f'{tableinfo_name}_{database}',
+            table = f'{tableinfo_name}_{tableinfo_source}',
             partitionBy = tableinfo_partitionBy,
             file_format = file_format,
         )

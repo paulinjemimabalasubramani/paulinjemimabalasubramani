@@ -12,7 +12,8 @@ from modules.common_functions import make_logging, catch_error
 from modules.data_functions import elt_audit_columns, partitionBy, execution_date
 from modules.config import is_pc
 from modules.spark_functions import create_spark
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, read_adls_gen2, get_azure_sp, file_format, container_name, to_storage_account_name, tableinfo_name
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, read_adls_gen2, get_azure_sp, \
+    file_format, container_name, to_storage_account_name, tableinfo_name
 
 
 # %% Import Snowflake
@@ -233,7 +234,7 @@ if manual_iteration:
 
 
 
-# %% Create Json Files
+# %% Create Ingest Files
 
 @catch_error(logger)
 def create_ingest_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
@@ -273,7 +274,7 @@ if manual_iteration:
     print(ingest_data)
 
 
-# %% Create Json List File
+# %% Create Ingest List File
 
 @catch_error(logger)
 def create_ingest_list_adls(ingest_data_list:defaultdict):
@@ -320,7 +321,7 @@ GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {database}
 GRANT SELECT ON ALL VIEWS IN SCHEMA {database}.{source_system}_RAW TO ROLE {engineer_role};
 GRANT SELECT ON ALL VIEWS IN SCHEMA {database}.{source_system} TO ROLE {engineer_role};
 GRANT SELECT ON ALL VIEWS IN SCHEMA {database}.ELT_STAGE TO ROLE {engineer_role};
-        """
+"""
 
         if manual_iteration:
             print(sqlstr)
@@ -712,7 +713,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
     ingest_data_list = defaultdict(list)
 
     for i, table in enumerate(table_rows):
-        #if i>3 and is_pc: break
+        if i>3 and is_pc: break
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']

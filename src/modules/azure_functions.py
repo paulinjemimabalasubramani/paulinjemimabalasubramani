@@ -187,7 +187,7 @@ def read_adls_gen2(spark,
 # %% Get Master Ingest List
 
 @catch_error(logger)
-def get_master_ingest_list_csv(spark, table_list_path:str, created_datetime:str=None, modified_datetime:str=None, save_to_adls:bool=False):
+def get_master_ingest_list_csv(spark, table_list_path:str, created_datetime:str=None, modified_datetime:str=None, save_to_adls:bool=False, tableinfo_source:str=None):
     """
     Get List of Tables of interest
     """
@@ -219,7 +219,7 @@ def get_master_ingest_list_csv(spark, table_list_path:str, created_datetime:str=
                 storage_account_name = storage_account_name,
                 container_name = tableinfo_container_name,
                 container_folder = '',
-                table = 'metadata.MasterIngestList',
+                table = f'metadata.MasterIngestList_{tableinfo_source}',
                 partitionBy = partitionBy,
                 file_format = file_format,
             )
