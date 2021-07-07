@@ -275,9 +275,7 @@ def create_json_list_adls(ingest_data_list:defaultdict):
     for source_system_plus_schema_name, ingest_data_per_source_system in ingest_data_list.items():
         json_string = json.dumps(ingest_data_per_source_system)
 
-        ssplit = source_system_plus_schema_name.split('+')
-        source_system = ssplit[0]
-        schema_name = ssplit[1]
+        source_system, schema_name = source_system_plus_schema_name
 
         storage_account_name = to_storage_account_name(firm_name = schema_name)
         setup_spark_adls_gen2_connection(spark, storage_account_name)
@@ -305,7 +303,7 @@ def create_json_list_adls(ingest_data_list:defaultdict):
 
 if manual_iteration:
     ingest_data_list = defaultdict(list)
-    ingest_data_list[f'{source_system}+{schema_name}'].append(ingest_data)
+    ingest_data_list[(source_system, schema_name)].append(ingest_data)
     create_json_list_adls(ingest_data_list=ingest_data_list)
 
 
@@ -697,7 +695,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
-            ingest_data_list[f'{source_system}+{schema_name}'].append(ingest_data)
+            ingest_data_list[(source_system, schema_name)].append(ingest_data)
 
     print('Finished Iterating over all tables')
     return ingest_data_list
