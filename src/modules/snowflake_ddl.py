@@ -279,7 +279,7 @@ def create_ingest_list_adls(ingest_data_list:defaultdict):
 
 GRANT USAGE ON DATABASE {wid.snowflake_raw_database} TO ROLE {wid.engineer_role};
 
-GRANT USAGE ON SCHEMA {wid.nowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
+GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
 GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
 GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.ELT_STAGE TO ROLE {wid.engineer_role};
 
