@@ -51,8 +51,8 @@ tableinfo_source = 'LR'
 snowflake_account = 'advisorgroup-edip'
 domain_name = 'financial_professional'
 envionment = 'QA'
-warehouse = f'{envionment}_RAW_WH'.upper()
-database = f'{envionment}_RAW_FP'.upper()
+snowflake_raw_warehouse = f'{envionment}_RAW_WH'.upper()
+snowflake_raw_database = f'{envionment}_RAW_FP'.upper()
 
 snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'.upper()
 engineer_role = f"AD_SNOWFLAKE_{envionment}_ENGINEER".upper()
@@ -149,8 +149,8 @@ def base_sqlstr(schema_name, table_name, source_system, layer:str):
     TABLE_NAME = f'{schema_name}_{table_name}'.upper()
 
     sqlstr = f"""USE ROLE {snowflake_role};
-USE WAREHOUSE {warehouse};
-USE DATABASE {database};
+USE WAREHOUSE {snowflake_raw_warehouse};
+USE DATABASE {snowflake_raw_database};
 USE SCHEMA {source_system}{LAYER};
 """
     return SCHEMA_NAME, TABLE_NAME, sqlstr
@@ -313,19 +313,19 @@ def create_ingest_list_adls(ingest_data_list:defaultdict):
         # Grant Permissions
         sqlstr = f"""USE ROLE {snowflake_role};
 
-GRANT USAGE ON DATABASE {database} TO ROLE {engineer_role};
+GRANT USAGE ON DATABASE {snowflake_raw_database} TO ROLE {engineer_role};
 
-GRANT USAGE ON SCHEMA {database}.{source_system}_RAW TO ROLE {engineer_role};
-GRANT USAGE ON SCHEMA {database}.{source_system} TO ROLE {engineer_role};
-GRANT USAGE ON SCHEMA {database}.ELT_STAGE TO ROLE {engineer_role};
+GRANT USAGE ON SCHEMA {snowflake_raw_database}.{source_system}_RAW TO ROLE {engineer_role};
+GRANT USAGE ON SCHEMA {snowflake_raw_database}.{source_system} TO ROLE {engineer_role};
+GRANT USAGE ON SCHEMA {snowflake_raw_database}.ELT_STAGE TO ROLE {engineer_role};
 
-GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {database}.{source_system}_RAW TO ROLE {engineer_role};
-GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {database}.{source_system} TO ROLE {engineer_role};
-GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {database}.ELT_STAGE TO ROLE {engineer_role};
+GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {snowflake_raw_database}.{source_system}_RAW TO ROLE {engineer_role};
+GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {snowflake_raw_database}.{source_system} TO ROLE {engineer_role};
+GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {snowflake_raw_database}.ELT_STAGE TO ROLE {engineer_role};
 
-GRANT SELECT ON ALL VIEWS IN SCHEMA {database}.{source_system}_RAW TO ROLE {engineer_role};
-GRANT SELECT ON ALL VIEWS IN SCHEMA {database}.{source_system} TO ROLE {engineer_role};
-GRANT SELECT ON ALL VIEWS IN SCHEMA {database}.ELT_STAGE TO ROLE {engineer_role};
+GRANT SELECT ON ALL VIEWS IN SCHEMA {snowflake_raw_database}.{source_system}_RAW TO ROLE {engineer_role};
+GRANT SELECT ON ALL VIEWS IN SCHEMA {snowflake_raw_database}.{source_system} TO ROLE {engineer_role};
+GRANT SELECT ON ALL VIEWS IN SCHEMA {snowflake_raw_database}.ELT_STAGE TO ROLE {engineer_role};
 """
 
         if manual_iteration:
@@ -543,9 +543,6 @@ def step6(source_system:str, schema_name:str, table_name:str, column_names:list,
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    environment = 'QA'
-    snowflake_raw_database = f'{environment}_RAW_FP'
-
     column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
     column_list = '\n  ,'.join(column_names+elt_audit_columns)
     column_list_with_alias = '\n  ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
@@ -693,7 +690,7 @@ def step9(source_system:str, schema_name:str, table_name:str, column_names:list)
 
     sqlstr += f"""
 CREATE OR REPLACE TASK {task_name}
-WAREHOUSE = {warehouse}
+WAREHOUSE = {snowflake_raw_warehouse}
 SCHEDULE = '1 minute'
 WHEN
 SYSTEM$STREAM_HAS_DATA('{stream_name}')

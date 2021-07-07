@@ -28,7 +28,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, to_storage_account_name, select_tableinfo_columns, tableinfo_partitionBy, tableinfo_container_name
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
+    to_storage_account_name, select_tableinfo_columns, tableinfo_partitionBy, tableinfo_container_name
 from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, firms
 
 
