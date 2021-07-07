@@ -10,10 +10,11 @@ pool:
   name: EDC_Agents
 
 steps:
+
 - task: CopyFiles@2
-  displayName: "Copy SRC Files"
+  displayName: "Copy Code Files"
   inputs:
-    SourceFolder: '$(agent.builddirectory)/src'
+    SourceFolder: '$(agent.builddirectory)'
     Contents: '**'
-    TargetFolder: '$(build.artifactstagingdirectory)/src'
+    TargetFolder: '$(build.artifactstagingdirectory)'
 
