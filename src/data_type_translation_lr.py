@@ -10,7 +10,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_csv, read_sql
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name, get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, tableinfo_partitionBy, select_tableinfo_columns
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name, \
+    get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, tableinfo_partitionBy, select_tableinfo_columns
 from modules.data_functions import execution_date, column_regex
 
 
@@ -38,6 +39,7 @@ data_type_translation_id = 'sqlserver_snowflake'
 
 database = 'LR' # TABLE_CATALOG
 sql_server = 'TSQLOLTP01'
+tableinfo_source = database
 
 storage_account_name = to_storage_account_name()
 
@@ -57,7 +59,8 @@ table_list = get_master_ingest_list_csv(
     table_list_path = table_list_path,
     created_datetime = created_datetime,
     modified_datetime = modified_datetime,
-    save_to_adls = True
+    save_to_adls = True,
+    tableinfo_source = tableinfo_source,
     )
 
 if is_pc: table_list.show(5)
@@ -301,7 +304,7 @@ def save_table_info_to_adls_gen2(columns):
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = '',
-            table = tableinfo_name,
+            table = f'{tableinfo_name}_{tableinfo_source}',
             partitionBy = tableinfo_partitionBy,
             file_format = file_format,
         )

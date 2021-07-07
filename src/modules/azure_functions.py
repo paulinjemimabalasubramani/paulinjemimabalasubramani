@@ -21,11 +21,11 @@ logger = make_logging(__name__)
 # %% firm_name to storage_account_name
 
 @catch_error(logger)
-def to_storage_account_name(firm_name:str=None):
+def to_storage_account_name(firm_name:str=None, source_system:str=''):
     """
     Converts firm_name to storage_account_name
     """
-    if firm_name:
+    if firm_name and source_system.upper() not in ['LR']:
         account = firm_name
     else:
         account = 'aggr' # Default Aggregate Account
@@ -187,7 +187,7 @@ def read_adls_gen2(spark,
 # %% Get Master Ingest List
 
 @catch_error(logger)
-def get_master_ingest_list_csv(spark, table_list_path:str, created_datetime:str=None, modified_datetime:str=None, save_to_adls:bool=False):
+def get_master_ingest_list_csv(spark, table_list_path:str, created_datetime:str=None, modified_datetime:str=None, save_to_adls:bool=False, tableinfo_source:str=None):
     """
     Get List of Tables of interest
     """
@@ -219,7 +219,7 @@ def get_master_ingest_list_csv(spark, table_list_path:str, created_datetime:str=
                 storage_account_name = storage_account_name,
                 container_name = tableinfo_container_name,
                 container_folder = '',
-                table = 'metadata.MasterIngestList',
+                table = f'metadata.MasterIngestList_{tableinfo_source}',
                 partitionBy = partitionBy,
                 file_format = file_format,
             )

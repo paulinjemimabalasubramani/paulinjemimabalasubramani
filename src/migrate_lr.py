@@ -22,7 +22,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_sql
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, get_azure_sp, container_name, file_format, to_storage_account_name
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, get_azure_sp, \
+    container_name, file_format, to_storage_account_name, tableinfo_name
 from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy
 
 
@@ -48,7 +49,7 @@ storage_account_name = to_storage_account_name()
 domain_name = 'financial_professional'
 
 reception_date = execution_date
-source = 'LR'
+tableinfo_source = 'LR'
 
 
 # %% Create Session
@@ -58,7 +59,7 @@ spark = create_spark()
 
 # %% Read metadata.TableInfo
 
-tableinfo, table_rows = read_tableinfo(spark)
+tableinfo, table_rows = read_tableinfo(spark, tableinfo_name=f'{tableinfo_name}_{tableinfo_source}')
 
 
 # %% Setup spark to ADLS Gen2 connection
@@ -91,7 +92,7 @@ def iterate_over_all_tables(table_rows):
         sql_table = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=schema, table=table, database=database, server=sql_server)
         sql_table = to_string(sql_table, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
         sql_table = remove_column_spaces(sql_table)
-        sql_table = add_elt_columns(table_to_add=sql_table, reception_date=reception_date, execution_date=execution_date, source=source)
+        sql_table = add_elt_columns(table_to_add=sql_table, reception_date=reception_date, execution_date=execution_date, source=tableinfo_source)
 
         save_adls_gen2(
             table_to_save = sql_table,
