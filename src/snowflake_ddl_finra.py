@@ -163,7 +163,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
 
-    storage_account_name = to_storage_account_name(firm_name = schema_name)
+    storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     table_for_paritition = read_adls_gen2(
@@ -196,7 +196,7 @@ def action_step(step:int):
                 print(sqlstr)
             
             if save_to_adls:
-                storage_account_name = to_storage_account_name(firm_name = kwargs['schema_name'])
+                storage_account_name = to_storage_account_name(firm_name=kwargs['schema_name'], source_system=kwargs['source_system'])
                 setup_spark_adls_gen2_connection(spark, storage_account_name)
 
                 save_adls_gen2(
@@ -241,10 +241,15 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label} FROM '@ELT_STAGE.{schema_name.upper()}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{FILE_FORMAT}') PATTERN = '{wild_card}' ON_ERROR = CONTINUE;"""
+    if source_system.upper() in ['LR']:
+        elt_stage_name = 'AGGR'
+    else:
+        elt_stage_name = schema_name.upper()
+
+    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label} FROM '@ELT_STAGE.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{FILE_FORMAT}') PATTERN = '{wild_card}' ON_ERROR = CONTINUE;"""
 
     ingest_data = {
-        "INGEST_STAGE_NAME": f'@ELT_STAGE.{schema_name.upper()}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
+        "INGEST_STAGE_NAME": f'@ELT_STAGE.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
         "EXECUTION_DATE": execution_date,
         "FULL_OBJECT_NAME": TABLE_NAME,
         "COPY_COMMAND": sqlstr,
@@ -253,7 +258,7 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
     
     json_string = json.dumps(ingest_data)
 
-    storage_account_name = to_storage_account_name(firm_name = schema_name)
+    storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     if write_jsons:
@@ -283,7 +288,7 @@ def create_ingest_list_adls(ingest_data_list:defaultdict):
 
         source_system, schema_name = source_system_plus_schema_name
 
-        storage_account_name = to_storage_account_name(firm_name = schema_name)
+        storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
         if write_jsons:
@@ -400,9 +405,14 @@ def step3(source_system:str, schema_name:str, table_name:str, column_names:list,
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
+    if source_system.upper() in ['LR']:
+        elt_stage_name = 'AGGR'
+    else:
+        elt_stage_name = schema_name.upper()
+
     sqlstr += f"""
 COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
-FROM '@ELT_STAGE.{schema_name.upper()}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
+FROM '@ELT_STAGE.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
 FILE_FORMAT = (type='{FILE_FORMAT}')
 PATTERN = '{wild_card}'
 ON_ERROR = CONTINUE;
