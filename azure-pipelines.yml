@@ -21,3 +21,11 @@ steps:
   inputs:
     pathToPublish: $(build.artifactstagingdirectory)/s/src
     artifactName: SRC
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: $(build.artifactstagingdirectory)/s/dags
+    artifactName: DAGS
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: $(build.artifactstagingdirectory)/s/drivers
+    artifactName: DRIVERS
