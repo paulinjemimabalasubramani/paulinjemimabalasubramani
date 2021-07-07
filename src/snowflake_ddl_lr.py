@@ -1,0 +1,51 @@
+# %% Import Libraries
+
+import os, sys
+
+# Add 'modules' path to the system environment - adjust or remove this as necessary
+sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
+sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
+
+from modules.spark_functions import create_spark
+from modules.azure_functions import read_tableinfo, tableinfo_name
+from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables, create_ingest_list_adls, snowflake_ddl_params
+
+
+# %% Parameters
+
+tableinfo_source = 'LR'
+
+
+# %% Create Session
+
+spark = create_spark()
+snowflake_ddl_params.spark = spark
+
+
+# %% Read metadata.TableInfo
+
+tableinfo, table_rows = read_tableinfo(spark, tableinfo_name=f'{tableinfo_name}_{tableinfo_source}')
+
+
+# %% Connect to SnowFlake
+
+snowflake_connection = connect_to_snowflake()
+snowflake_ddl_params.snowflake_connection = snowflake_connection
+
+
+# %% Iterate Over Steps for all tables
+
+ingest_data_list = iterate_over_all_tables(tableinfo, table_rows)
+
+# %% Write Ingest Data
+
+create_ingest_list_adls(ingest_data_list=ingest_data_list)
+
+
+# %% Close Showflake connection
+
+snowflake_connection.close()
+
+
+# %%
+

@@ -6,9 +6,8 @@ from collections import defaultdict
 from .common_functions import make_logging, catch_error
 from .data_functions import elt_audit_columns, partitionBy, execution_date
 from .config import is_pc
-from .spark_functions import create_spark
-from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, read_adls_gen2, get_azure_sp, \
-    file_format, container_name, to_storage_account_name, tableinfo_name
+from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_adls_gen2, get_azure_sp, \
+    file_format, container_name, to_storage_account_name
 
 
 # %% Import Snowflake
@@ -32,14 +31,10 @@ save_to_adls = True
 execute_at_snowflake = True
 write_jsons = True
 
-manual_iteration = False
 if not is_pc:
-    manual_iteration = False
     save_to_adls = True
     execute_at_snowflake = True
     write_jsons = True
-
-tableinfo_source = 'FINRA'
 
 snowflake_account = 'advisorgroup-edip'
 domain_name = 'financial_professional'
@@ -68,15 +63,14 @@ view_prefix = 'VW_'
 execution_date_str = 'EXECUTION_DATE'
 
 
+# %% Module Parameters Class
 
-# %% Create Session
+class module_params_class:
+    spark = None
+    snowflake_connection = None
 
-spark = create_spark()
 
-# %% Read metadata.TableInfo
-
-tableinfo, table_rows = read_tableinfo(spark, tableinfo_name=f'{tableinfo_name}_{tableinfo_source}')
-
+snowflake_ddl_params = module_params_class()
 
 
 # %% Connect to SnowFlake
@@ -103,9 +97,6 @@ def connect_to_snowflake(
     )
 
     return snowflake_connection
-
-
-snowflake_connection = connect_to_snowflake()
 
 
 
@@ -153,6 +144,7 @@ USE SCHEMA {source_system}{LAYER};
 
 @catch_error(logger)
 def get_partition(source_system:str, schema_name:str, table_name:str):
+    spark = snowflake_ddl_params.spark
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
 
@@ -183,9 +175,12 @@ def action_step(step:int):
     def outer(step_fn):
         @wraps(step_fn)
         def inner(*args, **kwargs):
+            spark = snowflake_ddl_params.spark
+            snowflake_connection = snowflake_ddl_params.snowflake_connection
+
             sqlstr = step_fn(*args, **kwargs)
 
-            if manual_iteration:
+            if is_pc and False:
                 print(sqlstr)
             
             if save_to_adls:
@@ -210,27 +205,11 @@ def action_step(step:int):
 
 
 
-# %% Manual Iteration
-
-if manual_iteration:
-    i = 0
-    n_tables = len(table_rows)
-
-    table = table_rows[i]
-    table_name = table['TableName']
-    schema_name = table['SourceSchema']
-    source_system = table['SourceDatabase']
-    print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
-
-    column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo, source_system, schema_name, table_name)
-    PARTITION = get_partition(source_system, schema_name, table_name)
-
-
-
 # %% Create Ingest Files
 
 @catch_error(logger)
 def create_ingest_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
+    spark = snowflake_ddl_params.spark
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -267,15 +246,14 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
     return ingest_data
 
 
-if manual_iteration:
-    ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
-    print(ingest_data)
-
 
 # %% Create Ingest List File
 
 @catch_error(logger)
 def create_ingest_list_adls(ingest_data_list:defaultdict):
+    spark = snowflake_ddl_params.spark
+    snowflake_connection = snowflake_ddl_params.snowflake_connection
+
     for source_system_plus_schema_name, ingest_data_per_source_system in ingest_data_list.items():
         json_string = json.dumps(ingest_data_per_source_system)
 
@@ -320,9 +298,6 @@ GRANT SELECT ON ALL VIEWS IN SCHEMA {snowflake_raw_database}.{source_system}_RAW
 GRANT SELECT ON ALL VIEWS IN SCHEMA {snowflake_raw_database}.{source_system} TO ROLE {engineer_role};
 GRANT SELECT ON ALL VIEWS IN SCHEMA {snowflake_raw_database}.ELT_STAGE TO ROLE {engineer_role};
 """
-
-        if manual_iteration:
-            print(sqlstr)
         
         table_name = 'grant_permissions'
 
@@ -343,13 +318,6 @@ GRANT SELECT ON ALL VIEWS IN SCHEMA {snowflake_raw_database}.ELT_STAGE TO ROLE {
 
 
 
-if manual_iteration:
-    ingest_data_list = defaultdict(list)
-    ingest_data_list[(source_system, schema_name)].append(ingest_data)
-    create_ingest_list_adls(ingest_data_list=ingest_data_list)
-
-
-
 # %% Create Step 1
 
 @catch_error(logger)
@@ -367,9 +335,6 @@ CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label}
     return sqlstr
 
 
-if manual_iteration:
-    step1(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
-
 
 # %% Create Step 2
 
@@ -385,9 +350,6 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
 """
     return sqlstr
 
-
-if manual_iteration:
-    step2(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
 
 
 # %% Create Step 3
@@ -469,9 +431,6 @@ FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{variant_label}, job_id => '_last'
     return sqlstr
 
 
-if manual_iteration:
-    step3(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
-
 
 
 # %% Create Step 4
@@ -497,9 +456,6 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label};
     return sqlstr
 
 
-if manual_iteration:
-    step4(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
-
 
 # %% Create Step 5
 
@@ -523,9 +479,6 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{variant_label}{stream_suffix};
 """
     return sqlstr
 
-
-if manual_iteration:
-    step5(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
 
 
 # %% Create Step 6
@@ -564,9 +517,6 @@ WHERE top_slice = 1;
     return sqlstr
 
 
-if manual_iteration:
-    step6(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, pk_column_names=pk_column_names)
-
 
 # %% Create Step 7
 
@@ -592,9 +542,6 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
 """
     return sqlstr
 
-
-if manual_iteration:
-    step7(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
 
 
 # %% Create Step 8
@@ -664,9 +611,6 @@ $$
     return sqlstr
 
 
-if manual_iteration:
-    step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
-
 
 # %% Create Step 9
 
@@ -698,10 +642,6 @@ USE ROLE {snowflake_role};
 ALTER TASK {task_name} RESUME;
 """
     return sqlstr
-
-
-if manual_iteration:
-    step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
 
 
 
@@ -738,19 +678,6 @@ def iterate_over_all_tables(tableinfo, table_rows):
     print('Finished Iterating over all tables')
     return ingest_data_list
 
-
-if not manual_iteration:
-    ingest_data_list = iterate_over_all_tables(tableinfo, table_rows)
-
-
-# %% Write Ingest Data
-
-create_ingest_list_adls(ingest_data_list=ingest_data_list)
-
-
-# %% Close Showflake connection
-
-snowflake_connection.close()
 
 
 # %%
