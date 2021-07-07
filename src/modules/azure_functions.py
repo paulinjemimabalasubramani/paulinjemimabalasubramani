@@ -21,11 +21,11 @@ logger = make_logging(__name__)
 # %% firm_name to storage_account_name
 
 @catch_error(logger)
-def to_storage_account_name(firm_name:str=None):
+def to_storage_account_name(firm_name:str=None, source_system:str=''):
     """
     Converts firm_name to storage_account_name
     """
-    if firm_name:
+    if firm_name and source_system.upper() not in ['LR']:
         account = firm_name
     else:
         account = 'aggr' # Default Aggregate Account
