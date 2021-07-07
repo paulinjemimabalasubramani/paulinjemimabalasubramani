@@ -13,6 +13,6 @@ steps:
 - script: dir
   displayName: 'Run a one-line script'
 
-- script: scp fake.txt jfields@ql1sqledip04.ibddomain.net:/mnt/FileServer/Shared
+- script: scp requirements.txt jfields@ql1sqledip04.ibddomain.net:/mnt/FileServer/Shared
   displayName: 'Copy SRC'
 
