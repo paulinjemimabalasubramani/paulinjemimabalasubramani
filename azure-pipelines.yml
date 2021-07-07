@@ -1,0 +1,25 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  name: EDC_Agents
+
+steps:
+- script: dir
+  displayName: 'Run a one-line script'
+
+- script: |
+    echo Add other tasks to build, test, and deploy your project.
+    echo See https://aka.ms/yaml
+  displayName: 'Run a multi-line script'
+
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '/src'
+    Contents: '**'
+    TargetFolder: '$(build.artifactstagingdirectory)'
