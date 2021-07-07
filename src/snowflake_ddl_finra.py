@@ -45,11 +45,16 @@ if not is_pc:
     execute_at_snowflake = True
     write_jsons = True
 
-database = 'FINRA'
+tableinfo_source = 'FINRA'
 
 snowflake_account = 'advisorgroup-edip'
-
 domain_name = 'financial_professional'
+envionment = 'QA'
+warehouse = f'{envionment}_RAW_WH'.upper()
+database = f'{envionment}_RAW_FP'.upper()
+
+snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'.upper()
+engineer_role = f"AD_SNOWFLAKE_{envionment}_ENGINEER".upper()
 
 ddl_folder = f'metadata/{domain_name}/DDL'
 
@@ -76,7 +81,7 @@ spark = create_spark()
 
 # %% Read metadata.TableInfo
 
-tableinfo, table_rows = read_tableinfo(spark, tableinfo_name=f'{tableinfo_name}_{database}')
+tableinfo, table_rows = read_tableinfo(spark, tableinfo_name=f'{tableinfo_name}_{tableinfo_source}')
 
 
 
@@ -142,9 +147,9 @@ def base_sqlstr(schema_name, table_name, source_system, layer:str):
     SCHEMA_NAME = f'{source_system}{LAYER}'.upper()
     TABLE_NAME = f'{schema_name}_{table_name}'.upper()
 
-    sqlstr = f"""USE ROLE AD_SNOWFLAKE_QA_DBA;
-USE WAREHOUSE QA_RAW_WH;
-USE DATABASE QA_RAW_FP;
+    sqlstr = f"""USE ROLE {snowflake_role};
+USE WAREHOUSE {warehouse};
+USE DATABASE {database};
 USE SCHEMA {source_system}{LAYER};
 """
     return SCHEMA_NAME, TABLE_NAME, sqlstr
@@ -231,7 +236,7 @@ if manual_iteration:
 # %% Create Json Files
 
 @catch_error(logger)
-def create_json_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
+def create_ingest_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -264,14 +269,14 @@ def create_json_adls(source_system:str, schema_name:str, table_name:str, column_
 
 
 if manual_iteration:
-    ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
+    ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
     print(ingest_data)
 
 
 # %% Create Json List File
 
 @catch_error(logger)
-def create_json_list_adls(ingest_data_list:defaultdict):
+def create_ingest_list_adls(ingest_data_list:defaultdict):
     for source_system_plus_schema_name, ingest_data_per_source_system in ingest_data_list.items():
         json_string = json.dumps(ingest_data_per_source_system)
 
@@ -299,12 +304,51 @@ def create_json_list_adls(ingest_data_list:defaultdict):
             file_format = 'parquet'
         )
 
+        # Grant Permissions
+        sqlstr = f"""USE ROLE {snowflake_role};
+
+GRANT USAGE ON DATABASE {database} TO ROLE {engineer_role};
+
+GRANT USAGE ON SCHEMA {database}.{source_system}_RAW TO ROLE {engineer_role};
+GRANT USAGE ON SCHEMA {database}.{source_system} TO ROLE {engineer_role};
+GRANT USAGE ON SCHEMA {database}.ELT_STAGE TO ROLE {engineer_role};
+
+GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {database}.{source_system}_RAW TO ROLE {engineer_role};
+GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {database}.{source_system} TO ROLE {engineer_role};
+GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {database}.ELT_STAGE TO ROLE {engineer_role};
+
+GRANT SELECT ON ALL VIEWS IN SCHEMA {database}.{source_system}_RAW TO ROLE {engineer_role};
+GRANT SELECT ON ALL VIEWS IN SCHEMA {database}.{source_system} TO ROLE {engineer_role};
+GRANT SELECT ON ALL VIEWS IN SCHEMA {database}.ELT_STAGE TO ROLE {engineer_role};
+        """
+
+        if manual_iteration:
+            print(sqlstr)
+        
+        table_name = 'grant_permissions'
+
+        if save_to_adls:
+            save_adls_gen2(
+                table_to_save = spark.createDataFrame([sqlstr], StringType()),
+                storage_account_name = storage_account_name,
+                container_name = container_name,
+                container_folder = f"{ddl_folder}/{source_system}",
+                table = table_name,
+                file_format = 'text'
+            )
+
+        if execute_at_snowflake:
+            print(f"Executing Snowflake SQL String: {ddl_folder}/{source_system}/{table_name}")
+            exec_status = snowflake_connection.execute_string(sql_text=sqlstr)
+
+
 
 
 if manual_iteration:
     ingest_data_list = defaultdict(list)
     ingest_data_list[(source_system, schema_name)].append(ingest_data)
-    create_json_list_adls(ingest_data_list=ingest_data_list)
+    create_ingest_list_adls(ingest_data_list=ingest_data_list)
+
 
 
 # %% Create Step 1
@@ -560,12 +604,13 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list)
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
+    stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
     column_list = '\n    ,'.join(column_names+elt_audit_columns)
     merge_update_columns = '\n    ,'.join([f'{tgt_alias}.{c} = {src_alias}.{c}' for c in column_names+elt_audit_columns])
     column_list_with_alias = '\n    ,'.join([f'{src_alias}.{c}' for c in column_names+elt_audit_columns])
 
     sqlstr += f"""
-CREATE OR REPLACE PROCEDURE {SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE()
+CREATE OR REPLACE PROCEDURE {stored_procedure}()
 RETURNS STRING
 LANGUAGE JAVASCRIPT
 EXECUTE AS CALLER
@@ -630,20 +675,12 @@ def step9(source_system:str, schema_name:str, table_name:str, column_names:list)
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
     
-    envionment = 'QA'
-    warehouse = f'{envionment.upper()}_RAW_WH'
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
     task_suffix = '_MERGE_TASK'
     task_name = f'{TABLE_NAME}{task_suffix}'.upper()
     stream_name = f'{SCHEMA_NAME}_RAW.{TABLE_NAME}{variant_label}{stream_suffix}'
-    snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'
 
-    sqlstr = f"""
-USE ROLE AD_SNOWFLAKE_QA_DBA;
-USE WAREHOUSE {warehouse};
-USE DATABASE QA_RAW_FP;
-USE SCHEMA {SCHEMA_NAME};
-
+    sqlstr += f"""
 CREATE OR REPLACE TASK {task_name}
 WAREHOUSE = {warehouse}
 SCHEDULE = '1 minute'
@@ -694,7 +731,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step7(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
-            ingest_data = create_json_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
+            ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
             ingest_data_list[(source_system, schema_name)].append(ingest_data)
 
     print('Finished Iterating over all tables')
@@ -707,8 +744,7 @@ if not manual_iteration:
 
 # %% Write Ingest Data
 
-if not manual_iteration:
-    create_json_list_adls(ingest_data_list=ingest_data_list)
+create_ingest_list_adls(ingest_data_list=ingest_data_list)
 
 
 # %% Close Showflake connection
