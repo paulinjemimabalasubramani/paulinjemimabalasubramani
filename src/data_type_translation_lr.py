@@ -11,7 +11,7 @@ from modules.config import is_pc
 from modules.spark_functions import create_spark, read_csv, read_sql
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, read_adls_gen2, \
     get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, tableinfo_partitionBy, select_tableinfo_columns,
-from modules.data_functions import execution_date, column_regex
+from modules.data_functions import execution_date, column_regex, metadata_DataTypeTranslation, metadata_MasterIngestList
 
 
 from pyspark.sql import functions as F
@@ -54,7 +54,7 @@ master_ingest_list = read_adls_gen2(
     storage_account_name = storage_account_name,
     container_name = tableinfo_container_name,
     container_folder = '',
-    table = f'metadata.MasterIngestList_{tableinfo_source}',
+    table = f'{metadata_MasterIngestList}_{tableinfo_source}',
     file_format = file_format
 )
 
@@ -73,7 +73,7 @@ translation = read_adls_gen2(
     storage_account_name = storage_account_name,
     container_name = tableinfo_container_name,
     container_folder = '',
-    table = 'metadata.DataTypeTranslation',
+    table = metadata_DataTypeTranslation,
     file_format = file_format
 )
 

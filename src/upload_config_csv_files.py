@@ -9,7 +9,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_csv,
 from modules.config import is_pc
-from modules.data_functions import remove_column_spaces, execution_date
+from modules.data_functions import remove_column_spaces, execution_date, metadata_DataTypeTranslation, metadata_MasterIngestList
 from modules.azure_functions import setup_spark_adls_gen2_connection, to_storage_account_name, file_format, save_adls_gen2, \
     tableinfo_container_name, tableinfo_partitionBy
 
@@ -54,7 +54,7 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 # %% Get Master Ingest List
 
 @catch_error(logger)
-def get_master_ingest_list_csv(master_ingest_list_path:str, save_to_adls:bool=False, tableinfo_source:str=None):
+def get_master_ingest_list_csv(master_ingest_list_path:str, tableinfo_source:str=None):
     """
     Get List of Tables of interest
     """
@@ -80,7 +80,7 @@ def get_master_ingest_list_csv(master_ingest_list_path:str, save_to_adls:bool=Fa
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = '',
-            table = f'metadata.MasterIngestList_{tableinfo_source}',
+            table = f'{metadata_MasterIngestList}_{tableinfo_source}',
             partitionBy = partitionBy,
             file_format = file_format,
         )
@@ -91,7 +91,6 @@ def get_master_ingest_list_csv(master_ingest_list_path:str, save_to_adls:bool=Fa
 
 master_ingest_list = get_master_ingest_list_csv(
     master_ingest_list_path = master_ingest_list_path,
-    save_to_adls = True,
     tableinfo_source = 'LR',
     )
 
@@ -118,7 +117,7 @@ def get_translation(data_type_translation_path):
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = '',
-            table = 'metadata.DataTypeTranslation',
+            table = metadata_DataTypeTranslation,
             partitionBy = tableinfo_partitionBy,
             file_format = file_format,
         )

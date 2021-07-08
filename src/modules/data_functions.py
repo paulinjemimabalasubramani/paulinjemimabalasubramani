@@ -21,6 +21,9 @@ execution_date = datetime.now().strftime(strftime)
 
 column_regex = r'[\W]+'
 
+metadata_DataTypeTranslation = 'metadata.DataTypeTranslation'
+metadata_MasterIngestList = 'metadata.MasterIngestList'
+
 firms = [
     {'firm_name': 'WFS', 'crd_number': '421'},
     {'firm_name': 'FSC', 'crd_number': '7461'},
