@@ -21,17 +21,9 @@ execution_date = datetime.now().strftime(strftime)
 
 column_regex = r'[\W]+'
 
-firms = [
-    {'firm_name': 'FSC', 'firm_number': '7461'},
-    {'firm_name': 'RAA', 'firm_number': '23131'},
-    {'firm_name': 'SAI', 'firm_number': '0'},
-    {'firm_name': 'SPF', 'firm_number': '1'},
-    {'firm_name': 'TRD', 'firm_number': '2'},
-    {'firm_name': 'WFS', 'firm_number': '3'},
-]
-
-firm_number_to_name = {firm['firm_number']:firm['firm_name'] for firm in firms}
-firm_name_to_number = {firm['firm_name']:firm['firm_number'] for firm in firms}
+metadata_DataTypeTranslation = 'metadata.DataTypeTranslation'
+metadata_MasterIngestList = 'metadata.MasterIngestList'
+metadata_FirmSourceMap = 'metadata.FirmSourceMap'
 
 
 

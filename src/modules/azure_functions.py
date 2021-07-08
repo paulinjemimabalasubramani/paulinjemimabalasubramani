@@ -1,18 +1,16 @@
 
-# %% Azure Libraries
+# %% Import Libraries
 
 import os
 
 from .common_functions import make_logging, catch_error
-from .data_functions import remove_column_spaces
-from .spark_functions import read_csv
 from .config import is_pc
 
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
 
 from pyspark.sql.functions import col, lit
-from pyspark.sql import functions as F
+
 
 # %% Logging
 logger = make_logging(__name__)
@@ -181,52 +179,6 @@ def read_adls_gen2(spark,
     if is_pc: table_read.show(5)
 
     return table_read
-
-
-
-# %% Get Master Ingest List
-
-@catch_error(logger)
-def get_master_ingest_list_csv(spark, table_list_path:str, created_datetime:str=None, modified_datetime:str=None, save_to_adls:bool=False, tableinfo_source:str=None):
-    """
-    Get List of Tables of interest
-    """
-    table_list = read_csv(spark, table_list_path)
-    if is_pc: table_list.printSchema()
-
-    table_list = remove_column_spaces(table_list)
-
-    table_list = table_list.withColumn('IsActive', F.when(F.upper(col('Table_of_Interest'))=='YES', lit(1)).otherwise(lit(0)))
-    if created_datetime:
-        table_list = table_list.withColumn('CreatedDateTime', lit(created_datetime))
-    if modified_datetime:
-        table_list = table_list.withColumn('ModifiedDateTime', lit(modified_datetime))
-
-    column_map = {
-        'TableName': 'TABLE_NAME',
-        'SchemaName' : 'TABLE_SCHEMA',
-    }
-
-    for key, val in column_map.items():
-        table_list = table_list.withColumnRenamed(key, val)
-
-    if save_to_adls: # Save Master Ingest List to ADLS Gen 2 - before filtering
-        setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-        partitionBy = 'ModifiedDateTime'
-        save_adls_gen2(
-                table_to_save=table_list,
-                storage_account_name = storage_account_name,
-                container_name = tableinfo_container_name,
-                container_folder = '',
-                table = f'metadata.MasterIngestList_{tableinfo_source}',
-                partitionBy = partitionBy,
-                file_format = file_format,
-            )
-
-    table_list = table_list.filter(col('IsActive')==lit(1))
-
-    return table_list
 
 
 

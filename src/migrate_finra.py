@@ -20,6 +20,7 @@ http://10.128.25.82:8282/
 
 import os, sys, tempfile, shutil, json, re
 from collections import defaultdict
+from datetime import datetime
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
@@ -29,8 +30,9 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
-    to_storage_account_name, select_tableinfo_columns, tableinfo_partitionBy, tableinfo_container_name
-from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, firms
+    to_storage_account_name, select_tableinfo_columns, tableinfo_partitionBy, tableinfo_container_name, read_adls_gen2
+from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, \
+    metadata_FirmSourceMap
 
 
 # %% Spark Libraries
@@ -78,6 +80,43 @@ else:
 schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../config/finra')
 
 
+
+# %% Get Firms
+
+@catch_error(logger)
+def get_firms():
+    storage_account_name = to_storage_account_name()
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    firms_table = read_adls_gen2(
+        spark = spark,
+        storage_account_name = storage_account_name,
+        container_name = tableinfo_container_name,
+        container_folder = '',
+        table = metadata_FirmSourceMap,
+        file_format = file_format
+    )
+
+    firms_table = firms_table.filter(
+        (col('Source') == lit(database.upper()).cast("string")) & 
+        (col('IsActive') == lit(1))
+    )
+
+    firms_table = firms_table.select('Firm', 'SourceKey') \
+        .withColumnRenamed('Firm', 'firm_name') \
+        .withColumnRenamed('SourceKey', 'crd_number')
+
+    firms = firms_table.toJSON().map(lambda j: json.loads(j)).collect()
+
+    return firms
+
+
+
+firms = get_firms()
+
+if is_pc: print(firms)
+
+
 # %% Load Schema
 
 @catch_error(logger)
@@ -104,11 +143,18 @@ def base_to_schema(base:dict):
 def extract_data_from_finra_file_name(file_name):
     basename = os.path.basename(file_name)
     sp = basename.split("_")
-    ans = {
-        'firm_number': sp[0],
-        'table_name': sp[1],
-        'date': sp[2].rsplit('.', 1)[0]
-    }
+
+    try:
+        ans = {
+            'crd_number': sp[0],
+            'table_name': sp[1],
+            'date': sp[2].rsplit('.', 1)[0]
+        }
+        _ = datetime.strptime(ans['date'], r'%Y-%m-%d')
+    except:
+        print(f'Cannot parse file name: {file_name}')
+        return
+
     return ans
 
 
@@ -249,10 +295,14 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
 
 @catch_error(logger)
 def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:str):
-    name_data = extract_data_from_finra_file_name(file)
-    print('\n', name_data)
-
     file_path = os.path.join(root, file)
+
+    name_data = extract_data_from_finra_file_name(file)
+    if not name_data:
+        print(f'Not valid file name format: {file_path}   -> SKIPPING')
+        return
+
+    print('\n', name_data)
 
     rowTags = find_rowTags(file_path)
     print(f'\nrowTags: {rowTags}\n')
@@ -310,10 +360,10 @@ def get_max_date(folder_path):
     for root, dirs, files in os.walk(folder_path):
         for file in files:
             name_data = extract_data_from_finra_file_name(file)
-            if not max_date or max_date<name_data['date']:
+            if name_data and (not max_date or max_date<name_data['date']):
                 max_date = name_data['date']
 
-    print(f'\nMax Date: {max_date}\n')
+    print(f'Max Date: {max_date}')
     return max_date
 
 
@@ -343,10 +393,10 @@ def process_one_file(root:str, file:str, firm_name:str, storage_account_name:str
 @catch_error(logger)
 def process_all_files():
     for firm in firms:
-        firm_folder = firm['firm_number']
+        firm_folder = firm['crd_number']
         folder_path = os.path.join(data_path_folder, firm_folder)
         firm_name = firm['firm_name']
-        print(f"Firm: {firm_name}, Firm Number: {firm['firm_number']}\n")
+        print(f"\n\nFirm: {firm_name}, Firm CRD Number: {firm['crd_number']}")
 
         if not os.path.isdir(folder_path):
             print(f'Path does not exist: {folder_path}   -> SKIPPING')
@@ -356,6 +406,10 @@ def process_all_files():
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
         max_date = get_max_date(folder_path=folder_path)
+
+        if not max_date:
+            print(f'Max Date not found, SKIPPING {folder_path}')
+            continue
 
         for root, dirs, files in os.walk(folder_path):
             for file in files:

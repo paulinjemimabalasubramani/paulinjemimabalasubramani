@@ -1,6 +1,5 @@
 # %% Import Libraries
 import os, sys
-from datetime import datetime
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
@@ -9,19 +8,14 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
-from modules.spark_functions import create_spark, read_csv, read_sql
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_master_ingest_list_csv, tableinfo_name, \
+from modules.spark_functions import create_spark, read_sql
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, read_adls_gen2, \
     get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, tableinfo_partitionBy, select_tableinfo_columns
-from modules.data_functions import execution_date, column_regex
+from modules.data_functions import execution_date, column_regex, metadata_DataTypeTranslation, metadata_MasterIngestList
 
-
-# %% Spark Libraries
-
-from pyspark.sql.types import StructType, StructField, StringType, TimestampType, BooleanType, DoubleType, IntegerType, FloatType
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit, split, explode, udf, expr
-from pyspark.sql import Row, Window
+from pyspark.sql.functions import col, lit
 
 
 # %% Logging
@@ -29,19 +23,12 @@ logger = make_logging(__name__)
 
 
 # %% Parameters
-data_type_translation_path = os.path.realpath(os.path.dirname(__file__)+'/../metadata_source_files/DataTypeTranslation.csv')
-assert os.path.isfile(data_type_translation_path), f"File not found: {data_type_translation_path}"
-
-table_list_path = os.path.realpath(os.path.dirname(__file__)+'/../config/LNR_Tables.csv')
-assert os.path.isfile(table_list_path), f"File not found: {table_list_path}"
 
 data_type_translation_id = 'sqlserver_snowflake'
 
 database = 'LR' # TABLE_CATALOG
 sql_server = 'TSQLOLTP01'
 tableinfo_source = database
-
-storage_account_name = to_storage_account_name()
 
 created_datetime = execution_date
 modified_datetime = execution_date
@@ -52,61 +39,48 @@ modified_datetime = execution_date
 spark = create_spark()
 
 
-# %% Get Master Ingest List
-
-table_list = get_master_ingest_list_csv(
-    spark = spark,
-    table_list_path = table_list_path,
-    created_datetime = created_datetime,
-    modified_datetime = modified_datetime,
-    save_to_adls = True,
-    tableinfo_source = tableinfo_source,
-    )
-
-if is_pc: table_list.show(5)
-
-
-
 # %% Setup spark to ADLS Gen2 connection
+
+storage_account_name = to_storage_account_name()
 
 setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 
+
+# %% Get Master Ingest List
+
+master_ingest_list = read_adls_gen2(
+    spark = spark,
+    storage_account_name = storage_account_name,
+    container_name = tableinfo_container_name,
+    container_folder = '',
+    table = f'{metadata_MasterIngestList}_{tableinfo_source}',
+    file_format = file_format
+)
+
+master_ingest_list = master_ingest_list.filter(
+    col('IsActive')==lit(1)
+)
+
+if is_pc: master_ingest_list.show(5)
+
+
+
 # %% Get DataTypeTranslation table
 
-@catch_error(logger)
-def get_translation(data_type_translation_path, data_type_translation_id:str, save_to_adls:bool=False):
-    """
-    Get DataTypeTranslation table
-    """
-    translation = read_csv(spark, data_type_translation_path)
-    if is_pc: translation.printSchema()
+translation = read_adls_gen2(
+    spark = spark,
+    storage_account_name = storage_account_name,
+    container_name = tableinfo_container_name,
+    container_folder = '',
+    table = metadata_DataTypeTranslation,
+    file_format = file_format
+)
 
-    translation = translation.withColumn('IsActive', lit(1))
-    translation = translation.withColumn('CreatedDateTime', lit(created_datetime))
-    translation = translation.withColumn('ModifiedDateTime', lit(modified_datetime))
-
-    if save_to_adls: # Save DataTypeTranslation to ADLS Gen 2 - before filtering
-        save_adls_gen2(
-                table_to_save=translation,
-                storage_account_name = storage_account_name,
-                container_name = tableinfo_container_name,
-                container_folder = '',
-                table = 'metadata.DataTypeTranslation',
-                partitionBy = tableinfo_partitionBy,
-                file_format = file_format,
-            )
-
-    # Filter the DataTypeTranslation for current use
-    translation = translation.filter(
-                        (col('DataTypeTranslationID') == lit(data_type_translation_id).cast("string")) & 
-                        (col('IsActive') == lit(1))
-                        )
-
-    return translation
-
-
-translation = get_translation(data_type_translation_path, data_type_translation_id, save_to_adls=True)
+translation = translation.filter(
+    (col('DataTypeTranslationID') == lit(data_type_translation_id).cast("string")) & 
+    (col('IsActive') == lit(1))
+)
 
 if is_pc: translation.show(5)
 
@@ -136,18 +110,19 @@ if is_pc: sql_key_column_usage.printSchema()
 if is_pc: sql_key_column_usage.show(5)
 
 
-# %% Join tables of interest with sql tables
+
+# %% Join master_ingest_list with sql tables
 
 @catch_error(logger)
-def join_table_list_sql_tables(table_list, sql_tables):
-    tables = table_list.join(
+def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
+    tables = master_ingest_list.join(
         sql_tables,
-        (table_list.TABLE_NAME == sql_tables.TABLE_NAME) &
-        (table_list.TABLE_SCHEMA == sql_tables.TABLE_SCHEMA),
+        (master_ingest_list.TABLE_NAME == sql_tables.TABLE_NAME) &
+        (master_ingest_list.TABLE_SCHEMA == sql_tables.TABLE_SCHEMA),
         how = 'left'
         ).select(
-            table_list.TABLE_NAME, 
-            table_list.TABLE_SCHEMA,
+            master_ingest_list.TABLE_NAME, 
+            master_ingest_list.TABLE_SCHEMA,
             sql_tables.TABLE_NAME.alias('SQL_TABLE_NAME'),
             sql_tables.TABLE_TYPE,
             sql_tables.TABLE_CATALOG,
@@ -156,14 +131,14 @@ def join_table_list_sql_tables(table_list, sql_tables):
     if is_pc: tables.printSchema()
     if is_pc: tables.show(5)
 
-    # Check if there is a table in the table_list that is not in the sql_tables
+    # Check if there is a table in the master_ingest_list that is not in the sql_tables
     null_rows = tables.filter(col('SQL_TABLE_NAME').isNull()).select(col('TABLE_NAME')).collect()
-    assert not null_rows, f"There are some tables in table_list that are not in sql_tables: {[x[0] for x in null_rows]}"
+    assert not null_rows, f"There are some tables in master_ingest_list that are not in sql_tables: {[x[0] for x in null_rows]}"
 
     return tables
 
 
-tables = join_table_list_sql_tables(table_list, sql_tables)
+tables = join_master_ingest_list_sql_tables(master_ingest_list, sql_tables)
 
 # %% filter columns by selected tables
 
