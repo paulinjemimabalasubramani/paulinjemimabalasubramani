@@ -30,8 +30,9 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
-    to_storage_account_name, select_tableinfo_columns, tableinfo_partitionBy, tableinfo_container_name
-from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, firms
+    to_storage_account_name, select_tableinfo_columns, tableinfo_partitionBy, tableinfo_container_name, read_adls_gen2
+from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, \
+    metadata_FirmSourceMap
 
 
 # %% Spark Libraries
@@ -77,6 +78,43 @@ else:
     data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared')
 
 schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../config/finra')
+
+
+
+# %% Get Firms
+
+@catch_error(logger)
+def get_firms():
+    storage_account_name = to_storage_account_name()
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    firms_table = read_adls_gen2(
+        spark = spark,
+        storage_account_name = storage_account_name,
+        container_name = tableinfo_container_name,
+        container_folder = '',
+        table = metadata_FirmSourceMap,
+        file_format = file_format
+    )
+
+    firms_table = firms_table.filter(
+        (col('Source') == lit(database.upper()).cast("string")) & 
+        (col('IsActive') == lit(1))
+    )
+
+    firms_table = firms_table.select('Firm', 'SourceKey') \
+        .withColumnRenamed('Firm', 'firm_name') \
+        .withColumnRenamed('SourceKey', 'crd_number')
+
+    firms = firms_table.toJSON().map(lambda j: json.loads(j)).collect()
+
+    return firms
+
+
+
+firms = get_firms()
+
+if is_pc: print(firms)
 
 
 # %% Load Schema

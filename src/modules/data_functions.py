@@ -25,18 +25,6 @@ metadata_DataTypeTranslation = 'metadata.DataTypeTranslation'
 metadata_MasterIngestList = 'metadata.MasterIngestList'
 metadata_FirmSourceMap = 'metadata.FirmSourceMap'
 
-firms = [
-    {'firm_name': 'WFS', 'crd_number': '421'},
-    {'firm_name': 'FSC', 'crd_number': '7461'},
-    {'firm_name': 'RAA', 'crd_number': '23131'},
-    {'firm_name': 'SPF', 'crd_number': '133763'},
-    {'firm_name': 'SAI', 'crd_number': '10205'},
-    {'firm_name': 'TRD', 'crd_number': '25803'},
-]
-
-crd_number_to_name = {firm['crd_number']:firm['firm_name'] for firm in firms}
-firm_name_to_number = {firm['firm_name']:firm['crd_number'] for firm in firms}
-
 
 
 # %% Remove Column Spaces
