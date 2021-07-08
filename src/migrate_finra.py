@@ -72,10 +72,10 @@ spark = create_spark()
 print(f'Main Path: {os.path.realpath(os.path.dirname(__file__))}')
 
 if is_pc:
-    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared')
+    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared/FINRA')
 else:
     # /usr/local/spark/resources/fileshare/Shared
-    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared')
+    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared/FINRA')
 
 schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../config/finra')
 
