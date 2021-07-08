@@ -646,7 +646,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
     ingest_data_list = defaultdict(list)
 
     for i, table in enumerate(table_rows):
-        if i>3 and is_pc: break
+        #if i>3 and is_pc: break
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
