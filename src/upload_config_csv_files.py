@@ -7,7 +7,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import make_logging, catch_error
-from modules.spark_functions import create_spark, read_csv,
+from modules.spark_functions import create_spark, read_csv
 from modules.config import is_pc
 from modules.data_functions import remove_column_spaces, execution_date, metadata_DataTypeTranslation, metadata_MasterIngestList
 from modules.azure_functions import setup_spark_adls_gen2_connection, to_storage_account_name, file_format, save_adls_gen2, \
@@ -25,13 +25,15 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-data_type_translation_path = os.path.realpath(os.path.dirname(__file__)+'/../config/DataTypeTranslation.csv')
+config_path = os.path.dirname(__file__)+'/../config/'
+
+data_type_translation_path = os.path.realpath(config_path + 'DataTypeTranslation.csv')
 assert os.path.isfile(data_type_translation_path), f"File not found: {data_type_translation_path}"
 
-master_ingest_list_path = os.path.realpath(os.path.dirname(__file__)+'/../config/LNR_Tables.csv')
+master_ingest_list_path = os.path.realpath(config_path + 'LNR_Tables.csv')
 assert os.path.isfile(master_ingest_list_path), f"File not found: {master_ingest_list_path}"
 
-firm_source_map_path = os.path.realpath(os.path.dirname(__file__)+'/../config/Firm_Source_Map.csv')
+firm_source_map_path = os.path.realpath(config_path + 'Firm_Source_Map.csv')
 assert os.path.isfile(firm_source_map_path), f"File not found: {firm_source_map_path}"
 
 storage_account_name = to_storage_account_name()
