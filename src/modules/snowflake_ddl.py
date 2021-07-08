@@ -50,6 +50,8 @@ class module_params_class:
     wild_card = '.*.parquet'
     stream_suffix = '_STREAM'
 
+    elt_stage_schema = "ELT_STAGE"
+
     src_alias = 'src'
     tgt_alias = 'tgt'
     hash_column_name = 'MD5_HASH'
@@ -214,14 +216,16 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
     else:
         elt_stage_name = schema_name.upper()
 
-    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '@ELT_STAGE.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
+    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '@{wid.elt_stage_schema}.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
 
     ingest_data = {
-        "INGEST_STAGE_NAME": f'@ELT_STAGE.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
+        "INGEST_STAGE_NAME": f'@{wid.elt_stage_schema}.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
         "EXECUTION_DATE": execution_date,
         "FULL_OBJECT_NAME": TABLE_NAME,
         "COPY_COMMAND": sqlstr,
-        "SCHEMA": SCHEMA_NAME,
+        "INGEST_SCHEMA": SCHEMA_NAME,
+        "SOURCE_SYSTEM": source_system,
+        "ELT_STAGE_SCHEMA": wid.elt_stage_schema
     }
     
     json_string = json.dumps(ingest_data)
@@ -271,15 +275,15 @@ GRANT USAGE ON DATABASE {wid.snowflake_raw_database} TO ROLE {wid.engineer_role}
 
 GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
 GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
-GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.ELT_STAGE TO ROLE {wid.engineer_role};
+GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_schema} TO ROLE {wid.engineer_role};
 
 GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {wid.snowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
 GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
-GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {wid.snowflake_raw_database}.ELT_STAGE TO ROLE {wid.engineer_role};
+GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_schema} TO ROLE {wid.engineer_role};
 
 GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
 GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
-GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.ELT_STAGE TO ROLE {wid.engineer_role};
+GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_schema} TO ROLE {wid.engineer_role};
 """
         
         table_name = 'grant_permissions'
@@ -310,7 +314,7 @@ def step1(source_system:str, schema_name:str, table_name:str, column_names:list)
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
     sqlstr += f"""
-CREATE OR REPLACE TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
+CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
 (
   {wid.variant_alias} VARIANT
 );
@@ -328,7 +332,7 @@ def step2(source_system:str, schema_name:str, table_name:str, column_names:list)
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
     sqlstr += f"""
-CREATE OR REPLACE STREAM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}
+CREATE STREAM IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}
 ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 """
     return sqlstr
@@ -350,7 +354,7 @@ def step3(source_system:str, schema_name:str, table_name:str, column_names:list,
 
     sqlstr += f"""
 COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
-FROM '@ELT_STAGE.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
+FROM '@{wid.elt_stage_schema}.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
 FILE_FORMAT = (type='{wid.FILE_FORMAT}')
 PATTERN = '{wid.wild_card}'
 ON_ERROR = CONTINUE;
@@ -369,7 +373,7 @@ SELECT $EXECEPTION_CREATED_BY_USER;
 SELECT $EXECEPTION_CREATED_BY_ROLE;
 SELECT $EXCEPTION_SESSION;
 
-INSERT INTO ELT_STAGE.ELT_COPY_EXCEPTION
+INSERT INTO {wid.elt_stage_schema}.ELT_COPY_EXCEPTION
 (
    SOURCE_SYSTEM
   ,TARGET_TABLE
@@ -609,17 +613,13 @@ def step9(source_system:str, schema_name:str, table_name:str, column_names:list)
     stream_name = f'{SCHEMA_NAME}_RAW.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}'
 
     sqlstr += f"""
-CREATE OR REPLACE TASK {task_name}
+CREATE TASK IF NOT EXISTS {task_name}
 WAREHOUSE = {wid.snowflake_raw_warehouse}
 SCHEDULE = '1 minute'
 WHEN
 SYSTEM$STREAM_HAS_DATA('{stream_name}')
 AS
     CALL {stored_procedure}();
-
-USE ROLE ACCOUNTADMIN;
-GRANT EXECUTE TASK ON ACCOUNT TO ROLE SYSADMIN;
-GRANT EXECUTE TASK ON ACCOUNT TO ROLE {wid.snowflake_role};
 
 USE ROLE {wid.snowflake_role};
 ALTER TASK {task_name} RESUME;
