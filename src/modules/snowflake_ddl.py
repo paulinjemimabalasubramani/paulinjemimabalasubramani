@@ -254,23 +254,13 @@ def create_ingest_list_adls(ingest_data_list:defaultdict):
 
         storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
         setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
-
-        if wid.write_jsons:
-            save_adls_gen2(
-                table_to_save = wid.spark.createDataFrame([json_string], StringType()),
-                storage_account_name = storage_account_name,
-                container_name = container_name,
-                container_folder = f"metadata/{wid.domain_name}/{source_system}",
-                table = 'ingest_data',
-                file_format = 'text'
-            )
         
         save_adls_gen2(
             table_to_save = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = f"metadata/{wid.domain_name}/{source_system}",
-            table = 'metadata_config_test_sm',
+            table = 'ingest_data',
             file_format = 'parquet'
         )
 
