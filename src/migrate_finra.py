@@ -363,7 +363,7 @@ def get_max_date(folder_path):
             if name_data and (not max_date or max_date<name_data['date']):
                 max_date = name_data['date']
 
-    print(f'\nMax Date: {max_date}\n')
+    print(f'Max Date: {max_date}')
     return max_date
 
 
@@ -396,7 +396,7 @@ def process_all_files():
         firm_folder = firm['crd_number']
         folder_path = os.path.join(data_path_folder, firm_folder)
         firm_name = firm['firm_name']
-        print(f"Firm: {firm_name}, Firm CRD Number: {firm['crd_number']}\n")
+        print(f"\n\nFirm: {firm_name}, Firm CRD Number: {firm['crd_number']}")
 
         if not os.path.isdir(folder_path):
             print(f'Path does not exist: {folder_path}   -> SKIPPING')
