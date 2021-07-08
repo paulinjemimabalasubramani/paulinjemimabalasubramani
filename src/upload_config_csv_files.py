@@ -10,7 +10,7 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_csv
 from modules.config import is_pc
 from modules.data_functions import remove_column_spaces, execution_date, metadata_DataTypeTranslation, metadata_MasterIngestList, \
-    metadata_Firm_Source_Map
+    metadata_FirmSourceMap
 from modules.azure_functions import setup_spark_adls_gen2_connection, to_storage_account_name, file_format, save_adls_gen2, \
     tableinfo_container_name, tableinfo_partitionBy
 
@@ -144,7 +144,7 @@ translation = get_translation(
 if is_pc: translation.show(5)
 
 
-# %% Get Firm_Source_Map
+# %% Get FirmSourceMap
 
 
 def get_firm_source_map(firm_source_map_path:str):
@@ -162,7 +162,7 @@ def get_firm_source_map(firm_source_map_path:str):
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = '',
-            table = metadata_Firm_Source_Map,
+            table = metadata_FirmSourceMap,
             partitionBy = tableinfo_partitionBy,
             file_format = file_format,
         )

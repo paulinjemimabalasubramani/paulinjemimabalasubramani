@@ -23,7 +23,7 @@ column_regex = r'[\W]+'
 
 metadata_DataTypeTranslation = 'metadata.DataTypeTranslation'
 metadata_MasterIngestList = 'metadata.MasterIngestList'
-metadata_Firm_Source_Map = 'metadata.Firm_Source_Map'
+metadata_FirmSourceMap = 'metadata.FirmSourceMap'
 
 firms = [
     {'firm_name': 'WFS', 'crd_number': '421'},

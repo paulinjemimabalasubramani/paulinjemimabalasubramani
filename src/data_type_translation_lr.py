@@ -8,9 +8,9 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
-from modules.spark_functions import create_spark, read_csv, read_sql
+from modules.spark_functions import create_spark, read_sql
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, read_adls_gen2, \
-    get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, tableinfo_partitionBy, select_tableinfo_columns,
+    get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, tableinfo_partitionBy, select_tableinfo_columns
 from modules.data_functions import execution_date, column_regex, metadata_DataTypeTranslation, metadata_MasterIngestList
 
 
