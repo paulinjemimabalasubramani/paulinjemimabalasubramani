@@ -29,3 +29,7 @@ steps:
   inputs:
     pathToPublish: $(build.artifactstagingdirectory)/s/drivers
     artifactName: DRIVERS
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: $(build.artifactstagingdirectory)/s/config
+    artifactName: CONFIG
