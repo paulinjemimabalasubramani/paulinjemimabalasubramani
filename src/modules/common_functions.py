@@ -4,7 +4,7 @@ Library for common generic functions
 """
 
 # %% Import Libraries
-import os, logging, platform, psutil, socket
+import os, logging, platform, psutil
 
 from functools import wraps
 
@@ -21,7 +21,10 @@ def catch_error(logger=None):
             except Exception as e:
                 uname = platform.uname()
 
-                exception_message = f"Exception occurred inside '{fn.__name__}' --> Exception Message: {e}"
+                exception_message  = f"\n"
+                exception_message += f"\nException occurred inside '{fn.__name__}'"
+                exception_message += f"\nException Message: {e}"
+                exception_message += f"\n"
                 exception_message += f"\nSystem:    {uname.system}"
                 exception_message += f"\nNode:      {uname.node}"
                 exception_message += f"\nRelease:   {uname.release}"
@@ -29,7 +32,8 @@ def catch_error(logger=None):
                 exception_message += f"\nMachine:   {uname.machine}"
                 exception_message += f"\nProcessor: {uname.processor}"
                 exception_message += f"\nRAM:       "+str(round(psutil.virtual_memory().total / (1024.0 **3)))+" GB"
-                exception_message += f"\nHostname:  {socket.gethostname()}"
+                exception_message += f"\n\n"
+                print(exception_message)
 
                 if logger:
                     logger.error(exception_message)
