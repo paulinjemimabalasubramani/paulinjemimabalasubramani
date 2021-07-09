@@ -377,7 +377,7 @@ def process_one_file(root:str, file:str, firm_name:str, storage_account_name:str
     print(f'\nProcessing {file_path}')
 
     if file.endswith('.zip'):
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with tempfile.TemporaryDirectory(dir=root) as tmpdir:
             print(f'\nExtracting {file} to {tmpdir}')
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
             for root1, dirs1, files1 in os.walk(tmpdir):
