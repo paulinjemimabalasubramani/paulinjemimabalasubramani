@@ -80,13 +80,24 @@ def select_tableinfo_columns(tableinfo):
 
 
 
+# %% Get Environment Variable
+
+@catch_error(logger)
+def get_env(variable_name:str):
+    value = os.environ.get(variable_name)
+    if not value:
+        raise ValueError(f'Environment variable does not exist: {variable_name}')
+    return value
+
+
+
 # %% Get Azure Key Vault
 
 @catch_error(logger)
 def get_azure_key_vault():
-    azure_tenant_id = os.environ.get("AZURE_TENANT_ID")
-    azure_client_id = os.environ.get("AZURE_KV_ID")
-    azure_client_secret = os.environ.get("AZURE_KV_SECRET")
+    azure_tenant_id = get_env("AZURE_TENANT_ID")
+    azure_client_id = get_env("AZURE_KV_ID")
+    azure_client_secret = get_env("AZURE_KV_SECRET")
     vault_endpoint = "https://ag-kv-west2-secondary.vault.azure.net/"
 
     credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
