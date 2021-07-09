@@ -73,11 +73,11 @@ print(f'Main Path: {os.path.realpath(os.path.dirname(__file__))}')
 
 if is_pc:
     data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared/FINRA')
+    schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../config/finra')
 else:
     # /usr/local/spark/resources/fileshare/Shared
     data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared/FINRA')
-
-schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../config/finra')
+    schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/EDIP-Code/config/finra')
 
 
 
@@ -318,6 +318,7 @@ def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:s
         schema = base_to_schema(base)
         xml_table = read_xml(spark, file_path, rowTag=rowTag, schema=schema)
     else:
+        print(f"Looking for Schema File Location: {schema_path}")
         print(f"No manual schema defined for {name_data['table_name']}. Using default schema.")
         xml_table = read_xml(spark, file_path, rowTag=rowTag)
 
