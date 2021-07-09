@@ -15,7 +15,7 @@ https://spark.apache.org/docs/latest/configuration
 
 # %% libraries
 from .common_functions import make_logging, catch_error
-from .config import Config, is_pc, extraClassPath, config_path
+from .config import Config, is_pc, extraClassPath, config_path, platform
 
 import os
 
@@ -61,7 +61,9 @@ def create_spark():
     spark = spark.getOrCreate()
     spark.getActiveSession()
 
-    print(f"\nSpark version = {spark.version}")
+    print(f'\n{platform.sys.version}')
+    print(f'Python version = {platform.python_version()}')
+    print(f"Spark version  = {spark.version}")
     print(f"Hadoop version = {spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}\n")
 
     return spark
