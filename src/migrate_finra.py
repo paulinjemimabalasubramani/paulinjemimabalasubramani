@@ -282,6 +282,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
             table_to_add = xml_table1,
             execution_date = execution_date,
             reception_date = reception_date,
+            source = tableinfo_source,
             is_full_load = is_full_load,
             dml_type = 'I' if is_full_load or firm_name not in ['IndividualInformationReport'] else 'U',
             )
