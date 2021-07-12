@@ -48,7 +48,7 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-manual_iteration = True
+manual_iteration = False
 save_xml_to_adls_flag = True
 
 if not is_pc:
