@@ -461,8 +461,8 @@ def save_tableinfo():
             table_to_save = meta_tableinfo,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
-            container_folder = '',
-            table = f'{tableinfo_name}_{tableinfo_source}',
+            container_folder = tableinfo_source,
+            table = tableinfo_name,
             partitionBy = tableinfo_partitionBy,
             file_format = file_format,
         )

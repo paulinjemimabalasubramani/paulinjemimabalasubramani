@@ -196,14 +196,14 @@ def read_adls_gen2(spark,
 # %% Read metadata.TableInfo
 
 catch_error(logger)
-def read_tableinfo(spark, tableinfo_name:str=tableinfo_name):
+def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     tableinfo = read_adls_gen2(
         spark = spark,
         storage_account_name = storage_account_name,
         container_name = tableinfo_container_name,
-        container_folder = '',
+        container_folder = tableinfo_source,
         table = tableinfo_name,
         file_format = file_format
     )
@@ -221,7 +221,7 @@ def read_tableinfo(spark, tableinfo_name:str=tableinfo_name):
     if is_pc: table_list.show(5)
 
     table_rows = table_list.collect()
-    print(f'\nNumber of Tables in {tableinfo_name} is {len(table_rows)}')
+    print(f'\nNumber of Tables in {tableinfo_source}/{tableinfo_name} is {len(table_rows)}')
 
     return tableinfo, table_rows
 
