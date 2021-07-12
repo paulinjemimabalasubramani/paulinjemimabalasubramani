@@ -267,7 +267,13 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
         xml_table1 = remove_column_spaces(xml_table1)
         xml_table1 = xml_table1.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table1.columns))) # add HASH column for key indicator
         add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name = df_name)
-        xml_table1 = add_elt_columns(table_to_add=xml_table1, execution_date=execution_date, reception_date=reception_date)
+        xml_table1 = add_elt_columns(
+            table_to_add = xml_table1,
+            execution_date = execution_date,
+            reception_date = reception_date,
+            is_full_load = True,
+            dml_type = 'I',
+            )
 
         if is_pc and manual_iteration:
             print(fr'Save to local {database}\{file_name}\{df_name}')

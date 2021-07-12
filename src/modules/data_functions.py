@@ -8,6 +8,7 @@ from .config import is_pc
 
 from pyspark.sql.functions import col, lit
 from pyspark.sql import functions as F
+from pyspark.sql.types import IntegerType
 
 
 # %% Logging
@@ -55,27 +56,35 @@ def to_string(table_to_convert_columns, col_types=['timestamp']):
 
 
 
-# %% Add ETL Temporary Columns
+# %% Add ETL Audit Columns
 
-elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE']
+elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE', 'ELT_LOAD_TYPE', 'ELT_DELETE_IND', 'DML_TYPE']
 partitionBy = 'PARTITION_DATE'
 
 
 @catch_error(logger)
-def add_elt_columns(table_to_add, reception_date:str=None, execution_date:str=None, source:str=None):
+def add_elt_columns(table_to_add, reception_date:str, execution_date:str, source:str, is_full_load:bool, dml_type:str=None):
     """
-    Add ELT Temporary Columns
+    Add ELT Audit Columns
     """
-    if reception_date:
-        table_to_add = table_to_add.withColumn('RECEPTION_DATE', lit(str(reception_date)))
-    
-    if execution_date:
-        partition_date = execution_date.replace(' ', '_').replace(':', '-')
-        table_to_add = table_to_add.withColumn('EXECUTION_DATE', lit(str(execution_date)))
-        table_to_add = table_to_add.withColumn(partitionBy, lit(str(partition_date)))
-    
-    if source:
-        table_to_add = table_to_add.withColumn('SOURCE', lit(str(source)))
+    table_to_add = table_to_add.withColumn('RECEPTION_DATE', lit(str(reception_date)))
+    table_to_add = table_to_add.withColumn('EXECUTION_DATE', lit(str(execution_date)))
+    table_to_add = table_to_add.withColumn('SOURCE', lit(str(source)))
+    table_to_add = table_to_add.withColumn('ELT_LOAD_TYPE', lit(str("FULL" if is_full_load else "INCREMENTAL")))
+    table_to_add = table_to_add.withColumn('ELT_DELETE_IND', lit(0).cast(IntegerType()))
+
+    if is_full_load:
+        DML_TYPE = 'I'
+    else:
+        DML_TYPE = dml_type.upper()
+
+    if DML_TYPE not in ['U', 'I', 'D']:
+        raise ValueError(f'DML_TYPE = {DML_TYPE}')
+
+    table_to_add = table_to_add.withColumn('DML_TYPE', lit(str(DML_TYPE)))
+
+    partition_date = re.sub(column_regex, '_', execution_date)
+    table_to_add = table_to_add.withColumn(partitionBy, lit(str(partition_date)))
 
     return table_to_add
 
