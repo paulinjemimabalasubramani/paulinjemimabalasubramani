@@ -384,17 +384,6 @@ if manual_iteration:
 
 
 
-# %%
-
-criteria.get('_reportDate')
-
-
-# %%
-
-
-
-
-
 
 # %% Get Maximum Date from file names:
 
