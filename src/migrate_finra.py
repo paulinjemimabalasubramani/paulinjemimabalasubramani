@@ -328,8 +328,13 @@ def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:s
     print(f'\nrowTags: {rowTags}\n')
     rowTag = rowTags[0]
 
-    assert criteria['_firmCRDNumber'] == name_data['crd_number'], f"Firm CRD Number in Criteria '{criteria['_firmCRDNumber']}' does not match to the CRD Number in the file name '{name_data['crd_number']}'"
-    assert criteria[reportDate_name] == name_data['date'], f"Report/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{name_data['date']}'"
+    if criteria['_firmCRDNumber'] != name_data['crd_number']:
+        print(f"\nFirm CRD Number in Criteria '{criteria['_firmCRDNumber']}' does not match to the CRD Number in the file name '{name_data['crd_number']}'\n")
+        name_data['crd_number'] = criteria['_firmCRDNumber']
+
+    if criteria[reportDate_name] != name_data['date']:
+        print(f"\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{name_data['date']}'\n")
+        name_data['date'] = criteria[reportDate_name]
     
     is_full_load = criteria.get('_IIRType') == 'FULL' or firm_name in ['BranchInformationReport']
 
