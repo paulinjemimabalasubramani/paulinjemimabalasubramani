@@ -265,7 +265,6 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
 
     for df_name, xml_table in xml_table_list.items():
         print(f'\nWriting {df_name} to Azure...')
-        if is_pc: xml_table.printSchema()
 
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{firm_name}"
@@ -286,6 +285,8 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
             is_full_load = is_full_load,
             dml_type = 'I' if is_full_load or firm_name not in ['IndividualInformationReport'] else 'U',
             )
+
+        if is_pc: xml_table.printSchema()
 
         if is_pc and manual_iteration:
             print(fr'Save to local {database}\{file_name}\{df_name}')
