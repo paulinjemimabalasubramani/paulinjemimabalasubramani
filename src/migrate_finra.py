@@ -377,6 +377,11 @@ def process_one_file(root:str, file:str, firm_name:str, storage_account_name:str
     file_path = os.path.join(root, file)
     print(f'\nProcessing {file_path}')
 
+    name_data = extract_data_from_finra_file_name(file)
+    if not name_data:
+        print(f'Not valid file name format: {file_path}   -> SKIPPING')
+        return
+
     if file.endswith('.zip'):
         with tempfile.TemporaryDirectory(dir=root) as tmpdir:
             print(f'\nExtracting {file} to {tmpdir}')
