@@ -227,21 +227,6 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
         "SOURCE_SYSTEM": source_system,
         "ELT_STAGE_SCHEMA": wid.elt_stage_schema
     }
-    
-    json_string = json.dumps(ingest_data)
-
-    storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
-    setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
-
-    if wid.write_jsons:
-        save_adls_gen2(
-            table_to_save = wid.spark.createDataFrame([json_string], StringType()),
-            storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = f"metadata/{wid.domain_name}/{source_system}/{schema_name}",
-            table = table_name,
-            file_format = 'text'
-        )
 
     return ingest_data
 
@@ -256,12 +241,14 @@ def create_ingest_list_adls(ingest_data_list:defaultdict):
 
         storage_account_name = to_storage_account_name()
         setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
+
+        container_folder = f'metadata/{wid.domain_name}/{source_system}'
         
         save_adls_gen2(
             table_to_save = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
             storage_account_name = storage_account_name,
-            container_name = tableinfo_container_name,
-            container_folder = source_system,
+            container_name = container_name,
+            container_folder = container_folder,
             table = 'ingest_data',
             file_format = 'parquet'
         )
@@ -290,8 +277,8 @@ GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_
             save_adls_gen2(
                 table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
                 storage_account_name = storage_account_name,
-                container_name = tableinfo_container_name,
-                container_folder = source_system,
+                container_name = container_name,
+                container_folder = container_folder,
                 table = table_name,
                 file_format = 'text'
             )
