@@ -5,6 +5,7 @@ import os
 
 from .common_functions import make_logging, catch_error
 from .config import is_pc
+from .data_functions import partitionBy
 
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
@@ -64,6 +65,7 @@ def select_tableinfo_columns(tableinfo):
         'IsActive',
         'CreatedDateTime',
         'ModifiedDateTime',
+        partitionBy,
         ]
 
     column_orderby = [
