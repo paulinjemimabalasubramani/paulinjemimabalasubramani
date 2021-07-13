@@ -60,6 +60,7 @@ database = 'FINRA'
 tableinfo_source = database
 
 KeyIndicator = 'MD5_KEY'
+FirmCRDNumber = 'FIRM_CRD_NUMBER'
 
 finra_individual_delta_name = 'IndividualInformationReportDelta'
 reportDate_name = '_reportDate'
@@ -236,6 +237,7 @@ def flatten_n_divide_df(xml_table, table_name:str):
 
 tableinfo = defaultdict(list)
 
+@catch_error(logger)
 def add_table_to_tableinfo(xml_table, firm_name, table_name):
     for ix, (col_name, col_type) in enumerate(xml_table.dtypes):
         tableinfo['SourceDatabase'].append(database)
@@ -258,6 +260,25 @@ def add_table_to_tableinfo(xml_table, firm_name, table_name):
         tableinfo[partitionBy].append(partitionBy_value)
 
 
+# %% Add Business Key
+
+@catch_error(logger)
+def add_business_key(xml_table):
+    cols = xml_table.columns
+
+    cols_indvl = sorted([c for c in cols if ('individualCRDNumber'.upper() in c.upper() or 'indvlPK'.upper() in c.upper())], key=len)
+    if is_pc: print(f'\nindvlPK: {cols_indvl}')
+    if cols_indvl:
+        xml_table = xml_table.withColumn('BUSINESS_KEY_INDVL', concat_ws('_', col(FirmCRDNumber), col(cols_indvl[0])))
+
+    cols_brnch = sorted([c for c in cols if ('brnchPK'.upper() in c.upper())], key=len)
+    if is_pc: print(f'\nbrnchPK: {cols_brnch}')
+    if cols_brnch:
+        xml_table = xml_table.withColumn('BUSINESS_KEY_BRNCH', concat_ws('_', col(FirmCRDNumber), col(cols_brnch[0])))
+
+    return xml_table
+
+
 
 # %% Write xml table list to Azure
 
@@ -268,13 +289,14 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
         print(f'\nWriting {df_name} to Azure...')
 
         data_type = 'data'
-        container_folder = f"{data_type}/{domain_name}/{database}/{firm_name}"
+        container_folder = f'{data_type}/{domain_name}/{database}/{firm_name}'
 
-        xml_table1 = to_string(xml_table, col_types = []) # Convert all columns to string
-        xml_table1 = remove_column_spaces(xml_table1)
+        xml_table1 = to_string(table_to_convert_columns = xml_table, col_types = []) # Convert all columns to string
+        xml_table1 = remove_column_spaces(table_to_remove = xml_table1)
         xml_table1 = xml_table1.withColumn('FILE_DATE', lit(str(reception_date)))
-        xml_table1 = xml_table1.withColumn('FIRM_CRD_NUMBER', lit(str(crd_number)))
-        xml_table1 = xml_table1.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table1.columns))) # add HASH column for key indicator
+        xml_table1 = xml_table1.withColumn(FirmCRDNumber, lit(str(crd_number)))
+        xml_table1 = add_business_key(xml_table = xml_table1)
+        xml_table1 = xml_table1.withColumn(KeyIndicator, md5(concat_ws('_', *xml_table1.columns))) # add HASH column for key indicator
 
         add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name = df_name)
 
@@ -286,13 +308,13 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
             dml_type = 'I' if is_full_load or firm_name not in ['IndividualInformationReport'] else 'U',
             )
 
-        if is_pc: xml_table.printSchema()
+        if is_pc: xml_table1.printSchema()
 
-        if is_pc and manual_iteration:
+        if is_pc: # and manual_iteration:
             print(fr'Save to local {database}\{file_name}\{df_name}')
             temp_path = os.path.join(data_path_folder, 'temp')
-            #xml_table1.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
-            xml_table1.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
+            xml_table1.coalesce(1).write.csv( path = fr'{temp_path}\{storage_account_name}\{container_folder}\{df_name}.csv',  mode='overwrite', header='true')
+            xml_table1.coalesce(1).write.json(path = fr'{temp_path}\{storage_account_name}\{container_folder}\{df_name}.json', mode='overwrite')
 
         if save_xml_to_adls_flag:
             save_adls_gen2(
