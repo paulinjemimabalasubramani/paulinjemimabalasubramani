@@ -53,8 +53,8 @@ master_ingest_list = read_adls_gen2(
     spark = spark,
     storage_account_name = storage_account_name,
     container_name = tableinfo_container_name,
-    container_folder = '',
-    table = f'{metadata_MasterIngestList}_{tableinfo_source}',
+    container_folder = tableinfo_source,
+    table = metadata_MasterIngestList,
     file_format = file_format
 )
 
@@ -278,8 +278,8 @@ def save_table_info_to_adls_gen2(columns):
             table_to_save=columns,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
-            container_folder = '',
-            table = f'{tableinfo_name}_{tableinfo_source}',
+            container_folder = tableinfo_source,
+            table = tableinfo_name,
             partitionBy = tableinfo_partitionBy,
             file_format = file_format,
         )

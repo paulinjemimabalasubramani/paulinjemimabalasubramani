@@ -7,7 +7,7 @@ from .common_functions import make_logging, catch_error
 from .data_functions import elt_audit_columns, partitionBy, execution_date
 from .config import is_pc
 from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_adls_gen2, get_azure_sp, \
-    file_format, container_name, to_storage_account_name
+    file_format, container_name, tableinfo_container_name, to_storage_account_name
 
 
 # %% Import Snowflake
@@ -251,19 +251,17 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
 
 @catch_error(logger)
 def create_ingest_list_adls(ingest_data_list:defaultdict):
-    for source_system_plus_schema_name, ingest_data_per_source_system in ingest_data_list.items():
+    for source_system, ingest_data_per_source_system in ingest_data_list.items():
         json_string = json.dumps(ingest_data_per_source_system)
 
-        source_system, schema_name = source_system_plus_schema_name
-
-        storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
+        storage_account_name = to_storage_account_name()
         setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
         
         save_adls_gen2(
             table_to_save = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
             storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = f"metadata/{wid.domain_name}/{source_system}",
+            container_name = tableinfo_container_name,
+            container_folder = source_system,
             table = 'ingest_data',
             file_format = 'parquet'
         )
@@ -292,14 +290,14 @@ GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_
             save_adls_gen2(
                 table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
                 storage_account_name = storage_account_name,
-                container_name = container_name,
-                container_folder = f"{wid.ddl_folder}/{source_system}",
+                container_name = tableinfo_container_name,
+                container_folder = source_system,
                 table = table_name,
                 file_format = 'text'
             )
 
         if wid.execute_at_snowflake:
-            print(f"Executing Snowflake SQL String: {wid.ddl_folder}/{source_system}/{table_name}")
+            print(f"Executing Snowflake SQL String: {source_system}/{table_name}")
             exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
 
 
@@ -656,7 +654,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
-            ingest_data_list[(source_system, schema_name)].append(ingest_data)
+            ingest_data_list[source_system].append(ingest_data)
 
     print('Finished Iterating over all tables')
     return ingest_data_list

@@ -24,7 +24,7 @@ snowflake_ddl_params.spark = spark
 
 # %% Read metadata.TableInfo
 
-tableinfo, table_rows = read_tableinfo(spark, tableinfo_name=f'{tableinfo_name}_{tableinfo_source}')
+tableinfo, table_rows = read_tableinfo(spark, tableinfo_name=tableinfo_name, tableinfo_source=tableinfo_source)
 
 
 # %% Connect to SnowFlake

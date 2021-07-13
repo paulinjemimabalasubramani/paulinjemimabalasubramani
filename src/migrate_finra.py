@@ -22,9 +22,11 @@ import os, sys, tempfile, shutil, json, re
 from collections import defaultdict
 from datetime import datetime
 
+
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
+
 
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
@@ -35,16 +37,9 @@ from modules.data_functions import  to_string, remove_column_spaces, add_elt_col
     metadata_FirmSourceMap
 
 
-# %% Spark Libraries
+from pyspark.sql.types import StructType, StructField, StringType, ArrayType
+from pyspark.sql.functions import col, lit, explode, md5, concat_ws
 
-import pyspark
-from pyspark.sql.types import StructType, StructField, StringType, TimestampType, BooleanType, DoubleType, IntegerType, FloatType, ArrayType, LongType
-
-from pyspark.sql import functions as F
-from pyspark.sql.functions import array, col, lit, split, explode, udf
-from pyspark.sql import Row, Window
-
-from pyspark.sql.functions import md5, concat_ws
 
 
 # %% Logging
@@ -56,11 +51,18 @@ logger = make_logging(__name__)
 manual_iteration = False
 save_xml_to_adls_flag = True
 
+if not is_pc:
+    manual_iteration = False
+    save_xml_to_adls_flag = True
+
 domain_name = 'financial_professional'
 database = 'FINRA'
 tableinfo_source = database
 
 KeyIndicator = 'MD5_KEY'
+
+finra_individual_delta_name = 'IndividualInformationReportDelta'
+reportDate_name = '_reportDate'
 
 
 # %% Initiate Spark
@@ -151,6 +153,7 @@ def extract_data_from_finra_file_name(file_name):
             'date': sp[2].rsplit('.', 1)[0]
         }
         _ = datetime.strptime(ans['date'], r'%Y-%m-%d')
+        assert len(sp)==3 or (len(sp)==4 and sp[1].upper()==finra_individual_delta_name.upper())
     except:
         print(f'Cannot parse file name: {file_name}')
         return
@@ -162,16 +165,20 @@ def extract_data_from_finra_file_name(file_name):
 # %% Find rowTags
 
 @catch_error(logger)
-def find_rowTags(file_path):
+def find_finra_xml_meta(file_path):
     xml_table = read_xml(spark, file_path, rowTag="?xml")
-    return [c for c in xml_table.columns if c not in ['Criteria']]
+    criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
+    if not criteria.get(reportDate_name):
+        criteria[reportDate_name] = criteria['_postingDate']
+    rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
+    return criteria, rowTags
 
 
 
 # %% Flatten XML
 
 @catch_error(logger)
-def flatten_df(xml_table) -> pyspark.sql.dataframe.DataFrame:
+def flatten_df(xml_table):
     cols = []
     nested = False
 
@@ -204,25 +211,25 @@ def flatten_df(xml_table) -> pyspark.sql.dataframe.DataFrame:
 # %% flatten and divide
 
 @catch_error(logger)
-def flatten_n_divide_df(xml_table, name:str='main'):
+def flatten_n_divide_df(xml_table, table_name:str):
     if not xml_table.rdd.flatMap(lambda x: x).collect(): # check if xml_table is empty
         return dict()
 
-    xml_table = flatten_df(xml_table)
+    xml_table = flatten_df(xml_table=xml_table)
 
     string_cols = [c[0] for c in xml_table.dtypes if c[1]=='string']
     array_cols = [c[0] for c in xml_table.dtypes if c[1].startswith('array')]
 
     if len(array_cols)==0:
-        return {name:xml_table}
+        return {table_name:xml_table}
 
-    df_list = dict()
+    xml_table_list = dict()
     for array_col in array_cols:
         colx = string_cols + [array_col]
         xml_table_select = xml_table.select(*colx)
-        df_list={**df_list, **flatten_n_divide_df(xml_table_select, name=name+'_'+array_col)}
+        xml_table_list={**xml_table_list, **flatten_n_divide_df(xml_table=xml_table_select, table_name=table_name+'_'+array_col)}
 
-    return df_list
+    return xml_table_list
 
 
 # %% Create tableinfo
@@ -254,20 +261,32 @@ def add_table_to_tableinfo(xml_table, firm_name, table_name):
 # %% Write xml table list to Azure
 
 @catch_error(logger)
-def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, firm_name, storage_account_name):
+def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_date:str, firm_name:str, storage_account_name:str, is_full_load:bool, crd_number:str):
 
     for df_name, xml_table in xml_table_list.items():
         print(f'\nWriting {df_name} to Azure...')
-        if is_pc: xml_table.printSchema()
 
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{firm_name}"
 
         xml_table1 = to_string(xml_table, col_types = []) # Convert all columns to string
         xml_table1 = remove_column_spaces(xml_table1)
+        xml_table1 = xml_table1.withColumn('FILE_DATE', lit(str(reception_date)))
+        xml_table1 = xml_table1.withColumn('FIRM_CRD_NUMBER', lit(str(crd_number)))
         xml_table1 = xml_table1.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table1.columns))) # add HASH column for key indicator
+
         add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name = df_name)
-        xml_table1 = add_elt_columns(table_to_add=xml_table1, execution_date=execution_date, reception_date=reception_date)
+
+        xml_table1 = add_elt_columns(
+            table_to_add = xml_table1,
+            execution_date = execution_date,
+            reception_date = reception_date,
+            source = tableinfo_source,
+            is_full_load = is_full_load,
+            dml_type = 'I' if is_full_load or firm_name not in ['IndividualInformationReport'] else 'U',
+            )
+
+        if is_pc: xml_table.printSchema()
 
         if is_pc and manual_iteration:
             print(fr'Save to local {database}\{file_name}\{df_name}')
@@ -297,6 +316,9 @@ def write_xml_table_list_to_azure(xml_table_list, file_name, reception_date, fir
 def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:str):
     file_path = os.path.join(root, file)
 
+    if firm_name == 'IndividualInformationReportDelta':
+        firm_name = 'IndividualInformationReport'
+
     name_data = extract_data_from_finra_file_name(file)
     if not name_data:
         print(f'Not valid file name format: {file_path}   -> SKIPPING')
@@ -304,9 +326,19 @@ def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:s
 
     print('\n', name_data)
 
-    rowTags = find_rowTags(file_path)
+    criteria, rowTags = find_finra_xml_meta(file_path)
     print(f'\nrowTags: {rowTags}\n')
     rowTag = rowTags[0]
+
+    if criteria['_firmCRDNumber'] != name_data['crd_number']:
+        print(f"\nFirm CRD Number in Criteria '{criteria['_firmCRDNumber']}' does not match to the CRD Number in the file name '{name_data['crd_number']}'\n")
+        name_data['crd_number'] = criteria['_firmCRDNumber']
+
+    if criteria[reportDate_name] != name_data['date']:
+        print(f"\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{name_data['date']}'\n")
+        name_data['date'] = criteria[reportDate_name]
+    
+    is_full_load = criteria.get('_IIRType') == 'FULL' or firm_name in ['BranchInformationReport']
 
     schema_file = name_data['table_name']+'.json'
     schema_path = os.path.join(schema_path_folder, schema_file)
@@ -324,7 +356,7 @@ def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:s
 
     if is_pc: xml_table.printSchema()
 
-    xml_table_list = flatten_n_divide_df(xml_table, name=name_data['table_name'])
+    xml_table_list = flatten_n_divide_df(xml_table=xml_table, table_name=name_data['table_name'])
     if not xml_table_list:
         print(f"No data to write -> {name_data['table_name']}")
         return
@@ -335,6 +367,8 @@ def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:s
         reception_date = name_data['date'],
         firm_name = firm_name,
         storage_account_name = storage_account_name,
+        is_full_load = is_full_load,
+        crd_number = name_data['crd_number'],
         )
 
 
@@ -343,13 +377,19 @@ def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:s
 
 if manual_iteration:
     firm = firms[0]
-    firm_folder = firm['folder']
-    firm_name = firm['firm_name']
+    firm_folder = firm['crd_number']
     folder_path = os.path.join(data_path_folder, firm_folder)
+    firm_name = firm['firm_name']
+    print(f"\n\nFirm: {firm_name}, Firm CRD Number: {firm['crd_number']}")
 
-    root = r"C:\Users\smammadov\packages\Shared\RAA_FINRA\2021-06-20"
-    file = r"23131_PostExamsReport_2021-06-19.exm"
-    process_finra_file(root=root, file=file, firm_name=firm_name)
+    root = r"C:\Users\smammadov\packages\Shared"
+    file = r"7461_IndividualInformationReport_2021-05-16.iid"
+    file_path = os.path.join(root, file)
+
+    criteria, rowTags = find_finra_xml_meta(file_path)
+    #process_finra_file(root=root, file=file, firm_name=firm_name)
+
+
 
 
 # %% Get Maximum Date from file names:
@@ -376,6 +416,11 @@ def get_max_date(folder_path):
 def process_one_file(root:str, file:str, firm_name:str, storage_account_name:str):
     file_path = os.path.join(root, file)
     print(f'\nProcessing {file_path}')
+
+    name_data = extract_data_from_finra_file_name(file)
+    if not name_data:
+        print(f'Not valid file name format: {file_path}   -> SKIPPING')
+        return
 
     if file.endswith('.zip'):
         with tempfile.TemporaryDirectory(dir=root) as tmpdir:
@@ -450,8 +495,8 @@ def save_tableinfo():
             table_to_save = meta_tableinfo,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
-            container_folder = '',
-            table = f'{tableinfo_name}_{tableinfo_source}',
+            container_folder = tableinfo_source,
+            table = tableinfo_name,
             partitionBy = tableinfo_partitionBy,
             file_format = file_format,
         )

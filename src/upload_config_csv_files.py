@@ -92,8 +92,8 @@ def get_master_ingest_list_csv(master_ingest_list_path:str, tableinfo_source:str
             table_to_save = master_ingest_list,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
-            container_folder = '',
-            table = f'{metadata_MasterIngestList}_{tableinfo_source}',
+            container_folder = tableinfo_source,
+            table = metadata_MasterIngestList,
             partitionBy = partitionBy,
             file_format = file_format,
         )
