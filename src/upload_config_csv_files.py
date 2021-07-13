@@ -10,13 +10,15 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_csv
 from modules.config import is_pc
 from modules.data_functions import remove_column_spaces, execution_date, metadata_DataTypeTranslation, metadata_MasterIngestList, \
-    metadata_FirmSourceMap
+    metadata_FirmSourceMap, partitionBy, partitionBy_value
 from modules.azure_functions import setup_spark_adls_gen2_connection, to_storage_account_name, file_format, save_adls_gen2, \
-    tableinfo_container_name, tableinfo_partitionBy
+    tableinfo_container_name
 
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
+from pyspark.sql.types import StringType, IntegerType
+
 
 
 # %% Logging
@@ -41,7 +43,6 @@ storage_account_name = to_storage_account_name()
 
 created_datetime = execution_date
 modified_datetime = execution_date
-partitionBy = 'ModifiedDateTime'
 
 
 # %% Create Session
@@ -57,9 +58,10 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 # %% Add ELT Audit Columns for Config Tables
 
 def add_config_elt_columns(config_table):
-    config_table = config_table.withColumn('IsActive', lit(1))
-    config_table = config_table.withColumn('CreatedDateTime', lit(created_datetime))
-    config_table = config_table.withColumn('ModifiedDateTime', lit(modified_datetime))
+    config_table = config_table.withColumn('IsActive', lit(1).cast(IntegerType()))
+    config_table = config_table.withColumn('CreatedDateTime', lit(created_datetime).cast(StringType()))
+    config_table = config_table.withColumn('ModifiedDateTime', lit(modified_datetime).cast(StringType()))
+    config_table = config_table.withColumn(partitionBy, lit(partitionBy_value).cast(StringType()))
 
     return config_table
 
@@ -78,7 +80,7 @@ def get_master_ingest_list_csv(master_ingest_list_path:str, tableinfo_source:str
     master_ingest_list = remove_column_spaces(master_ingest_list)
 
     master_ingest_list = add_config_elt_columns(config_table=master_ingest_list)
-    master_ingest_list = master_ingest_list.withColumn('IsActive', F.when(F.upper(col('Table_of_Interest'))=='YES', lit(1)).otherwise(lit(0)))
+    master_ingest_list = master_ingest_list.withColumn('IsActive', F.when(F.upper(col('Table_of_Interest'))=='YES', lit(1)).otherwise(lit(0)).cast(IntegerType()))
 
     column_map = {
         'TableName': 'TABLE_NAME',
@@ -129,7 +131,7 @@ def get_translation(data_type_translation_path:str):
             container_name = tableinfo_container_name,
             container_folder = '',
             table = metadata_DataTypeTranslation,
-            partitionBy = tableinfo_partitionBy,
+            partitionBy = partitionBy,
             file_format = file_format,
         )
 
@@ -163,7 +165,7 @@ def get_firm_source_map(firm_source_map_path:str):
             container_name = tableinfo_container_name,
             container_folder = '',
             table = metadata_FirmSourceMap,
-            partitionBy = tableinfo_partitionBy,
+            partitionBy = partitionBy,
             file_format = file_format,
         )
 

@@ -38,7 +38,6 @@ storage_account_name = to_storage_account_name() # Default Storage Account Name
 tableinfo_container_name = "tables"
 container_name = "ingress" # Default Container Name
 tableinfo_name = 'metadata.TableInfo'
-tableinfo_partitionBy = 'ModifiedDateTime'
 file_format = 'delta' # Default File Format
 
 

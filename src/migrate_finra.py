@@ -32,9 +32,9 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
-    to_storage_account_name, select_tableinfo_columns, tableinfo_partitionBy, tableinfo_container_name, read_adls_gen2
+    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, read_adls_gen2
 from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, \
-    metadata_FirmSourceMap
+    metadata_FirmSourceMap, partitionBy_value
 
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
@@ -250,11 +250,12 @@ def add_table_to_tableinfo(xml_table, firm_name, table_name):
         tableinfo['CleanType'].append(col_type)
         tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
         tableinfo['TargetDataType'].append('string')
-        tableinfo['IsNullable'].append(0 if col_name==KeyIndicator else 1)
-        tableinfo['KeyIndicator'].append(1 if col_name==KeyIndicator else 0)
+        tableinfo['IsNullable'].append(0 if col_name in [KeyIndicator] else 1)
+        tableinfo['KeyIndicator'].append(1 if col_name in [KeyIndicator] else 0)
         tableinfo['IsActive'].append(1)
         tableinfo['CreatedDateTime'].append(execution_date)
         tableinfo['ModifiedDateTime'].append(execution_date)
+        tableinfo[partitionBy].append(partitionBy_value)
 
 
 
@@ -279,7 +280,6 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
 
         xml_table1 = add_elt_columns(
             table_to_add = xml_table1,
-            execution_date = execution_date,
             reception_date = reception_date,
             source = tableinfo_source,
             is_full_load = is_full_load,
@@ -409,6 +409,25 @@ def get_max_date(folder_path):
 
 
 
+# %% Get list of file names above certain date:
+
+@catch_error(logger)
+def get_files_list_date(folder_path, date_start:str, inclusive:bool=True):
+    files_list = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            name_data = extract_data_from_finra_file_name(file)
+            if name_data and (date_start<name_data['date'] or (date_start==name_data['date'] and inclusive)):
+                files_list.append({
+                    **name_data,
+                    'root': root,
+                    'file': file,
+                })
+
+    return files_list
+
+
+
 
 # %% Process Single File
 
@@ -497,7 +516,7 @@ def save_tableinfo():
             container_name = tableinfo_container_name,
             container_folder = tableinfo_source,
             table = tableinfo_name,
-            partitionBy = tableinfo_partitionBy,
+            partitionBy = partitionBy,
             file_format = file_format,
         )
 

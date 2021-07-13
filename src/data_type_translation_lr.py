@@ -10,12 +10,14 @@ from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_sql
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, read_adls_gen2, \
-    get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, tableinfo_partitionBy, select_tableinfo_columns
-from modules.data_functions import execution_date, column_regex, metadata_DataTypeTranslation, metadata_MasterIngestList
+    get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, select_tableinfo_columns
+from modules.data_functions import execution_date, column_regex, metadata_DataTypeTranslation, metadata_MasterIngestList, \
+    partitionBy, partitionBy_value
 
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
+from pyspark.sql.types import IntegerType, StringType
 
 
 # %% Logging
@@ -219,13 +221,14 @@ def rename_columns(columns):
     for key, val in column_map.items():
         columns = columns.withColumnRenamed(key, val)
     
-    columns = columns.withColumn('IsNullable', F.when(F.upper(col('IS_NULLABLE'))=='YES', lit(1)).otherwise(lit(0)))
-    columns = columns.withColumn('KeyIndicator', F.when((F.upper(col('CONSTRAINT_TYPE'))=='PRIMARY KEY') & (col('SourceColumnName')==col('KEY_COLUMN_NAME')), lit(1)).otherwise(lit(0)))
+    columns = columns.withColumn('IsNullable', F.when(F.upper(col('IS_NULLABLE'))=='YES', lit(1)).otherwise(lit(0)).cast(IntegerType()))
+    columns = columns.withColumn('KeyIndicator', F.when((F.upper(col('CONSTRAINT_TYPE'))=='PRIMARY KEY') & (col('SourceColumnName')==col('KEY_COLUMN_NAME')), lit(1)).otherwise(lit(0)).cast(IntegerType()))
     columns = columns.withColumn('CleanType', col('SourceDataType'))
     columns = columns.withColumn('TargetColumnName', F.regexp_replace(col('SourceColumnName'), column_regex, '_'))
-    columns = columns.withColumn('IsActive', lit(1))
-    columns = columns.withColumn('CreatedDateTime', lit(created_datetime))
-    columns = columns.withColumn('ModifiedDateTime', lit(modified_datetime))
+    columns = columns.withColumn('IsActive', lit(1).cast(IntegerType()))
+    columns = columns.withColumn('CreatedDateTime', lit(created_datetime).cast(StringType()))
+    columns = columns.withColumn('ModifiedDateTime', lit(modified_datetime).cast(StringType()))
+    columns = columns.withColumn(partitionBy, lit(partitionBy_value).cast(StringType()))
 
     if is_pc: columns.printSchema()
     return columns
@@ -275,12 +278,12 @@ columns = select_tableinfo_columns(columns)
 @catch_error(logger)
 def save_table_info_to_adls_gen2(columns):
     save_adls_gen2(
-            table_to_save=columns,
+            table_to_save = columns,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = tableinfo_source,
             table = tableinfo_name,
-            partitionBy = tableinfo_partitionBy,
+            partitionBy = partitionBy,
             file_format = file_format,
         )
 
