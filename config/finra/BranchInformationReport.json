@@ -70,8 +70,36 @@
                         "_nm": null
                     }]
                 },
-                "RcrdsLocs": null,
-                "ShrdEnttys": null,
+                "RcrdsLocs": {
+                    "RcrdsLoc": [{
+                        "Addr": {
+                            "_VALUE": null,
+                            "_strt1": null,
+                            "_strt2": null,
+                            "_city": null,
+                            "_state": null,
+                            "_cntry": null,
+                            "_postlCd": null
+                        },
+                        "_seqNb": null,
+                        "_cntctFirstNm": null,
+                        "_cntctLastNm": null,
+                        "_phone": null
+                    }]
+                },
+                "ShrdEnttys": {
+                    "ShrdEntty": [{
+                        "EnttyTypes": {
+                            "EnttyType": [{
+                                "_VALUE": null,
+                                "_enttyCd": null
+                            }]
+                        },
+                        "_seqNb": null,
+                        "_nm": null,
+                        "_affltdFl": null
+                    }]
+                },
                 "XpnsRspbyEnttys": {
                     "XpnsRspbyEntty": [{
                         "_VALUE": null,

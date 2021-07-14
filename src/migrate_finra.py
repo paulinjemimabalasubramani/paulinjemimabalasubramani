@@ -49,11 +49,13 @@ logger = make_logging(__name__)
 # %% Parameters
 
 manual_iteration = False
-save_xml_to_adls_flag = True
+save_xml_to_adls_flag = False
+save_tableinfo_adls_flag = False
 
 if not is_pc:
     manual_iteration = False
     save_xml_to_adls_flag = True
+    save_tableinfo_adls_flag = True
 
 domain_name = 'financial_professional'
 database = 'FINRA'
@@ -532,15 +534,16 @@ def save_tableinfo():
     storage_account_name = to_storage_account_name() # keep default storage account name for tableinfo
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-    save_adls_gen2(
-            table_to_save = meta_tableinfo,
-            storage_account_name = storage_account_name,
-            container_name = tableinfo_container_name,
-            container_folder = tableinfo_source,
-            table = tableinfo_name,
-            partitionBy = partitionBy,
-            file_format = file_format,
-        )
+    if save_tableinfo_adls_flag:
+        save_adls_gen2(
+                table_to_save = meta_tableinfo,
+                storage_account_name = storage_account_name,
+                container_name = tableinfo_container_name,
+                container_folder = tableinfo_source,
+                table = tableinfo_name,
+                partitionBy = partitionBy,
+                file_format = file_format,
+            )
 
 
 
