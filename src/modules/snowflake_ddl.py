@@ -1,3 +1,8 @@
+"""
+Common Library for creating and executing (if required) Snowflake DDL Steps and ingest_data
+
+"""
+
 # %% Import Libraries
 import json
 from functools import wraps

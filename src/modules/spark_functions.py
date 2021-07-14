@@ -1,10 +1,9 @@
 
 """
-Library for starting a Spark session
+Library for creating a Spark session and for other common Spark functions
 
 
-USEFUL LINKS:
-Download JDBC Driver:
+Download SQL Server JDBC Driver:
 https://docs.microsoft.com/en-us/sql/connect/jdbc/download-microsoft-jdbc-driver-for-sql-server?view=sql-server-ver15
 
 https://github.com/microsoft/sql-spark-connector
@@ -14,12 +13,15 @@ https://spark.apache.org/docs/latest/configuration
 """
 
 # %% libraries
-from .common_functions import make_logging, catch_error
-from .config import Config, is_pc, extraClassPath, config_path, platform
+import os, platform
 
-import os
+
+from .common_functions import make_logging, catch_error
+from .config import is_pc, extraClassPath
+
 
 from pyspark.sql import SparkSession
+
 
 
 # %% Logging

@@ -1,3 +1,15 @@
+"""
+Create and Execute (if required) Snowflake DDL Steps and ingest_data for FINRA
+
+Spark Web UI:
+http://10.128.25.82:8181/
+
+Airflow:
+http://10.128.25.82:8282/
+
+
+"""
+
 # %% Import Libraries
 
 import os, sys

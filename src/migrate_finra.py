@@ -1,10 +1,8 @@
 """
-Flatten all XML files and migrate them to ADLS Gen 2 
+Flatten all Finra XML files and migrate them to ADLS Gen 2 
 
+Official Finra Schemas:
 https://www.finra.org/filing-reporting/web-crd/web-eft-schema-documentation-and-schema-files
-
-Ingestion Path:
-CRD Number > Files (2 of them are zip) get the latest dates
 
 Spark Web UI:
 http://10.128.25.82:8181/

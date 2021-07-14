@@ -1,3 +1,15 @@
+"""
+Create/Update metadata.TableInfo table for LR
+
+Spark Web UI:
+http://10.128.25.82:8181/
+
+Airflow:
+http://10.128.25.82:8282/
+
+
+"""
+
 # %% Import Libraries
 import os, sys
 
