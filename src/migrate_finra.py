@@ -424,6 +424,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
 
 @catch_error(logger)
 def get_files_meta(folder_path, date_start:str, inclusive:bool=True):
+    print(f'\nGetting list of candidate files from {folder_path}')
     files_meta = []
     for root, dirs, files in os.walk(folder_path):
         for file in files:
@@ -439,6 +440,7 @@ def get_files_meta(folder_path, date_start:str, inclusive:bool=True):
                     'rowTags': rowTags,
                 })
 
+    print(f'Finished getting list of files. Total Files = {len(files_meta)}\n')
     return files_meta
 
 
