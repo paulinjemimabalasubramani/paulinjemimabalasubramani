@@ -32,9 +32,9 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_xml
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
-    to_storage_account_name, select_tableinfo_columns, tableinfo_partitionBy, tableinfo_container_name, read_adls_gen2
+    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, read_adls_gen2
 from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, \
-    metadata_FirmSourceMap
+    metadata_FirmSourceMap, partitionBy_value
 
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
@@ -60,6 +60,7 @@ database = 'FINRA'
 tableinfo_source = database
 
 KeyIndicator = 'MD5_KEY'
+FirmCRDNumber = 'FIRM_CRD_NUMBER'
 
 finra_individual_delta_name = 'IndividualInformationReportDelta'
 reportDate_name = '_reportDate'
@@ -236,6 +237,7 @@ def flatten_n_divide_df(xml_table, table_name:str):
 
 tableinfo = defaultdict(list)
 
+@catch_error(logger)
 def add_table_to_tableinfo(xml_table, firm_name, table_name):
     for ix, (col_name, col_type) in enumerate(xml_table.dtypes):
         tableinfo['SourceDatabase'].append(database)
@@ -250,11 +252,31 @@ def add_table_to_tableinfo(xml_table, firm_name, table_name):
         tableinfo['CleanType'].append(col_type)
         tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
         tableinfo['TargetDataType'].append('string')
-        tableinfo['IsNullable'].append(0 if col_name==KeyIndicator else 1)
-        tableinfo['KeyIndicator'].append(1 if col_name==KeyIndicator else 0)
+        tableinfo['IsNullable'].append(0 if col_name in [KeyIndicator] else 1)
+        tableinfo['KeyIndicator'].append(1 if col_name in [KeyIndicator] else 0)
         tableinfo['IsActive'].append(1)
         tableinfo['CreatedDateTime'].append(execution_date)
         tableinfo['ModifiedDateTime'].append(execution_date)
+        tableinfo[partitionBy].append(partitionBy_value)
+
+
+# %% Add Business Key
+
+@catch_error(logger)
+def add_business_key(xml_table):
+    cols = xml_table.columns
+
+    cols_indvl = sorted([c for c in cols if ('individualCRDNumber'.upper() in c.upper() or 'indvlPK'.upper() in c.upper())], key=len)
+    if is_pc: print(f'\nindvlPK: {cols_indvl}')
+    if cols_indvl:
+        xml_table = xml_table.withColumn('BUSINESS_KEY_INDVL', concat_ws('_', col(FirmCRDNumber), col(cols_indvl[0])))
+
+    cols_brnch = sorted([c for c in cols if ('brnchPK'.upper() in c.upper())], key=len)
+    if is_pc: print(f'\nbrnchPK: {cols_brnch}')
+    if cols_brnch:
+        xml_table = xml_table.withColumn('BUSINESS_KEY_BRNCH', concat_ws('_', col(FirmCRDNumber), col(cols_brnch[0])))
+
+    return xml_table
 
 
 
@@ -267,32 +289,32 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
         print(f'\nWriting {df_name} to Azure...')
 
         data_type = 'data'
-        container_folder = f"{data_type}/{domain_name}/{database}/{firm_name}"
+        container_folder = f'{data_type}/{domain_name}/{database}/{firm_name}'
 
-        xml_table1 = to_string(xml_table, col_types = []) # Convert all columns to string
-        xml_table1 = remove_column_spaces(xml_table1)
+        xml_table1 = to_string(table_to_convert_columns = xml_table, col_types = []) # Convert all columns to string
+        xml_table1 = remove_column_spaces(table_to_remove = xml_table1)
         xml_table1 = xml_table1.withColumn('FILE_DATE', lit(str(reception_date)))
-        xml_table1 = xml_table1.withColumn('FIRM_CRD_NUMBER', lit(str(crd_number)))
-        xml_table1 = xml_table1.withColumn(KeyIndicator, md5(concat_ws("||", *xml_table1.columns))) # add HASH column for key indicator
+        xml_table1 = xml_table1.withColumn(FirmCRDNumber, lit(str(crd_number)))
+        xml_table1 = add_business_key(xml_table = xml_table1)
+        xml_table1 = xml_table1.withColumn(KeyIndicator, md5(concat_ws('_', *xml_table1.columns))) # add HASH column for key indicator
 
         add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name = df_name)
 
         xml_table1 = add_elt_columns(
             table_to_add = xml_table1,
-            execution_date = execution_date,
             reception_date = reception_date,
             source = tableinfo_source,
             is_full_load = is_full_load,
             dml_type = 'I' if is_full_load or firm_name not in ['IndividualInformationReport'] else 'U',
             )
 
-        if is_pc: xml_table.printSchema()
+        if is_pc: xml_table1.printSchema()
 
-        if is_pc and manual_iteration:
+        if is_pc: # and manual_iteration:
             print(fr'Save to local {database}\{file_name}\{df_name}')
             temp_path = os.path.join(data_path_folder, 'temp')
-            #xml_table1.coalesce(1).write.csv( path = fr'{temp_path}\{database}\{file_name}\{df_name}.csv',  mode='overwrite', header='true')
-            xml_table1.coalesce(1).write.json(path = fr'{temp_path}\{database}\{file_name}\{df_name}.json', mode='overwrite')
+            xml_table1.coalesce(1).write.csv( path = fr'{temp_path}\{storage_account_name}\{container_folder}\{df_name}.csv',  mode='overwrite', header='true')
+            xml_table1.coalesce(1).write.json(path = fr'{temp_path}\{storage_account_name}\{container_folder}\{df_name}.json', mode='overwrite')
 
         if save_xml_to_adls_flag:
             save_adls_gen2(
@@ -409,6 +431,25 @@ def get_max_date(folder_path):
 
 
 
+# %% Get list of file names above certain date:
+
+@catch_error(logger)
+def get_files_list_date(folder_path, date_start:str, inclusive:bool=True):
+    files_list = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            name_data = extract_data_from_finra_file_name(file)
+            if name_data and (date_start<name_data['date'] or (date_start==name_data['date'] and inclusive)):
+                files_list.append({
+                    **name_data,
+                    'root': root,
+                    'file': file,
+                })
+
+    return files_list
+
+
+
 
 # %% Process Single File
 
@@ -497,7 +538,7 @@ def save_tableinfo():
             container_name = tableinfo_container_name,
             container_folder = tableinfo_source,
             table = tableinfo_name,
-            partitionBy = tableinfo_partitionBy,
+            partitionBy = partitionBy,
             file_format = file_format,
         )
 

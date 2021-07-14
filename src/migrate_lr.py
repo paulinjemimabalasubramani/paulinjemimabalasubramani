@@ -15,9 +15,11 @@ http://10.128.25.82:8282/
 import os, sys
 from datetime import datetime
 
+
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
+
 
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
@@ -26,10 +28,6 @@ from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_
     container_name, file_format, to_storage_account_name, tableinfo_name
 from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy
 
-
-# %% Spark Libraries
-
-from pyspark.sql.types import StructType, StructField, StringType, TimestampType, BooleanType, DoubleType, IntegerType, FloatType
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit, split, explode, udf
@@ -95,7 +93,6 @@ def iterate_over_all_tables(table_rows):
         sql_table = add_elt_columns(
             table_to_add = sql_table,
             reception_date = reception_date,
-            execution_date = execution_date,
             source = tableinfo_source,
             is_full_load = True,
             dml_type = 'I',

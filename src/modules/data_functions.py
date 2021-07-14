@@ -56,14 +56,15 @@ def to_string(table_to_convert_columns, col_types=['timestamp']):
 
 
 
-# %% Add ETL Audit Columns
+# %% Add ELT Audit Columns
 
 elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE', 'ELT_LOAD_TYPE', 'ELT_DELETE_IND', 'DML_TYPE']
 partitionBy = 'PARTITION_DATE'
+partitionBy_value = re.sub(column_regex, '_', execution_date)
 
 
 @catch_error(logger)
-def add_elt_columns(table_to_add, reception_date:str, execution_date:str, source:str, is_full_load:bool, dml_type:str=None):
+def add_elt_columns(table_to_add, reception_date:str, source:str, is_full_load:bool, dml_type:str=None):
     """
     Add ELT Audit Columns
     """
@@ -83,8 +84,7 @@ def add_elt_columns(table_to_add, reception_date:str, execution_date:str, source
 
     table_to_add = table_to_add.withColumn('DML_TYPE', lit(str(DML_TYPE)))
 
-    partition_date = re.sub(column_regex, '_', execution_date)
-    table_to_add = table_to_add.withColumn(partitionBy, lit(str(partition_date)))
+    table_to_add = table_to_add.withColumn(partitionBy, lit(str(partitionBy_value)))
 
     return table_to_add
 
