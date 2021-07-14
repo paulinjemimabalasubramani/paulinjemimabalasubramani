@@ -88,15 +88,17 @@
                     }]
                 },
                 "ShrdEnttys": {
-                    "EnttyTypes": {
-                        "EnttyType": [{
-                            "_VALUE": null,
-                            "_enttyCd": null
-                        }]
-                    },
-                    "_seqNb": null,
-                    "_nm": null,
-                    "_affltdFl": null
+                    "ShrdEntty": [{
+                        "EnttyTypes": {
+                            "EnttyType": [{
+                                "_VALUE": null,
+                                "_enttyCd": null
+                            }]
+                        },
+                        "_seqNb": null,
+                        "_nm": null,
+                        "_affltdFl": null
+                    }]
                 },
                 "XpnsRspbyEnttys": {
                     "XpnsRspbyEntty": [{
