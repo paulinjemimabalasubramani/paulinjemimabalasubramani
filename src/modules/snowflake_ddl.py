@@ -32,6 +32,7 @@ class module_params_class:
     save_to_adls = True
     execute_at_snowflake = True
     write_jsons = True
+    create_or_replace = True
 
     snowflake_account = 'advisorgroup-edip'
     domain_name = 'financial_professional'
@@ -309,7 +310,7 @@ AS
   CALL {wid.elt_stage_schema}.USP_INGEST(); 
 
 USE ROLE {wid.snowflake_role};
-ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME ;
+ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME;
 """
 
     table_name = 'usp_ingest'
@@ -329,7 +330,7 @@ ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME ;
 
 
 
-# %% Create Ingest List File
+# %% Create Source Level Tables
 
 @catch_error(logger)
 def create_source_level_tables(ingest_data_list:defaultdict):
@@ -359,6 +360,17 @@ def create_source_level_tables(ingest_data_list:defaultdict):
 
 
 
+# %% Create or Replace Utility Function
+
+def create_or_replace_func(object_name:str):
+    if wid.create_or_replace:
+        sqlstr = f'CREATE OR REPLACE {object_name}'
+    else:
+        sqlstr = f'CREATE {object_name} IF NOT EXISTS'
+    return sqlstr
+
+
+
 # %% Create Step 1
 
 @catch_error(logger)
@@ -368,7 +380,7 @@ def step1(source_system:str, schema_name:str, table_name:str, column_names:list)
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
     sqlstr += f"""
-CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
+{create_or_replace_func('TABLE')} {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
 (
   {wid.variant_alias} VARIANT
 );
@@ -386,7 +398,7 @@ def step2(source_system:str, schema_name:str, table_name:str, column_names:list)
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
     sqlstr += f"""
-CREATE STREAM IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}
+{create_or_replace_func('STREAM')} {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}
 ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 """
     return sqlstr
@@ -573,7 +585,7 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
         )
 
     sqlstr += f"""
-CREATE TABLE IF NOT EXISTS {SCHEMA_NAME}.{TABLE_NAME}
+{create_or_replace_func('TABLE')} {SCHEMA_NAME}.{TABLE_NAME}
 (
    {wid.integration_id} VARCHAR(1000) NOT NULL
   ,{column_list_types}
