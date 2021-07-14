@@ -7,7 +7,8 @@ from .common_functions import make_logging, catch_error
 from .data_functions import elt_audit_columns, partitionBy, execution_date
 from .config import is_pc
 from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_adls_gen2, get_azure_sp, \
-    file_format, container_name, tableinfo_container_name, to_storage_account_name
+    file_format, container_name, to_storage_account_name
+
 
 
 # %% Import Snowflake
@@ -232,29 +233,28 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
 
 
 
-# %% Create Ingest List File
+# %% Create ingest_data table
 
 @catch_error(logger)
-def create_ingest_list_adls(ingest_data_list:defaultdict):
-    for source_system, ingest_data_per_source_system in ingest_data_list.items():
-        json_string = json.dumps(ingest_data_per_source_system)
+def create_ingest_data_table(ingest_data_per_source_system, container_folder:str, storage_account_name:str):
+    json_string = json.dumps(ingest_data_per_source_system)
 
-        storage_account_name = to_storage_account_name()
-        setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
+    save_adls_gen2(
+        table_to_save = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
+        storage_account_name = storage_account_name,
+        container_name = container_name,
+        container_folder = container_folder,
+        table = 'ingest_data',
+        file_format = 'parquet'
+    )
 
-        container_folder = f'metadata/{wid.domain_name}/{source_system}'
-        
-        save_adls_gen2(
-            table_to_save = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
-            storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = container_folder,
-            table = 'ingest_data',
-            file_format = 'parquet'
-        )
 
-        # Grant Permissions
-        sqlstr = f"""USE ROLE {wid.snowflake_role};
+
+# %% Create grant_permissions file
+
+@catch_error(logger)
+def create_grant_permissions_file(source_system:str, container_folder:str, storage_account_name:str):
+    sqlstr = f"""USE ROLE {wid.snowflake_role};
 
 GRANT USAGE ON DATABASE {wid.snowflake_raw_database} TO ROLE {wid.engineer_role};
 
@@ -270,22 +270,91 @@ GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{source_system}
 GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
 GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_schema} TO ROLE {wid.engineer_role};
 """
-        
-        table_name = 'grant_permissions'
+    
+    table_name = 'grant_permissions'
+    if wid.save_to_adls:
+        save_adls_gen2(
+            table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
+            storage_account_name = storage_account_name,
+            container_name = container_name,
+            container_folder = container_folder,
+            table = table_name,
+            file_format = 'text'
+        )
 
-        if wid.save_to_adls:
-            save_adls_gen2(
-                table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
-                storage_account_name = storage_account_name,
-                container_name = container_name,
-                container_folder = container_folder,
-                table = table_name,
-                file_format = 'text'
+    if wid.execute_at_snowflake:
+        print(f"Executing Snowflake SQL String: {container_folder}/{table_name}")
+        exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
+
+
+
+# %% Create Trigger USP_INGEST() file
+
+@catch_error(logger)
+def create_trigger_usp_ingest_file(source_system:str, container_folder:str, storage_account_name:str):
+    stream_name = f'INGEST_REQUEST_VARIANT_STREAM'
+    task_name = f'{source_system}_INGEST_REQUEST_TASK'
+
+    sqlstr = f"""USE ROLE {wid.snowflake_role};
+USE WAREHOUSE {wid.snowflake_raw_warehouse};
+USE DATABASE {wid.snowflake_raw_database};
+USE SCHEMA {wid.elt_stage_schema};
+
+CREATE TASK IF NOT EXISTS {wid.elt_stage_schema}.{task_name}
+WAREHOUSE = {wid.snowflake_raw_warehouse}
+SCHEDULE = '1 minute'
+WHEN
+SYSTEM$STREAM_HAS_DATA('{wid.elt_stage_schema}.{stream_name}')
+AS
+  CALL {wid.elt_stage_schema}.USP_INGEST(); 
+
+USE ROLE {wid.snowflake_role};
+ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME ;
+"""
+
+    table_name = 'usp_ingest'
+    if wid.save_to_adls:
+        save_adls_gen2(
+            table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
+            storage_account_name = storage_account_name,
+            container_name = container_name,
+            container_folder = container_folder,
+            table = table_name,
+            file_format = 'text'
+        )
+
+    if wid.execute_at_snowflake:
+        print(f"Executing Snowflake SQL String: {container_folder}/{table_name}")
+        exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
+
+
+
+# %% Create Ingest List File
+
+@catch_error(logger)
+def create_source_level_tables(ingest_data_list:defaultdict):
+    for source_system, ingest_data_per_source_system in ingest_data_list.items():
+        storage_account_name = to_storage_account_name()
+        setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
+        container_folder = f'metadata/{wid.domain_name}/{source_system}'
+
+        create_ingest_data_table(
+            ingest_data_per_source_system = ingest_data_per_source_system,
+            container_folder = container_folder,
+            storage_account_name = storage_account_name,
             )
 
-        if wid.execute_at_snowflake:
-            print(f"Executing Snowflake SQL String: {source_system}/{table_name}")
-            exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
+        create_grant_permissions_file(
+            source_system = source_system,
+            container_folder = container_folder,
+            storage_account_name = storage_account_name,
+            )
+
+        create_trigger_usp_ingest_file(
+            source_system = source_system,
+            container_folder = container_folder,
+            storage_account_name = storage_account_name,
+            )
 
 
 

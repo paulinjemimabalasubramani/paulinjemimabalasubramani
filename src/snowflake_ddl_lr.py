@@ -8,7 +8,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.spark_functions import create_spark
 from modules.azure_functions import read_tableinfo, tableinfo_name
-from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables, create_ingest_list_adls, snowflake_ddl_params
+from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables, create_source_level_tables, snowflake_ddl_params
 
 
 # %% Parameters
@@ -37,9 +37,9 @@ snowflake_ddl_params.snowflake_connection = snowflake_connection
 
 ingest_data_list = iterate_over_all_tables(tableinfo, table_rows)
 
-# %% Write Ingest Data
+# %% Create Source Level Tables
 
-create_ingest_list_adls(ingest_data_list=ingest_data_list)
+create_source_level_tables(ingest_data_list=ingest_data_list)
 
 
 # %% Close Showflake connection
