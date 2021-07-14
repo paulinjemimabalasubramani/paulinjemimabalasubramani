@@ -346,10 +346,10 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
         if is_pc: xml_table1.printSchema()
 
         if is_pc: # and manual_iteration:
-            print(fr'Save to local {database}\{file_name}\{df_name}')
-            temp_path = os.path.join(data_path_folder, 'temp')
-            xml_table1.coalesce(1).write.csv( path = fr'{temp_path}\{storage_account_name}\{container_folder}\{df_name}.csv',  mode='overwrite', header='true')
-            xml_table1.coalesce(1).write.json(path = fr'{temp_path}\{storage_account_name}\{container_folder}\{df_name}.json', mode='overwrite')
+            local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{df_name}'
+            print(fr'Save to local {local_path}')
+            xml_table1.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
+            xml_table1.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
 
         if save_xml_to_adls_flag:
             save_adls_gen2(
