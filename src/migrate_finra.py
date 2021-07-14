@@ -180,13 +180,15 @@ def get_finra_file_xml_meta(file_path):
     if file_path.endswith('.zip'):
         with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
+            k = 0
             for root1, dirs1, files1 in os.walk(tmpdir):
                 for file1 in files1:
                     file_path1 = os.path.join(root1, file1)
                     xml_table = read_xml(spark=spark, file_path=file_path1, rowTag=rowTag)
                     criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
+                    k += 1
                     break
-                break
+                if k>0: break
     else:
         xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag)
         criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
@@ -453,14 +455,16 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
         with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
             print(f'\nExtracting {file_path} to {tmpdir}')
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
+            k = 0
             for root1, dirs1, files1 in os.walk(tmpdir):
                 for file1 in files1:
                     file_meta1 = json.loads(json.dumps(file_meta))
                     file_meta1['root'] = root1
                     file_meta1['file'] = file1
                     process_finra_file(file_meta=file_meta1, firm_name=firm_name, storage_account_name=storage_account_name)
+                    k += 1
                     break
-                break
+                if k>0: break
     else:
         process_finra_file(file_meta=file_meta, firm_name=firm_name, storage_account_name=storage_account_name)
 
