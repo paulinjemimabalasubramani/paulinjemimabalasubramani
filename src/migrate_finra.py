@@ -1,6 +1,8 @@
 """
 Flatten all Finra XML files and migrate them to ADLS Gen 2 
 
+https://brokercheck.finra.org/individual/summary/3132991
+
 Official Finra Schemas:
 https://www.finra.org/filing-reporting/web-crd/web-eft-schema-documentation-and-schema-files
 
@@ -64,6 +66,8 @@ FirmCRDNumber = 'FIRM_CRD_NUMBER'
 
 finra_individual_delta_name = 'IndividualInformationReportDelta'
 reportDate_name = '_reportDate'
+firmCRDNumber_name = '_firmCRDNumber'
+
 
 
 # %% Initiate Spark
@@ -167,12 +171,26 @@ def extract_data_from_finra_file_name(file_name):
 
 @catch_error(logger)
 def find_finra_xml_meta(file_path):
+    name_data = extract_data_from_finra_file_name(file_name=file_path)
+    if not name_data:
+        return (None,) * 3
+
     xml_table = read_xml(spark, file_path, rowTag="?xml")
     criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
     if not criteria.get(reportDate_name):
         criteria[reportDate_name] = criteria['_postingDate']
     rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
-    return criteria, rowTags
+
+    if criteria[firmCRDNumber_name] != name_data['crd_number']:
+        print(f"\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{name_data['crd_number']}'\n")
+        name_data['crd_number'] = criteria[firmCRDNumber_name]
+
+    if criteria[reportDate_name] != name_data['date']:
+        print(f"\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{name_data['date']}'\n")
+        name_data['date'] = criteria[reportDate_name]
+
+    return name_data, criteria, rowTags
+
 
 
 
@@ -341,24 +359,14 @@ def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:s
     if firm_name == 'IndividualInformationReportDelta':
         firm_name = 'IndividualInformationReport'
 
-    name_data = extract_data_from_finra_file_name(file)
+    name_data, criteria, rowTags = find_finra_xml_meta(file_path)
     if not name_data:
         print(f'Not valid file name format: {file_path}   -> SKIPPING')
         return
 
     print('\n', name_data)
-
-    criteria, rowTags = find_finra_xml_meta(file_path)
     print(f'\nrowTags: {rowTags}\n')
     rowTag = rowTags[0]
-
-    if criteria['_firmCRDNumber'] != name_data['crd_number']:
-        print(f"\nFirm CRD Number in Criteria '{criteria['_firmCRDNumber']}' does not match to the CRD Number in the file name '{name_data['crd_number']}'\n")
-        name_data['crd_number'] = criteria['_firmCRDNumber']
-
-    if criteria[reportDate_name] != name_data['date']:
-        print(f"\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{name_data['date']}'\n")
-        name_data['date'] = criteria[reportDate_name]
     
     is_full_load = criteria.get('_IIRType') == 'FULL' or firm_name in ['BranchInformationReport']
 
@@ -395,25 +403,6 @@ def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:s
 
 
 
-# %% Manual Iteration
-
-if manual_iteration:
-    firm = firms[0]
-    firm_folder = firm['crd_number']
-    folder_path = os.path.join(data_path_folder, firm_folder)
-    firm_name = firm['firm_name']
-    print(f"\n\nFirm: {firm_name}, Firm CRD Number: {firm['crd_number']}")
-
-    root = r"C:\Users\smammadov\packages\Shared"
-    file = r"7461_IndividualInformationReport_2021-05-16.iid"
-    file_path = os.path.join(root, file)
-
-    criteria, rowTags = find_finra_xml_meta(file_path)
-    #process_finra_file(root=root, file=file, firm_name=firm_name)
-
-
-
-
 # %% Get Maximum Date from file names:
 
 @catch_error(logger)
@@ -422,7 +411,9 @@ def get_max_date(folder_path):
 
     for root, dirs, files in os.walk(folder_path):
         for file in files:
-            name_data = extract_data_from_finra_file_name(file)
+            file_path = os.path.join(root, file)
+            name_data, criteria, rowTags = find_finra_xml_meta(file_path)
+
             if name_data and (not max_date or max_date<name_data['date']):
                 max_date = name_data['date']
 
@@ -438,7 +429,9 @@ def get_files_list_date(folder_path, date_start:str, inclusive:bool=True):
     files_list = []
     for root, dirs, files in os.walk(folder_path):
         for file in files:
-            name_data = extract_data_from_finra_file_name(file)
+            file_path = os.path.join(root, file)
+            name_data, criteria, rowTags = find_finra_xml_meta(file_path)
+
             if name_data and (date_start<name_data['date'] or (date_start==name_data['date'] and inclusive)):
                 files_list.append({
                     **name_data,
@@ -458,8 +451,8 @@ def process_one_file(root:str, file:str, firm_name:str, storage_account_name:str
     file_path = os.path.join(root, file)
     print(f'\nProcessing {file_path}')
 
-    name_data = extract_data_from_finra_file_name(file)
-    if not name_data:
+    is_valid_file_name = bool(extract_data_from_finra_file_name(file))
+    if not is_valid_file_name:
         print(f'Not valid file name format: {file_path}   -> SKIPPING')
         return
 
@@ -472,6 +465,25 @@ def process_one_file(root:str, file:str, firm_name:str, storage_account_name:str
                     process_one_file(root=root1, file=file1, firm_name=firm_name, storage_account_name=storage_account_name)
     else:
         process_finra_file(root=root, file=file, firm_name=firm_name, storage_account_name=storage_account_name)
+
+
+
+# %% Manual Iteration
+
+if manual_iteration:
+    firm = firms[0]
+    firm_folder = firm['crd_number']
+    folder_path = os.path.join(data_path_folder, firm_folder)
+    firm_name = firm['firm_name']
+    print(f"\n\nFirm: {firm_name}, Firm CRD Number: {firm['crd_number']}")
+
+    root = r"C:\Users\smammadov\packages\Shared"
+    file = r"7461_IndividualInformationReport_2021-05-16.iid"
+    file_path = os.path.join(root, file)
+
+    criteria, rowTags = find_finra_xml_meta(file_path)
+    #process_finra_file(root=root, file=file, firm_name=firm_name)
+
 
 
 
