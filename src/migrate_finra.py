@@ -184,12 +184,12 @@ def get_finra_file_xml_meta(file_path):
                 for file1 in files1:
                     file_path1 = os.path.join(root1, file1)
                     xml_table = read_xml(spark=spark, file_path=file_path1, rowTag=rowTag)
+                    criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
                     break
                 break
     else:
         xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag)
-
-    criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
+        criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
 
     if not criteria.get(reportDate_name):
         criteria[reportDate_name] = criteria['_postingDate']
