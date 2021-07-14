@@ -29,10 +29,9 @@ logger = make_logging(__name__)
 
 # %% Parameters
 class module_params_class:
-    save_to_adls = True
-    execute_at_snowflake = True
-    write_jsons = True
-    create_or_replace = True
+    save_to_adls = True # Default False
+    execute_at_snowflake = True # Default False
+    create_or_replace = True # Default False
 
     snowflake_account = 'advisorgroup-edip'
     domain_name = 'financial_professional'
@@ -70,11 +69,6 @@ class module_params_class:
 wid = module_params_class()
 snowflake_ddl_params = wid
 
-
-if not is_pc:
-    wid.save_to_adls = True
-    wid.execute_at_snowflake = True
-    wid.write_jsons = True
 
 
 
@@ -273,7 +267,7 @@ GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_
 """
     
     table_name = 'grant_permissions'
-    if wid.save_to_adls:
+    if wid.save_to_adls or True:
         save_adls_gen2(
             table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
             storage_account_name = storage_account_name,
@@ -314,7 +308,7 @@ ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME;
 """
 
     table_name = 'usp_ingest'
-    if wid.save_to_adls:
+    if wid.save_to_adls or True:
         save_adls_gen2(
             table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
             storage_account_name = storage_account_name,
