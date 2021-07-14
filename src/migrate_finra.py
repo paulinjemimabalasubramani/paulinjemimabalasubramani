@@ -48,14 +48,14 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-manual_iteration = False
 save_xml_to_adls_flag = False
 save_tableinfo_adls_flag = False
 
 if not is_pc:
-    manual_iteration = False
     save_xml_to_adls_flag = True
     save_tableinfo_adls_flag = True
+
+date_start = '2021-01-01'
 
 domain_name = 'financial_professional'
 database = 'FINRA'
@@ -147,7 +147,7 @@ def base_to_schema(base:dict):
 # %% Name extract
 
 @catch_error(logger)
-def extract_data_from_finra_file_name(file_name):
+def extract_data_from_finra_file_name1(file_name):
     basename = os.path.basename(file_name)
     sp = basename.split("_")
 
@@ -167,19 +167,32 @@ def extract_data_from_finra_file_name(file_name):
 
 
 
-# %% Find rowTags
+# %% Get Meta Data from Finra XML File
 
 @catch_error(logger)
-def find_finra_xml_meta(file_path):
-    name_data = extract_data_from_finra_file_name(file_name=file_path)
+def get_finra_file_xml_meta(file_path):
+    rowTag = '?xml'
+    
+    name_data = extract_data_from_finra_file_name1(file_name=file_path)
     if not name_data:
         return (None,) * 3
 
-    xml_table = read_xml(spark, file_path, rowTag="?xml")
+    if file_path.endswith('.zip'):
+        with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
+            shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
+            for root1, dirs1, files1 in os.walk(tmpdir):
+                for file1 in files1:
+                    file_path1 = os.path.join(root1, file1)
+                    xml_table = read_xml(spark=spark, file_path=file_path1, rowTag=rowTag)
+                    break
+                break
+    else:
+        xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag)
+
     criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
+
     if not criteria.get(reportDate_name):
         criteria[reportDate_name] = criteria['_postingDate']
-    rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
 
     if criteria[firmCRDNumber_name] != name_data['crd_number']:
         print(f"\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{name_data['crd_number']}'\n")
@@ -188,6 +201,8 @@ def find_finra_xml_meta(file_path):
     if criteria[reportDate_name] != name_data['date']:
         print(f"\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{name_data['date']}'\n")
         name_data['date'] = criteria[reportDate_name]
+
+    rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
 
     return name_data, criteria, rowTags
 
@@ -353,24 +368,23 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
 # %% Main Processing of Finra file
 
 @catch_error(logger)
-def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:str):
-    file_path = os.path.join(root, file)
+def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
+    file_path = os.path.join(file_meta['root'], file_meta['file'])
 
-    if firm_name == 'IndividualInformationReportDelta':
-        firm_name = 'IndividualInformationReport'
+    criteria = file_meta['criteria']
+    rowTags = file_meta['rowTags']
 
-    name_data, criteria, rowTags = find_finra_xml_meta(file_path)
-    if not name_data:
-        print(f'Not valid file name format: {file_path}   -> SKIPPING')
-        return
-
-    print('\n', name_data)
+    print('\n', file_meta['crd_number'], file_meta['table_name'], file_meta['date'])
     print(f'\nrowTags: {rowTags}\n')
     rowTag = rowTags[0]
     
-    is_full_load = criteria.get('_IIRType') == 'FULL' or firm_name in ['BranchInformationReport']
+    table_name = file_meta['table_name']
+    if table_name == 'IndividualInformationReportDelta':
+        table_name = 'IndividualInformationReport'
 
-    schema_file = name_data['table_name']+'.json'
+    is_full_load = criteria.get('_IIRType') == 'FULL' or table_name in ['BranchInformationReport']
+
+    schema_file = table_name+'.json'
     schema_path = os.path.join(schema_path_folder, schema_file)
 
     if os.path.isfile(schema_path):
@@ -381,65 +395,49 @@ def process_finra_file(root:str, file:str, firm_name:str, storage_account_name:s
         xml_table = read_xml(spark, file_path, rowTag=rowTag, schema=schema)
     else:
         print(f"Looking for Schema File Location: {schema_path}")
-        print(f"No manual schema defined for {name_data['table_name']}. Using default schema.")
+        print(f"No manual schema defined for {table_name}. Using default schema.")
         xml_table = read_xml(spark, file_path, rowTag=rowTag)
 
     if is_pc: xml_table.printSchema()
 
-    xml_table_list = flatten_n_divide_df(xml_table=xml_table, table_name=name_data['table_name'])
+    xml_table_list = flatten_n_divide_df(xml_table=xml_table, table_name=table_name)
     if not xml_table_list:
-        print(f"No data to write -> {name_data['table_name']}")
+        print(f"No data to write -> {table_name}")
         return
 
     write_xml_table_list_to_azure(
         xml_table_list= xml_table_list,
-        file_name = name_data['table_name'],
-        reception_date = name_data['date'],
+        file_name = table_name,
+        reception_date = file_meta['date'],
         firm_name = firm_name,
         storage_account_name = storage_account_name,
         is_full_load = is_full_load,
-        crd_number = name_data['crd_number'],
+        crd_number = file_meta['crd_number'],
         )
 
-
-
-# %% Get Maximum Date from file names:
-
-@catch_error(logger)
-def get_max_date(folder_path):
-    max_date:str=None
-
-    for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            name_data, criteria, rowTags = find_finra_xml_meta(file_path)
-
-            if name_data and (not max_date or max_date<name_data['date']):
-                max_date = name_data['date']
-
-    print(f'Max Date: {max_date}')
-    return max_date
 
 
 
 # %% Get list of file names above certain date:
 
 @catch_error(logger)
-def get_files_list_date(folder_path, date_start:str, inclusive:bool=True):
-    files_list = []
+def get_files_meta(folder_path, date_start:str, inclusive:bool=True):
+    files_meta = []
     for root, dirs, files in os.walk(folder_path):
         for file in files:
             file_path = os.path.join(root, file)
-            name_data, criteria, rowTags = find_finra_xml_meta(file_path)
+            name_data, criteria, rowTags = get_finra_file_xml_meta(file_path)
 
             if name_data and (date_start<name_data['date'] or (date_start==name_data['date'] and inclusive)):
-                files_list.append({
+                files_meta.append({
                     **name_data,
                     'root': root,
                     'file': file,
+                    'criteria': criteria,
+                    'rowTags': rowTags,
                 })
 
-    return files_list
+    return files_meta
 
 
 
@@ -447,42 +445,24 @@ def get_files_list_date(folder_path, date_start:str, inclusive:bool=True):
 # %% Process Single File
 
 @catch_error(logger)
-def process_one_file(root:str, file:str, firm_name:str, storage_account_name:str):
-    file_path = os.path.join(root, file)
+def process_one_file(file_meta, firm_name:str, storage_account_name:str):
+    file_path = os.path.join(file_meta['root'], file_meta['file'])
     print(f'\nProcessing {file_path}')
 
-    is_valid_file_name = bool(extract_data_from_finra_file_name(file))
-    if not is_valid_file_name:
-        print(f'Not valid file name format: {file_path}   -> SKIPPING')
-        return
-
-    if file.endswith('.zip'):
-        with tempfile.TemporaryDirectory(dir=root) as tmpdir:
-            print(f'\nExtracting {file} to {tmpdir}')
+    if file_path.endswith('.zip'):
+        with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
+            print(f'\nExtracting {file_path} to {tmpdir}')
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
             for root1, dirs1, files1 in os.walk(tmpdir):
                 for file1 in files1:
-                    process_one_file(root=root1, file=file1, firm_name=firm_name, storage_account_name=storage_account_name)
+                    file_meta1 = json.loads(json.dumps(file_meta))
+                    file_meta1['root'] = root1
+                    file_meta1['file'] = file1
+                    process_finra_file(file_meta=file_meta1, firm_name=firm_name, storage_account_name=storage_account_name)
+                    break
+                break
     else:
-        process_finra_file(root=root, file=file, firm_name=firm_name, storage_account_name=storage_account_name)
-
-
-
-# %% Manual Iteration
-
-if manual_iteration:
-    firm = firms[0]
-    firm_folder = firm['crd_number']
-    folder_path = os.path.join(data_path_folder, firm_folder)
-    firm_name = firm['firm_name']
-    print(f"\n\nFirm: {firm_name}, Firm CRD Number: {firm['crd_number']}")
-
-    root = r"C:\Users\smammadov\packages\Shared"
-    file = r"7461_IndividualInformationReport_2021-05-16.iid"
-    file_path = os.path.join(root, file)
-
-    criteria, rowTags = find_finra_xml_meta(file_path)
-    #process_finra_file(root=root, file=file, firm_name=firm_name)
+        process_finra_file(file_meta=file_meta, firm_name=firm_name, storage_account_name=storage_account_name)
 
 
 
@@ -504,24 +484,12 @@ def process_all_files():
         storage_account_name = to_storage_account_name(firm_name=firm_name)
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-        max_date = get_max_date(folder_path=folder_path)
+        files_meta = get_files_meta(folder_path=folder_path, date_start=date_start)
 
-        if not max_date:
-            print(f'Max Date not found, SKIPPING {folder_path}')
-            continue
-
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                if max_date not in file:
-                    print(f'Not Max Date {max_date}. Skipping file {os.path.join(root, file)}')
-                    continue
-
-                if is_pc and 'IndividualInformationReport' in file:
-                    continue
-                
-                if not manual_iteration:
-                    process_one_file(root=root, file=file, firm_name=firm_name, storage_account_name=storage_account_name)
-
+        for file_meta in files_meta:
+            if is_pc and 'IndividualInformationReport' in file_meta['table_name']:
+                continue
+            process_one_file(file_meta=file_meta, firm_name=firm_name, storage_account_name=storage_account_name)
 
 
 
