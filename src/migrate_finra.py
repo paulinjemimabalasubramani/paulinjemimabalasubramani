@@ -375,12 +375,12 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
 
     criteria = file_meta['criteria']
     rowTags = file_meta['rowTags']
+    table_name = file_meta['table_name']
 
-    print('\n', file_meta['crd_number'], file_meta['table_name'], file_meta['date'])
+    print('\n', file_meta['crd_number'], table_name, file_meta['date'])
     print(f'\nrowTags: {rowTags}\n')
     rowTag = rowTags[0]
-    
-    table_name = file_meta['table_name']
+
     if table_name == 'IndividualInformationReportDelta':
         table_name = 'IndividualInformationReport'
 
