@@ -1,3 +1,7 @@
+"""
+Library for Azure Functions
+
+"""
 
 # %% Import Libraries
 

@@ -1,5 +1,5 @@
 """ 
-Library Class for retrieving and storing configuration data
+Library for retrieving and storing configuration data
 
 """
 

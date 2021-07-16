@@ -13,7 +13,6 @@ http://10.128.25.82:8282/
 # %% Import Libraries
 
 import os, sys
-from datetime import datetime
 
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
@@ -22,16 +21,10 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import make_logging, catch_error
-from modules.config import is_pc
 from modules.spark_functions import create_spark, read_sql
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, get_azure_sp, \
     container_name, file_format, to_storage_account_name, tableinfo_name
 from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy
-
-
-from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit, split, explode, udf
-from pyspark.sql import Row, Window
 
 
 

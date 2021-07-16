@@ -197,14 +197,20 @@ def get_finra_file_xml_meta(file_path):
         criteria[reportDate_name] = criteria['_postingDate']
 
     if criteria[firmCRDNumber_name] != name_data['crd_number']:
-        print(f"\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{name_data['crd_number']}'\n")
+        print(f"\n{file_path}\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{name_data['crd_number']}'\n")
         name_data['crd_number'] = criteria[firmCRDNumber_name]
 
     if criteria[reportDate_name] != name_data['date']:
-        print(f"\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{name_data['date']}'\n")
+        print(f"\n{file_path}\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{name_data['date']}'\n")
         name_data['date'] = criteria[reportDate_name]
 
     rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
+    assert len(rowTags) == 1, f"\n{file_path}\nXML File has rowTags {rowTags} is not valid\n"
+
+    if name_data['table_name'] == 'IndividualInformationReportDelta':
+        name_data['table_name'] = 'IndividualInformationReport'
+
+    name_data['is_full_load'] = criteria.get('_IIRType') == 'FULL' or name_data['table_name'] in ['BranchInformationReport']
 
     return name_data, criteria, rowTags
 
@@ -381,11 +387,6 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
     print(f'\nrowTags: {rowTags}\n')
     rowTag = rowTags[0]
 
-    if table_name == 'IndividualInformationReportDelta':
-        table_name = 'IndividualInformationReport'
-
-    is_full_load = criteria.get('_IIRType') == 'FULL' or table_name in ['BranchInformationReport']
-
     schema_file = table_name+'.json'
     schema_path = os.path.join(schema_path_folder, schema_file)
 
@@ -413,7 +414,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
         reception_date = file_meta['date'],
         firm_name = firm_name,
         storage_account_name = storage_account_name,
-        is_full_load = is_full_load,
+        is_full_load = file_meta['is_full_load'],
         crd_number = file_meta['crd_number'],
         )
 
@@ -469,6 +470,19 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
                 if k>0: break
     else:
         process_finra_file(file_meta=file_meta, firm_name=firm_name, storage_account_name=storage_account_name)
+
+
+
+# %%
+
+folder_path = r'C:\Users\smammadov\packages\Shared\FINRA\DELTAS_FSC'
+
+files_meta = get_files_meta(folder_path=folder_path, date_start=date_start)
+
+
+# %%
+
+
 
 
 

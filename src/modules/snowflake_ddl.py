@@ -1,3 +1,8 @@
+"""
+Common Library for creating and executing (if required) Snowflake DDL Steps and ingest_data
+
+"""
+
 # %% Import Libraries
 import json
 from functools import wraps
@@ -31,7 +36,7 @@ logger = make_logging(__name__)
 class module_params_class:
     save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
-    create_or_replace = False # Default False - Use True for Schema Change Update
+    create_or_replace = True # Default False - Use True for Schema Change Update
 
     snowflake_account = 'advisorgroup-edip'
     domain_name = 'financial_professional'
@@ -69,6 +74,10 @@ class module_params_class:
 wid = module_params_class()
 snowflake_ddl_params = wid
 
+if not is_pc:
+    wid.save_to_adls = False
+    execute_at_snowflake = False
+    create_or_replace = False
 
 
 
