@@ -21,6 +21,7 @@ http://10.128.25.82:8282/
 import os, sys, tempfile, shutil, json, re
 from collections import defaultdict
 from datetime import datetime
+from pprint import pprint
 
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
@@ -38,7 +39,7 @@ from modules.data_functions import  to_string, remove_column_spaces, add_elt_col
 
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import col, lit, explode, md5, concat_ws
+from pyspark.sql.functions import col, lit, explode, md5, concat_ws, from_json, arrays_zip, concat, filter
 
 
 
@@ -356,6 +357,9 @@ def add_business_key(xml_table):
 
 @catch_error(logger)
 def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_date:str, firm_name:str, storage_account_name:str, is_full_load:bool, crd_number:str):
+    if not xml_table_list:
+        print(f"No data to write -> {file_name}")
+        return
 
     for df_name, xml_table in xml_table_list.items():
         print(f'\nWriting {df_name} to Azure...')
@@ -385,7 +389,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
         if is_pc: # and manual_iteration:
             local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{df_name}'
             print(fr'Save to local {local_path}')
-            xml_table1.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
+            #xml_table1.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
             xml_table1.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
 
         if save_xml_to_adls_flag:
@@ -437,9 +441,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
 
     if flatten_n_divide_flag:
         xml_table_list += flatten_n_divide_df(xml_table=xml_table, table_name=table_name)
-        if not xml_table_list:
-            print(f"No data to write -> {table_name}")
-            return
+
 
 
 
@@ -453,6 +455,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
         crd_number = file_meta['crd_number'],
         )
 
+    return xml_table
 
 
 
@@ -498,14 +501,165 @@ file_meta
 
 # %%
 
+xml_table = process_finra_file(file_meta, firm_name='x', storage_account_name='x')
+
+
+
+# %%
+
+xml_table.select(col('Addr.*')).show()
+
+
+
+# %% Build Branch Table
+
+semi_flat_table = flatten_df(xml_table=xml_table)
+
+
+# %%
+
+Branch_Address_Schema = StructType([
+    StructField('Country', StringType(), True),
+    StructField('State', StringType(), True),
+    StructField('City', StringType(), True),
+    StructField('Postal_Code', StringType(), True),
+    StructField('Street1', StringType(), True),
+    StructField('Street2', StringType(), True),
+    ])
+
+
+Associated_Individuals_Schema = ArrayType(StructType([
+    StructField('First_Name', StringType(), True),
+    StructField('Middle_Name', StringType(), True),
+    StructField('Last_Name', StringType(), True),
+    StructField('CRD_Number', StringType(), True),
+    StructField('Independent_Contractor', StringType(), True),
+    ]), True)
+
+
+Registrations_Schema = ArrayType(StructType([
+    StructField('Regulator', StringType(), True),
+    StructField('Status', StringType(), True),
+    StructField('Status_Date', StringType(), True),
+    ]), True)
+
+
+def filter_Registration(x):
+    return x.getField('_rgltr') == lit('FINRA')
+
+
+Other_Business_Activity_Schema = ArrayType(StructType([
+    StructField('Activity_Name', StringType(), True),
+    StructField('Sequence_Number', StringType(), True),
+    StructField('Description', StringType(), True),
+    StructField('Affiliated', StringType(), True),
+    ]), True)
+
+
+# %%
+
+branch = semi_flat_table.select(
+    col('_orgPK').alias('Firm_CRD_Number'),
+    col('BrnchOfcs_BrnchOfc_brnchPK').alias('Branch_CRD_Number'),
+    col('BrnchOfcs_BrnchOfc_bllngCd').alias('Billing_Code'),
+    col('BrnchOfcs_BrnchOfc_brnchPhone').alias('Branch_Phone'),
+    col('BrnchOfcs_BrnchOfc_brnchFax').alias('Branch_Fax'),
+    col('BrnchOfcs_BrnchOfc_prvtRsdnc').alias('Is_Private_Residence'),
+    col('BrnchOfcs_BrnchOfc_dstrtPK').alias('District_Office'),
+    col('BrnchOfcs_BrnchOfc_oprnlStCd').alias('Operational_Status'),
+    from_json(
+        col = concat(
+        lit('{'),
+        lit('  "Country": "'), col('BrnchOfcs_BrnchOfc_Addr_cntry'), lit('"'),
+        lit(', "State": "'), col('BrnchOfcs_BrnchOfc_Addr_state'), lit('"'),
+        lit(', "City": "'), col('BrnchOfcs_BrnchOfc_Addr_city'), lit('"'),
+        lit(', "Postal_Code": "'), col('BrnchOfcs_BrnchOfc_Addr_postlCd'), lit('"'),
+        lit(', "Street1": "'), col('BrnchOfcs_BrnchOfc_Addr_strt1'), lit('"'),
+        lit(', "Street2": "'), col('BrnchOfcs_BrnchOfc_Addr_strt2'), lit('"'),
+        lit('}'),
+        ),
+        schema = Branch_Address_Schema
+        ).alias('Branch_Address'),
+    arrays_zip(
+        col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._first').alias('First_Name'),
+        col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._mid').alias('Middle_Name'),
+        col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._last').alias('Last_Name'),
+        col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._indvlPK').alias('CRD_Number'),
+        col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._ndpndCntrcrFl').alias('Independent_Contractor'),
+        ).cast(Associated_Individuals_Schema
+        ).alias('Associated_Individuals'),
+    arrays_zip(
+        col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn._rgltr').alias('Regulator'),
+        col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn._st').alias('Status'),
+        col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn._stDt').alias('Status_Date'),
+        ).cast(Registrations_Schema
+        ).alias('Registrations'),
+    filter(
+        col = col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn'), 
+        f = filter_Registration
+        ).getField('_st').getItem(0).alias('Registration_Status'),
+    filter(
+        col = col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn'), 
+        f = filter_Registration
+        ).getField('_stDt').getItem(0).alias('Registration_Start_Date'),
+    filter(
+        col = col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn'), 
+        f = filter_Registration
+        ).getField('_rgltr').getItem(0).alias('Registration_Regulator_Code'),
+    col('BrnchOfcs_BrnchOfc_TypeOfc_typeOfcBDFl').alias('Is_Broker_Dealer_Office'),
+    col('BrnchOfcs_BrnchOfc_TypeOfc_typeOfcIAFl').alias('Is_Investment_Advisor_Office'),
+    col('BrnchOfcs_BrnchOfc_TypeOfc_OSJFl').alias('Is_OSJ'),
+    concat_ws(', ', col('BrnchOfcs_BrnchOfc_FinActvys_FinActvy._actvyCd')).alias('Financial_Activity'),
+    col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC._indvlPK').getItem(0).alias('PIC_CRDNumber'),
+    col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC._roleCd').getItem(0).alias('PIC_Role_Code'),
+    col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC._sprvPICDt').getItem(0).alias('PIC_StartDate'),
+    col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC._ndpndCntrcrFl').getItem(0).alias('PIC_Is_Independent_Contractor'),
+    col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._first').getItem(0).alias('PIC_First_Name'),
+    col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._mid').getItem(0).alias('PIC_Middle_Name'),
+    col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._last').getItem(0).alias('PIC_Last_Name'),
+    col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ._sprvgOSJBrnchPK').getItem(0).alias('Supervisor_Branch_CRDNumber'),
+    col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ._sprvgOSJIndvlPK').getItem(0).alias('Supervisor_OSJ_CRDNumber'),
+    col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ.Nm._first').getItem(0).alias('Supervisor_First_Name'),
+    col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ.Nm._mid').getItem(0).alias('Supervisor_Middle_Name'),
+    col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ.Nm._last').getItem(0).alias('Supervisor_Last_Name'),
+    col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ.Nm._suf').getItem(0).alias('Supervisor_Suffix_Name'),
+    arrays_zip(
+        col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusActvys_OthrBusActvy._nm').alias('Activity_Name'),
+        col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusActvys_OthrBusActvy._seqNb').alias('Sequence_Number'),
+        col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusActvys_OthrBusActvy._desc').alias('Description'),
+        col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusActvys_OthrBusActvy._affltdFl').alias('Affiliated'),
+        ).cast(Other_Business_Activity_Schema
+        ).alias('Other_Business_Activity'),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+)
 
 
 
 
 
 
+pprint(branch.limit(10).toJSON().map(lambda j: json.loads(j)).collect())
 
 
+semi_flat_table.columns
 
 
 
