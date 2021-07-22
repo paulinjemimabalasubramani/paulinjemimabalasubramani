@@ -532,6 +532,7 @@ Associated_Individuals_Schema = ArrayType(StructType([
     StructField('First_Name', StringType(), True),
     StructField('Middle_Name', StringType(), True),
     StructField('Last_Name', StringType(), True),
+    StructField('Suffix_Name', StringType(), True),
     StructField('CRD_Number', StringType(), True),
     StructField('Independent_Contractor', StringType(), True),
     ]), True)
@@ -584,6 +585,7 @@ branch = semi_flat_table.select(
         col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._first').alias('First_Name'),
         col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._mid').alias('Middle_Name'),
         col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._last').alias('Last_Name'),
+        col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._suf').alias('Suffix_Name'),
         col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._indvlPK').alias('CRD_Number'),
         col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._ndpndCntrcrFl').alias('Independent_Contractor'),
         ).cast(Associated_Individuals_Schema
@@ -617,6 +619,7 @@ branch = semi_flat_table.select(
     col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._first').getItem(0).alias('PIC_First_Name'),
     col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._mid').getItem(0).alias('PIC_Middle_Name'),
     col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._last').getItem(0).alias('PIC_Last_Name'),
+    col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._suf').getItem(0).alias('PIC_Suffix_Name'),
     col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ._sprvgOSJBrnchPK').getItem(0).alias('Supervisor_Branch_CRDNumber'),
     col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ._sprvgOSJIndvlPK').getItem(0).alias('Supervisor_OSJ_CRDNumber'),
     col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ.Nm._first').getItem(0).alias('Supervisor_First_Name'),
