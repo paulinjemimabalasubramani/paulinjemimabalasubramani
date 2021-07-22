@@ -50,10 +50,12 @@ logger = make_logging(__name__)
 
 save_xml_to_adls_flag = False
 save_tableinfo_adls_flag = False
+flatten_n_divide_flag = False
 
 if not is_pc:
     save_xml_to_adls_flag = True
     save_tableinfo_adls_flag = True
+    flatten_n_divide_flag = False
 
 date_start = '2021-01-01'
 
@@ -147,7 +149,7 @@ def base_to_schema(base:dict):
 # %% Name extract
 
 @catch_error(logger)
-def extract_data_from_finra_file_name1(file_name):
+def extract_data_from_finra_file_name(file_name):
     basename = os.path.basename(file_name)
     sp = basename.split("_")
 
@@ -172,9 +174,9 @@ def extract_data_from_finra_file_name1(file_name):
 @catch_error(logger)
 def get_finra_file_xml_meta(file_path):
     rowTag = '?xml'
-    
-    name_data = extract_data_from_finra_file_name1(file_name=file_path)
-    if not name_data:
+
+    file_meta = extract_data_from_finra_file_name(file_name=file_path)
+    if not file_meta:
         return (None,) * 3
 
     if file_path.endswith('.zip'):
@@ -196,23 +198,52 @@ def get_finra_file_xml_meta(file_path):
     if not criteria.get(reportDate_name):
         criteria[reportDate_name] = criteria['_postingDate']
 
-    if criteria[firmCRDNumber_name] != name_data['crd_number']:
-        print(f"\n{file_path}\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{name_data['crd_number']}'\n")
-        name_data['crd_number'] = criteria[firmCRDNumber_name]
+    if criteria[firmCRDNumber_name] != file_meta['crd_number']:
+        print(f"\n{file_path}\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{file_meta['crd_number']}'\n")
+        file_meta['crd_number'] = criteria[firmCRDNumber_name]
 
-    if criteria[reportDate_name] != name_data['date']:
-        print(f"\n{file_path}\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{name_data['date']}'\n")
-        name_data['date'] = criteria[reportDate_name]
+    if criteria[reportDate_name] != file_meta['date']:
+        print(f"\n{file_path}\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{file_meta['date']}'\n")
+        file_meta['date'] = criteria[reportDate_name]
 
     rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
     assert len(rowTags) == 1, f"\n{file_path}\nXML File has rowTags {rowTags} is not valid\n"
 
-    if name_data['table_name'] == 'IndividualInformationReportDelta':
-        name_data['table_name'] = 'IndividualInformationReport'
+    if file_meta['table_name'] == 'IndividualInformationReportDelta':
+        file_meta['table_name'] = 'IndividualInformationReport'
 
-    name_data['is_full_load'] = criteria.get('_IIRType') == 'FULL' or name_data['table_name'] in ['BranchInformationReport']
+    file_meta['is_full_load'] = criteria.get('_IIRType') == 'FULL' or file_meta['table_name'] in ['BranchInformationReport']
 
-    return name_data, criteria, rowTags
+    file_meta = {
+        **file_meta,
+        'root': os.path.dirname(file_path),
+        'file': os.path.basename(file_path),
+        'criteria': criteria,
+        'rowTags': rowTags,
+    }
+
+    return file_meta
+
+
+
+
+# %% Get list of file names above certain date:
+
+@catch_error(logger)
+def get_all_finra_file_xml_meta(folder_path, date_start:str, inclusive:bool=True):
+    print(f'\nGetting list of candidate files from {folder_path}')
+    files_meta = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            file_meta = get_finra_file_xml_meta(file_path)
+
+            if file_meta and (date_start<file_meta['date'] or (date_start==file_meta['date'] and inclusive)):
+                files_meta.append(file_meta)
+
+    print(f'Finished getting list of files. Total Files = {len(files_meta)}\n')
+    return files_meta
+
 
 
 
@@ -402,11 +433,15 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
         xml_table = read_xml(spark, file_path, rowTag=rowTag)
 
     if is_pc: xml_table.printSchema()
+    xml_table_list = []
 
-    xml_table_list = flatten_n_divide_df(xml_table=xml_table, table_name=table_name)
-    if not xml_table_list:
-        print(f"No data to write -> {table_name}")
-        return
+    if flatten_n_divide_flag:
+        xml_table_list += flatten_n_divide_df(xml_table=xml_table, table_name=table_name)
+        if not xml_table_list:
+            print(f"No data to write -> {table_name}")
+            return
+
+
 
     write_xml_table_list_to_azure(
         xml_table_list= xml_table_list,
@@ -418,31 +453,6 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
         crd_number = file_meta['crd_number'],
         )
 
-
-
-
-# %% Get list of file names above certain date:
-
-@catch_error(logger)
-def get_files_meta(folder_path, date_start:str, inclusive:bool=True):
-    print(f'\nGetting list of candidate files from {folder_path}')
-    files_meta = []
-    for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            name_data, criteria, rowTags = get_finra_file_xml_meta(file_path)
-
-            if name_data and (date_start<name_data['date'] or (date_start==name_data['date'] and inclusive)):
-                files_meta.append({
-                    **name_data,
-                    'root': root,
-                    'file': file,
-                    'criteria': criteria,
-                    'rowTags': rowTags,
-                })
-
-    print(f'Finished getting list of files. Total Files = {len(files_meta)}\n')
-    return files_meta
 
 
 
@@ -475,12 +485,24 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
 
 # %%
 
-folder_path = r'C:\Users\smammadov\packages\Shared\FINRA\DELTAS_FSC'
+folder_path = r'C:\Users\smammadov\packages\Shared\test'
 
-files_meta = get_files_meta(folder_path=folder_path, date_start=date_start)
+files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start)
 
 
 # %%
+
+file_meta = files_meta[0]
+
+file_meta
+
+# %%
+
+
+
+
+
+
 
 
 
@@ -504,7 +526,7 @@ def process_all_files():
         storage_account_name = to_storage_account_name(firm_name=firm_name)
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-        files_meta = get_files_meta(folder_path=folder_path, date_start=date_start)
+        files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start)
 
         for file_meta in files_meta:
             if is_pc and 'IndividualInformationReport' in file_meta['table_name']:
