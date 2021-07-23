@@ -557,6 +557,36 @@ Other_Business_Activity_Schema = ArrayType(StructType([
     ]), True)
 
 
+Other_Business_Names_Schema =  ArrayType(StructType([
+    StructField('Sequence_Number', StringType(), True),
+    StructField('Business_Name', StringType(), True),
+    ]), True)
+
+
+Other_Websites_Schema =  ArrayType(StructType([
+    StructField('Sequence_Number', StringType(), True),
+    StructField('Website_Address', StringType(), True),
+    ]), True)
+
+
+Arrangements_Shared_Entities_Entity_Types_Schema = ArrayType(StructType([
+    StructField('Blank', StringType(), True),
+    StructField('Entity_Code', StringType(), True),
+    StructField('Other_Description', StringType(), True),
+    ]), True)
+
+
+Arrangements_Shared_Entities_Schema =  ArrayType(StructType([
+    StructField('Sequence_Number', StringType(), True),
+    StructField('Name', StringType(), True),
+    StructField('CRD_Number', StringType(), True),
+    StructField('Affiliate', StringType(), True),
+    StructField('Entity_Types', Arrangements_Shared_Entities_Entity_Types_Schema, True),
+    ]), True)
+
+
+
+
 # %%
 
 branch = semi_flat_table.select(
@@ -605,7 +635,7 @@ branch = semi_flat_table.select(
         f = filter_Registration
         ).getField('_stDt').getItem(0).alias('Registration_Start_Date'),
     filter(
-        col = col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn'), 
+        col = col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn'),
         f = filter_Registration
         ).getField('_rgltr').getItem(0).alias('Registration_Regulator_Code'),
     col('BrnchOfcs_BrnchOfc_TypeOfc_typeOfcBDFl').alias('Is_Broker_Dealer_Office'),
@@ -633,22 +663,29 @@ branch = semi_flat_table.select(
         col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusActvys_OthrBusActvy._affltdFl').alias('Affiliated'),
         ).cast(Other_Business_Activity_Schema
         ).alias('Other_Business_Activity'),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
+    arrays_zip(
+        col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusNms_OthrBusNm._seqNb').alias('Sequence_Number'),
+        col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusNms_OthrBusNm._nm').alias('Business_Name'),
+        ).cast(Other_Business_Names_Schema
+        ).alias('Other_Business_Names'),
+    arrays_zip(
+        col('BrnchOfcs_BrnchOfc_OthrBuss_OthrWebs_OthrWeb._seqNb').alias('Sequence_Number'),
+        col('BrnchOfcs_BrnchOfc_OthrBuss_OthrWebs_OthrWeb._webAddr').alias('Website_Address'),
+        ).cast(Other_Websites_Schema
+        ).alias('Other_Websites'),
+    col('BrnchOfcs_BrnchOfc_Rgmnts_shrOfcFl').alias('Has_Shared_Space'),
+    col('BrnchOfcs_BrnchOfc_Rgmnts_undrCntrcFl').alias('Is_Under_Contract'),
+    col('BrnchOfcs_BrnchOfc_Rgmnts_empDcsnFl').alias('Has_Employment_Responsibility'),
+    col('BrnchOfcs_BrnchOfc_Rgmnts_xpnsRspbyEnttyFl').alias('Has_Financial_Responsibility'),
+    col('BrnchOfcs_BrnchOfc_Rgmnts_xpnsEnttyDesc').alias('Has_Financial_Interest'),
+    arrays_zip(
+        col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty._seqNb').alias('Sequence_Number'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty._nm').alias('Name'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty._crdPK').alias('CRD_Number'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty._affltdFl').alias('Affiliate'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty.EnttyTypes.EnttyType').alias('Entity_Types'),
+        ).cast(Arrangements_Shared_Entities_Schema
+        ).alias('Arrangements_Shared_Entities'),
 #    col('').alias(''),
 #    col('').alias(''),
 #    col('').alias(''),
@@ -660,6 +697,8 @@ branch = semi_flat_table.select(
 
 
 pprint(branch.limit(10).toJSON().map(lambda j: json.loads(j)).collect())
+
+# pprint(branch.where('Branch_CRD_Number = 701487').toJSON().map(lambda j: json.loads(j)).collect())
 
 
 semi_flat_table.columns

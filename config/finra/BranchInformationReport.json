@@ -107,11 +107,12 @@
                             "EnttyType": [{
                                 "_VALUE": null,
                                 "_enttyCd": null,
-                                "_OthrDesc": null
+                                "_othrDesc": null
                             }]
                         },
                         "_seqNb": null,
                         "_nm": null,
+                        "_crdPK": null,
                         "_affltdFl": null
                     }]
                 },
