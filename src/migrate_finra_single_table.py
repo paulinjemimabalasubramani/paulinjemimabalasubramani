@@ -39,7 +39,7 @@ from modules.data_functions import  to_string, remove_column_spaces, add_elt_col
 
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import col, lit, explode, md5, concat_ws, from_json, arrays_zip, concat, filter
+from pyspark.sql.functions import col, lit, explode, md5, concat_ws, from_json, arrays_zip, concat, filter, array_remove
 
 
 
@@ -576,12 +576,45 @@ Arrangements_Shared_Entities_Entity_Types_Schema = ArrayType(StructType([
     ]), True)
 
 
-Arrangements_Shared_Entities_Schema =  ArrayType(StructType([
+Arrangements_Shared_Entities_Schema = ArrayType(StructType([
     StructField('Sequence_Number', StringType(), True),
     StructField('Name', StringType(), True),
     StructField('CRD_Number', StringType(), True),
     StructField('Affiliate', StringType(), True),
     StructField('Entity_Types', Arrangements_Shared_Entities_Entity_Types_Schema, True),
+    ]), True)
+
+
+Arrangements_Contract_Entities_Schema = ArrayType(StructType([
+    StructField('Sequence_Number', StringType(), True),
+    StructField('Name', StringType(), True),
+    StructField('CRD_Number', StringType(), True),
+    StructField('Type', StringType(), True),
+    ]), True)
+
+
+Arrangements_Expense_Entities_Schema = ArrayType(StructType([
+    StructField('Sequence_Number', StringType(), True),
+    StructField('Name', StringType(), True),
+    StructField('Type', StringType(), True),
+    StructField('Registered', StringType(), True),
+    StructField('CRD_Number', StringType(), True),
+    StructField('EIN', StringType(), True),
+    ]), True)
+
+
+Arrangements_Records_Entities_Schema = ArrayType(StructType([
+    StructField('Street1', StringType(), True),
+    StructField('Street2', StringType(), True),
+    StructField('City', StringType(), True),
+    StructField('State', StringType(), True),
+    StructField('Country', StringType(), True),
+    StructField('Postal_Code', StringType(), True),
+    StructField('Sequence_Number', StringType(), True),
+    StructField('First_Name', StringType(), True),
+    StructField('Last_Name', StringType(), True),
+    StructField('Email', StringType(), True),
+    StructField('Phone', StringType(), True),
     ]), True)
 
 
@@ -686,22 +719,44 @@ branch = semi_flat_table.select(
         col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty.EnttyTypes.EnttyType').alias('Entity_Types'),
         ).cast(Arrangements_Shared_Entities_Schema
         ).alias('Arrangements_Shared_Entities'),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
+    arrays_zip(
+        col('BrnchOfcs_BrnchOfc_Rgmnts_CntrcEnttys_CntrcEntty._seqNb').alias('Sequence_Number'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_CntrcEnttys_CntrcEntty._nm').alias('Name'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_CntrcEnttys_CntrcEntty._crdPK').alias('CRD_Number'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_CntrcEnttys_CntrcEntty._type').alias('Type'),
+        ).cast(Arrangements_Contract_Entities_Schema
+        ).alias('Arrangements_Contract_Entities'),
+    arrays_zip(
+        col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._seqNb').alias('Sequence_Number'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._nm').alias('Name'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._type').alias('Type'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._rgstdFl').alias('Registered'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._crdPK').alias('CRD_Number'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._EIN').alias('EIN'),
+        ).cast(Arrangements_Expense_Entities_Schema
+        ).alias('Arrangements_Expense_Entities'),
+    arrays_zip(
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._strt1').alias('Street1'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._strt2').alias('Street2'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._city').alias('City'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._state').alias('State'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._cntry').alias('Country'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._postlCd').alias('Postal_Code'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc._seqNb').alias('Sequence_Number'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc._cntctFirstNm').alias('First_Name'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc._cntctLastNm').alias('Last_Name'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc._cntctEmailAddr').alias('Email'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc._phone').alias('Phone'),
+        ).cast(Arrangements_Records_Entities_Schema
+        ).alias('Arrangements_Records_Entities'),
 )
-
-
-
 
 
 
 pprint(branch.limit(10).toJSON().map(lambda j: json.loads(j)).collect())
 
-# pprint(branch.where('Branch_CRD_Number = 701487').toJSON().map(lambda j: json.loads(j)).collect())
+#pprint(branch.where('Branch_CRD_Number = 701667').toJSON().map(lambda j: json.loads(j)).collect())
 
-
-semi_flat_table.columns
 
 
 
