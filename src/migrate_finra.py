@@ -344,7 +344,6 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
         print(f"No data to write -> {file_name}")
         return
     monid = 'monotonically_increasing_id'
-    FILE_DATE = 'FILE_DATE'
 
     for df_name, xml_table in xml_table_list.items():
         print(f'\nWriting {df_name} to Azure...')
@@ -354,18 +353,17 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
 
         xml_table1 = xml_table
         xml_table1 = remove_column_spaces(table_to_remove = xml_table1)
+        xml_table1 = xml_table1.withColumn('FILE_DATE', lit(str(reception_date)))
+        xml_table1 = xml_table1.withColumn(FirmCRDNumber, lit(str(crd_number)))
+
         xml_table1 = xml_table1.withColumn(monid, monotonically_increasing_id().cast('string'))
-
         xml_table2 = to_string(table_to_convert_columns = xml_table1, col_types = []) # Convert all columns to string
-        xml_table2 = xml_table2.withColumn(FILE_DATE, lit(str(reception_date)))
-        xml_table2 = xml_table2.withColumn(FirmCRDNumber, lit(str(crd_number)))
-
         md5_columns = [c for c in xml_table2.columns if c not in [monid]]
         xml_table2 = xml_table2.withColumn(KeyIndicator, md5(concat_ws('_', *md5_columns))) # add HASH column for key indicator
 
         xml_table1 = xml_table1.alias('x1'
             ).join(xml_table2.alias('x2'), xml_table1[monid]==xml_table2[monid], how='left'
-            ).select('x1.*', 'x2.'+FILE_DATE, 'x2.'+FirmCRDNumber, 'x2.'+KeyIndicator
+            ).select('x1.*', 'x2.'+KeyIndicator
             ).drop(monid)
 
         add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name = df_name)
