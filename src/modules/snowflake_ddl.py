@@ -84,10 +84,10 @@ if not is_pc:
 
 
 if is_pc:
-    wid.shared_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared')
+    wid.shared_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../../Shared')
 else:
     # /usr/local/spark/resources/fileshare/Shared
-    wid.shared_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared')
+    wid.shared_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../resources/fileshare/Shared')
 
 
 if wid.create_cicd_file:
@@ -273,7 +273,8 @@ def write_CICD_file(source_system:str, schema_name:str, table_name:str):
 
     file_path = os.path.join(file_folder_path, f'{TABLE_NAME}.sql')
 
-    with open(wid.shared_path_folder, 'w') as f:
+    print(f'\nWriting: {file_path}\n')
+    with open(file_path, 'w') as f:
         f.write(wid.cicd_file)
 
 
@@ -666,7 +667,12 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
 """
 
     sqlstr += step
-    wid.cicd_file += sqlstr # Note the difference from other steps
+    wid.cicd_file += f"""
+    
+    USE SCHEMA {source_system};
+
+    {sqlstr}
+    """
     return sqlstr
 
 
