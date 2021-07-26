@@ -21,6 +21,7 @@ http://10.128.25.82:8282/
 import os, sys, tempfile, shutil, json, re
 from collections import defaultdict
 from datetime import datetime
+from pprint import pprint
 
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
@@ -38,7 +39,7 @@ from modules.data_functions import  to_string, remove_column_spaces, add_elt_col
 
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import col, lit, explode, md5, concat_ws
+from pyspark.sql.functions import col, lit, explode, md5, concat_ws, from_json, arrays_zip, concat, filter, monotonically_increasing_id
 
 
 
@@ -48,12 +49,14 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-save_xml_to_adls_flag = False
-save_tableinfo_adls_flag = False
+save_xml_to_adls_flag = True
+save_tableinfo_adls_flag = True
+flatten_n_divide_flag = False
 
 if not is_pc:
     save_xml_to_adls_flag = True
     save_tableinfo_adls_flag = True
+    flatten_n_divide_flag = False
 
 date_start = '2021-01-01'
 
@@ -62,7 +65,7 @@ database = 'FINRA'
 tableinfo_source = database
 
 KeyIndicator = 'MD5_KEY'
-FirmCRDNumber = 'FIRM_CRD_NUMBER'
+FirmCRDNumber = 'Firm_CRD_Number'
 
 finra_individual_delta_name = 'IndividualInformationReportDelta'
 reportDate_name = '_reportDate'
@@ -147,7 +150,7 @@ def base_to_schema(base:dict):
 # %% Name extract
 
 @catch_error(logger)
-def extract_data_from_finra_file_name1(file_name):
+def extract_data_from_finra_file_name(file_name):
     basename = os.path.basename(file_name)
     sp = basename.split("_")
 
@@ -172,9 +175,9 @@ def extract_data_from_finra_file_name1(file_name):
 @catch_error(logger)
 def get_finra_file_xml_meta(file_path):
     rowTag = '?xml'
-    
-    name_data = extract_data_from_finra_file_name1(file_name=file_path)
-    if not name_data:
+
+    file_meta = extract_data_from_finra_file_name(file_name=file_path)
+    if not file_meta:
         return (None,) * 3
 
     if file_path.endswith('.zip'):
@@ -196,17 +199,52 @@ def get_finra_file_xml_meta(file_path):
     if not criteria.get(reportDate_name):
         criteria[reportDate_name] = criteria['_postingDate']
 
-    if criteria[firmCRDNumber_name] != name_data['crd_number']:
-        print(f"\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{name_data['crd_number']}'\n")
-        name_data['crd_number'] = criteria[firmCRDNumber_name]
+    if criteria[firmCRDNumber_name] != file_meta['crd_number']:
+        print(f"\n{file_path}\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{file_meta['crd_number']}'\n")
+        file_meta['crd_number'] = criteria[firmCRDNumber_name]
 
-    if criteria[reportDate_name] != name_data['date']:
-        print(f"\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{name_data['date']}'\n")
-        name_data['date'] = criteria[reportDate_name]
+    if criteria[reportDate_name] != file_meta['date']:
+        print(f"\n{file_path}\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{file_meta['date']}'\n")
+        file_meta['date'] = criteria[reportDate_name]
 
     rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
+    assert len(rowTags) == 1, f"\n{file_path}\nXML File has rowTags {rowTags} is not valid\n"
 
-    return name_data, criteria, rowTags
+    if file_meta['table_name'].upper() == 'IndividualInformationReportDelta'.upper():
+        file_meta['table_name'] = 'IndividualInformationReport'
+
+    file_meta['is_full_load'] = criteria.get('_IIRType') == 'FULL' or file_meta['table_name'].upper() in ['BranchInformationReport'.upper()]
+
+    file_meta = {
+        **file_meta,
+        'root': os.path.dirname(file_path),
+        'file': os.path.basename(file_path),
+        'criteria': criteria,
+        'rowTags': rowTags,
+    }
+
+    return file_meta
+
+
+
+
+# %% Get list of file names above certain date:
+
+@catch_error(logger)
+def get_all_finra_file_xml_meta(folder_path, date_start:str, inclusive:bool=True):
+    print(f'\nGetting list of candidate files from {folder_path}')
+    files_meta = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            file_meta = get_finra_file_xml_meta(file_path)
+
+            if file_meta and (date_start<file_meta['date'] or (date_start==file_meta['date'] and inclusive)):
+                files_meta.append(file_meta)
+
+    print(f'Finished getting list of files. Total Files = {len(files_meta)}\n')
+    return files_meta
+
 
 
 
@@ -275,18 +313,20 @@ tableinfo = defaultdict(list)
 @catch_error(logger)
 def add_table_to_tableinfo(xml_table, firm_name, table_name):
     for ix, (col_name, col_type) in enumerate(xml_table.dtypes):
+        var_col_type = 'string' if col_type=='string' else 'variant'
+
         tableinfo['SourceDatabase'].append(database)
         tableinfo['SourceSchema'].append(firm_name)
         tableinfo['TableName'].append(table_name)
         tableinfo['SourceColumnName'].append(col_name)
-        tableinfo['SourceDataType'].append(col_type)
+        tableinfo['SourceDataType'].append(var_col_type)
         tableinfo['SourceDataLength'].append(0)
         tableinfo['SourceDataPrecision'].append(0)
         tableinfo['SourceDataScale'].append(0)
         tableinfo['OrdinalPosition'].append(ix+1)
-        tableinfo['CleanType'].append(col_type)
+        tableinfo['CleanType'].append(var_col_type)
         tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
-        tableinfo['TargetDataType'].append('string')
+        tableinfo['TargetDataType'].append(var_col_type)
         tableinfo['IsNullable'].append(0 if col_name in [KeyIndicator] else 1)
         tableinfo['KeyIndicator'].append(1 if col_name in [KeyIndicator] else 0)
         tableinfo['IsActive'].append(1)
@@ -295,30 +335,15 @@ def add_table_to_tableinfo(xml_table, firm_name, table_name):
         tableinfo[partitionBy].append(partitionBy_value)
 
 
-# %% Add Business Key
-
-@catch_error(logger)
-def add_business_key(xml_table):
-    cols = xml_table.columns
-
-    cols_indvl = sorted([c for c in cols if ('individualCRDNumber'.upper() in c.upper() or 'indvlPK'.upper() in c.upper())], key=len)
-    if is_pc: print(f'\nindvlPK: {cols_indvl}')
-    if cols_indvl:
-        xml_table = xml_table.withColumn('BUSINESS_KEY_INDVL', concat_ws('_', col(FirmCRDNumber), col(cols_indvl[0])))
-
-    cols_brnch = sorted([c for c in cols if ('brnchPK'.upper() in c.upper())], key=len)
-    if is_pc: print(f'\nbrnchPK: {cols_brnch}')
-    if cols_brnch:
-        xml_table = xml_table.withColumn('BUSINESS_KEY_BRNCH', concat_ws('_', col(FirmCRDNumber), col(cols_brnch[0])))
-
-    return xml_table
-
-
 
 # %% Write xml table list to Azure
 
 @catch_error(logger)
 def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_date:str, firm_name:str, storage_account_name:str, is_full_load:bool, crd_number:str):
+    if not xml_table_list:
+        print(f"No data to write -> {file_name}")
+        return
+    monid = 'monotonically_increasing_id'
 
     for df_name, xml_table in xml_table_list.items():
         print(f'\nWriting {df_name} to Azure...')
@@ -326,12 +351,20 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
         data_type = 'data'
         container_folder = f'{data_type}/{domain_name}/{database}/{firm_name}'
 
-        xml_table1 = to_string(table_to_convert_columns = xml_table, col_types = []) # Convert all columns to string
+        xml_table1 = xml_table
         xml_table1 = remove_column_spaces(table_to_remove = xml_table1)
         xml_table1 = xml_table1.withColumn('FILE_DATE', lit(str(reception_date)))
         xml_table1 = xml_table1.withColumn(FirmCRDNumber, lit(str(crd_number)))
-        xml_table1 = add_business_key(xml_table = xml_table1)
-        xml_table1 = xml_table1.withColumn(KeyIndicator, md5(concat_ws('_', *xml_table1.columns))) # add HASH column for key indicator
+
+        xml_table1 = xml_table1.withColumn(monid, monotonically_increasing_id().cast('string'))
+        xml_table2 = to_string(table_to_convert_columns = xml_table1, col_types = []) # Convert all columns to string
+        md5_columns = [c for c in xml_table2.columns if c not in [monid]]
+        xml_table2 = xml_table2.withColumn(KeyIndicator, md5(concat_ws('_', *md5_columns))) # add HASH column for key indicator
+
+        xml_table1 = xml_table1.alias('x1'
+            ).join(xml_table2.alias('x2'), xml_table1[monid]==xml_table2[monid], how='left'
+            ).select('x1.*', 'x2.'+KeyIndicator
+            ).drop(monid)
 
         add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name = df_name)
 
@@ -340,7 +373,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
             reception_date = reception_date,
             source = tableinfo_source,
             is_full_load = is_full_load,
-            dml_type = 'I' if is_full_load or firm_name not in ['IndividualInformationReport'] else 'U',
+            dml_type = 'I' if is_full_load or firm_name.upper() not in ['IndividualInformationReport'.upper()] else 'U',
             )
 
         if is_pc: xml_table1.printSchema()
@@ -348,7 +381,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
         if is_pc: # and manual_iteration:
             local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{df_name}'
             print(fr'Save to local {local_path}')
-            xml_table1.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
+            #xml_table1.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
             xml_table1.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
 
         if save_xml_to_adls_flag:
@@ -367,6 +400,249 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
 
 
 
+
+# %% Build Branch Table
+
+def build_branch_table(semi_flat_table):
+    # Create Schemas
+    Branch_Address_Schema = StructType([
+        StructField('Country', StringType(), True),
+        StructField('State', StringType(), True),
+        StructField('City', StringType(), True),
+        StructField('Postal_Code', StringType(), True),
+        StructField('Street1', StringType(), True),
+        StructField('Street2', StringType(), True),
+        ])
+
+
+    Associated_Individuals_Schema = ArrayType(StructType([
+        StructField('First_Name', StringType(), True),
+        StructField('Middle_Name', StringType(), True),
+        StructField('Last_Name', StringType(), True),
+        StructField('Suffix_Name', StringType(), True),
+        StructField('CRD_Number', StringType(), True),
+        StructField('Independent_Contractor', StringType(), True),
+        ]), True)
+
+
+    Registrations_Schema = ArrayType(StructType([
+        StructField('Regulator', StringType(), True),
+        StructField('Status', StringType(), True),
+        StructField('Status_Date', StringType(), True),
+        ]), True)
+
+
+    def filter_Registration(x):
+        return x.getField('_rgltr') == lit('FINRA')
+
+
+    Other_Business_Activity_Schema = ArrayType(StructType([
+        StructField('Activity_Name', StringType(), True),
+        StructField('Sequence_Number', StringType(), True),
+        StructField('Description', StringType(), True),
+        StructField('Affiliated', StringType(), True),
+        ]), True)
+
+
+    Other_Business_Names_Schema =  ArrayType(StructType([
+        StructField('Sequence_Number', StringType(), True),
+        StructField('Business_Name', StringType(), True),
+        ]), True)
+
+
+    Other_Websites_Schema =  ArrayType(StructType([
+        StructField('Sequence_Number', StringType(), True),
+        StructField('Website_Address', StringType(), True),
+        ]), True)
+
+
+    Arrangements_Shared_Entities_Entity_Types_Schema = ArrayType(StructType([
+        StructField('Blank', StringType(), True),
+        StructField('Entity_Code', StringType(), True),
+        StructField('Other_Description', StringType(), True),
+        ]), True)
+
+
+    Arrangements_Shared_Entities_Schema = ArrayType(StructType([
+        StructField('Sequence_Number', StringType(), True),
+        StructField('Name', StringType(), True),
+        StructField('CRD_Number', StringType(), True),
+        StructField('Affiliate', StringType(), True),
+        StructField('Entity_Types', Arrangements_Shared_Entities_Entity_Types_Schema, True),
+        ]), True)
+
+
+    Arrangements_Contract_Entities_Schema = ArrayType(StructType([
+        StructField('Sequence_Number', StringType(), True),
+        StructField('Name', StringType(), True),
+        StructField('CRD_Number', StringType(), True),
+        StructField('Type', StringType(), True),
+        ]), True)
+
+
+    Arrangements_Expense_Entities_Schema = ArrayType(StructType([
+        StructField('Sequence_Number', StringType(), True),
+        StructField('Name', StringType(), True),
+        StructField('Type', StringType(), True),
+        StructField('Registered', StringType(), True),
+        StructField('CRD_Number', StringType(), True),
+        StructField('EIN', StringType(), True),
+        ]), True)
+
+
+    Arrangements_Records_Entities_Schema = ArrayType(StructType([
+        StructField('Street1', StringType(), True),
+        StructField('Street2', StringType(), True),
+        StructField('City', StringType(), True),
+        StructField('State', StringType(), True),
+        StructField('Country', StringType(), True),
+        StructField('Postal_Code', StringType(), True),
+        StructField('Sequence_Number', StringType(), True),
+        StructField('First_Name', StringType(), True),
+        StructField('Last_Name', StringType(), True),
+        StructField('Email', StringType(), True),
+        StructField('Phone', StringType(), True),
+        ]), True)
+
+
+    # Create Branch Table
+
+    branch = semi_flat_table.select(
+        #col('_orgPK').alias('Firm_CRD_Number'),
+        col('BrnchOfcs_BrnchOfc_brnchPK').alias('Branch_CRD_Number'),
+        col('BrnchOfcs_BrnchOfc_bllngCd').alias('Billing_Code'),
+        col('BrnchOfcs_BrnchOfc_brnchPhone').alias('Branch_Phone'),
+        col('BrnchOfcs_BrnchOfc_brnchFax').alias('Branch_Fax'),
+        col('BrnchOfcs_BrnchOfc_prvtRsdnc').alias('Is_Private_Residence'),
+        col('BrnchOfcs_BrnchOfc_dstrtPK').alias('District_Office'),
+        col('BrnchOfcs_BrnchOfc_oprnlStCd').alias('Operational_Status'),
+        from_json(
+            col = concat(
+            lit('{'),
+            lit('  "Country": "'), col('BrnchOfcs_BrnchOfc_Addr_cntry'), lit('"'),
+            lit(', "State": "'), col('BrnchOfcs_BrnchOfc_Addr_state'), lit('"'),
+            lit(', "City": "'), col('BrnchOfcs_BrnchOfc_Addr_city'), lit('"'),
+            lit(', "Postal_Code": "'), col('BrnchOfcs_BrnchOfc_Addr_postlCd'), lit('"'),
+            lit(', "Street1": "'), col('BrnchOfcs_BrnchOfc_Addr_strt1'), lit('"'),
+            lit(', "Street2": "'), col('BrnchOfcs_BrnchOfc_Addr_strt2'), lit('"'),
+            lit('}'),
+            ),
+            schema = Branch_Address_Schema
+            ).alias('Branch_Address'),
+        arrays_zip(
+            col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._first').alias('First_Name'),
+            col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._mid').alias('Middle_Name'),
+            col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._last').alias('Last_Name'),
+            col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._suf').alias('Suffix_Name'),
+            col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._indvlPK').alias('CRD_Number'),
+            col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._ndpndCntrcrFl').alias('Independent_Contractor'),
+            ).cast(Associated_Individuals_Schema
+            ).alias('Associated_Individuals'),
+        arrays_zip(
+            col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn._rgltr').alias('Regulator'),
+            col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn._st').alias('Status'),
+            col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn._stDt').alias('Status_Date'),
+            ).cast(Registrations_Schema
+            ).alias('Registrations'),
+        filter(
+            col = col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn'), 
+            f = filter_Registration
+            ).getField('_st').getItem(0).alias('Registration_Status'),
+        filter(
+            col = col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn'), 
+            f = filter_Registration
+            ).getField('_stDt').getItem(0).alias('Registration_Start_Date'),
+        filter(
+            col = col('BrnchOfcs_BrnchOfc_Rgstns_Rgstn'),
+            f = filter_Registration
+            ).getField('_rgltr').getItem(0).alias('Registration_Regulator_Code'),
+        col('BrnchOfcs_BrnchOfc_TypeOfc_typeOfcBDFl').alias('Is_Broker_Dealer_Office'),
+        col('BrnchOfcs_BrnchOfc_TypeOfc_typeOfcIAFl').alias('Is_Investment_Advisor_Office'),
+        col('BrnchOfcs_BrnchOfc_TypeOfc_OSJFl').alias('Is_OSJ'),
+        concat_ws(', ', col('BrnchOfcs_BrnchOfc_FinActvys_FinActvy._actvyCd')).alias('Financial_Activity'),
+        col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC._indvlPK').getItem(0).alias('PIC_CRDNumber'),
+        col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC._roleCd').getItem(0).alias('PIC_Role_Code'),
+        col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC._sprvPICDt').getItem(0).alias('PIC_StartDate'),
+        col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC._ndpndCntrcrFl').getItem(0).alias('PIC_Is_Independent_Contractor'),
+        col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._first').getItem(0).alias('PIC_First_Name'),
+        col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._mid').getItem(0).alias('PIC_Middle_Name'),
+        col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._last').getItem(0).alias('PIC_Last_Name'),
+        col('BrnchOfcs_BrnchOfc_SprvPICs_SprvPIC.Nm._suf').getItem(0).alias('PIC_Suffix_Name'),
+        col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ._sprvgOSJBrnchPK').getItem(0).alias('Supervisor_Branch_CRDNumber'),
+        col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ._sprvgOSJIndvlPK').getItem(0).alias('Supervisor_OSJ_CRDNumber'),
+        col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ.Nm._first').getItem(0).alias('Supervisor_First_Name'),
+        col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ.Nm._mid').getItem(0).alias('Supervisor_Middle_Name'),
+        col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ.Nm._last').getItem(0).alias('Supervisor_Last_Name'),
+        col('BrnchOfcs_BrnchOfc_SprvgOSJs_SprvgOSJ.Nm._suf').getItem(0).alias('Supervisor_Suffix_Name'),
+        arrays_zip(
+            col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusActvys_OthrBusActvy._nm').alias('Activity_Name'),
+            col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusActvys_OthrBusActvy._seqNb').alias('Sequence_Number'),
+            col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusActvys_OthrBusActvy._desc').alias('Description'),
+            col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusActvys_OthrBusActvy._affltdFl').alias('Affiliated'),
+            ).cast(Other_Business_Activity_Schema
+            ).alias('Other_Business_Activity'),
+        arrays_zip(
+            col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusNms_OthrBusNm._seqNb').alias('Sequence_Number'),
+            col('BrnchOfcs_BrnchOfc_OthrBuss_OthrBusNms_OthrBusNm._nm').alias('Business_Name'),
+            ).cast(Other_Business_Names_Schema
+            ).alias('Other_Business_Names'),
+        arrays_zip(
+            col('BrnchOfcs_BrnchOfc_OthrBuss_OthrWebs_OthrWeb._seqNb').alias('Sequence_Number'),
+            col('BrnchOfcs_BrnchOfc_OthrBuss_OthrWebs_OthrWeb._webAddr').alias('Website_Address'),
+            ).cast(Other_Websites_Schema
+            ).alias('Other_Websites'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_shrOfcFl').alias('Has_Shared_Space'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_undrCntrcFl').alias('Is_Under_Contract'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_empDcsnFl').alias('Has_Employment_Responsibility'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_xpnsRspbyEnttyFl').alias('Has_Financial_Responsibility'),
+        col('BrnchOfcs_BrnchOfc_Rgmnts_xpnsEnttyDesc').alias('Has_Financial_Interest'),
+        arrays_zip(
+            col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty._seqNb').alias('Sequence_Number'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty._nm').alias('Name'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty._crdPK').alias('CRD_Number'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty._affltdFl').alias('Affiliate'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_ShrdEnttys_ShrdEntty.EnttyTypes.EnttyType').alias('Entity_Types'),
+            ).cast(Arrangements_Shared_Entities_Schema
+            ).alias('Arrangements_Shared_Entities'),
+        arrays_zip(
+            col('BrnchOfcs_BrnchOfc_Rgmnts_CntrcEnttys_CntrcEntty._seqNb').alias('Sequence_Number'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_CntrcEnttys_CntrcEntty._nm').alias('Name'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_CntrcEnttys_CntrcEntty._crdPK').alias('CRD_Number'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_CntrcEnttys_CntrcEntty._type').alias('Type'),
+            ).cast(Arrangements_Contract_Entities_Schema
+            ).alias('Arrangements_Contract_Entities'),
+        arrays_zip(
+            col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._seqNb').alias('Sequence_Number'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._nm').alias('Name'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._type').alias('Type'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._rgstdFl').alias('Registered'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._crdPK').alias('CRD_Number'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_XpnsRspbyEnttys_XpnsRspbyEntty._EIN').alias('EIN'),
+            ).cast(Arrangements_Expense_Entities_Schema
+            ).alias('Arrangements_Expense_Entities'),
+        arrays_zip(
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._strt1').alias('Street1'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._strt2').alias('Street2'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._city').alias('City'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._state').alias('State'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._cntry').alias('Country'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc.Addr._postlCd').alias('Postal_Code'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc._seqNb').alias('Sequence_Number'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc._cntctFirstNm').alias('First_Name'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc._cntctLastNm').alias('Last_Name'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc._cntctEmailAddr').alias('Email'),
+            col('BrnchOfcs_BrnchOfc_Rgmnts_RcrdsLocs_RcrdsLoc._phone').alias('Phone'),
+            ).cast(Arrangements_Records_Entities_Schema
+            ).alias('Arrangements_Records_Entities'),
+    )
+
+    #pprint(branch.limit(10).toJSON().map(lambda j: json.loads(j)).collect())
+    #pprint(branch.where('Branch_CRD_Number = 701667').toJSON().map(lambda j: json.loads(j)).collect())
+    return branch
+
+
+
+
 # %% Main Processing of Finra file
 
 @catch_error(logger)
@@ -380,11 +656,6 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
     print('\n', file_meta['crd_number'], table_name, file_meta['date'])
     print(f'\nrowTags: {rowTags}\n')
     rowTag = rowTags[0]
-
-    if table_name == 'IndividualInformationReportDelta':
-        table_name = 'IndividualInformationReport'
-
-    is_full_load = criteria.get('_IIRType') == 'FULL' or table_name in ['BranchInformationReport']
 
     schema_file = table_name+'.json'
     schema_path = os.path.join(schema_path_folder, schema_file)
@@ -401,11 +672,18 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
         xml_table = read_xml(spark, file_path, rowTag=rowTag)
 
     if is_pc: xml_table.printSchema()
+    xml_table_list = {}
 
-    xml_table_list = flatten_n_divide_df(xml_table=xml_table, table_name=table_name)
-    if not xml_table_list:
-        print(f"No data to write -> {table_name}")
-        return
+    if flatten_n_divide_flag:
+        xml_table_list={**xml_table_list, **flatten_n_divide_df(xml_table=xml_table, table_name=table_name)}
+
+    semi_flat_table = flatten_df(xml_table=xml_table)
+
+    if table_name.upper() == 'BranchInformationReport'.upper():
+        xml_table_list={**xml_table_list, table_name: build_branch_table(semi_flat_table=semi_flat_table)}
+    else:
+        xml_table_list={**xml_table_list, table_name: semi_flat_table}
+
 
     write_xml_table_list_to_azure(
         xml_table_list= xml_table_list,
@@ -413,35 +691,11 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
         reception_date = file_meta['date'],
         firm_name = firm_name,
         storage_account_name = storage_account_name,
-        is_full_load = is_full_load,
+        is_full_load = file_meta['is_full_load'],
         crd_number = file_meta['crd_number'],
         )
 
-
-
-
-# %% Get list of file names above certain date:
-
-@catch_error(logger)
-def get_files_meta(folder_path, date_start:str, inclusive:bool=True):
-    print(f'\nGetting list of candidate files from {folder_path}')
-    files_meta = []
-    for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            name_data, criteria, rowTags = get_finra_file_xml_meta(file_path)
-
-            if name_data and (date_start<name_data['date'] or (date_start==name_data['date'] and inclusive)):
-                files_meta.append({
-                    **name_data,
-                    'root': root,
-                    'file': file,
-                    'criteria': criteria,
-                    'rowTags': rowTags,
-                })
-
-    print(f'Finished getting list of files. Total Files = {len(files_meta)}\n')
-    return files_meta
+    return xml_table
 
 
 
@@ -472,6 +726,19 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
 
 
 
+# %% Testing
+
+if False:
+    folder_path = r'C:\Users\smammadov\packages\Shared\test'
+    files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start)
+    file_meta = files_meta[0]
+    print(file_meta)
+    xml_table = process_finra_file(file_meta, firm_name='x', storage_account_name='x')
+    semi_flat_table = flatten_df(xml_table=xml_table)
+
+
+
+
 
 # %% Process all files
 
@@ -490,10 +757,10 @@ def process_all_files():
         storage_account_name = to_storage_account_name(firm_name=firm_name)
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-        files_meta = get_files_meta(folder_path=folder_path, date_start=date_start)
+        files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start)
 
         for file_meta in files_meta:
-            if is_pc and 'IndividualInformationReport' in file_meta['table_name']:
+            if is_pc and 'IndividualInformationReport'.upper() in file_meta['table_name'].upper():
                 continue
             process_one_file(file_meta=file_meta, firm_name=firm_name, storage_account_name=storage_account_name)
 

@@ -26,14 +26,23 @@
                     "_last": null,
                     "_first": null,
                     "_mid": null,
+                    "_suf": null,
                     "_ndpndCntrcrFl": null
                 }]
             },
-            "Dfcnys": null,
+            "Dfcnys": {
+                "Dfcny": [{
+                    "_VALUE": null,
+                    "_st": null,
+                    "_dtlTxt": null,
+                    "_dt": null
+                }]
+            },
             "FinActvys": {
                 "FinActvy": [{
                     "_VALUE": null,
-                    "_actvyCd": null
+                    "_actvyCd": null,
+                    "_othrDesc": null
                 }]
             },
             "OthrBuss": {
@@ -41,7 +50,9 @@
                     "OthrBusActvy": [{
                         "_VALUE": null,
                         "_seqNb": null,
-                        "_nm": null
+                        "_nm": null,
+                        "_desc": null,
+                        "_affltdFl": null
                     }]
                 },
                 "OthrBusNms": {
@@ -67,7 +78,9 @@
                     "CntrcEntty": [{
                         "_VALUE": null,
                         "_seqNb": null,
-                        "_nm": null
+                        "_nm": null,
+                        "_crdPK": null,
+                        "_type": null
                     }]
                 },
                 "RcrdsLocs": {
@@ -84,6 +97,7 @@
                         "_seqNb": null,
                         "_cntctFirstNm": null,
                         "_cntctLastNm": null,
+                        "_cntctEmailAddr": null,
                         "_phone": null
                     }]
                 },
@@ -92,11 +106,13 @@
                         "EnttyTypes": {
                             "EnttyType": [{
                                 "_VALUE": null,
-                                "_enttyCd": null
+                                "_enttyCd": null,
+                                "_othrDesc": null
                             }]
                         },
                         "_seqNb": null,
                         "_nm": null,
+                        "_crdPK": null,
                         "_affltdFl": null
                     }]
                 },
@@ -107,7 +123,8 @@
                         "_nm": null,
                         "_type": null,
                         "_rgstdFl": null,
-                        "_crdPK": null
+                        "_crdPK": null,
+                        "_EIN": null
                     }]
                 },
                 "_empDcsnFl": null,
@@ -137,7 +154,8 @@
                     "_indvlPK": null,
                     "_ndpndCntrcrFl": null,
                     "_roleCd": null,
-                    "_sprvPICDt": null
+                    "_sprvPICDt": null,
+                    "_actvyDesc": null
                 }]
             },
             "SprvgOSJs": {
@@ -146,11 +164,13 @@
                         "_VALUE": null,
                         "_first": null,
                         "_last": null,
-                        "_mid": null
+                        "_mid": null,
+                        "_suf": null
                     },
                     "_sprvgOSJBrnchPK": null,
                     "_sprvgOSJIndvlPK": null,
-                    "_sprvgOSJBllngCd": null
+                    "_sprvgOSJBllngCd": null,
+                    "_sprvgOSJActvyDesc": null
                 }]
             },
             "TypeOfc": {
