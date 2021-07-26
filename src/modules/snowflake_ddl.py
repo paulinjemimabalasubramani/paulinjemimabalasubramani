@@ -668,12 +668,13 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
 
     sqlstr += step
     wid.cicd_file += f"""
-    
-    USE SCHEMA {source_system};
 
-    {sqlstr}
-    """
+USE SCHEMA {source_system};
+
+{step}
+"""
     return sqlstr
+
 
 
 

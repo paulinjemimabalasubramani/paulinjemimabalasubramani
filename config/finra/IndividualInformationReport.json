@@ -28,6 +28,9 @@
                         "_vndrNm": null,
                         "_vndrCnfrtNb": null,
                         "_cntrID": null,
+                        "_cntrCity": null,
+                        "_cntrSt": null,
+                        "_cntrCntry": null,
                         "_updtTS": null
                     }]
                 },
@@ -174,6 +177,7 @@
                 "Addr": {
                     "_VALUE": null,
                     "_strt1": null,
+                    "_strt2": null,
                     "_city": null,
                     "_state": null,
                     "_postlCd": null,
@@ -257,7 +261,8 @@
                     "_VALUE": null,
                     "_last": null,
                     "_first": null,
-                    "_mid": null
+                    "_mid": null,
+                    "_suf": null
                 },
                 "_seqNb": null
             }]
@@ -270,7 +275,8 @@
                     "_cntryCd": null,
                     "_postlCd": null,
                     "_state": null,
-                    "_strt1": null
+                    "_strt1": null,
+                    "_strt2": null
                 },
                 "DtRng": {
                     "_VALUE": null,

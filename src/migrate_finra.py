@@ -39,7 +39,8 @@ from modules.data_functions import  to_string, remove_column_spaces, add_elt_col
 
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import col, lit, explode, md5, concat_ws, from_json, arrays_zip, concat, filter, monotonically_increasing_id
+from pyspark.sql.functions import col, lit, explode, md5, concat_ws, from_json, arrays_zip, concat, filter, monotonically_increasing_id, \
+    struct
 
 
 
@@ -49,8 +50,8 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-save_xml_to_adls_flag = True
-save_tableinfo_adls_flag = True
+save_xml_to_adls_flag = False
+save_tableinfo_adls_flag = False
 flatten_n_divide_flag = False
 
 if not is_pc:
@@ -696,7 +697,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
         crd_number = file_meta['crd_number'],
         )
 
-    return xml_table
+    return semi_flat_table
 
 
 
@@ -729,14 +730,259 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
 
 # %% Testing
 
-if False:
+if True:
     folder_path = r'C:\Users\smammadov\packages\Shared\test'
     files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start)
     file_meta = files_meta[0]
     print(file_meta)
-    xml_table = process_finra_file(file_meta, firm_name='x', storage_account_name='x')
-    semi_flat_table = flatten_df(xml_table=xml_table)
+    semi_flat_table = process_finra_file(file_meta, firm_name='x', storage_account_name='x')
 
+
+
+# %% Create Individual Table
+
+IA_Affiliations_Schema = ArrayType(StructType([
+    StructField('Street1', StringType(), True),
+    StructField('Street2', StringType(), True),
+    StructField('City', StringType(), True),
+    StructField('State', StringType(), True),
+    StructField('Country', StringType(), True),
+    StructField('Country_Old', StringType(), True),
+    StructField('Postal_Code', StringType(), True),
+    StructField('Affiliation_Category', StringType(), True),
+    StructField('Branch_Name', StringType(), True),
+    StructField('Branch_CRD_Number', StringType(), True),
+    ]), True)
+
+
+Other_Names_Schema = ArrayType(StructType([
+    StructField('Last_Name', StringType(), True),
+    StructField('First_Name', StringType(), True),
+    StructField('Middle_Name', StringType(), True),
+    StructField('Suffix_Name', StringType(), True),
+    StructField('Sequence_Number', StringType(), True),
+    ]), True)
+
+
+Address_History_Schema = ArrayType(StructType([
+    StructField('Street1', StringType(), True),
+    StructField('Street2', StringType(), True),
+    StructField('City', StringType(), True),
+    StructField('State', StringType(), True),
+    StructField('Country', StringType(), True),
+    StructField('Postal_Code', StringType(), True),
+    StructField('From_Date', StringType(), True),
+    StructField('To_Date', StringType(), True),
+    StructField('Sequence_Number', StringType(), True),
+    ]), True)
+
+
+def filter_Current_Address(x):
+    return (x.getField('DtRng').getField('_toDt').isNull()) | (x.getField('DtRng').getField('_toDt') == lit(''))
+
+
+Designations_Schema = ArrayType(StructType([
+    StructField('Designation_Code', StringType(), True),
+    StructField('Designating_Authority', StringType(), True),
+    StructField('Date_First_Filing', StringType(), True),
+    ]), True)
+
+
+Continuing_Education_Details_Appointments_Schema = ArrayType(StructType([
+    StructField('Blank', StringType(), True), # _VALUE
+    StructField('Appointment_ID', StringType(), True), # _apptID
+    StructField('Current_Status', StringType(), True), # _apptSt
+    StructField('Current_Status_Detail', StringType(), True), # _apptDt
+    StructField('Vendor', StringType(), True), # _vndrNm
+    StructField('Vendor_Number', StringType(), True), # _vndrCnfrtNb
+    StructField('Vendor_Center_ID', StringType(), True), # _cntrID
+    StructField('Vendor_Center_City', StringType(), True), # _cntrCity
+    StructField('Vendor_Center_State', StringType(), True), # _cntrSt
+    StructField('Vendor_Center_Country', StringType(), True), # _cntrCntry
+    StructField('Date_Apppointment_Updated', StringType(), True), # _updtTS
+    ]), True)
+
+
+Continuing_Education_Details_Schema = ArrayType(StructType([
+    StructField('Appointments', Continuing_Education_Details_Appointments_Schema, True),
+    StructField('Start_Date', StringType(), True),
+    StructField('End_Date', StringType(), True),
+    StructField('Information_Changed_Date', StringType(), True),
+    StructField('Foreign_Deferred', StringType(), True),
+    StructField('Military_Deferred', StringType(), True),
+    StructField('Enrollment_ID', StringType(), True),
+    StructField('Result', StringType(), True),
+    StructField('Session_Type', StringType(), True),
+    StructField('Session_Date', StringType(), True),
+    StructField('Session_Status_Type', StringType(), True),
+    StructField('Session_Status', StringType(), True),
+    ]), True)
+
+
+Filing_History_Schema = ArrayType(StructType([
+    StructField('Filing_Date', StringType(), True),
+    StructField('Filing_Type', StringType(), True),
+    StructField('Form_Type', StringType(), True),
+    StructField('Filing_ID', StringType(), True),
+    StructField('Submitted_By', StringType(), True),
+    StructField('Event_Type', StringType(), True),
+    ]), True)
+
+
+individual = semi_flat_table.select(
+    col('Comp_indvlSSN').alias('SSN'),
+    col('Comp_indvlPK').alias('CRD_Number'),
+    col('Comp_rptblDisc').alias('Has_Reportable_Disclosure'),
+    col('Comp_statDisq').alias('Has_Statutory_Disqualifications'),
+    col('Comp_rgstdMult').alias('Has_Multiple_Firm_Registrations'),
+    col('Comp_matDiff').alias('Has_Material_Difference_In_Disc'),
+    col('Comp_bllngCd').alias('Billing_Code'),
+    col('Comp_actvMltry').alias('Is_Active_Military_Duty'),
+    col('Comp_Nm_first').alias('First_Name'),
+    col('Comp_Nm_mid').alias('Middle_Name'),
+    col('Comp_Nm_last').alias('Last_Name'),
+    col('Comp_Nm_suf').alias('Suffix_Name'),
+    arrays_zip(
+        col('IAAffltns_IAAffltn.Addr._strt1').alias('Street1'),
+        col('IAAffltns_IAAffltn.Addr._strt2').alias('Street2'),
+        col('IAAffltns_IAAffltn.Addr._city').alias('City'),
+        col('IAAffltns_IAAffltn.Addr._state').alias('State'),
+        col('IAAffltns_IAAffltn.Addr._cntryCd').alias('Country'),
+        col('IAAffltns_IAAffltn.Addr._cntryOld').alias('Country_Old'),
+        col('IAAffltns_IAAffltn.Addr._postlCd').alias('Postal_Code'),
+        col('IAAffltns_IAAffltn._iaAffltnCtgry').alias('Affiliation_Category'),
+        col('IAAffltns_IAAffltn._orgNm').alias('Firm_Name'),
+        col('IAAffltns_IAAffltn._orgPk').alias('Firm_CRD_Number'),
+        ).cast(IA_Affiliations_Schema
+        ).alias('IA_Affiliations'),
+    arrays_zip(
+        col('OthrNms_OthrNm.Nm._last').alias('Last_Name'),
+        col('OthrNms_OthrNm.Nm._first').alias('First_Name'),
+        col('OthrNms_OthrNm.Nm._mid').alias('Middle_Name'),
+        col('OthrNms_OthrNm.Nm._suf').alias('Suffix_Name'),
+        col('OthrNms_OthrNm._seqNb').alias('Sequence_Number'),
+        ).cast(Other_Names_Schema
+        ).alias('Other_Names'),
+    arrays_zip(
+        col('ResHists_ResHist.Addr._strt1').alias('Street1'),
+        col('ResHists_ResHist.Addr._strt2').alias('Street2'),
+        col('ResHists_ResHist.Addr._city').alias('City'),
+        col('ResHists_ResHist.Addr._state').alias('State'),
+        col('ResHists_ResHist.Addr._cntryCd').alias('Country'),
+        col('ResHists_ResHist.Addr._postlCd').alias('Postal_Code'),
+        col('ResHists_ResHist.DtRng._fromDt').alias('From_Date'),
+        col('ResHists_ResHist.DtRng._toDt').alias('To_Date'),
+        col('ResHists_ResHist._seqNb').alias('Sequence_Number'),
+        ).cast(Address_History_Schema
+        ).alias('Address_History'),
+    struct(
+        filter(
+            col = col('ResHists_ResHist'), 
+            f = filter_Current_Address
+            ).getField('Addr').getField('_strt1').getItem(0).alias('Street1'),
+        filter(
+            col = col('ResHists_ResHist'), 
+            f = filter_Current_Address
+            ).getField('Addr').getField('_strt2').getItem(0).alias('Street2'),
+        filter(
+            col = col('ResHists_ResHist'), 
+            f = filter_Current_Address
+            ).getField('Addr').getField('_city').getItem(0).alias('City'),
+        filter(
+            col = col('ResHists_ResHist'), 
+            f = filter_Current_Address
+            ).getField('Addr').getField('_state').getItem(0).alias('State'),
+        filter(
+            col = col('ResHists_ResHist'), 
+            f = filter_Current_Address
+            ).getField('Addr').getField('_cntryCd').getItem(0).alias('Country'),
+        filter(
+            col = col('ResHists_ResHist'), 
+            f = filter_Current_Address
+            ).getField('Addr').getField('_postlCd').getItem(0).alias('Postal_Code'),
+        filter(
+            col = col('ResHists_ResHist'), 
+            f = filter_Current_Address
+            ).getField('DtRng').getField('_fromDt').getItem(0).alias('From_Date'),
+        filter(
+            col = col('ResHists_ResHist'), 
+            f = filter_Current_Address
+            ).getField('DtRng').getField('_toDt').getItem(0).alias('To_Date'),
+        filter(
+            col = col('ResHists_ResHist'), 
+            f = filter_Current_Address
+            ).getField('_seqNb').getItem(0).alias('Sequence_Number'),
+        ).alias('Current_Address'),
+    arrays_zip(
+        col('Dsgntns_Dsgntn._cd').alias('Designation_Code'),
+        col('Dsgntns_Dsgntn._auth').alias('Designating_Authority'),
+        col('Dsgntns_Dsgntn._flngDt').alias('Date_First_Filing'),
+        ).cast(Designations_Schema
+        ).alias('Designations'),
+    col('ContEds_baseDt').alias('Continuing_Education_Date'),
+    col('ContEds_st').alias('Continuing_Education_Status'),
+    arrays_zip(
+        col('ContEds_ContEd.Appts.Appt').alias('Appointments'),
+        col('ContEds_ContEd._begDt').alias('Start_Date'),
+        col('ContEds_ContEd._endDt').alias('End_Date'),
+        col('ContEds_ContEd._eventDt').alias('Information_Changed_Date'),
+        col('ContEds_ContEd._frgnDfrdFl').alias('Foreign_Deferred'),
+        col('ContEds_ContEd._mltryDfrdFl').alias('Military_Deferred'),
+        col('ContEds_ContEd._nrlmtID').alias('Enrollment_ID'),
+        col('ContEds_ContEd._rslt').alias('Result'),
+        col('ContEds_ContEd._sssn').alias('Session_Type'),
+        col('ContEds_ContEd._sssnDt').alias('Session_Date'),
+        col('ContEds_ContEd._sssnReqSt').alias('Session_Status_Type'),
+        col('ContEds_ContEd._sssnSt').alias('Session_Status'),
+        ).cast(Continuing_Education_Details_Schema
+        ).alias('Continuing_Education_Details'),
+    arrays_zip(
+        col('EventFlngHists_EventFlngHist._dt').alias('Filing_Date'),
+        col('EventFlngHists_EventFlngHist._flngType').alias('Filing_Type'),
+        col('EventFlngHists_EventFlngHist._frmType').alias('Form_Type'),
+        col('EventFlngHists_EventFlngHist._id').alias('Filing_ID'),
+        col('EventFlngHists_EventFlngHist._src').alias('Submitted_By'),
+        col('EventFlngHists_EventFlngHist._type').alias('Event_Type'),
+        ).cast(Filing_History_Schema
+        ).alias('Filing_History'),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+#    col('').alias(''),
+)
+
+
+semi_flat_table.printSchema()
+print('\n')
+individual.printSchema()
+
+pprint(individual.limit(10).toJSON().map(lambda j: json.loads(j)).collect())
+704265
+
+pprint(individual.where('CRD_Number = 704265').toJSON().map(lambda j: json.loads(j)).collect())
 
 
 
