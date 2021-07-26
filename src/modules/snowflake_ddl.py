@@ -4,7 +4,7 @@ Common Library for creating and executing (if required) Snowflake DDL Steps and 
 """
 
 # %% Import Libraries
-import json
+import json, os
 from functools import wraps
 from collections import defaultdict
 
@@ -34,9 +34,10 @@ logger = make_logging(__name__)
 
 # %% Parameters
 class module_params_class:
-    save_to_adls = True # Default False
+    save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
     create_or_replace = False # Default False - Use True for Schema Change Update
+    create_cicd_file = True # Default False
 
     snowflake_account = 'advisorgroup-edip'
     domain_name = 'financial_professional'
@@ -68,6 +69,7 @@ class module_params_class:
 
     spark = None
     snowflake_connection = None
+    cicd_file = None
 
 
 
@@ -76,8 +78,21 @@ snowflake_ddl_params = wid
 
 if not is_pc:
     wid.save_to_adls = False
-    execute_at_snowflake = False
-    create_or_replace = False
+    wid.execute_at_snowflake = False
+    wid.create_or_replace = False
+    wid.create_cicd_file = False
+
+
+if is_pc:
+    wid.shared_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared')
+else:
+    # /usr/local/spark/resources/fileshare/Shared
+    wid.shared_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared')
+
+
+if wid.create_cicd_file:
+    wid.cicd_folder_path = os.path.join(wid.shared_path_folder, 'CICD')
+    os.makedirs(name=wid.cicd_folder_path, exist_ok=True)
 
 
 
@@ -209,6 +224,61 @@ def action_step(step:int):
 
 
 
+
+# %% Action Source Level Tables
+
+def action_source_level_tables(table_name:str):
+    def outer(fn):
+        @wraps(fn)
+        def inner(*args, **kwargs):
+            sqlstr = fn(*args, **kwargs)
+            if wid.save_to_adls or True:
+                save_adls_gen2(
+                    table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
+                    storage_account_name = kwargs['storage_account_name'],
+                    container_name = container_name,
+                    container_folder = kwargs['container_folder'],
+                    table = table_name,
+                    file_format = 'text'
+                )
+
+            if wid.execute_at_snowflake:
+                print(f"Executing Snowflake SQL String: {kwargs['container_folder']}/{table_name}")
+                exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
+            
+            if wid.create_cicd_file:
+                wid.cicd_file = sqlstr
+                write_CICD_file(source_system=kwargs['source_system'], schema_name=None, table_name=table_name)
+
+        return inner
+    return outer
+
+
+
+
+# %% Write CICD File to local PC
+
+@catch_error(logger)
+def write_CICD_file(source_system:str, schema_name:str, table_name:str):
+    if not wid.create_cicd_file:
+        return
+
+    file_folder_path = os.path.join(wid.cicd_folder_path, source_system)
+    os.makedirs(name=file_folder_path, exist_ok=True)
+
+    if schema_name:
+        TABLE_NAME = f'{schema_name}_{table_name}'
+    else:
+        TABLE_NAME = table_name
+
+    file_path = os.path.join(file_folder_path, f'{TABLE_NAME}.sql')
+
+    with open(wid.shared_path_folder, 'w') as f:
+        f.write(wid.cicd_file)
+
+
+
+
 # %% Create Ingest Files
 
 @catch_error(logger)
@@ -257,6 +327,7 @@ def create_ingest_data_table(ingest_data_per_source_system, container_folder:str
 # %% Create grant_permissions file
 
 @catch_error(logger)
+@action_source_level_tables('grant_permissions')
 def create_grant_permissions_file(source_system:str, container_folder:str, storage_account_name:str):
     sqlstr = f"""USE ROLE {wid.snowflake_role};
 
@@ -274,27 +345,16 @@ GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{source_system}
 GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
 GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_schema} TO ROLE {wid.engineer_role};
 """
-    
-    table_name = 'grant_permissions'
-    if wid.save_to_adls or True:
-        save_adls_gen2(
-            table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
-            storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = container_folder,
-            table = table_name,
-            file_format = 'text'
-        )
 
-    if wid.execute_at_snowflake:
-        print(f"Executing Snowflake SQL String: {container_folder}/{table_name}")
-        exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
+    return sqlstr
+
 
 
 
 # %% Create Trigger USP_INGEST() file
 
 @catch_error(logger)
+@action_source_level_tables('usp_ingest')
 def create_trigger_usp_ingest_file(source_system:str, container_folder:str, storage_account_name:str):
     stream_name = f'INGEST_REQUEST_VARIANT_STREAM'
     task_name = f'{source_system}_INGEST_REQUEST_TASK'
@@ -316,20 +376,8 @@ USE ROLE {wid.snowflake_role};
 ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME;
 """
 
-    table_name = 'usp_ingest'
-    if wid.save_to_adls or True:
-        save_adls_gen2(
-            table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
-            storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = container_folder,
-            table = table_name,
-            file_format = 'text'
-        )
+    return sqlstr
 
-    if wid.execute_at_snowflake:
-        print(f"Executing Snowflake SQL String: {container_folder}/{table_name}")
-        exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
 
 
 
@@ -382,12 +430,17 @@ def step1(source_system:str, schema_name:str, table_name:str, column_names:list)
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    sqlstr += f"""
+    wid.cicd_file = sqlstr
+
+    step = f"""
 {create_or_replace_func('TABLE')} {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
 (
   {wid.variant_alias} VARIANT
 );
 """
+
+    sqlstr += step
+    wid.cicd_file += step
     return sqlstr
 
 
@@ -400,10 +453,13 @@ def step2(source_system:str, schema_name:str, table_name:str, column_names:list)
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    sqlstr += f"""
+    step = f"""
 {create_or_replace_func('STREAM')} {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}
 ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 """
+
+    sqlstr += step
+    wid.cicd_file += step
     return sqlstr
 
 
@@ -421,7 +477,7 @@ def step3(source_system:str, schema_name:str, table_name:str, column_names:list,
     else:
         elt_stage_name = schema_name.upper()
 
-    sqlstr += f"""
+    step = f"""
 COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
 FROM '@{wid.elt_stage_schema}.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
 FILE_FORMAT = (type='{wid.FILE_FORMAT}')
@@ -484,6 +540,9 @@ SELECT
   ,REJECTED_RECORD
 FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}, job_id => '_last'));
 """
+
+    sqlstr += step
+    wid.cicd_file += step
     return sqlstr
 
 
@@ -502,13 +561,16 @@ def step4(source_system:str, schema_name:str, table_name:str, column_names:list,
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
-    sqlstr += f"""
+    step = f"""
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}{wid.variant_label}
 AS
 SELECT
    {column_list_src}
 FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 """
+
+    sqlstr += step
+    wid.cicd_file += step
     return sqlstr
 
 
@@ -526,13 +588,16 @@ def step5(source_system:str, schema_name:str, table_name:str, column_names:list,
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
-    sqlstr += f"""
+    step = f"""
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}
 AS
 SELECT
    {column_list_src}
 FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix};
 """
+
+    sqlstr += step
+    wid.cicd_file += step
     return sqlstr
 
 
@@ -552,7 +617,7 @@ def step6(source_system:str, schema_name:str, table_name:str, column_names:list,
     INTEGRATION_ID = "TRIM(CONCAT(" + ', '.join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in pk_column_names]) + "))"
     pk_column_with_alias = ', '.join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in pk_column_names])
 
-    sqlstr += f"""
+    step = f"""
 CREATE OR REPLACE VIEW {SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}
 AS
 SELECT
@@ -570,6 +635,9 @@ FROM {wid.snowflake_raw_database}.{SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}{wi
 )
 WHERE top_slice = 1;
 """
+
+    sqlstr += step
+    wid.cicd_file += step
     return sqlstr
 
 
@@ -587,7 +655,7 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
         [f'{c} VARCHAR(50)' for c in elt_audit_columns]
         )
 
-    sqlstr += f"""
+    step = f"""
 {create_or_replace_func('TABLE')} {SCHEMA_NAME}.{TABLE_NAME}
 (
    {wid.integration_id} VARCHAR(1000) NOT NULL
@@ -596,6 +664,9 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
   ,CONSTRAINT PK_{SCHEMA_NAME}_{TABLE_NAME} PRIMARY KEY ({wid.integration_id}) NOT ENFORCED
 );
 """
+
+    sqlstr += step
+    wid.cicd_file += sqlstr # Note the difference from other steps
     return sqlstr
 
 
@@ -613,7 +684,7 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list)
     merge_update_columns = '\n    ,'.join([f'{wid.tgt_alias}.{c} = {wid.src_alias}.{c}' for c in column_names+elt_audit_columns])
     column_list_with_alias = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in column_names+elt_audit_columns])
 
-    sqlstr += f"""
+    step = f"""
 CREATE OR REPLACE PROCEDURE {stored_procedure}()
 RETURNS STRING
 LANGUAGE JAVASCRIPT
@@ -664,6 +735,9 @@ catch (err)  {
     }
 $$
 """
+
+    sqlstr += step
+    wid.cicd_file += step
     return sqlstr
 
 
@@ -681,7 +755,7 @@ def step9(source_system:str, schema_name:str, table_name:str, column_names:list)
     task_name = f'{TABLE_NAME}{task_suffix}'.upper()
     stream_name = f'{SCHEMA_NAME}_RAW.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}'
 
-    sqlstr += f"""
+    step = f"""
 CREATE TASK IF NOT EXISTS {task_name}
 WAREHOUSE = {wid.snowflake_raw_warehouse}
 SCHEDULE = '1 minute'
@@ -693,6 +767,9 @@ AS
 USE ROLE {wid.snowflake_role};
 ALTER TASK {task_name} RESUME;
 """
+
+    sqlstr += step
+    wid.cicd_file += step
     return sqlstr
 
 
@@ -724,6 +801,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step7(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
+            write_CICD_file(source_system=source_system, schema_name=schema_name, table_name=table_name)
             ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
             ingest_data_list[source_system].append(ingest_data)
 

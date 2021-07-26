@@ -403,6 +403,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
 
 # %% Build Branch Table
 
+@catch_error(logger)
 def build_branch_table(semi_flat_table):
     # Create Schemas
     Branch_Address_Schema = StructType([
