@@ -962,6 +962,42 @@ def filter_Current_Date_and_Firm(crd_number:str):
     return inner_filter_func
 
 
+State_Registrations_Deficiencies_Schema = ArrayType(StructType([
+    StructField('Blank', StringType(), True),
+    StructField('Current_Registration_Deficiency', StringType(), True),
+    StructField('Exam_Code', StringType(), True),
+    StructField('Date_Deficiency_Created', StringType(), True),
+    ]), True)
+
+
+State_Registrations_Schema = ArrayType(StructType([
+    StructField('Deficiencies', State_Registrations_Deficiencies_Schema, True),
+    StructField('Active_Registration', StringType(), True),
+    StructField('Approval_Date', StringType(), True),
+    StructField('Date_Registration_Created', StringType(), True),
+    StructField('Employment_Start_Date', StringType(), True),
+    StructField('Regulatory_Authority', StringType(), True),
+    StructField('Registration_Category', StringType(), True),
+    StructField('Registration_Status', StringType(), True),
+    StructField('Date_Status_Change', StringType(), True),
+    StructField('Date_Registration_Terminated', StringType(), True),
+    StructField('Date_Updated', StringType(), True),
+    ]), True)
+
+
+DRP_Schema = ArrayType(StructType([
+    StructField('Occurrence_Number', StringType(), True),
+    StructField('Disclosure_Type', StringType(), True),
+    StructField('Public_Disclosable', StringType(), True),
+    StructField('Reportable', StringType(), True),
+    StructField('Form_Type', StringType(), True),
+    StructField('Received_Date', StringType(), True),
+    StructField('Source', StringType(), True),
+    StructField('Form_Version', StringType(), True),
+    StructField('Disclosure_Questions', StringType(), True),
+    ]), True)
+
+
 individual = semi_flat_table.select(
     col('Comp_indvlSSN').alias('SSN'),
     col('Comp_indvlPK').alias('CRD_Number'),
@@ -1068,15 +1104,15 @@ individual = semi_flat_table.select(
         col('ContEds_ContEd._sssnSt').alias('Session_Status'),
         ).cast(Continuing_Education_Details_Schema
         ).alias('Continuing_Education_Details'),
-    # arrays_zip(
-    #     col('EventFlngHists_EventFlngHist._dt').alias('Filing_Date'),
-    #     col('EventFlngHists_EventFlngHist._flngType').alias('Filing_Type'),
-    #     col('EventFlngHists_EventFlngHist._frmType').alias('Form_Type'),
-    #     col('EventFlngHists_EventFlngHist._id').alias('Filing_ID'),
-    #     col('EventFlngHists_EventFlngHist._src').alias('Submitted_By'),
-    #     col('EventFlngHists_EventFlngHist._type').alias('Event_Type'),
-    #     ).cast(Filing_History_Schema
-    #     ).alias('Filing_History'),
+    arrays_zip(
+        col('EventFlngHists_EventFlngHist._dt').alias('Filing_Date'),
+        col('EventFlngHists_EventFlngHist._flngType').alias('Filing_Type'),
+        col('EventFlngHists_EventFlngHist._frmType').alias('Form_Type'),
+        col('EventFlngHists_EventFlngHist._id').alias('Filing_ID'),
+        col('EventFlngHists_EventFlngHist._src').alias('Submitted_By'),
+        col('EventFlngHists_EventFlngHist._type').alias('Event_Type'),
+        ).cast(Filing_History_Schema
+        ).alias('Filing_History'),
     arrays_zip(
         col('OthrBuss_OthrBus._desc').alias('Description'),
         ).cast(Other_Businesses_Schema
@@ -1283,10 +1319,34 @@ individual = semi_flat_table.select(
         col = col('OffHists_OffHist'), 
         f = filter_Current_Date_and_Firm(crd_number=file_meta['crd_number'])
         ).getField('DtRng').getField('_fromDt').getItem(0).alias('Current_Office_From_Date'),
-
-
-
+    arrays_zip(
+        col('CrntRgstns_CrntRgstn.CrntDfcnys.CrntDfcny').alias('Deficiencies'),
+        col('CrntRgstns_CrntRgstn._actvReg').alias('Active_Registration'),
+        col('CrntRgstns_CrntRgstn._aprvlDt').alias('Approval_Date'),
+        col('CrntRgstns_CrntRgstn._crtnDt').alias('Date_Registration_Created'),
+        col('CrntRgstns_CrntRgstn._empStDt').alias('Employment_Start_Date'),
+        col('CrntRgstns_CrntRgstn._regAuth').alias('Regulatory_Authority'),
+        col('CrntRgstns_CrntRgstn._regCat').alias('Registration_Category'),
+        col('CrntRgstns_CrntRgstn._st').alias('Registration_Status'),
+        col('CrntRgstns_CrntRgstn._stDt').alias('Date_Status_Change'),
+        col('CrntRgstns_CrntRgstn._trmnnDt').alias('Date_Registration_Terminated'),
+        col('CrntRgstns_CrntRgstn._updateTS').alias('Date_Updated'),
+        ).cast(State_Registrations_Schema
+        ).alias('State_Registrations'),
+    arrays_zip(
+        col('DRPs_OcrnInfo._ocrn').alias('Occurrence_Number'),
+        col('DRPs_OcrnInfo._dsclrType').alias('Disclosure_Type'),
+        col('DRPs_OcrnInfo._pblcDscl').alias('Public_Disclosable'),
+        col('DRPs_OcrnInfo._rptbl').alias('Reportable'),
+        col('DRPs_OcrnInfo._frm').alias('Form_Type'),
+        col('DRPs_OcrnInfo._rcvdDt').alias('Received_Date'),
+        col('DRPs_OcrnInfo._src').alias('Source'),
+        col('DRPs_OcrnInfo._frmVer').alias('Form_Version'),
+        col('DRPs_OcrnInfo._qstns').alias('Disclosure_Questions'),
+        ).cast(DRP_Schema
+        ).alias('DRP'),
 )
+
 
 individual = individual.persist()
 
@@ -1298,7 +1358,7 @@ individual.printSchema()
 pprint(individual.limit(10).toJSON().map(lambda j: json.loads(j)).collect())
 
 
-pprint(individual.where('CRD_Number = 716965').toJSON().map(lambda j: json.loads(j)).collect())
+# pprint(individual.where('CRD_Number = 429109').toJSON().map(lambda j: json.loads(j)).collect())
 
 
 
