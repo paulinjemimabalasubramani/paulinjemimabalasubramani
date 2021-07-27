@@ -120,8 +120,10 @@
                 },
                 "_city": null,
                 "_cntryCd": null,
+                "_cntryOld": null,
                 "_invRel": null,
                 "_orgNm": null,
+                "_postlCd": null,
                 "_pstnHeld": null,
                 "_seqNb": null,
                 "_state": null
@@ -144,6 +146,9 @@
                 "_nrlmtID": null,
                 "_exmCd": null,
                 "_regAuth": null,
+                "_rsnCd": null,
+                "_exmValidFl": null,
+                "_exmValidDt": null,
                 "_efctvDt": null
             }]
         },
@@ -207,6 +212,40 @@
                 "_iaAffltnCtgry": null
             }]
         },
+        "AffltdFirms": {
+            "AffltdFirm": [{
+                "EmpLocs": {
+                    "EmpLoc": [{
+                        "Addr": {
+                            "_VALUE": null,
+                            "_city": null,
+                            "_cntryCd": null,
+                            "_cntryOld": null,
+                            "_postlCd": null,
+                            "_state": null,
+                            "_strt1": null,
+                            "_strt2": null
+                        },
+                        "_bllngCd": null,
+                        "_brnchPK": null,
+                        "_fromDt": null,
+                        "_lctdFl": null,
+                        "_mainOfcBDFl": null,
+                        "_mainOfcIAFl": null,
+                        "_oldSeqNb": null,
+                        "_prvtRsdnc": null,
+                        "_regdLocFl": null,
+                        "_seqNb": null,
+                        "_sprvdFl": null,
+                        "_toDt": null
+                    }]
+                },
+                "_orgNm": null,
+                "_orgPK": null,
+                "_empStDt": null,
+                "_ndpndCntrcrFl": null
+            }]
+        },
         "IdentInfo": {
             "Ht": {
                 "_VALUE": null,
@@ -264,7 +303,8 @@
                 "_termDt": null,
                 "_termExpln": null,
                 "_termRsn": null,
-                "_termRsnAmndtExpln": null
+                "_termRsnAmndtExpln": null,
+                "_termDtAmndtExpln": null
             }]
         },
         "OthrBuss": {
