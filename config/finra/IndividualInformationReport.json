@@ -149,14 +149,31 @@
         },
         "Exms": {
             "Exm": [{
-                "Appts": null,
+                "Appts":{
+                    "Appt":
+                        [{
+                        "_VALUE": null,
+                        "_apptID": null,
+                        "_apptSt": null,
+                        "_apptDt": null,
+                        "_vndrNm": null,
+                        "_vndrCnfrtNb": null,
+                        "_cntrID": null,
+                        "_cntrCity": null,
+                        "_cntrSt": null,
+                        "_cntrCntry": null,
+                        "_updtTS": null
+                    }]
+                },
                 "_exmCd": null,
                 "_exmDt": null,
                 "_exmValidFl": null,
+                "_exmValidDt": null,
                 "_grd": null,
                 "_nrlmtID": null,
                 "_st": null,
                 "_stDt": null,
+                "_scr": null,
                 "_updateTS": null,
                 "_wndwBeginDt": null,
                 "_wndwEndDt": null
@@ -166,6 +183,7 @@
             "FngprInfo": [{
                 "_VALUE": null,
                 "_barCd": null,
+                "_recdDt": null,
                 "_orgNm": null,
                 "_pstnInFirm": null,
                 "_st": null,

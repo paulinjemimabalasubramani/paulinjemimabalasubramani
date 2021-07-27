@@ -314,7 +314,7 @@ tableinfo = defaultdict(list)
 @catch_error(logger)
 def add_table_to_tableinfo(xml_table, firm_name, table_name):
     for ix, (col_name, col_type) in enumerate(xml_table.dtypes):
-        var_col_type = 'string' if col_type=='string' else 'variant'
+        var_col_type = 'variant' if ':' in col_type else col_type
 
         tableinfo['SourceDatabase'].append(database)
         tableinfo['SourceSchema'].append(firm_name)
@@ -829,6 +829,55 @@ Filing_History_Schema = ArrayType(StructType([
     ]), True)
 
 
+Other_Businesses_Schema = ArrayType(StructType([
+    StructField('Description', StringType(), True),
+    ]), True)
+
+
+Finger_Print_Info_Schema = ArrayType(StructType([
+    StructField('Card_Bar_Code', StringType(), True),
+    StructField('Firm_Submitted', StringType(), True),
+    StructField('Position', StringType(), True),
+    StructField('Card_Status', StringType(), True),
+    StructField('Card_Status_Date', StringType(), True),
+    StructField('Card_Received_Date', StringType(), True),
+    ]), True)
+
+
+Exams_Appointments_Schema = ArrayType(StructType([
+    StructField('Blank', StringType(), True), # _VALUE
+    StructField('Appointment_ID', StringType(), True), # _apptID
+    StructField('Current_Status', StringType(), True), # _apptSt
+    StructField('Current_Status_Detail', StringType(), True), # _apptDt
+    StructField('Vendor', StringType(), True), # _vndrNm
+    StructField('Vendor_Number', StringType(), True), # _vndrCnfrtNb
+    StructField('Vendor_Center_ID', StringType(), True), # _cntrID
+    StructField('Vendor_Center_City', StringType(), True), # _cntrCity
+    StructField('Vendor_Center_State', StringType(), True), # _cntrSt
+    StructField('Vendor_Center_Country', StringType(), True), # _cntrCntry
+    StructField('Date_Apppointment_Updated', StringType(), True), # _updtTS
+    ]), True)
+
+
+Exams_Schema = ArrayType(StructType([
+    StructField('Appointments', Exams_Appointments_Schema, True),
+    StructField('Exam_Code', StringType(), True),
+    StructField('Exam_Date', StringType(), True),
+    StructField('Currently_Valid', StringType(), True),
+    StructField('Valid_Date', StringType(), True),
+    StructField('Grade', StringType(), True),
+    StructField('Score', StringType(), True),
+    StructField('Enrollment_ID', StringType(), True),
+    StructField('Exam_Status', StringType(), True),
+    StructField('Exam_Status_Date', StringType(), True),
+    StructField('Date_Updated', StringType(), True),
+    StructField('Window_Begin_Date', StringType(), True),
+    StructField('Window_End_Date', StringType(), True),
+    ]), True)
+
+
+
+
 individual = semi_flat_table.select(
     col('Comp_indvlSSN').alias('SSN'),
     col('Comp_indvlPK').alias('CRD_Number'),
@@ -936,22 +985,56 @@ individual = semi_flat_table.select(
         col('ContEds_ContEd._sssnSt').alias('Session_Status'),
         ).cast(Continuing_Education_Details_Schema
         ).alias('Continuing_Education_Details'),
+    # arrays_zip(
+    #     col('EventFlngHists_EventFlngHist._dt').alias('Filing_Date'),
+    #     col('EventFlngHists_EventFlngHist._flngType').alias('Filing_Type'),
+    #     col('EventFlngHists_EventFlngHist._frmType').alias('Form_Type'),
+    #     col('EventFlngHists_EventFlngHist._id').alias('Filing_ID'),
+    #     col('EventFlngHists_EventFlngHist._src').alias('Submitted_By'),
+    #     col('EventFlngHists_EventFlngHist._type').alias('Event_Type'),
+    #     ).cast(Filing_History_Schema
+    #     ).alias('Filing_History'),
     arrays_zip(
-        col('EventFlngHists_EventFlngHist._dt').alias('Filing_Date'),
-        col('EventFlngHists_EventFlngHist._flngType').alias('Filing_Type'),
-        col('EventFlngHists_EventFlngHist._frmType').alias('Form_Type'),
-        col('EventFlngHists_EventFlngHist._id').alias('Filing_ID'),
-        col('EventFlngHists_EventFlngHist._src').alias('Submitted_By'),
-        col('EventFlngHists_EventFlngHist._type').alias('Event_Type'),
-        ).cast(Filing_History_Schema
-        ).alias('Filing_History'),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
-#    col('').alias(''),
+        col('OthrBuss_OthrBus._desc').alias('Description'),
+        ).cast(Other_Businesses_Schema
+        ).alias('Other_Businesses'),
+    col('IdentInfo_dob').alias('Identification_Birth_Date'),
+    col('IdentInfo_birthStCd').alias('Identification_Birth_State'),
+    col('IdentInfo_birthPrvnc').alias('Identification_Birth_Province'),
+    col('IdentInfo_birthCntryCd').alias('Identification_Birth_Country'),
+    col('IdentInfo_gender').alias('Identification_Gender'),
+    struct(
+        col('IdentInfo_Ht_ft').alias('Height_ft'),
+        col('IdentInfo_Ht_in').alias('Height_in'),
+        col('IdentInfo_eye').alias('Eye_Color'),
+        col('IdentInfo_hair').alias('Hair_Color'),
+        col('IdentInfo_wt').alias('Weight'),
+        ).alias('Identification_Personal'),
+    arrays_zip(
+        col('FngprInfos_FngprInfo._barCd').alias('Card_Bar_Code'),
+        col('FngprInfos_FngprInfo._orgNm').alias('Firm_Submitted'),
+        col('FngprInfos_FngprInfo._pstnInFirm').alias('Position'),
+        col('FngprInfos_FngprInfo._st').alias('Card_Status'),
+        col('FngprInfos_FngprInfo._stDt').alias('Card_Status_Date'),
+        col('FngprInfos_FngprInfo._recdDt').alias('Card_Received_Date'),
+        ).cast(Finger_Print_Info_Schema
+        ).alias('Finger_Print_Info'),
+    arrays_zip(
+        col('Exms_Exm.Appts.Appt').alias('Appointments'),
+        col('Exms_Exm._exmCd').alias('Exam_Code'),
+        col('Exms_Exm._exmDt').alias('Exam_Date'),
+        col('Exms_Exm._exmValidFl').alias('Currently_Valid'),
+        col('Exms_Exm._exmValidDt').alias('Valid_Date'),
+        col('Exms_Exm._grd').alias('Grade'),
+        col('Exms_Exm._scr').alias('Score'),
+        col('Exms_Exm._nrlmtID').alias('Enrollment_ID'),
+        col('Exms_Exm._st').alias('Exam_Status'),
+        col('Exms_Exm._stDt').alias('Exam_Status_Date'),
+        col('Exms_Exm._updateTS').alias('Date_Updated'),
+        col('Exms_Exm._wndwBeginDt').alias('Window_Begin_Date'),
+        col('Exms_Exm._wndwEndDt').alias('Window_End_Date'),
+        ).cast(Exams_Schema
+        ).alias('Exams'),
 #    col('').alias(''),
 #    col('').alias(''),
 #    col('').alias(''),
@@ -980,9 +1063,9 @@ print('\n')
 individual.printSchema()
 
 pprint(individual.limit(10).toJSON().map(lambda j: json.loads(j)).collect())
-704265
 
-pprint(individual.where('CRD_Number = 704265').toJSON().map(lambda j: json.loads(j)).collect())
+
+pprint(individual.where('CRD_Number = 5471555').toJSON().map(lambda j: json.loads(j)).collect())
 
 
 
