@@ -1281,8 +1281,9 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
 
     rowTags = file_meta['rowTags']
     table_name = file_meta['table_name']
+    crd_number = file_meta['crd_number']
 
-    print('\n', file_meta['crd_number'], table_name, file_meta['date'])
+    print('\n', crd_number, table_name, file_meta['date'])
     print(f'\nrowTags: {rowTags}\n')
     rowTag = rowTags[0]
 
@@ -1311,7 +1312,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
     if table_name.upper() == 'BranchInformationReport'.upper():
         xml_table_list={**xml_table_list, table_name: build_branch_table(semi_flat_table=semi_flat_table)}
     if table_name.upper() == 'IndividualInformationReport'.upper():
-        xml_table_list={**xml_table_list, table_name: build_individual_table(semi_flat_table=semi_flat_table, crd_number=file_meta['crd_number'])}
+        xml_table_list={**xml_table_list, table_name: build_individual_table(semi_flat_table=semi_flat_table, crd_number=crd_number)}
     else:
         xml_table_list={**xml_table_list, table_name: semi_flat_table}
 
@@ -1323,7 +1324,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
         firm_name = firm_name,
         storage_account_name = storage_account_name,
         is_full_load = file_meta['is_full_load'],
-        crd_number = file_meta['crd_number'],
+        crd_number = crd_number,
         )
 
     return semi_flat_table
