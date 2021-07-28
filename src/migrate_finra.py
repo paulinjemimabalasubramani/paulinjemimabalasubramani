@@ -1311,7 +1311,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
 
     if table_name.upper() == 'BranchInformationReport'.upper():
         xml_table_list={**xml_table_list, table_name: build_branch_table(semi_flat_table=semi_flat_table)}
-    if table_name.upper() == 'IndividualInformationReport'.upper():
+    elif table_name.upper() == 'IndividualInformationReport'.upper():
         xml_table_list={**xml_table_list, table_name: build_individual_table(semi_flat_table=semi_flat_table, crd_number=crd_number)}
     else:
         xml_table_list={**xml_table_list, table_name: semi_flat_table}
