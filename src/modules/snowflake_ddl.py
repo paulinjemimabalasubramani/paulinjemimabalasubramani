@@ -197,6 +197,7 @@ def action_step(step:int):
     def outer(step_fn):
         @wraps(step_fn)
         def inner(*args, **kwargs):
+            print(f"\n{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}/{kwargs['table_name']}")
             sqlstr = step_fn(*args, **kwargs)
 
             if is_pc and False:
@@ -231,6 +232,7 @@ def action_source_level_tables(table_name:str):
     def outer(fn):
         @wraps(fn)
         def inner(*args, **kwargs):
+            print(f"\nSource Level Table {kwargs['container_folder']}/{table_name}")
             sqlstr = fn(*args, **kwargs)
             if wid.save_to_adls or True:
                 save_adls_gen2(
@@ -386,6 +388,7 @@ ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME;
 
 @catch_error(logger)
 def create_source_level_tables(ingest_data_list:defaultdict):
+    print(f'\nCreate Source Level Tables')
     for source_system, ingest_data_per_source_system in ingest_data_list.items():
         storage_account_name = to_storage_account_name()
         setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
