@@ -39,7 +39,7 @@ from modules.data_functions import  to_string, remove_column_spaces, add_elt_col
 
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import col, lit, explode, md5, concat_ws, from_json, arrays_zip, concat, filter, monotonically_increasing_id, \
+from pyspark.sql.functions import col, lit, explode, md5, concat_ws, arrays_zip, concat, filter, monotonically_increasing_id, \
     struct
 
 
@@ -407,15 +407,6 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
 @catch_error(logger)
 def build_branch_table(semi_flat_table):
     # Create Schemas
-    Branch_Address_Schema = StructType([
-        StructField('Country', StringType(), True),
-        StructField('State', StringType(), True),
-        StructField('City', StringType(), True),
-        StructField('Postal_Code', StringType(), True),
-        StructField('Street1', StringType(), True),
-        StructField('Street2', StringType(), True),
-        ])
-
 
     Associated_Individuals_Schema = ArrayType(StructType([
         StructField('First_Name', StringType(), True),
@@ -518,18 +509,13 @@ def build_branch_table(semi_flat_table):
         col('BrnchOfcs_BrnchOfc_prvtRsdnc').alias('Is_Private_Residence'),
         col('BrnchOfcs_BrnchOfc_dstrtPK').alias('District_Office'),
         col('BrnchOfcs_BrnchOfc_oprnlStCd').alias('Operational_Status'),
-        from_json(
-            col = concat(
-            lit('{'),
-            lit('  "Country": "'), col('BrnchOfcs_BrnchOfc_Addr_cntry'), lit('"'),
-            lit(', "State": "'), col('BrnchOfcs_BrnchOfc_Addr_state'), lit('"'),
-            lit(', "City": "'), col('BrnchOfcs_BrnchOfc_Addr_city'), lit('"'),
-            lit(', "Postal_Code": "'), col('BrnchOfcs_BrnchOfc_Addr_postlCd'), lit('"'),
-            lit(', "Street1": "'), col('BrnchOfcs_BrnchOfc_Addr_strt1'), lit('"'),
-            lit(', "Street2": "'), col('BrnchOfcs_BrnchOfc_Addr_strt2'), lit('"'),
-            lit('}'),
-            ),
-            schema = Branch_Address_Schema
+        struct(
+            col('BrnchOfcs_BrnchOfc_Addr_cntry').alias('Country'),
+            col('BrnchOfcs_BrnchOfc_Addr_state').alias('State'),
+            col('BrnchOfcs_BrnchOfc_Addr_city').alias('City'),
+            col('BrnchOfcs_BrnchOfc_Addr_postlCd').alias('Postal_Code'),
+            col('BrnchOfcs_BrnchOfc_Addr_strt1').alias('Street1'),
+            col('BrnchOfcs_BrnchOfc_Addr_strt2').alias('Street2'),
             ).alias('Branch_Address'),
         arrays_zip(
             col('BrnchOfcs_BrnchOfc_AsctdIndvls_AsctdIndvl._first').alias('First_Name'),

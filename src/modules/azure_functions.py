@@ -78,7 +78,7 @@ def select_tableinfo_columns(tableinfo):
         'TableName',
     ]
 
-    selected_tableinfo = tableinfo.select(*column_names).orderBy(*column_orderby)
+    selected_tableinfo = tableinfo.select(*column_names).distinct().orderBy(*column_orderby)
 
     if is_pc: selected_tableinfo.printSchema()
     return selected_tableinfo
@@ -213,7 +213,7 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
         file_format = file_format
     )
 
-    tableinfo = tableinfo.filter(col('IsActive')==lit(1))
+    tableinfo = tableinfo.filter(col('IsActive')==lit(1)).distinct()
     tableinfo.persist()
 
     # Create unique list of tables
