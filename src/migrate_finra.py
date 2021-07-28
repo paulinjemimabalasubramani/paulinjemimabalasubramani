@@ -179,7 +179,7 @@ def get_finra_file_xml_meta(file_path):
 
     file_meta = extract_data_from_finra_file_name(file_name=file_path)
     if not file_meta:
-        return (None,) * 3
+        return
 
     if file_path.endswith('.zip'):
         with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
