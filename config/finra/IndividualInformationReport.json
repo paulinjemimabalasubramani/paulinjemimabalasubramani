@@ -28,6 +28,9 @@
                         "_vndrNm": null,
                         "_vndrCnfrtNb": null,
                         "_cntrID": null,
+                        "_cntrCity": null,
+                        "_cntrSt": null,
+                        "_cntrCntry": null,
                         "_updtTS": null
                     }]
                 },
@@ -97,7 +100,8 @@
                 "_frm": null,
                 "_rcvdDt": null,
                 "_src": null,
-                "_frmVer": null
+                "_frmVer": null,
+                "_qstns": null
             }]
         },
         "Dsgntns": {
@@ -117,8 +121,10 @@
                 },
                 "_city": null,
                 "_cntryCd": null,
+                "_cntryOld": null,
                 "_invRel": null,
                 "_orgNm": null,
+                "_postlCd": null,
                 "_pstnHeld": null,
                 "_seqNb": null,
                 "_state": null
@@ -141,19 +147,39 @@
                 "_nrlmtID": null,
                 "_exmCd": null,
                 "_regAuth": null,
+                "_rsnCd": null,
+                "_exmValidFl": null,
+                "_exmValidDt": null,
                 "_efctvDt": null
             }]
         },
         "Exms": {
             "Exm": [{
-                "Appts": null,
+                "Appts":{
+                    "Appt":
+                        [{
+                        "_VALUE": null,
+                        "_apptID": null,
+                        "_apptSt": null,
+                        "_apptDt": null,
+                        "_vndrNm": null,
+                        "_vndrCnfrtNb": null,
+                        "_cntrID": null,
+                        "_cntrCity": null,
+                        "_cntrSt": null,
+                        "_cntrCntry": null,
+                        "_updtTS": null
+                    }]
+                },
                 "_exmCd": null,
                 "_exmDt": null,
                 "_exmValidFl": null,
+                "_exmValidDt": null,
                 "_grd": null,
                 "_nrlmtID": null,
                 "_st": null,
                 "_stDt": null,
+                "_scr": null,
                 "_updateTS": null,
                 "_wndwBeginDt": null,
                 "_wndwEndDt": null
@@ -163,6 +189,7 @@
             "FngprInfo": [{
                 "_VALUE": null,
                 "_barCd": null,
+                "_recdDt": null,
                 "_orgNm": null,
                 "_pstnInFirm": null,
                 "_st": null,
@@ -174,6 +201,7 @@
                 "Addr": {
                     "_VALUE": null,
                     "_strt1": null,
+                    "_strt2": null,
                     "_city": null,
                     "_state": null,
                     "_postlCd": null,
@@ -183,6 +211,40 @@
                 "_orgPk": null,
                 "_orgNm": null,
                 "_iaAffltnCtgry": null
+            }]
+        },
+        "AffltdFirms": {
+            "AffltdFirm": [{
+                "EmpLocs": {
+                    "EmpLoc": [{
+                        "Addr": {
+                            "_VALUE": null,
+                            "_city": null,
+                            "_cntryCd": null,
+                            "_cntryOld": null,
+                            "_postlCd": null,
+                            "_state": null,
+                            "_strt1": null,
+                            "_strt2": null
+                        },
+                        "_bllngCd": null,
+                        "_brnchPK": null,
+                        "_fromDt": null,
+                        "_lctdFl": null,
+                        "_mainOfcBDFl": null,
+                        "_mainOfcIAFl": null,
+                        "_oldSeqNb": null,
+                        "_prvtRsdnc": null,
+                        "_regdLocFl": null,
+                        "_seqNb": null,
+                        "_sprvdFl": null,
+                        "_toDt": null
+                    }]
+                },
+                "_orgNm": null,
+                "_orgPK": null,
+                "_empStDt": null,
+                "_ndpndCntrcrFl": null
             }]
         },
         "IdentInfo": {
@@ -242,7 +304,8 @@
                 "_termDt": null,
                 "_termExpln": null,
                 "_termRsn": null,
-                "_termRsnAmndtExpln": null
+                "_termRsnAmndtExpln": null,
+                "_termDtAmndtExpln": null
             }]
         },
         "OthrBuss": {
@@ -257,7 +320,8 @@
                     "_VALUE": null,
                     "_last": null,
                     "_first": null,
-                    "_mid": null
+                    "_mid": null,
+                    "_suf": null
                 },
                 "_seqNb": null
             }]
@@ -270,7 +334,8 @@
                     "_cntryCd": null,
                     "_postlCd": null,
                     "_state": null,
-                    "_strt1": null
+                    "_strt1": null,
+                    "_strt2": null
                 },
                 "DtRng": {
                     "_VALUE": null,
