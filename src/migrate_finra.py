@@ -185,12 +185,14 @@ def extract_data_from_finra_file_name(file_name:str, crd_number:str):
 @catch_error(logger)
 def get_finra_file_xml_meta(file_path:str, crd_number:str):
     rowTag = '?xml'
+    csv_flag = False
 
     file_meta = extract_data_from_finra_file_name(file_name=file_path, crd_number=crd_number)
     if not file_meta:
         return
 
     if file_meta['table_name'] == DualRegistrations_name:
+        csv_flag = True
         xml_table = read_csv(spark=spark, file_path=file_path)
         criteria = {
             reportDate_name: file_meta['date'],
@@ -224,7 +226,7 @@ def get_finra_file_xml_meta(file_path:str, crd_number:str):
         file_meta['date'] = criteria[reportDate_name]
 
     rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
-    assert len(rowTags) == 1, f"\n{file_path}\nXML File has rowTags {rowTags} is not valid\n"
+    assert len(rowTags) == 1 or csv_flag, f"\n{file_path}\nXML File has rowTags {rowTags} is not valid\n"
 
     if file_meta['table_name'].upper() == 'IndividualInformationReportDelta'.upper():
         file_meta['table_name'] = 'IndividualInformationReport'
