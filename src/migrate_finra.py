@@ -653,7 +653,22 @@ def build_branch_table(semi_flat_table):
 
 @catch_error(logger)
 def build_individual_table(semi_flat_table, crd_number:str):
-    # Create Schemas
+    # Create Schemas and Filters
+
+    def filter_Current_Date(x):
+        return (x.getField('DtRng').getField('_toDt').isNull()) | (x.getField('DtRng').getField('_toDt') == lit(''))
+
+
+    def filter_Current_Date_zipped(x):
+        return (x.getField('To_Date').isNull()) | (x.getField('To_Date') == lit(''))
+
+
+    def filter_Current_Date_and_Firm(crd_number:str):
+        def inner_filter_func(x):
+            return (((x.getField('DtRng').getField('_toDt').isNull()) | (x.getField('DtRng').getField('_toDt') == lit(''))) 
+                & (x.getField('_orgPK') == lit(crd_number)))
+        return inner_filter_func
+
 
     IA_Affiliations_Schema = ArrayType(StructType([
         StructField('Street1', StringType(), True),
@@ -688,10 +703,6 @@ def build_individual_table(semi_flat_table, crd_number:str):
         StructField('To_Date', StringType(), True),
         StructField('Sequence_Number', StringType(), True),
         ]), True)
-
-
-    def filter_Current_Date(x):
-        return (x.getField('DtRng').getField('_toDt').isNull()) | (x.getField('DtRng').getField('_toDt') == lit(''))
 
 
     Designations_Schema = ArrayType(StructType([
@@ -867,13 +878,6 @@ def build_individual_table(semi_flat_table, crd_number:str):
         StructField('Termination_Amendment_Explanation', StringType(), True),
         StructField('Termination_Date_Amendment_Explanation', StringType(), True),
         ]), True)
-
-
-    def filter_Current_Date_and_Firm(crd_number:str):
-        def inner_filter_func(x):
-            return (((x.getField('DtRng').getField('_toDt').isNull()) | (x.getField('DtRng').getField('_toDt') == lit(''))) 
-                & (x.getField('_orgPK') == lit(crd_number)))
-        return inner_filter_func
 
 
     State_Registrations_Deficiencies_Schema = ArrayType(StructType([
@@ -1093,49 +1097,22 @@ def build_individual_table(semi_flat_table, crd_number:str):
             col('EmpHists_EmpHist._state').alias('State'),
             ).cast(Employment_History_Schema
             ).alias('Employment_History'),
-        arrays_zip(
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('DtRng').getField('_fromDt').alias('From_Date'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('DtRng').getField('_toDt').alias('To_Date'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_city').alias('City'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_cntryCd').alias('Country'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_invRel').alias('Investment_Related'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_orgNm').alias('Organization_Name'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_postlCd').alias('Postal_Code'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_pstnHeld').alias('Position'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_seqNb').alias('Sequence_Number'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_state').alias('State'),
-            ).cast(Employment_History_Schema
-            ).alias('Current_Employment'),
+        filter(
+            col = arrays_zip(
+                col('EmpHists_EmpHist.DtRng._fromDt').alias('From_Date'),
+                col('EmpHists_EmpHist.DtRng._toDt').alias('To_Date'),
+                col('EmpHists_EmpHist._city').alias('City'),
+                col('EmpHists_EmpHist._cntryCd').alias('Country'),
+                col('EmpHists_EmpHist._invRel').alias('Investment_Related'),
+                col('EmpHists_EmpHist._orgNm').alias('Organization_Name'),
+                col('EmpHists_EmpHist._postlCd').alias('Postal_Code'),
+                col('EmpHists_EmpHist._pstnHeld').alias('Position'),
+                col('EmpHists_EmpHist._seqNb').alias('Sequence_Number'),
+                col('EmpHists_EmpHist._state').alias('State'),
+                ).cast(Employment_History_Schema
+                ),
+            f = filter_Current_Date_zipped
+                ).alias('Current_Employment'),
         arrays_zip(
             col('AffltdFirms_AffltdFirm.EmpLocs.EmpLoc').alias('Employment_Locations'),
             col('AffltdFirms_AffltdFirm._orgNm').alias('Firm_Name'),
@@ -1160,60 +1137,24 @@ def build_individual_table(semi_flat_table, crd_number:str):
             col('OffHists_OffHist._termDtAmndtExpln').alias('Termination_Date_Amendment_Explanation'),
             ).cast(Office_Employment_History_Schema
             ).alias('Office_Employment_History'),
-        arrays_zip(
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('DtRng').getField('_fromDt').alias('From_Date'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('DtRng').getField('_toDt').alias('To_Date'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('EmpLocs').getField('EmpLoc').alias('Employment_Locations'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_empCntxt').alias('Employment_Type'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_firmAsctnSt').alias('Firm_Association'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_ndpndCntrcrFl').alias('Independent_Contractor'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_orgNm').alias('Firm_Name'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_orgPK').alias('Firm_CRD_Number'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_termDt').alias('Termination_Date'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_termExpln').alias('Termination_Explanation'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_termRsn').alias('Termination_Reason'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_termRsnAmndtExpln').alias('Termination_Amendment_Explanation'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_termDtAmndtExpln').alias('Termination_Date_Amendment_Explanation'),
-            ).cast(Office_Employment_History_Schema
+        filter(
+            col = arrays_zip(
+                col('OffHists_OffHist.DtRng._fromDt').alias('From_Date'),
+                col('OffHists_OffHist.DtRng._toDt').alias('To_Date'),
+                col('OffHists_OffHist.EmpLocs.EmpLoc').alias('Employment_Locations'),
+                col('OffHists_OffHist._empCntxt').alias('Employment_Type'),
+                col('OffHists_OffHist._firmAsctnSt').alias('Firm_Association'),
+                col('OffHists_OffHist._ndpndCntrcrFl').alias('Independent_Contractor'),
+                col('OffHists_OffHist._orgNm').alias('Firm_Name'),
+                col('OffHists_OffHist._orgPK').alias('Firm_CRD_Number'),
+                col('OffHists_OffHist._termDt').alias('Termination_Date'),
+                col('OffHists_OffHist._termExpln').alias('Termination_Explanation'),
+                col('OffHists_OffHist._termRsn').alias('Termination_Reason'),
+                col('OffHists_OffHist._termRsnAmndtExpln').alias('Termination_Amendment_Explanation'),
+                col('OffHists_OffHist._termDtAmndtExpln').alias('Termination_Date_Amendment_Explanation'),
+                ).cast(Office_Employment_History_Schema
+                ),
+            f = filter_Current_Date_zipped
             ).alias('Current_Office'),
         filter(
             col = col('OffHists_OffHist'), 
@@ -1367,11 +1308,20 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
 
 if False:
     folder_path = r'C:\Users\smammadov\packages\Shared\test'
-    files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start)
+    files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number='x')
     file_meta = files_meta[0]
     print(file_meta)
     semi_flat_table = process_finra_file(file_meta, firm_name='x', storage_account_name='x')
 
+
+# %% Testing 2
+
+
+# individual = build_individual_table(semi_flat_table=semi_flat_table, crd_number='7461')
+
+
+# individual = individual.persist()
+# pprint(individual.where('CRD_Number = 3044031').toJSON().map(lambda j: json.loads(j)).collect())
 
 
 
