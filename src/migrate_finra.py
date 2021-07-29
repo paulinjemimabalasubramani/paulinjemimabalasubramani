@@ -30,16 +30,16 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import make_logging, catch_error
-from modules.spark_functions import create_spark, read_xml
+from modules.spark_functions import create_spark, read_csv, read_xml
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
     to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, read_adls_gen2
 from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, \
-    metadata_FirmSourceMap, partitionBy_value
+    metadata_FirmSourceMap, partitionBy_value, strftime
 
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import col, lit, explode, md5, concat_ws, arrays_zip, concat, filter, monotonically_increasing_id, \
+from pyspark.sql.functions import col, lit, explode, md5, concat_ws, arrays_zip, filter, monotonically_increasing_id, \
     struct
 
 
@@ -71,6 +71,7 @@ FirmCRDNumber = 'Firm_CRD_Number'
 finra_individual_delta_name = 'IndividualInformationReportDelta'
 reportDate_name = '_reportDate'
 firmCRDNumber_name = '_firmCRDNumber'
+DualRegistrations_name = 'DualRegistrations'
 
 
 
@@ -151,9 +152,17 @@ def base_to_schema(base:dict):
 # %% Name extract
 
 @catch_error(logger)
-def extract_data_from_finra_file_name(file_name):
+def extract_data_from_finra_file_name(file_name:str, crd_number:str):
     basename = os.path.basename(file_name)
     sp = basename.split("_")
+
+    if basename.startswith("INDIVIDUAL_-_DUAL_REGISTRATIONS_-_FIRMS_DOWNLOAD_-_"):
+        ans = {
+            'crd_number': crd_number,
+            'table_name': DualRegistrations_name,
+            'date': datetime.strftime(datetime.strptime(execution_date, strftime), r'%Y-%m-%d')
+        }
+        return ans
 
     try:
         ans = {
@@ -174,14 +183,22 @@ def extract_data_from_finra_file_name(file_name):
 # %% Get Meta Data from Finra XML File
 
 @catch_error(logger)
-def get_finra_file_xml_meta(file_path):
+def get_finra_file_xml_meta(file_path:str, crd_number:str):
     rowTag = '?xml'
+    csv_flag = False
 
-    file_meta = extract_data_from_finra_file_name(file_name=file_path)
+    file_meta = extract_data_from_finra_file_name(file_name=file_path, crd_number=crd_number)
     if not file_meta:
         return
 
-    if file_path.endswith('.zip'):
+    if file_meta['table_name'] == DualRegistrations_name:
+        csv_flag = True
+        xml_table = read_csv(spark=spark, file_path=file_path)
+        criteria = {
+            reportDate_name: file_meta['date'],
+            firmCRDNumber_name: file_meta['crd_number'],
+            }
+    elif file_path.endswith('.zip'):
         with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
             k = 0
@@ -209,12 +226,12 @@ def get_finra_file_xml_meta(file_path):
         file_meta['date'] = criteria[reportDate_name]
 
     rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
-    assert len(rowTags) == 1, f"\n{file_path}\nXML File has rowTags {rowTags} is not valid\n"
+    assert len(rowTags) == 1 or csv_flag, f"\n{file_path}\nXML File has rowTags {rowTags} is not valid\n"
 
     if file_meta['table_name'].upper() == 'IndividualInformationReportDelta'.upper():
         file_meta['table_name'] = 'IndividualInformationReport'
 
-    file_meta['is_full_load'] = criteria.get('_IIRType') == 'FULL' or file_meta['table_name'].upper() in ['BranchInformationReport'.upper()]
+    file_meta['is_full_load'] = criteria.get('_IIRType') == 'FULL' or file_meta['table_name'].upper() in ['BranchInformationReport'.upper(), DualRegistrations_name.upper()]
 
     file_meta = {
         **file_meta,
@@ -232,13 +249,13 @@ def get_finra_file_xml_meta(file_path):
 # %% Get list of file names above certain date:
 
 @catch_error(logger)
-def get_all_finra_file_xml_meta(folder_path, date_start:str, inclusive:bool=True):
+def get_all_finra_file_xml_meta(folder_path, date_start:str, crd_number:str, inclusive:bool=True):
     print(f'\nGetting list of candidate files from {folder_path}')
     files_meta = []
     for root, dirs, files in os.walk(folder_path):
         for file in files:
             file_path = os.path.join(root, file)
-            file_meta = get_finra_file_xml_meta(file_path)
+            file_meta = get_finra_file_xml_meta(file_path=file_path, crd_number=crd_number)
 
             if file_meta and (date_start<file_meta['date'] or (date_start==file_meta['date'] and inclusive)):
                 files_meta.append(file_meta)
@@ -636,7 +653,22 @@ def build_branch_table(semi_flat_table):
 
 @catch_error(logger)
 def build_individual_table(semi_flat_table, crd_number:str):
-    # Create Schemas
+    # Create Schemas and Filters
+
+    def filter_Current_Date(x):
+        return (x.getField('DtRng').getField('_toDt').isNull()) | (x.getField('DtRng').getField('_toDt') == lit(''))
+
+
+    def filter_Current_Date_zipped(x):
+        return (x.getField('To_Date').isNull()) | (x.getField('To_Date') == lit(''))
+
+
+    def filter_Current_Date_and_Firm(crd_number:str):
+        def inner_filter_func(x):
+            return (((x.getField('DtRng').getField('_toDt').isNull()) | (x.getField('DtRng').getField('_toDt') == lit(''))) 
+                & (x.getField('_orgPK') == lit(crd_number)))
+        return inner_filter_func
+
 
     IA_Affiliations_Schema = ArrayType(StructType([
         StructField('Street1', StringType(), True),
@@ -671,10 +703,6 @@ def build_individual_table(semi_flat_table, crd_number:str):
         StructField('To_Date', StringType(), True),
         StructField('Sequence_Number', StringType(), True),
         ]), True)
-
-
-    def filter_Current_Date(x):
-        return (x.getField('DtRng').getField('_toDt').isNull()) | (x.getField('DtRng').getField('_toDt') == lit(''))
 
 
     Designations_Schema = ArrayType(StructType([
@@ -850,13 +878,6 @@ def build_individual_table(semi_flat_table, crd_number:str):
         StructField('Termination_Amendment_Explanation', StringType(), True),
         StructField('Termination_Date_Amendment_Explanation', StringType(), True),
         ]), True)
-
-
-    def filter_Current_Date_and_Firm(crd_number:str):
-        def inner_filter_func(x):
-            return (((x.getField('DtRng').getField('_toDt').isNull()) | (x.getField('DtRng').getField('_toDt') == lit(''))) 
-                & (x.getField('_orgPK') == lit(crd_number)))
-        return inner_filter_func
 
 
     State_Registrations_Deficiencies_Schema = ArrayType(StructType([
@@ -1076,49 +1097,22 @@ def build_individual_table(semi_flat_table, crd_number:str):
             col('EmpHists_EmpHist._state').alias('State'),
             ).cast(Employment_History_Schema
             ).alias('Employment_History'),
-        arrays_zip(
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('DtRng').getField('_fromDt').alias('From_Date'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('DtRng').getField('_toDt').alias('To_Date'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_city').alias('City'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_cntryCd').alias('Country'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_invRel').alias('Investment_Related'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_orgNm').alias('Organization_Name'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_postlCd').alias('Postal_Code'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_pstnHeld').alias('Position'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_seqNb').alias('Sequence_Number'),
-            filter(
-                col = col('EmpHists_EmpHist'), 
-                f = filter_Current_Date
-                ).getField('_state').alias('State'),
-            ).cast(Employment_History_Schema
-            ).alias('Current_Employment'),
+        filter(
+            col = arrays_zip(
+                col('EmpHists_EmpHist.DtRng._fromDt').alias('From_Date'),
+                col('EmpHists_EmpHist.DtRng._toDt').alias('To_Date'),
+                col('EmpHists_EmpHist._city').alias('City'),
+                col('EmpHists_EmpHist._cntryCd').alias('Country'),
+                col('EmpHists_EmpHist._invRel').alias('Investment_Related'),
+                col('EmpHists_EmpHist._orgNm').alias('Organization_Name'),
+                col('EmpHists_EmpHist._postlCd').alias('Postal_Code'),
+                col('EmpHists_EmpHist._pstnHeld').alias('Position'),
+                col('EmpHists_EmpHist._seqNb').alias('Sequence_Number'),
+                col('EmpHists_EmpHist._state').alias('State'),
+                ).cast(Employment_History_Schema
+                ),
+            f = filter_Current_Date_zipped
+                ).alias('Current_Employment'),
         arrays_zip(
             col('AffltdFirms_AffltdFirm.EmpLocs.EmpLoc').alias('Employment_Locations'),
             col('AffltdFirms_AffltdFirm._orgNm').alias('Firm_Name'),
@@ -1143,60 +1137,24 @@ def build_individual_table(semi_flat_table, crd_number:str):
             col('OffHists_OffHist._termDtAmndtExpln').alias('Termination_Date_Amendment_Explanation'),
             ).cast(Office_Employment_History_Schema
             ).alias('Office_Employment_History'),
-        arrays_zip(
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('DtRng').getField('_fromDt').alias('From_Date'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('DtRng').getField('_toDt').alias('To_Date'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('EmpLocs').getField('EmpLoc').alias('Employment_Locations'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_empCntxt').alias('Employment_Type'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_firmAsctnSt').alias('Firm_Association'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_ndpndCntrcrFl').alias('Independent_Contractor'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_orgNm').alias('Firm_Name'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_orgPK').alias('Firm_CRD_Number'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_termDt').alias('Termination_Date'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_termExpln').alias('Termination_Explanation'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_termRsn').alias('Termination_Reason'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_termRsnAmndtExpln').alias('Termination_Amendment_Explanation'),
-            filter(
-                col = col('OffHists_OffHist'), 
-                f = filter_Current_Date
-                ).getField('_termDtAmndtExpln').alias('Termination_Date_Amendment_Explanation'),
-            ).cast(Office_Employment_History_Schema
+        filter(
+            col = arrays_zip(
+                col('OffHists_OffHist.DtRng._fromDt').alias('From_Date'),
+                col('OffHists_OffHist.DtRng._toDt').alias('To_Date'),
+                col('OffHists_OffHist.EmpLocs.EmpLoc').alias('Employment_Locations'),
+                col('OffHists_OffHist._empCntxt').alias('Employment_Type'),
+                col('OffHists_OffHist._firmAsctnSt').alias('Firm_Association'),
+                col('OffHists_OffHist._ndpndCntrcrFl').alias('Independent_Contractor'),
+                col('OffHists_OffHist._orgNm').alias('Firm_Name'),
+                col('OffHists_OffHist._orgPK').alias('Firm_CRD_Number'),
+                col('OffHists_OffHist._termDt').alias('Termination_Date'),
+                col('OffHists_OffHist._termExpln').alias('Termination_Explanation'),
+                col('OffHists_OffHist._termRsn').alias('Termination_Reason'),
+                col('OffHists_OffHist._termRsnAmndtExpln').alias('Termination_Amendment_Explanation'),
+                col('OffHists_OffHist._termDtAmndtExpln').alias('Termination_Date_Amendment_Explanation'),
+                ).cast(Office_Employment_History_Schema
+                ),
+            f = filter_Current_Date_zipped
             ).alias('Current_Office'),
         filter(
             col = col('OffHists_OffHist'), 
@@ -1276,16 +1234,18 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
     schema_file = table_name+'.json'
     schema_path = os.path.join(schema_path_folder, schema_file)
 
-    if os.path.isfile(schema_path):
+    if table_name == DualRegistrations_name:
+        xml_table = read_csv(spark=spark, file_path=file_path)
+    elif os.path.isfile(schema_path):
         print(f"Loading schema from file: {schema_file}")
         with open(schema_path, 'r') as f:
             base = json.load(f)
         schema = base_to_schema(base)
-        xml_table = read_xml(spark, file_path, rowTag=rowTag, schema=schema)
+        xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag, schema=schema)
     else:
         print(f"Looking for Schema File Location: {schema_path}")
         print(f"No manual schema defined for {table_name}. Using default schema.")
-        xml_table = read_xml(spark, file_path, rowTag=rowTag)
+        xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag)
 
     if is_pc: xml_table.printSchema()
     xml_table_list = {}
@@ -1348,11 +1308,20 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
 
 if False:
     folder_path = r'C:\Users\smammadov\packages\Shared\test'
-    files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start)
+    files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number='x')
     file_meta = files_meta[0]
     print(file_meta)
     semi_flat_table = process_finra_file(file_meta, firm_name='x', storage_account_name='x')
 
+
+# %% Testing 2
+
+
+# individual = build_individual_table(semi_flat_table=semi_flat_table, crd_number='7461')
+
+
+# individual = individual.persist()
+# pprint(individual.where('CRD_Number = 3044031').toJSON().map(lambda j: json.loads(j)).collect())
 
 
 
@@ -1374,7 +1343,7 @@ def process_all_files():
         storage_account_name = to_storage_account_name(firm_name=firm_name)
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-        files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start)
+        files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=firm['crd_number'])
 
         for file_meta in files_meta:
             if is_pc and 'IndividualInformationReport'.upper() in file_meta['table_name'].upper():
