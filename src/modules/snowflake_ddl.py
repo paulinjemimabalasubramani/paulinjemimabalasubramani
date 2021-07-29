@@ -685,14 +685,26 @@ USE SCHEMA {source_system};
 
 @catch_error(logger)
 @action_step(8)
-def step8(source_system:str, schema_name:str, table_name:str, column_names:list):
+def step8(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
-    column_list = '\n    ,'.join(column_names+elt_audit_columns)
-    merge_update_columns = '\n    ,'.join([f'{wid.tgt_alias}.{c} = {wid.src_alias}.{c}' for c in column_names+elt_audit_columns])
-    column_list_with_alias = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in column_names+elt_audit_columns])
+    column_list = '\n    ,'.join([target_column_name for target_column_name, target_data_type in data_types_dict.items()] + elt_audit_columns)
+
+    def fval(column_name:str, data_type:str):
+        if data_type.upper() == 'variant'.upper():
+            return f'TO_VARIANT({column_name})'
+        else:
+            return f"IFNULL({column_name}, '')"
+
+    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict.items()])
+    merge_update_elt_columns = '\n    ,'.join([f'{wid.tgt_alias}.{c} = {wid.src_alias}.{c}' for c in elt_audit_columns])
+    merge_update_columns    += '\n    ,' + merge_update_elt_columns
+
+    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict.items()])
+    column_list_with_alias_elt = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in elt_audit_columns])
+    column_list_with_alias    += '\n    ,' + column_list_with_alias_elt
 
     step = f"""
 CREATE OR REPLACE PROCEDURE {stored_procedure}()
@@ -809,7 +821,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step5(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
             step6(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, pk_column_names=pk_column_names)
             step7(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
-            step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
+            step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             write_CICD_file(source_system=source_system, schema_name=schema_name, table_name=table_name)
             ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
