@@ -694,7 +694,7 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
 
     def fval(column_name:str, data_type:str):
         if data_type.upper() == 'variant'.upper():
-            return f'TO_VARIANT({column_name})'
+            return f'PARSE_JSON({column_name})'
         else:
             return f"IFNULL({column_name}, '')"
 
