@@ -854,7 +854,7 @@ def build_individual_table(semi_flat_table, crd_number:str):
         ]), True)
 
 
-    Affilated_Firms_Schema = ArrayType(StructType([
+    Affiliated_Firms_Schema = ArrayType(StructType([
         StructField('Employment_Locations', Employment_Locations_Schema, True),
         StructField('Firm_Name', StringType(), True),
         StructField('Firm_CRD_Number', StringType(), True),
@@ -1119,8 +1119,8 @@ def build_individual_table(semi_flat_table, crd_number:str):
             col('AffltdFirms_AffltdFirm._orgPK').alias('Firm_CRD_Number'),
             col('AffltdFirms_AffltdFirm._empStDt').alias('Date_Hired'),
             col('AffltdFirms_AffltdFirm._ndpndCntrcrFl').alias('Independent_Contractor'),
-            ).cast(Affilated_Firms_Schema
-            ).alias('Affilated_Firms'),
+            ).cast(Affiliated_Firms_Schema
+            ).alias('Affiliated_Firms'),
         arrays_zip(
             col('OffHists_OffHist.DtRng._fromDt').alias('From_Date'),
             col('OffHists_OffHist.DtRng._toDt').alias('To_Date'),
