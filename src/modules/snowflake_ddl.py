@@ -80,7 +80,7 @@ if not is_pc:
     wid.save_to_adls = False
     wid.execute_at_snowflake = False
     wid.create_or_replace = False
-    wid.create_cicd_file = False
+    wid.create_cicd_file = True
 
 
 if is_pc:
@@ -695,8 +695,10 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
     def fval(column_name:str, data_type:str):
         if data_type.upper() == 'variant'.upper():
             return f'PARSE_JSON({column_name})'
-        else:
+        elif data_type.upper() == 'string'.upper():
             return f"IFNULL({column_name}, '')"
+        else:
+            return column_name
 
     merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict.items()])
     merge_update_elt_columns = '\n    ,'.join([f'{wid.tgt_alias}.{c} = {wid.src_alias}.{c}' for c in elt_audit_columns])
