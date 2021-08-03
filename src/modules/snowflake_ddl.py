@@ -693,9 +693,9 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
     column_list = '\n    ,'.join([target_column_name for target_column_name, target_data_type in data_types_dict.items()] + elt_audit_columns)
 
     def fval(column_name:str, data_type:str):
-        if data_type.upper() == 'variant'.upper():
+        if data_type.upper().startswith('variant'.upper()):
             return f'PARSE_JSON({column_name})'
-        elif data_type.upper() == 'string'.upper():
+        elif data_type.upper().startswith('string'.upper()) or data_type.upper().startswith('varchar'.upper()):
             return f"IFNULL({column_name}, '')"
         else:
             return column_name
