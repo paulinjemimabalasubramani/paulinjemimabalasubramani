@@ -44,8 +44,8 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-save_csv_to_adls_flag = False
-save_tableinfo_adls_flag = False
+save_csv_to_adls_flag = True
+save_tableinfo_adls_flag = True
 
 
 if not is_pc:
