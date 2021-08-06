@@ -30,7 +30,7 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-tableinfo_source = 'FINRA'
+tableinfo_source = 'SF'
 
 
 # %% Create Session

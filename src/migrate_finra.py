@@ -84,12 +84,12 @@ spark = create_spark()
 print(f'Main Path: {os.path.realpath(os.path.dirname(__file__))}')
 
 if is_pc:
-    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../Shared/FINRA')
-    schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../config/finra')
+    data_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../../Shared/{tableinfo_source}')
+    schema_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../config/{tableinfo_source}')
 else:
     # /usr/local/spark/resources/fileshare/Shared
-    data_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/Shared/FINRA')
-    schema_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../resources/fileshare/EDIP-Code/config/finra')
+    data_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../resources/fileshare/Shared/{tableinfo_source}')
+    schema_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../resources/fileshare/EDIP-Code/config/{tableinfo_source}')
 
 
 
@@ -120,6 +120,7 @@ def get_firms():
 
     firms = firms_table.toJSON().map(lambda j: json.loads(j)).collect()
 
+    assert firms, 'No Firms Found!'
     return firms
 
 
@@ -159,7 +160,7 @@ def extract_data_from_finra_file_name(file_name:str, crd_number:str):
     if basename.startswith("INDIVIDUAL_-_DUAL_REGISTRATIONS_-_FIRMS_DOWNLOAD_-_"):
         ans = {
             'crd_number': crd_number,
-            'table_name': DualRegistrations_name,
+            'table_name': DualRegistrations_name.lower(),
             'date': datetime.strftime(datetime.strptime(execution_date, strftime), r'%Y-%m-%d')
         }
         return ans
@@ -167,7 +168,7 @@ def extract_data_from_finra_file_name(file_name:str, crd_number:str):
     try:
         ans = {
             'crd_number': sp[0],
-            'table_name': sp[1],
+            'table_name': sp[1].lower(),
             'date': sp[2].rsplit('.', 1)[0]
         }
         _ = datetime.strptime(ans['date'], r'%Y-%m-%d')
@@ -191,14 +192,14 @@ def get_finra_file_xml_meta(file_path:str, crd_number:str):
     if not file_meta:
         return
 
-    if file_meta['table_name'] == DualRegistrations_name:
+    if file_meta['table_name'].upper() == DualRegistrations_name.upper():
         csv_flag = True
         xml_table = read_csv(spark=spark, file_path=file_path)
         criteria = {
             reportDate_name: file_meta['date'],
             firmCRDNumber_name: file_meta['crd_number'],
             }
-    elif file_path.endswith('.zip'):
+    elif file_path.lower().endswith('.zip'):
         with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
             k = 0
@@ -363,8 +364,8 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
         return
     monid = 'monotonically_increasing_id'
 
-    for df_name, xml_table in xml_table_list.items():
-        print(f'\nWriting {df_name} to Azure...')
+    for table_name, xml_table in xml_table_list.items():
+        print(f'\nWriting {table_name} to Azure...')
 
         data_type = 'data'
         container_folder = f'{data_type}/{domain_name}/{database}/{firm_name}'
@@ -384,7 +385,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
             ).select('x1.*', 'x2.'+KeyIndicator
             ).drop(monid)
 
-        add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name = df_name)
+        add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name=table_name)
 
         xml_table1 = add_elt_columns(
             table_to_add = xml_table1,
@@ -397,7 +398,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
         if is_pc: xml_table1.printSchema()
 
         if is_pc: # and manual_iteration:
-            local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{df_name}'
+            local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
             print(fr'Save to local {local_path}')
             #xml_table1.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
             xml_table1.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
@@ -408,7 +409,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
                 storage_account_name = storage_account_name,
                 container_name = container_name,
                 container_folder = container_folder,
-                table = df_name,
+                table = table_name,
                 partitionBy = partitionBy,
                 file_format = file_format
             )
@@ -1234,7 +1235,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
     schema_file = table_name+'.json'
     schema_path = os.path.join(schema_path_folder, schema_file)
 
-    if table_name == DualRegistrations_name:
+    if table_name.upper() == DualRegistrations_name.upper():
         xml_table = read_csv(spark=spark, file_path=file_path)
     elif os.path.isfile(schema_path):
         print(f"Loading schema from file: {schema_file}")
@@ -1265,7 +1266,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
 
     write_xml_table_list_to_azure(
         xml_table_list= xml_table_list,
-        file_name = table_name,
+        file_name = file_meta['file'],
         reception_date = file_meta['date'],
         firm_name = firm_name,
         storage_account_name = storage_account_name,
@@ -1285,7 +1286,7 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
     file_path = os.path.join(file_meta['root'], file_meta['file'])
     print(f'\nProcessing {file_path}')
 
-    if file_path.endswith('.zip'):
+    if file_path.lower().endswith('.zip'):
         with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
             print(f'\nExtracting {file_path} to {tmpdir}')
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
@@ -1306,7 +1307,7 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
 
 # %% Testing
 
-if False:
+if is_pc and False:
     folder_path = r'C:\Users\smammadov\packages\Shared\test'
     files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number='x')
     file_meta = files_meta[0]
@@ -1359,6 +1360,10 @@ process_all_files()
 
 @catch_error(logger)
 def save_tableinfo():
+    if not tableinfo:
+        print('No data in TableInfo --> Skipping write to Azure')
+        return
+        
     tableinfo_values = list(tableinfo.values())
 
     list_of_dict = []

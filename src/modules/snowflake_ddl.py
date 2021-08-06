@@ -37,7 +37,7 @@ class module_params_class:
     save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
     create_or_replace = False # Default False - Use True for Schema Change Update
-    create_cicd_file = True # Default False
+    create_cicd_file = True # Default True
 
     snowflake_account = 'advisorgroup-edip'
     domain_name = 'financial_professional'
