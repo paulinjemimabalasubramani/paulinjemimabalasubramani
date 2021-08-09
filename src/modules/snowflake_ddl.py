@@ -70,6 +70,7 @@ class module_params_class:
     spark = None
     snowflake_connection = None
     cicd_file = None
+    cicd_str_per_step = defaultdict(str)
 
 
 
@@ -158,7 +159,7 @@ def base_sqlstr(schema_name, table_name, source_system, layer:str):
     sqlstr = f"""USE ROLE {wid.snowflake_role};
 USE WAREHOUSE {wid.snowflake_raw_warehouse};
 USE DATABASE {wid.snowflake_raw_database};
-USE SCHEMA {source_system}{LAYER};
+USE SCHEMA {SCHEMA_NAME};
 """
     return SCHEMA_NAME, TABLE_NAME, sqlstr
 
@@ -250,7 +251,7 @@ def action_source_level_tables(table_name:str):
             
             if wid.create_cicd_file:
                 wid.cicd_file = sqlstr
-                write_CICD_file(source_system=kwargs['source_system'], schema_name=None, table_name=table_name)
+                write_CICD_file_per_table(source_system=kwargs['source_system'], schema_name=None, table_name=table_name)
 
         return inner
     return outer
@@ -258,10 +259,10 @@ def action_source_level_tables(table_name:str):
 
 
 
-# %% Write CICD File to local PC
+# %% Write CICD File per Table to local file system
 
 @catch_error(logger)
-def write_CICD_file(source_system:str, schema_name:str, table_name:str):
+def write_CICD_file_per_table(source_system:str, schema_name:str, table_name:str):
     if not wid.create_cicd_file:
         return
 
@@ -278,6 +279,28 @@ def write_CICD_file(source_system:str, schema_name:str, table_name:str):
     print(f'\nWriting: {file_path}\n')
     with open(file_path, 'w') as f:
         f.write(wid.cicd_file)
+
+
+
+
+# %% Write CICD File per Step to local file system
+
+@catch_error(logger)
+def write_CICD_file_per_step():
+    if not wid.create_cicd_file:
+        return
+
+    for cicd_source_system, cicd_str in wid.cicd_str_per_step.items():
+        folder_name, file_name = cicd_source_system
+
+        file_folder_path = os.path.join(wid.cicd_folder_path + '/per_step', folder_name)
+        os.makedirs(name=file_folder_path, exist_ok=True)
+
+        file_path = os.path.join(file_folder_path, f'{file_name}.sql')
+
+        print(f'\nWriting: {file_path}\n')
+        with open(file_path, 'w') as f:
+            f.write(cicd_str)
 
 
 
@@ -433,6 +456,10 @@ def create_or_replace_func(object_name:str):
 def step1(source_system:str, schema_name:str, table_name:str, column_names:list):
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+    
+    cicd_source_system = (SCHEMA_NAME, 'V0.0.1__Create_Tables')
+    if not wid.cicd_str_per_step[cicd_source_system]:
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     wid.cicd_file = sqlstr
 
@@ -445,6 +472,7 @@ def step1(source_system:str, schema_name:str, table_name:str, column_names:list)
 
     sqlstr += step
     wid.cicd_file += step
+    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*4
     return sqlstr
 
 
@@ -456,6 +484,10 @@ def step1(source_system:str, schema_name:str, table_name:str, column_names:list)
 def step2(source_system:str, schema_name:str, table_name:str, column_names:list):
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+    
+    cicd_source_system = (SCHEMA_NAME, 'V0.0.2__Create_Streams')
+    if not wid.cicd_str_per_step[cicd_source_system]:
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     step = f"""
 {create_or_replace_func('STREAM')} {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}
@@ -464,6 +496,7 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 
     sqlstr += step
     wid.cicd_file += step
+    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*4
     return sqlstr
 
 
@@ -560,6 +593,10 @@ def step4(source_system:str, schema_name:str, table_name:str, column_names:list,
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
+    cicd_source_system = (SCHEMA_NAME, 'V0.0.3__Create_Views')
+    if not wid.cicd_str_per_step[cicd_source_system]:
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
+
     column_list_src = '\n  ,'.join(
         [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
@@ -575,6 +612,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 
     sqlstr += step
     wid.cicd_file += step
+    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*4
     return sqlstr
 
 
@@ -586,6 +624,10 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 def step5(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
+    cicd_source_system = (SCHEMA_NAME, 'V0.0.3__Create_Views')
+    if not wid.cicd_str_per_step[cicd_source_system]:
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     column_list_src = '\n  ,'.join(
         [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
@@ -602,6 +644,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix};
 
     sqlstr += step
     wid.cicd_file += step
+    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*4
     return sqlstr
 
 
@@ -613,6 +656,10 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix};
 def step6(source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
+    cicd_source_system = (SCHEMA_NAME, 'V0.0.3__Create_Views')
+    if not wid.cicd_str_per_step[cicd_source_system]:
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
     column_list = '\n  ,'.join(column_names+elt_audit_columns)
@@ -642,6 +689,7 @@ WHERE top_slice = 1;
 
     sqlstr += step
     wid.cicd_file += step
+    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*4
     return sqlstr
 
 
@@ -653,6 +701,10 @@ WHERE top_slice = 1;
 def step7(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
+    cicd_source_system = (SCHEMA_NAME, 'V0.0.1__Create_Tables')
+    if not wid.cicd_str_per_step[cicd_source_system]:
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     column_list_types = '\n  ,'.join(
         [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in data_types_dict.items()] +
@@ -670,12 +722,8 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
 """
 
     sqlstr += step
-    wid.cicd_file += f"""
-
-USE SCHEMA {source_system};
-
-{step}
-"""
+    wid.cicd_file += f"\n\nUSE SCHEMA {SCHEMA_NAME};\n\n{step}"
+    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*4
     return sqlstr
 
 
@@ -688,6 +736,10 @@ USE SCHEMA {source_system};
 def step8(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+
+    cicd_source_system = (SCHEMA_NAME, 'V0.0.2__Create_Stored_Procedures')
+    if not wid.cicd_str_per_step[cicd_source_system]:
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
     column_list = '\n    ,'.join([target_column_name for target_column_name, target_data_type in data_types_dict.items()] + elt_audit_columns)
@@ -762,6 +814,7 @@ $$
 
     sqlstr += step
     wid.cicd_file += step
+    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*4
     return sqlstr
 
 
@@ -773,7 +826,11 @@ $$
 def step9(source_system:str, schema_name:str, table_name:str, column_names:list):
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
-    
+
+    cicd_source_system = (SCHEMA_NAME, 'V0.0.3__Create_Tasks')
+    if not wid.cicd_str_per_step[cicd_source_system]:
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
+
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
     task_suffix = '_MERGE_TASK'
     task_name = f'{TABLE_NAME}{task_suffix}'.upper()
@@ -794,6 +851,7 @@ ALTER TASK {task_name} RESUME;
 
     sqlstr += step
     wid.cicd_file += step
+    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*4
     return sqlstr
 
 
@@ -825,10 +883,11 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step7(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
-            write_CICD_file(source_system=source_system, schema_name=schema_name, table_name=table_name)
+            write_CICD_file_per_table(source_system=source_system, schema_name=schema_name, table_name=table_name)
             ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
             ingest_data_list[source_system].append(ingest_data)
 
+    write_CICD_file_per_step()
     print('Finished Iterating over all tables')
     return ingest_data_list
 
