@@ -38,8 +38,8 @@ with DAG(
     airflow_app_name,
     default_args=default_args,
     description=description_DAG,
-    schedule_interval=timedelta(hours=24),
-    start_date=days_ago(2),
+    schedule_interval='0 13 * * *',
+    start_date=days_ago(1),
 ) as dag:
     current_datetime = datetime.now()
     info = "CAT"
