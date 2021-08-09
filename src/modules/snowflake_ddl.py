@@ -265,7 +265,7 @@ def write_CICD_file(source_system:str, schema_name:str, table_name:str):
     if not wid.create_cicd_file:
         return
 
-    file_folder_path = os.path.join(wid.cicd_folder_path, source_system)
+    file_folder_path = os.path.join(wid.cicd_folder_path + '/per_table', source_system)
     os.makedirs(name=file_folder_path, exist_ok=True)
 
     if schema_name:
