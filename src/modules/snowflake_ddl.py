@@ -413,7 +413,12 @@ ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME;
 
 @catch_error(logger)
 def trigger_snowpipe(source_system:str):
-    sqlstr= f'alter pipe {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_stage_name}_{wid.domain_abbr}_{source_system}_INGEST_REQUEST_PIPE refresh;'
+    sqlstr = f"""
+USE ROLE {wid.snowflake_role};
+USE WAREHOUSE {wid.snowflake_raw_warehouse};
+
+ALTER PIPE {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_stage_name}_{wid.domain_abbr}_{source_system}_INGEST_REQUEST_PIPE REFRESH;
+"""
 
     print(f'\nTriggering Snowpipe\n{sqlstr}\n')
     exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
