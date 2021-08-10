@@ -41,9 +41,12 @@ class module_params_class:
 
     snowflake_account = 'advisorgroup-edip'
     domain_name = 'financial_professional'
+    domain_abbr = 'FP'
     envionment = 'QA'
     snowflake_raw_warehouse = f'{envionment}_RAW_WH'.upper()
-    snowflake_raw_database = f'{envionment}_RAW_FP'.upper()
+    snowflake_raw_database = f'{envionment}_RAW_{domain_abbr}'.upper()
+
+    common_elt_stage_name = 'AGGR'
 
     snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'.upper()
     engineer_role = f"AD_SNOWFLAKE_{envionment}_ENGINEER".upper()
@@ -313,14 +316,14 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
     if source_system.upper() in ['LR']:
-        elt_stage_name = 'AGGR'
+        elt_stage_name = wid.common_elt_stage_name
     else:
         elt_stage_name = schema_name.upper()
 
-    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '@{wid.elt_stage_schema}.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
+    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '@{wid.elt_stage_schema}.{elt_stage_name}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
 
     ingest_data = {
-        "INGEST_STAGE_NAME": f'@{wid.elt_stage_schema}.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
+        "INGEST_STAGE_NAME": f'@{wid.elt_stage_schema}.{elt_stage_name}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
         "EXECUTION_DATE": execution_date,
         "FULL_OBJECT_NAME": TABLE_NAME,
         "COPY_COMMAND": sqlstr,
@@ -406,6 +409,16 @@ ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME;
 
 
 
+# %% Trigger snowpipe
+
+@catch_error(logger)
+def trigger_snowpipe(source_system:str):
+    sqlstr= f'alter pipe {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_stage_name}_{wid.domain_abbr}_{source_system}_INGEST_REQUEST_PIPE refresh;'
+
+    print(f'\nTriggering Snowpipe\n{sqlstr}\n')
+    exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
+
+
 
 # %% Create Source Level Tables
 
@@ -433,6 +446,10 @@ def create_source_level_tables(ingest_data_list:defaultdict):
             source_system = source_system,
             container_folder = container_folder,
             storage_account_name = storage_account_name,
+            )
+        
+        trigger_snowpipe(
+            source_system = source_system,
             )
 
 
@@ -510,13 +527,13 @@ def step3(source_system:str, schema_name:str, table_name:str, column_names:list,
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
     if source_system.upper() in ['LR']:
-        elt_stage_name = 'AGGR'
+        elt_stage_name = wid.common_elt_stage_name
     else:
         elt_stage_name = schema_name.upper()
 
     step = f"""
 COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
-FROM '@{wid.elt_stage_schema}.{elt_stage_name}_FP_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
+FROM '@{wid.elt_stage_schema}.{elt_stage_name}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
 FILE_FORMAT = (type='{wid.FILE_FORMAT}')
 PATTERN = '{wid.wild_card}'
 ON_ERROR = CONTINUE;
