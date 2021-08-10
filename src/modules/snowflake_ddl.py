@@ -40,11 +40,14 @@ class module_params_class:
     create_cicd_file = True # Default True
 
     snowflake_account = 'advisorgroup-edip'
+    sf_key_vault_account = 'snowflake'
+
     domain_name = 'financial_professional'
     domain_abbr = 'FP'
     envionment = 'QA'
     snowflake_raw_warehouse = f'{envionment}_RAW_WH'.upper()
     snowflake_raw_database = f'{envionment}_RAW_{domain_abbr}'.upper()
+    snowflake_curated_database = f'{envionment}_CURATED_{domain_abbr}'.upper()
 
     common_elt_stage_name = 'AGGR'
 
@@ -105,7 +108,7 @@ if wid.create_cicd_file:
 @catch_error(logger)
 def connect_to_snowflake(
         snowflake_account:str=wid.snowflake_account,
-        key_vault_account:str='snowflake',
+        key_vault_account:str=wid.sf_key_vault_account,
         snowflake_database:str=None, 
         snowflake_warehouse:str=None,
         snowflake_role:str=None,
