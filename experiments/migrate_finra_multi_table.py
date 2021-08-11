@@ -100,7 +100,7 @@ def get_firms():
         storage_account_name = storage_account_name,
         container_name = tableinfo_container_name,
         container_folder = '',
-        table = metadata_FirmSourceMap,
+        table_name = metadata_FirmSourceMap,
         file_format = file_format
     )
 
@@ -357,7 +357,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
                 storage_account_name = storage_account_name,
                 container_name = container_name,
                 container_folder = container_folder,
-                table = df_name,
+                table_name = df_name,
                 partitionBy = partitionBy,
                 file_format = file_format
             )
@@ -524,7 +524,7 @@ def save_tableinfo():
                 storage_account_name = storage_account_name,
                 container_name = tableinfo_container_name,
                 container_folder = tableinfo_source,
-                table = tableinfo_name,
+                table_name = tableinfo_name,
                 partitionBy = partitionBy,
                 file_format = file_format,
             )

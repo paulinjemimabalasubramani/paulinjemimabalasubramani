@@ -185,7 +185,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = container_folder,
-        table = table_name,
+        table_name = table_name,
         file_format = file_format
     )
 
@@ -219,7 +219,7 @@ def action_step(step:int):
                     storage_account_name = storage_account_name,
                     container_name = container_name,
                     container_folder = f"{wid.ddl_folder}/{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}",
-                    table = kwargs['table_name'],
+                    table_name = kwargs['table_name'],
                     file_format = 'text'
                 )
 
@@ -247,7 +247,7 @@ def action_source_level_tables(table_name:str):
                     storage_account_name = kwargs['storage_account_name'],
                     container_name = container_name,
                     container_folder = kwargs['container_folder'],
-                    table = table_name,
+                    table_name = table_name,
                     file_format = 'text'
                 )
 
@@ -350,7 +350,7 @@ def create_ingest_data_table(ingest_data_per_source_system, container_folder:str
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = container_folder,
-        table = 'ingest_data',
+        table_name = 'ingest_data',
         file_format = 'parquet'
     )
 
@@ -834,7 +834,7 @@ try {
 catch (err)  {
     return "Failed: " + err;
     }
-$$
+$$;
 """
 
     sqlstr += step

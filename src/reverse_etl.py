@@ -17,14 +17,16 @@ https://docs.databricks.com/_static/notebooks/snowflake-python.html
 
 import os, sys
 
-
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
+from pprint import pprint
+
+
 from modules.common_functions import make_logging, catch_error
-from modules.spark_functions import create_spark, read_sql
+from modules.spark_functions import create_spark, write_sql, read_snowflake
 from modules.azure_functions import  get_azure_sp
 from modules.snowflake_ddl import connect_to_snowflake, snowflake_ddl_params
 from modules.config import is_pc
@@ -41,7 +43,10 @@ logger = make_logging(__name__)
 # %% Parameters
 
 sql_server = 'DSQLOLTP02'
+sql_database = 'FinancialProfessional'
+sql_schema = 'edip'
 
+sf_account = snowflake_ddl_params.snowflake_account
 sf_role = snowflake_ddl_params.snowflake_role
 sf_warehouse = snowflake_ddl_params.snowflake_raw_warehouse
 sf_database = snowflake_ddl_params.snowflake_curated_database
@@ -62,61 +67,82 @@ _, sql_id, sql_pass = get_azure_sp(sql_server.lower())
 _, sf_id, sf_pass = get_azure_sp(snowflake_ddl_params.sf_key_vault_account.lower())
 
 
-# %% Function to Get Snowflake Table
+
+# %% Get List of Tables and Columns from Information Schema
 
 @catch_error(logger)
-def get_sf_table(schema_name, table_name):
-    sf_options = {
-        'sfUrl': f'{snowflake_ddl_params.snowflake_account}.snowflakecomputing.com',
-        'sfUser': sf_id,
-        'sfPassword': sf_pass,
-        'sfRole': sf_role,
-        'sfWarehouse': sf_warehouse,
-        'sfDatabase': sf_database,
-        'sfSchema': schema_name,
-        }
+def get_sf_table_list(schema_name:str):
+    print('\nGet List of Tables and Columns from Information Schema...')
+    tables = read_snowflake(
+        spark = spark,
+        table_name = 'TABLES',
+        schema_name = 'INFORMATION_SCHEMA',
+        database = sf_database,
+        warehouse = sf_warehouse,
+        role = sf_role,
+        account = sf_account,
+        user = sf_id,
+        password = sf_pass,
+        )
 
-    table = spark.read \
-        .format('snowflake') \
-        .options(**sf_options) \
-        .option('dbtable', table_name) \
-        .load()
-    
-    return table
+    columns = read_snowflake(
+        spark = spark,
+        table_name = 'COLUMNS',
+        schema_name = 'INFORMATION_SCHEMA',
+        database = sf_database,
+        warehouse = sf_warehouse,
+        role = sf_role,
+        account = sf_account,
+        user = sf_id,
+        password = sf_pass,
+        )
+
+    tables = tables.filter((col('TABLE_SCHEMA') == lit(schema_name)) & (col('TABLE_TYPE')==lit('BASE TABLE')))
+    columns = columns.filter(col('TABLE_SCHEMA') == lit(schema_name))
+    columns = columns.alias('c').join(tables.alias('t'), columns['TABLE_NAME']==tables['TABLE_NAME'], how='inner').select('c.*')
+
+    table_names = columns.select('TABLE_NAME').distinct().rdd.flatMap(lambda x: x).collect()
+
+    print(f'Total of {len(table_names)} tables')
+    pprint(table_names)
+    return table_names, columns
 
 
 
-# %% Get List of Tables from Information Schema
+table_names, columns = get_sf_table_list(schema_name=sf_schema)
 
-tables = get_sf_table(
-    schema_name = 'INFORMATION_SCHEMA',
-    table_name = 'TABLES',
-    )
-
-
-if is_pc: tables.show(5)
-
-
-# %%
-
-tables = tables.filter((col('TABLE_SCHEMA') == lit(sf_schema)) & (col('TABLE_TYPE')==lit('BASE TABLE')))
-
-# %%
-
-table_names = tables.select('TABLE_NAME').rdd.flatMap(lambda x: x).collect()
 
 
 # %%
 
 table_name = table_names[0]
 
-table = get_sf_table(
-    schema_name = sf_schema,
+table = read_snowflake(
+    spark = spark,
     table_name = table_name,
+    schema_name = sf_schema,
+    database = sf_database,
+    warehouse = sf_warehouse,
+    role = sf_role,
+    account = sf_account,
+    user = sf_id,
+    password = sf_pass,
     )
 
+# %%
 
 
+write_sql(
+    table = table,
+    table_name = table_name,
+    schema = sql_schema,
+    database = sql_database,
+    server = sql_server,
+    user = sql_id,
+    password = sql_pass
+)
 
+
+# %%
 
 

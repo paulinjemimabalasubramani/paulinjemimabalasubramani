@@ -68,10 +68,10 @@ sql_config = read_sql_config()
 
 # %% Get Table and Column Metadata from information_schema
 
-df_tables = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='tables', database=database, server=server)
+df_tables = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table_name='tables', database=database, server=server)
 df_tables.printSchema()
 
-df_columns = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table='columns', database=database, server=server)
+df_columns = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema='information_schema', table_name='columns', database=database, server=server)
 df_columns.printSchema()
 
 # %% Filter Tables for Schema
@@ -93,7 +93,7 @@ for i, table in enumerate(table_list):
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
 
-    df = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema=schema, table=table, database=database, server=server)
+    df = read_sql(spark=spark, user=sql_config.sql_user, password=sql_config.sql_password, schema=schema, table_name=table, database=database, server=server)
     df = to_string(df, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
     df = remove_column_spaces(df) # May create "name not matching" problems as we are saving column metadata as well.
     df = add_etl_columns(df=df, execution_date=execution_date)

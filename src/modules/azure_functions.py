@@ -148,13 +148,13 @@ def save_adls_gen2(
         storage_account_name:str,
         container_name:str,
         container_folder:str,
-        table:str,
+        table_name:str,
         partitionBy:str=None,
         file_format:str=file_format):
     """
     Save table_to_save to ADLS Gen 2
     """
-    data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table}"
+    data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table_name}"
     print(f"Write {file_format} -> {data_path}")
 
     if file_format == 'text':
@@ -166,7 +166,7 @@ def save_adls_gen2(
     else:
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
 
-    print(f'Finished Writing {container_folder}/{table}')
+    print(f'Finished Writing {container_folder}/{table_name}')
 
 
 
@@ -177,12 +177,12 @@ def read_adls_gen2(spark,
         storage_account_name:str,
         container_name:str,
         container_folder:str,
-        table:str,
+        table_name:str,
         file_format:str=file_format):
     """
     Read table from ADLS Gen 2
     """
-    data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table}"
+    data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table_name}"
 
     print(f'Reading -> {data_path}')
 
@@ -209,7 +209,7 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
         storage_account_name = storage_account_name,
         container_name = tableinfo_container_name,
         container_folder = tableinfo_source,
-        table = tableinfo_name,
+        table_name = tableinfo_name,
         file_format = file_format
     )
 
