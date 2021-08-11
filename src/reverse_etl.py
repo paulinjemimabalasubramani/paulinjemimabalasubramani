@@ -28,7 +28,7 @@ from pprint import pprint
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, write_sql, read_snowflake
 from modules.azure_functions import  get_azure_sp
-from modules.snowflake_ddl import connect_to_snowflake, snowflake_ddl_params
+from modules.snowflake_ddl import snowflake_ddl_params
 from modules.config import is_pc
 
 
@@ -76,7 +76,7 @@ def get_sf_table_list(schema_name:str):
     tables = read_snowflake(
         spark = spark,
         table_name = 'TABLES',
-        schema_name = 'INFORMATION_SCHEMA',
+        schema = 'INFORMATION_SCHEMA',
         database = sf_database,
         warehouse = sf_warehouse,
         role = sf_role,
@@ -88,7 +88,7 @@ def get_sf_table_list(schema_name:str):
     columns = read_snowflake(
         spark = spark,
         table_name = 'COLUMNS',
-        schema_name = 'INFORMATION_SCHEMA',
+        schema = 'INFORMATION_SCHEMA',
         database = sf_database,
         warehouse = sf_warehouse,
         role = sf_role,
@@ -113,34 +113,38 @@ table_names, columns = get_sf_table_list(schema_name=sf_schema)
 
 
 
-# %%
+# %% Loop over all tables
 
-table_name = table_names[0]
+@catch_error(logger)
+def reverse_etl_all_tables():
+    for table_name in table_names:
+        table = read_snowflake(
+            spark = spark,
+            table_name = table_name,
+            schema = sf_schema,
+            database = sf_database,
+            warehouse = sf_warehouse,
+            role = sf_role,
+            account = sf_account,
+            user = sf_id,
+            password = sf_pass,
+            )
 
-table = read_snowflake(
-    spark = spark,
-    table_name = table_name,
-    schema_name = sf_schema,
-    database = sf_database,
-    warehouse = sf_warehouse,
-    role = sf_role,
-    account = sf_account,
-    user = sf_id,
-    password = sf_pass,
-    )
-
-# %%
+        write_sql(
+            table = table,
+            table_name = table_name.lower(),
+            schema = sql_schema,
+            database = sql_database,
+            server = sql_server,
+            user = sql_id,
+            password = sql_pass
+        )
+    
+    print('Finished Reverse ETL for all tables')
 
 
-write_sql(
-    table = table,
-    table_name = table_name,
-    schema = sql_schema,
-    database = sql_database,
-    server = sql_server,
-    user = sql_id,
-    password = sql_pass
-)
+
+reverse_etl_all_tables()
 
 
 # %%
