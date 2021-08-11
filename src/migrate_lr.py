@@ -80,7 +80,7 @@ def iterate_over_all_tables(table_rows):
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
 
-        sql_table = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=schema, table=table, database=database, server=sql_server)
+        sql_table = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=schema, table_name=table, database=database, server=sql_server)
         sql_table = to_string(sql_table, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
         sql_table = remove_column_spaces(sql_table)
         sql_table = add_elt_columns(
@@ -96,7 +96,7 @@ def iterate_over_all_tables(table_rows):
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = container_folder,
-            table = table,
+            table_name = table,
             partitionBy = partitionBy,
             file_format = file_format
         )

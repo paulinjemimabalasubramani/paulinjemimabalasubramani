@@ -107,7 +107,7 @@ def get_master_ingest_list_csv(master_ingest_list_path:str, tableinfo_source:str
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = tableinfo_source,
-            table = metadata_MasterIngestList,
+            table_name = metadata_MasterIngestList,
             partitionBy = partitionBy,
             file_format = file_format,
         )
@@ -142,7 +142,7 @@ def get_translation(data_type_translation_path:str):
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = '',
-            table = metadata_DataTypeTranslation,
+            table_name = metadata_DataTypeTranslation,
             partitionBy = partitionBy,
             file_format = file_format,
         )
@@ -176,7 +176,7 @@ def get_firm_source_map(firm_source_map_path:str):
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = '',
-            table = metadata_FirmSourceMap,
+            table_name = metadata_FirmSourceMap,
             partitionBy = partitionBy,
             file_format = file_format,
         )

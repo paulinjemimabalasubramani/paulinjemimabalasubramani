@@ -40,9 +40,10 @@ logger = make_logging(__name__)
 
 data_type_translation_id = 'sqlserver_snowflake'
 
-database = 'LR' # TABLE_CATALOG
 sql_server = 'TSQLOLTP01'
-tableinfo_source = database
+sql_database = 'LR' # TABLE_CATALOG
+
+tableinfo_source = sql_database
 
 created_datetime = execution_date
 modified_datetime = execution_date
@@ -68,7 +69,7 @@ master_ingest_list = read_adls_gen2(
     storage_account_name = storage_account_name,
     container_name = tableinfo_container_name,
     container_folder = tableinfo_source,
-    table = metadata_MasterIngestList,
+    table_name = metadata_MasterIngestList,
     file_format = file_format
 )
 
@@ -87,7 +88,7 @@ translation = read_adls_gen2(
     storage_account_name = storage_account_name,
     container_name = tableinfo_container_name,
     container_folder = '',
-    table = metadata_DataTypeTranslation,
+    table_name = metadata_DataTypeTranslation,
     file_format = file_format
 )
 
@@ -107,19 +108,19 @@ _, sql_id, sql_pass = get_azure_sp(sql_server.lower())
 
 # %% Get Table and Column Metadata from information_schema
 
-sql_tables = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='TABLES', database=database, server=sql_server)
+sql_tables = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table_name='TABLES', database=sql_database, server=sql_server)
 if is_pc: sql_tables.printSchema()
 if is_pc: sql_tables.show(5)
 
-sql_columns = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='COLUMNS', database=database, server=sql_server)
+sql_columns = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table_name='COLUMNS', database=sql_database, server=sql_server)
 if is_pc: sql_columns.printSchema()
 if is_pc: sql_columns.show(5)
 
-sql_table_constraints = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='TABLE_CONSTRAINTS', database=database, server=sql_server)
+sql_table_constraints = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table_name='TABLE_CONSTRAINTS', database=sql_database, server=sql_server)
 if is_pc: sql_table_constraints.printSchema()
 if is_pc: sql_table_constraints.show(5)
 
-sql_key_column_usage = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table='KEY_COLUMN_USAGE', database=database, server=sql_server)
+sql_key_column_usage = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table_name='KEY_COLUMN_USAGE', database=sql_database, server=sql_server)
 if is_pc: sql_key_column_usage.printSchema()
 if is_pc: sql_key_column_usage.show(5)
 
@@ -294,7 +295,7 @@ def save_table_info_to_adls_gen2(columns):
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = tableinfo_source,
-            table = tableinfo_name,
+            table_name = tableinfo_name,
             partitionBy = partitionBy,
             file_format = file_format,
         )

@@ -75,11 +75,12 @@ def create_spark():
 # %% Read SQL Table
 
 @catch_error(logger)
-def read_sql(spark, user:str, password:str, schema:str, table:str, database:str, server:str):
+def read_sql(spark, schema:str, table_name:str, database:str, server:str, user:str, password:str):
     """
     Read a table from SQL server
     """
-    print(f"Reading SQL: server='{server}', database='{database}', table='{schema}.{table}'")
+    sql_table_name = f'{schema}.{table_name}'
+    print(f"Reading SQL: server='{server}', database='{database}', table='{sql_table_name}'")
 
     url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
 
@@ -90,13 +91,66 @@ def read_sql(spark, user:str, password:str, schema:str, table:str, database:str,
             .option("driver", 'com.microsoft.sqlserver.jdbc.SQLServerDriver')
             .option("user", user)
             .option("password", password)
-            .option("dbtable", f"{schema}.{table}")
+            .option("dbtable", f"{sql_table_name}")
             .option("encrypt", "true")
             .option("hostNameInCertificate", "*.database.windows.net")
             .load()
         )
     
     return sql_table
+
+
+
+# %% Write table to SQL server
+
+@catch_error(logger)
+def write_sql(table, table_name:str, schema:str, database:str, server:str, user:str, password:str):
+    """
+    Write table to SQL server
+    """
+    sql_table_name = f'{schema}.{table_name}'
+    print(f"\nWriting to SQL Server: server='{server}', database='{database}', table='{sql_table_name}'")
+
+    url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
+
+    table.write.mode("overwrite") \
+        .format("jdbc") \
+        .option("url", url) \
+        .option("driver", 'com.microsoft.sqlserver.jdbc.SQLServerDriver') \
+        .option("user", user) \
+        .option("password", password) \
+        .option("dbtable", sql_table_name) \
+        .option("encrypt", "true") \
+        .option("hostNameInCertificate", "*.database.windows.net") \
+        .save()
+
+    print('Finished Writing to SQL Server\n')
+
+
+
+# %% Function to Get Snowflake Table
+
+@catch_error(logger)
+def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:str, role:str, account:str, user:str, password:str):
+    print(f"\nReading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
+    sf_options = {
+        'sfUrl': f'{account}.snowflakecomputing.com',
+        'sfUser': user,
+        'sfPassword': password,
+        'sfRole': role,
+        'sfWarehouse': warehouse,
+        'sfDatabase': database,
+        'sfSchema': schema,
+        }
+
+    table = spark.read \
+        .format('snowflake') \
+        .options(**sf_options) \
+        .option('dbtable', table_name) \
+        .load()
+
+    print('Finished Reading from Snowflake\n')
+    return table
 
 
 
@@ -107,6 +161,7 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     """
     Read XML Files using Spark
     """
+    print(f'\nReading XML file: {file_path}')
     xml_table = (spark.read
         .format("com.databricks.spark.xml")
         .option("rowTag", rowTag)
@@ -119,7 +174,9 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     if schema:
         xml_table = xml_table.schema(schema=schema)
 
-    return xml_table.load(file_path)
+    xml_table_load = xml_table.load(file_path)
+    print('Finished reading XML file\n')
+    return xml_table_load
 
 
 # %% Read CSV File
@@ -129,12 +186,13 @@ def read_csv(spark, file_path:str):
     """
     Read CSV File using Spark
     """
+    print(f'\nReading CSV file: {file_path}')
     csv_table = (spark.read
         .format('csv')
         .option('header', 'true')
         .load(file_path)
     )
-
+    print('Finished reading CSV file\n')
     return csv_table
 
 

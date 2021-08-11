@@ -40,11 +40,14 @@ class module_params_class:
     create_cicd_file = True # Default True
 
     snowflake_account = 'advisorgroup-edip'
+    sf_key_vault_account = 'snowflake'
+
     domain_name = 'financial_professional'
     domain_abbr = 'FP'
     envionment = 'QA'
     snowflake_raw_warehouse = f'{envionment}_RAW_WH'.upper()
     snowflake_raw_database = f'{envionment}_RAW_{domain_abbr}'.upper()
+    snowflake_curated_database = f'{envionment}_CURATED_{domain_abbr}'.upper()
 
     common_elt_stage_name = 'AGGR'
 
@@ -105,7 +108,7 @@ if wid.create_cicd_file:
 @catch_error(logger)
 def connect_to_snowflake(
         snowflake_account:str=wid.snowflake_account,
-        key_vault_account:str='snowflake',
+        key_vault_account:str=wid.sf_key_vault_account,
         snowflake_database:str=None, 
         snowflake_warehouse:str=None,
         snowflake_role:str=None,
@@ -182,7 +185,7 @@ def get_partition(source_system:str, schema_name:str, table_name:str):
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = container_folder,
-        table = table_name,
+        table_name = table_name,
         file_format = file_format
     )
 
@@ -216,7 +219,7 @@ def action_step(step:int):
                     storage_account_name = storage_account_name,
                     container_name = container_name,
                     container_folder = f"{wid.ddl_folder}/{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}",
-                    table = kwargs['table_name'],
+                    table_name = kwargs['table_name'],
                     file_format = 'text'
                 )
 
@@ -244,7 +247,7 @@ def action_source_level_tables(table_name:str):
                     storage_account_name = kwargs['storage_account_name'],
                     container_name = container_name,
                     container_folder = kwargs['container_folder'],
-                    table = table_name,
+                    table_name = table_name,
                     file_format = 'text'
                 )
 
@@ -347,7 +350,7 @@ def create_ingest_data_table(ingest_data_per_source_system, container_folder:str
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = container_folder,
-        table = 'ingest_data',
+        table_name = 'ingest_data',
         file_format = 'parquet'
     )
 
@@ -831,7 +834,7 @@ try {
 catch (err)  {
     return "Failed: " + err;
     }
-$$
+$$;
 """
 
     sqlstr += step
