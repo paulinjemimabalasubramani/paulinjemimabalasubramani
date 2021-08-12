@@ -26,7 +26,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import make_logging, catch_error
-from modules.spark_functions import create_spark, read_csv
+from modules.spark_functions import create_spark, read_csv, add_md5_key, IDKeyIndicator, MD5KeyIndicator
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
     to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, read_adls_gen2
@@ -203,7 +203,6 @@ def write_csv_table_list_to_azure(csv_table_list:dict, file_name:str, reception_
     if not csv_table_list:
         print(f"No data to write -> {file_name}")
         return
-    monid = 'monotonically_increasing_id'
 
     for table_name, csv_table in csv_table_list.items():
         print(f'\nWriting {table_name} to Azure...')
@@ -218,15 +217,7 @@ def write_csv_table_list_to_azure(csv_table_list:dict, file_name:str, reception_
 
         id_columns = [c for c in table1.columns if c.upper() in [IDKeyIndicator.upper()]]
         if not id_columns:
-            table1 = table1.withColumn(monid, monotonically_increasing_id().cast('string'))
-            table2 = to_string(table_to_convert_columns = table1, col_types = []) # Convert all columns to string
-            md5_columns = [c for c in table2.columns if c not in [monid]]
-            table2 = table2.withColumn(MD5KeyIndicator, md5(concat_ws('_', *md5_columns))) # add HASH column for key indicator
-
-            table1 = table1.alias('x1'
-                ).join(table2.alias('x2'), table1[monid]==table2[monid], how='left'
-                ).select('x1.*', 'x2.'+MD5KeyIndicator
-                ).drop(monid)
+            table1 = add_md5_key(table1)
 
         add_table_to_tableinfo(csv_table=table1, firm_name=firm_name, table_name=table_name)
 

@@ -21,11 +21,19 @@ from .config import is_pc, extraClassPath
 
 
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce
 
 
 
 # %% Logging
 logger = make_logging(__name__)
+
+
+
+# %% Parameters
+
+MD5KeyIndicator = 'MD5_KEY'
+IDKeyIndicator = 'ID'
 
 
 
@@ -194,6 +202,26 @@ def read_csv(spark, file_path:str):
     )
     print('Finished reading CSV file\n')
     return csv_table
+
+
+
+# %% Add ID Key
+
+@catch_error(logger)
+def add_id_key(table, key_column_names:list):
+    coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
+    table = table.withColumn(MD5KeyIndicator, concat_ws('_', *coalesce_list)) # TODO: Change this to IDKeyIndicator later when we can add schema change
+    return table
+
+
+# %% Add MD5 Key
+
+@catch_error(logger)
+def add_md5_key(table):
+    coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in table.columns]
+    table = table.withColumn(MD5KeyIndicator, md5(concat_ws('_', *coalesce_list)))
+    return table
+
 
 
 
