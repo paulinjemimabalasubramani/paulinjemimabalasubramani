@@ -33,7 +33,7 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_csv, read_xml, add_id_key, add_md5_key, IDKeyIndicator, MD5KeyIndicator
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
-    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd
+    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, get_azure_sp
 from modules.data_functions import  remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, \
     partitionBy_value, strftime
 from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table, flatten_df, flatten_n_divide_df
@@ -64,6 +64,11 @@ domain_name = 'financial_professional'
 database = 'FINRA'
 tableinfo_source = database
 
+sql_server = 'DSQLOLTP02'
+sql_database = 'EDIPIngestion'
+sql_schema = 'edip'
+sql_key_vault_account = 'sqledipingestion'
+
 FirmCRDNumber = 'Firm_CRD_Number'
 
 finra_individual_delta_name = 'IndividualInformationReportDelta'
@@ -75,6 +80,14 @@ DualRegistrations_name = 'DualRegistrations'
 
 # %% Initiate Spark
 spark = create_spark()
+
+
+# %% Read Key Vault Data
+
+# _, sql_id, sql_id = get_azure_sp(sql_key_vault_account.lower())
+
+sql_id , sql_pass = 'svc_edipingestionapp', 'svc_edipingestionapp'  # TODO: Remove this once KV is ready.
+
 
 
 # %% Get Paths
