@@ -140,15 +140,15 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
         (col('SourceDatabase') == source_system)
         )
     
-    column_names = filtered_tableinfo.select('TargetColumnName').rdd.flatMap(lambda x: x).collect()
+    column_names = sorted(filtered_tableinfo.select('TargetColumnName').rdd.flatMap(lambda x: x).collect())
     src_column_names = filtered_tableinfo.select('TargetColumnName', 'SourceColumnName').collect()
     src_column_dict = {c['TargetColumnName']:c['SourceColumnName'] for c in src_column_names}
     data_types = filtered_tableinfo.select('TargetColumnName', 'TargetDataType').collect()
     data_types_dict = {c['TargetColumnName']:c['TargetDataType'] for c in data_types}
 
-    pk_column_names = filtered_tableinfo.filter(
+    pk_column_names = sorted(filtered_tableinfo.filter(
         (col('KeyIndicator') == lit(1))
-        ).select('TargetColumnName').rdd.flatMap(lambda x: x).collect()
+        ).select('TargetColumnName').rdd.flatMap(lambda x: x).collect())
 
     return column_names, pk_column_names, src_column_dict, data_types_dict
 
@@ -622,8 +622,9 @@ def step4(source_system:str, schema_name:str, table_name:str, column_names:list,
     if not wid.cicd_str_per_step[cicd_source_system]:
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
+    sorted_src_column_dict = sorted(src_column_dict.items())
     column_list_src = '\n  ,'.join(
-        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
+        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in sorted_src_column_dict] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
@@ -654,8 +655,9 @@ def step5(source_system:str, schema_name:str, table_name:str, column_names:list,
     if not wid.cicd_str_per_step[cicd_source_system]:
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
+    sorted_src_column_dict = sorted(src_column_dict.items())
     column_list_src = '\n  ,'.join(
-        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
+        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in sorted_src_column_dict] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
@@ -731,8 +733,9 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
     if not wid.cicd_str_per_step[cicd_source_system]:
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
+    sorted_data_types_dict = sorted(data_types_dict.items())
     column_list_types = '\n  ,'.join(
-        [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in data_types_dict.items()] +
+        [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in sorted_data_types_dict] +
         [f'{c} VARCHAR(50)' for c in elt_audit_columns]
         )
 
@@ -767,7 +770,8 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
-    column_list = '\n    ,'.join([target_column_name for target_column_name, target_data_type in data_types_dict.items()] + elt_audit_columns)
+    sorted_data_types_dict = sorted(data_types_dict.items())
+    column_list = '\n    ,'.join([target_column_name for target_column_name, target_data_type in sorted_data_types_dict] + elt_audit_columns)
 
     def fval(column_name:str, data_type:str):
         if data_type.upper().startswith('variant'.upper()):
@@ -777,11 +781,11 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
         else:
             return column_name
 
-    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict.items()])
+    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in sorted_data_types_dict])
     merge_update_elt_columns = '\n    ,'.join([f'{wid.tgt_alias}.{c} = {wid.src_alias}.{c}' for c in elt_audit_columns])
     merge_update_columns    += '\n    ,' + merge_update_elt_columns
 
-    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict.items()])
+    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in sorted_data_types_dict])
     column_list_with_alias_elt = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in elt_audit_columns])
     column_list_with_alias    += '\n    ,' + column_list_with_alias_elt
 

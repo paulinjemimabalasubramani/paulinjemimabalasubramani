@@ -30,17 +30,16 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import make_logging, catch_error
-from modules.spark_functions import create_spark, read_csv, read_xml
+from modules.spark_functions import create_spark, read_csv, read_xml, add_id_key, add_md5_key, IDKeyIndicator, MD5KeyIndicator
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
     to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, read_adls_gen2
-from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, \
+from modules.data_functions import  remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, \
     metadata_FirmSourceMap, partitionBy_value, strftime
 
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import col, lit, explode, md5, concat_ws, arrays_zip, filter, monotonically_increasing_id, \
-    struct
+from pyspark.sql.functions import col, lit, explode, md5, concat_ws, arrays_zip, filter, struct
 
 
 
@@ -65,7 +64,6 @@ domain_name = 'financial_professional'
 database = 'FINRA'
 tableinfo_source = database
 
-KeyIndicator = 'MD5_KEY'
 FirmCRDNumber = 'Firm_CRD_Number'
 
 finra_individual_delta_name = 'IndividualInformationReportDelta'
@@ -346,8 +344,8 @@ def add_table_to_tableinfo(xml_table, firm_name, table_name):
         tableinfo['CleanType'].append(var_col_type)
         tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
         tableinfo['TargetDataType'].append(var_col_type)
-        tableinfo['IsNullable'].append(0 if col_name in [KeyIndicator] else 1)
-        tableinfo['KeyIndicator'].append(1 if col_name in [KeyIndicator] else 0)
+        tableinfo['IsNullable'].append(0 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 1)
+        tableinfo['KeyIndicator'].append(1 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 0)
         tableinfo['IsActive'].append(1)
         tableinfo['CreatedDateTime'].append(execution_date)
         tableinfo['ModifiedDateTime'].append(execution_date)
@@ -362,7 +360,6 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
     if not xml_table_list:
         print(f"No data to write -> {file_name}")
         return
-    monid = 'monotonically_increasing_id'
 
     for table_name, xml_table in xml_table_list.items():
         print(f'\nWriting {table_name} to Azure...')
@@ -375,15 +372,12 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
         xml_table1 = xml_table1.withColumn('FILE_DATE', lit(str(reception_date)))
         xml_table1 = xml_table1.withColumn(FirmCRDNumber, lit(str(crd_number)))
 
-        xml_table1 = xml_table1.withColumn(monid, monotonically_increasing_id().cast('string'))
-        xml_table2 = to_string(table_to_convert_columns = xml_table1, col_types = []) # Convert all columns to string
-        md5_columns = [c for c in xml_table2.columns if c not in [monid]]
-        xml_table2 = xml_table2.withColumn(KeyIndicator, md5(concat_ws('_', *md5_columns))) # add HASH column for key indicator
-
-        xml_table1 = xml_table1.alias('x1'
-            ).join(xml_table2.alias('x2'), xml_table1[monid]==xml_table2[monid], how='left'
-            ).select('x1.*', 'x2.'+KeyIndicator
-            ).drop(monid)
+        if table_name.upper() == 'IndividualInformationReport'.upper():
+            xml_table1 = add_id_key(xml_table1, key_column_names=['FIRM_CRD_NUMBER', 'CRD_NUMBER'])
+        elif table_name.upper() == 'BranchInformationReport'.upper():
+            xml_table1 = add_id_key(xml_table1, key_column_names=['FIRM_CRD_NUMBER', 'BRANCH_CRD_NUMBER'])
+        else:
+            xml_table1 = add_md5_key(xml_table1)
 
         add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name=table_name)
 
