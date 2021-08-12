@@ -5,11 +5,11 @@ Library for Azure Functions
 
 # %% Import Libraries
 
-import os
+import os, json
 
 from .common_functions import make_logging, catch_error
 from .config import is_pc
-from .data_functions import partitionBy
+from .data_functions import partitionBy, metadata_FirmSourceMap
 
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
@@ -229,6 +229,38 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
     print(f'\nNumber of Tables in {tableinfo_source}/{tableinfo_name} is {len(table_rows)}')
 
     return tableinfo, table_rows
+
+
+
+# %% Get Firms with CRD Number
+
+@catch_error(logger)
+def get_firms_with_crd(spark, tableinfo_source):
+    storage_account_name = to_storage_account_name()
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    firms_table = read_adls_gen2(
+        spark = spark,
+        storage_account_name = storage_account_name,
+        container_name = tableinfo_container_name,
+        container_folder = '',
+        table_name = metadata_FirmSourceMap,
+        file_format = file_format
+    )
+
+    firms_table = firms_table.filter(
+        (col('Source') == lit(tableinfo_source.upper()).cast("string")) & 
+        (col('IsActive') == lit(1))
+    )
+
+    firms_table = firms_table.select('Firm', 'SourceKey') \
+        .withColumnRenamed('Firm', 'firm_name') \
+        .withColumnRenamed('SourceKey', 'crd_number')
+
+    firms = firms_table.toJSON().map(lambda j: json.loads(j)).collect()
+
+    assert firms, 'No Firms Found!'
+    return firms
 
 
 
