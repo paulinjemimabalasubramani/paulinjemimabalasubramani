@@ -411,12 +411,28 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
 
 # %% Testing
 
-if is_pc and False:
-    folder_path = r'C:\Users\smammadov\packages\Shared\test'
-    files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number='x')
+if is_pc and True:
+    crd_number = '25803'
+    firm = [f for f in firms if f['crd_number']==crd_number][0]
+
+    crd_number = firm['crd_number']
+    firm_name = firm['firm_name']
+    firm_folder = crd_number
+    folder_path = os.path.join(data_path_folder, firm_folder)
+    print(f"\n\nFirm: {firm_name}, Firm CRD Number: {crd_number}")
+
+    if not os.path.isdir(folder_path):
+        print(f'Path does not exist: {folder_path}   -> SKIPPING')
+
+    files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=crd_number)
+
+    storage_account_name = to_storage_account_name(firm_name=firm_name)
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
     file_meta = files_meta[0]
     print(file_meta)
-    semi_flat_table = process_finra_file(file_meta, firm_name='x', storage_account_name='x')
+    semi_flat_table = process_finra_file(file_meta, firm_name=firm_name, storage_account_name='x')
+
 
 
 # %% Testing 2
@@ -436,19 +452,20 @@ if is_pc and False:
 @catch_error(logger)
 def process_all_files():
     for firm in firms:
-        firm_folder = firm['crd_number']
-        folder_path = os.path.join(data_path_folder, firm_folder)
+        crd_number = firm['crd_number']
         firm_name = firm['firm_name']
-        print(f"\n\nFirm: {firm_name}, Firm CRD Number: {firm['crd_number']}")
+        firm_folder = crd_number
+        folder_path = os.path.join(data_path_folder, firm_folder)
+        print(f"\n\nFirm: {firm_name}, Firm CRD Number: {crd_number}")
 
         if not os.path.isdir(folder_path):
             print(f'Path does not exist: {folder_path}   -> SKIPPING')
             continue
 
+        files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=crd_number)
+
         storage_account_name = to_storage_account_name(firm_name=firm_name)
         setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-        files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=firm['crd_number'])
 
         for file_meta in files_meta:
             if is_pc and 'IndividualInformationReport'.upper() in file_meta['table_name'].upper():
