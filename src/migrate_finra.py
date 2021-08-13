@@ -68,7 +68,7 @@ tableinfo_source = database
 sql_server = 'DSQLOLTP02'
 sql_database = 'EDIPIngestion'
 sql_schema = 'edip'
-sql_finra_ingest_table_name = 'finra_ingest'
+sql_ingest_table_name = 'finra_ingest'
 sql_key_vault_account = 'sqledipingestion'
 
 FirmCRDNumber = 'Firm_CRD_Number'
@@ -448,17 +448,17 @@ table_names, sql_tables = get_sql_table_names(
     )
 
 
-sql_finra_ingest_table_exists = sql_finra_ingest_table_name in table_names
+sql_ingest_table_exists = sql_ingest_table_name in table_names
 
 
 # %%
-if sql_finra_ingest_table_exists:
-    sql_finra_ingest = read_sql(
+if sql_ingest_table_exists:
+    sql_ingest_table = read_sql(
         spark = spark, 
         user = sql_id, 
         password = sql_pass, 
         schema = sql_schema, 
-        table_name = sql_finra_ingest_table_name, 
+        table_name = sql_ingest_table_name, 
         database = sql_database, 
         server = sql_server
         )
@@ -466,31 +466,32 @@ if sql_finra_ingest_table_exists:
 
 # %%
 
-finra_ingest = spark.createDataFrame(files_meta)
-finra_ingest = finra_ingest.select(
+ingest_table = spark.createDataFrame(files_meta)
+ingest_table = ingest_table.select(
     col('table_name'),
     col('crd_number').cast(StringType()),
     to_date(col('date'), format='yyyy-MM-dd').alias('file_date'),
     col('is_full_load').cast(BooleanType()),
     col('root').alias('root_folder'),
     col('file').alias('file_name'),
-    to_json(col('criteria')).alias('criteria'),
-    to_json(col('rowTags')).alias('rowTags'),
+    to_json(col('criteria')).alias('xml_criteria'),
+    to_json(col('rowTags')).alias('xml_rowtags'),
     to_timestamp(lit(execution_date)).alias('ingestion_date'),
-    lit(True).cast(BooleanType()).alias('is_ingested')
+    lit(True).cast(BooleanType()).alias('is_ingested'),
 )
 
-finra_ingest = add_md5_key(finra_ingest, key_column_names=['table_name', 'crd_number', 'ingestion_date', 'is_full_load'])
+key_column_names = ['table_name', 'crd_number', 'ingestion_date', 'is_full_load']
+ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names)
 
-finra_ingest.show()
+ingest_table.show()
 
 
 # %%
-if not sql_finra_ingest_table_exists:
-    sql_finra_ingest = spark.createDataFrame(spark.sparkContext.emptyRDD(), finra_ingest.schema)
+if not sql_ingest_table_exists:
+    sql_ingest_table = spark.createDataFrame(spark.sparkContext.emptyRDD(), ingest_table.schema)
     write_sql(
-        table = sql_finra_ingest,
-        table_name = sql_finra_ingest_table_name,
+        table = sql_ingest_table,
+        table_name = sql_ingest_table_name,
         schema = sql_schema,
         database = sql_database,
         server = sql_server,
@@ -501,21 +502,42 @@ if not sql_finra_ingest_table_exists:
 
 # %%
 
-selected_files = finra_ingest.alias('t'
-    ).join(sql_finra_ingest, finra_ingest[MD5KeyIndicator]==sql_finra_ingest[MD5KeyIndicator], how='left_anti'
+selected_files = ingest_table.alias('t'
+    ).join(sql_ingest_table, ingest_table[MD5KeyIndicator]==sql_ingest_table[MD5KeyIndicator], how='left_anti'
     ).select('t.*')
 
 
 selected_files.show()
 
+
+# %% Selected Files keys - grouped
+
+group_columns = ['table_name', 'crd_number']
+selected_files_group = selected_files.select(*[col(c) for c in group_columns]).distinct()
+
+
 # %%
 
-for ingest_row in selected_files.rdd.toLocalIterator():
-    file_meta = ingest_row.asDict()
-    file_meta['criteria'] = json.loads(file_meta['criteria'])
-    file_meta['rowTags'] = json.loads(file_meta['rowTags'])
-    pprint(file_meta)
+for ingest_row in selected_files_group.rdd.toLocalIterator():
+    files_group = selected_files
+    for c in group_columns:
+        files_group = files_group.where(col(c)==lit(ingest_row[c]))
 
+    files_group.show()
+
+
+
+
+# %%
+
+
+"""
+file_meta = ingest_row.asDict()
+file_meta['criteria'] = json.loads(file_meta['xml_criteria'])
+file_meta['rowTags'] = json.loads(file_meta['xml_rowtags'])
+file_meta['date'] = datetime.strftime(file_meta['file_date'], r'%Y-%m-%d')
+pprint(file_meta)
+"""
 
 
 
