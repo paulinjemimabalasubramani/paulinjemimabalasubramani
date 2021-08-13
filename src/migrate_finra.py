@@ -30,7 +30,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import make_logging, catch_error
-from modules.spark_functions import create_spark, read_csv, read_xml, add_id_key, add_md5_key, IDKeyIndicator, MD5KeyIndicator
+from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
+    IDKeyIndicator, MD5KeyIndicator, get_sql_table_names
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
     to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, get_azure_sp
@@ -39,8 +40,8 @@ from modules.data_functions import  remove_column_spaces, add_elt_columns, execu
 from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table, flatten_df, flatten_n_divide_df
 
 
-from pyspark.sql.functions import col, lit
-
+from pyspark.sql.functions import col, lit, to_date, to_json, to_timestamp, from_json
+from pyspark.sql.types import StringType, BooleanType
 
 
 # %% Logging
@@ -67,6 +68,7 @@ tableinfo_source = database
 sql_server = 'DSQLOLTP02'
 sql_database = 'EDIPIngestion'
 sql_schema = 'edip'
+sql_finra_ingest_table_name = 'finra_ingest'
 sql_key_vault_account = 'sqledipingestion'
 
 FirmCRDNumber = 'Firm_CRD_Number'
@@ -84,9 +86,9 @@ spark = create_spark()
 
 # %% Read Key Vault Data
 
-# _, sql_id, sql_id = get_azure_sp(sql_key_vault_account.lower())
+_, sql_id, sql_pass = get_azure_sp(sql_key_vault_account.lower())
 
-sql_id , sql_pass = 'svc_edipingestionapp', 'svc_edipingestionapp'  # TODO: Remove this once KV is ready.
+#sql_id , sql_pass = 'svc_edipingestionapp', 'svc_edipingestionapp'  # TODO: Remove this once KV is ready.
 
 
 
@@ -435,14 +437,94 @@ if is_pc and True:
 
 
 
-# %% Testing 2
+# %%
+table_names, sql_tables = get_sql_table_names(
+    spark = spark, 
+    schema = sql_schema,
+    database = sql_database,
+    server = sql_server,
+    user = sql_id,
+    password = sql_pass,
+    )
 
 
-# individual = build_individual_table(semi_flat_table=semi_flat_table, crd_number='7461')
+sql_finra_ingest_table_exists = sql_finra_ingest_table_name in table_names
 
 
-# individual = individual.persist()
-# pprint(individual.where('CRD_Number = 3044031').toJSON().map(lambda j: json.loads(j)).collect())
+# %%
+if sql_finra_ingest_table_exists:
+    sql_finra_ingest = read_sql(
+        spark = spark, 
+        user = sql_id, 
+        password = sql_pass, 
+        schema = sql_schema, 
+        table_name = sql_finra_ingest_table_name, 
+        database = sql_database, 
+        server = sql_server
+        )
+
+
+# %%
+
+finra_ingest = spark.createDataFrame(files_meta)
+finra_ingest = finra_ingest.select(
+    col('table_name'),
+    col('crd_number').cast(StringType()),
+    to_date(col('date'), format='yyyy-MM-dd').alias('file_date'),
+    col('is_full_load').cast(BooleanType()),
+    col('root').alias('root_folder'),
+    col('file').alias('file_name'),
+    to_json(col('criteria')).alias('criteria'),
+    to_json(col('rowTags')).alias('rowTags'),
+    to_timestamp(lit(execution_date)).alias('ingestion_date'),
+    lit(True).cast(BooleanType()).alias('is_ingested')
+)
+
+finra_ingest = add_md5_key(finra_ingest, key_column_names=['table_name', 'crd_number', 'ingestion_date', 'is_full_load'])
+
+finra_ingest.show()
+
+
+# %%
+if not sql_finra_ingest_table_exists:
+    sql_finra_ingest = spark.createDataFrame(spark.sparkContext.emptyRDD(), finra_ingest.schema)
+    write_sql(
+        table = sql_finra_ingest,
+        table_name = sql_finra_ingest_table_name,
+        schema = sql_schema,
+        database = sql_database,
+        server = sql_server,
+        user = sql_id,
+        password = sql_pass,
+        mode = 'overwrite',
+    )
+
+# %%
+
+selected_files = finra_ingest.alias('t'
+    ).join(sql_finra_ingest, finra_ingest[MD5KeyIndicator]==sql_finra_ingest[MD5KeyIndicator], how='left_anti'
+    ).select('t.*')
+
+
+selected_files.show()
+
+# %%
+
+for ingest_row in selected_files.rdd.toLocalIterator():
+    file_meta = ingest_row.asDict()
+    file_meta['criteria'] = json.loads(file_meta['criteria'])
+    file_meta['rowTags'] = json.loads(file_meta['rowTags'])
+    pprint(file_meta)
+
+
+
+
+
+
+# %%
+
+
+
 
 
 
@@ -463,6 +545,8 @@ def process_all_files():
             continue
 
         files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=crd_number)
+        if not files_meta:
+            continue
 
         storage_account_name = to_storage_account_name(firm_name=firm_name)
         setup_spark_adls_gen2_connection(spark, storage_account_name)

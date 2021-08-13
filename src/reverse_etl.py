@@ -138,7 +138,8 @@ def reverse_etl_all_tables():
             database = sql_database,
             server = sql_server,
             user = sql_id,
-            password = sql_pass
+            password = sql_pass,
+            mode = 'overwrite',
         )
     
     print('Finished Reverse ETL for all tables')
