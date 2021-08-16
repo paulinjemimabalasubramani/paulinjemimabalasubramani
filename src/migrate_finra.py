@@ -18,7 +18,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys, tempfile, shutil, json, re
+import os, sys, tempfile, shutil, json
 from collections import defaultdict
 from datetime import datetime
 from pprint import pprint
@@ -34,9 +34,8 @@ from modules.spark_functions import create_spark, read_sql, write_sql, read_csv,
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
-    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, get_azure_sp
-from modules.data_functions import  remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, \
-    partitionBy_value, strftime
+    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, get_azure_sp, add_table_to_tableinfo
+from modules.data_functions import  remove_column_spaces, add_elt_columns, execution_date, partitionBy, strftime
 from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table, flatten_df, flatten_n_divide_df
 
 
@@ -80,6 +79,11 @@ reportDate_name = '_reportDate'
 firmCRDNumber_name = '_firmCRDNumber'
 DualRegistrations_name = 'DualRegistrations'
 
+key_column_names = ['crd_number', 'table_name']
+key_column_names_with_load = key_column_names + ['is_full_load']
+key_column_names_with_load_n_date = key_column_names_with_load + ['file_date']
+
+
 
 
 # %% Initiate Spark
@@ -90,7 +94,11 @@ spark = create_spark()
 
 _, sql_id, sql_pass = get_azure_sp(sql_key_vault_account.lower())
 
-#sql_id , sql_pass = 'svc_edipingestionapp', 'svc_edipingestionapp'  # TODO: Remove this once KV is ready.
+
+
+# %% Create tableinfo
+
+tableinfo = defaultdict(list)
 
 
 
@@ -113,6 +121,35 @@ else:
 firms = get_firms_with_crd(spark=spark, tableinfo_source=tableinfo_source)
 
 if is_pc: print(firms)
+
+
+
+# %% Get SQL Ingest Table
+
+table_names, sql_tables = get_sql_table_names(
+    spark = spark, 
+    schema = sql_schema,
+    database = sql_database,
+    server = sql_server,
+    user = sql_id,
+    password = sql_pass,
+    )
+
+sql_ingest_table_exists = sql_ingest_table_name in table_names
+
+sql_ingest_table = None
+if sql_ingest_table_exists:
+    sql_ingest_table = read_sql(
+        spark = spark, 
+        user = sql_id, 
+        password = sql_pass, 
+        schema = sql_schema, 
+        table_name = sql_ingest_table_name, 
+        database = sql_database, 
+        server = sql_server
+        )
+
+
 
 
 
@@ -233,41 +270,10 @@ def get_all_finra_file_xml_meta(folder_path, date_start:str, crd_number:str, inc
 
 
 
-
-# %% Create tableinfo
-
-tableinfo = defaultdict(list)
-
-@catch_error(logger)
-def add_table_to_tableinfo(xml_table, firm_name, table_name):
-    for ix, (col_name, col_type) in enumerate(xml_table.dtypes):
-        var_col_type = 'variant' if ':' in col_type else col_type
-
-        tableinfo['SourceDatabase'].append(database)
-        tableinfo['SourceSchema'].append(firm_name)
-        tableinfo['TableName'].append(table_name)
-        tableinfo['SourceColumnName'].append(col_name)
-        tableinfo['SourceDataType'].append(var_col_type)
-        tableinfo['SourceDataLength'].append(0)
-        tableinfo['SourceDataPrecision'].append(0)
-        tableinfo['SourceDataScale'].append(0)
-        tableinfo['OrdinalPosition'].append(ix+1)
-        tableinfo['CleanType'].append(var_col_type)
-        tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
-        tableinfo['TargetDataType'].append(var_col_type)
-        tableinfo['IsNullable'].append(0 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 1)
-        tableinfo['KeyIndicator'].append(1 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 0)
-        tableinfo['IsActive'].append(1)
-        tableinfo['CreatedDateTime'].append(execution_date)
-        tableinfo['ModifiedDateTime'].append(execution_date)
-        tableinfo[partitionBy].append(partitionBy_value)
-
-
-
 # %% Write xml table list to Azure
 
 @catch_error(logger)
-def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_date:str, firm_name:str, storage_account_name:str, is_full_load:bool, crd_number:str):
+def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, firm_name:str, storage_account_name:str):
     if not xml_table_list:
         print(f"No data to write -> {file_name}")
         return
@@ -275,42 +281,20 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
     for table_name, xml_table in xml_table_list.items():
         print(f'\nWriting {table_name} to Azure...')
 
+        add_table_to_tableinfo(tableinfo=tableinfo, table=xml_table, firm_name=firm_name, table_name=table_name, tableinfo_source=tableinfo_source)
+
         data_type = 'data'
         container_folder = f'{data_type}/{domain_name}/{database}/{firm_name}'
-
-        xml_table1 = xml_table
-        xml_table1 = remove_column_spaces(table_to_remove = xml_table1)
-        xml_table1 = xml_table1.withColumn('FILE_DATE', lit(str(reception_date)))
-        xml_table1 = xml_table1.withColumn(FirmCRDNumber, lit(str(crd_number)))
-
-        if table_name.upper() == 'IndividualInformationReport'.upper():
-            xml_table1 = add_id_key(xml_table1, key_column_names=['FIRM_CRD_NUMBER', 'CRD_NUMBER'])
-        elif table_name.upper() == 'BranchInformationReport'.upper():
-            xml_table1 = add_id_key(xml_table1, key_column_names=['FIRM_CRD_NUMBER', 'BRANCH_CRD_NUMBER'])
-        else:
-            xml_table1 = add_md5_key(xml_table1)
-
-        add_table_to_tableinfo(xml_table=xml_table1, firm_name=firm_name, table_name=table_name)
-
-        xml_table1 = add_elt_columns(
-            table_to_add = xml_table1,
-            reception_date = reception_date,
-            source = tableinfo_source,
-            is_full_load = is_full_load,
-            dml_type = 'I' if is_full_load or firm_name.upper() not in ['IndividualInformationReport'.upper()] else 'U',
-            )
-
-        if is_pc: xml_table1.printSchema()
 
         if is_pc: # and manual_iteration:
             local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
             print(fr'Save to local {local_path}')
-            #xml_table1.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
-            xml_table1.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
+            #xml_table.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
+            xml_table.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
 
         if save_xml_to_adls_flag:
             save_adls_gen2(
-                table_to_save = xml_table1,
+                table_to_save = xml_table,
                 storage_account_name = storage_account_name,
                 container_name = container_name,
                 container_folder = container_folder,
@@ -323,23 +307,10 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, reception_
 
 
 
-
-
-
-# %% Main Processing of Finra file
+# %% Read XML File
 
 @catch_error(logger)
-def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
-    file_path = os.path.join(file_meta['root'], file_meta['file'])
-
-    rowTags = file_meta['rowTags']
-    table_name = file_meta['table_name']
-    crd_number = file_meta['crd_number']
-
-    print('\n', crd_number, table_name, file_meta['date'])
-    print(f'\nrowTags: {rowTags}\n')
-    rowTag = rowTags[0]
-
+def read_xml_file(table_name:str, file_path:str, rowTag:str):
     schema_file = table_name+'.json'
     schema_path = os.path.join(schema_path_folder, schema_file)
 
@@ -357,6 +328,14 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
         xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag)
 
     if is_pc: xml_table.printSchema()
+    return xml_table
+
+
+
+# %% Get XML Table List
+
+@catch_error(logger)
+def get_xml_table_list(xml_table, table_name:str, crd_number:str):
     xml_table_list = {}
 
     if flatten_n_divide_flag:
@@ -367,22 +346,64 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
     if table_name.upper() == 'BranchInformationReport'.upper():
         xml_table_list={**xml_table_list, table_name: build_branch_table(semi_flat_table=semi_flat_table)}
     elif table_name.upper() == 'IndividualInformationReport'.upper():
-        xml_table_list={**xml_table_list, table_name: build_individual_table(semi_flat_table=semi_flat_table, crd_number=crd_number)}
+        xml_table_list = {**xml_table_list, table_name: build_individual_table(semi_flat_table=semi_flat_table, crd_number=crd_number)}
     else:
-        xml_table_list={**xml_table_list, table_name: semi_flat_table}
+        xml_table_list = {**xml_table_list, table_name: semi_flat_table}
+    
+    return xml_table_list
 
 
-    write_xml_table_list_to_azure(
-        xml_table_list= xml_table_list,
-        file_name = file_meta['file'],
-        reception_date = file_meta['date'],
-        firm_name = firm_name,
-        storage_account_name = storage_account_name,
-        is_full_load = file_meta['is_full_load'],
-        crd_number = crd_number,
-        )
 
-    return semi_flat_table
+# %% Process Columns for ELT
+
+@catch_error(logger)
+def process_columns_for_elt(table_list, file_meta):
+    new_table_list = {}
+
+    for table_name, table in table_list.items():
+        table1 = table
+        table1 = remove_column_spaces(table_to_remove = table1)
+        table1 = table1.withColumn('FILE_DATE', lit(str(file_meta['date'])))
+        table1 = table1.withColumn(FirmCRDNumber, lit(str(file_meta['crd_number'])))
+
+        if table_name.upper() == 'IndividualInformationReport'.upper():
+            table1 = add_id_key(table1, key_column_names=['FIRM_CRD_NUMBER', 'CRD_NUMBER'])
+        elif table_name.upper() == 'BranchInformationReport'.upper():
+            table1 = add_id_key(table1, key_column_names=['FIRM_CRD_NUMBER', 'BRANCH_CRD_NUMBER'])
+        else:
+            table1 = add_md5_key(table1)
+
+        table1 = add_elt_columns(
+            table_to_add = table1,
+            reception_date = file_meta['date'],
+            source = tableinfo_source,
+            is_full_load = file_meta['is_full_load'],
+            dml_type = 'I' if file_meta['is_full_load'] or file_meta['table_name'].upper() not in ['IndividualInformationReport'.upper()] else 'U',
+            )
+
+        new_table_list = {**new_table_list, table_name: table1}
+
+    return new_table_list
+
+
+
+
+# %% Main Processing of Finra file
+
+@catch_error(logger)
+def process_finra_file(file_meta):
+    file_path = os.path.join(file_meta['root'], file_meta['file'])
+
+    print('\n', file_meta['crd_number'], file_meta['table_name'], file_meta['date'])
+
+    rowTags = file_meta['rowTags']
+    print(f'\nrowTags: {rowTags}\n')
+
+    xml_table = read_xml_file(table_name=file_meta['table_name'], file_path=file_path, rowTag=rowTags[0])
+    xml_table_list = get_xml_table_list(xml_table=xml_table, table_name=file_meta['table_name'], crd_number=file_meta['crd_number'])
+    xml_table_list = process_columns_for_elt(table_list=xml_table_list, file_meta=file_meta)
+
+    return xml_table_list
 
 
 
@@ -390,7 +411,7 @@ def process_finra_file(file_meta, firm_name:str, storage_account_name:str):
 # %% Process Single File
 
 @catch_error(logger)
-def process_one_file(file_meta, firm_name:str, storage_account_name:str):
+def process_one_file(file_meta):
     file_path = os.path.join(file_meta['root'], file_meta['file'])
     print(f'\nProcessing {file_path}')
 
@@ -398,23 +419,20 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
         with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
             print(f'\nExtracting {file_path} to {tmpdir}')
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
-            k = 0
             for root1, dirs1, files1 in os.walk(tmpdir):
                 for file1 in files1:
                     file_meta1 = json.loads(json.dumps(file_meta))
                     file_meta1['root'] = root1
                     file_meta1['file'] = file1
-                    process_finra_file(file_meta=file_meta1, firm_name=firm_name, storage_account_name=storage_account_name)
-                    k += 1
-                    break
-                if k>0: break
+                    return process_finra_file(file_meta=file_meta1)
     else:
-        process_finra_file(file_meta=file_meta, firm_name=firm_name, storage_account_name=storage_account_name)
+        return process_finra_file(file_meta=file_meta)
+
 
 
 
 # %% Testing
-
+"""
 if is_pc and True:
     crd_number = '25803'
     firm = [f for f in firms if f['crd_number']==crd_number][0]
@@ -432,158 +450,90 @@ if is_pc and True:
 
     storage_account_name = to_storage_account_name(firm_name=firm_name)
     setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-    file_meta = files_meta[0]
-    print(file_meta)
-    semi_flat_table = process_finra_file(file_meta, firm_name=firm_name, storage_account_name='x')
-
-
-
-# %%
-table_names, sql_tables = get_sql_table_names(
-    spark = spark, 
-    schema = sql_schema,
-    database = sql_database,
-    server = sql_server,
-    user = sql_id,
-    password = sql_pass,
-    )
-
-
-sql_ingest_table_exists = sql_ingest_table_name in table_names
-
-
-# %%
-if sql_ingest_table_exists:
-    sql_ingest_table = read_sql(
-        spark = spark, 
-        user = sql_id, 
-        password = sql_pass, 
-        schema = sql_schema, 
-        table_name = sql_ingest_table_name, 
-        database = sql_database, 
-        server = sql_server
-        )
-
-
-# %%
+"""
 
 #with open('./logs/files_meta.json', 'w', encoding='utf-8') as f:
 #    json.dump(files_meta, f, ensure_ascii=False, indent=4)
 
 
-with open('./logs/files_meta.json', 'r', encoding='utf-8') as f:
-    files_meta = json.load(f)
+#with open('./logs/files_meta.json', 'r', encoding='utf-8') as f:
+#    files_meta = json.load(f)
 
 
-# %%
+# %% Create Ingest Table from files_meta
 
-ingest_table = spark.createDataFrame(files_meta)
-ingest_table = ingest_table.select(
-    col('table_name'),
-    col('crd_number').cast(StringType()),
-    to_date(col('date'), format='yyyy-MM-dd').alias('file_date'),
-    col('is_full_load').cast(BooleanType()),
-    col('root').alias('root_folder'),
-    col('file').alias('file_name'),
-    to_json(col('criteria')).alias('xml_criteria'),
-    to_json(col('rowTags')).alias('xml_rowtags'),
-    to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
-    lit(True).cast(BooleanType()).alias('is_ingested'),
-)
+@catch_error(logger)
+def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name:str):
+    global sql_ingest_table_exists, sql_ingest_table
 
-key_column_names = ['table_name', 'crd_number']
-key_column_names_with_load = key_column_names + ['is_full_load']
-key_column_names_with_load_n_date = key_column_names_with_load + ['file_date']
-ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names_with_load_n_date)
-
-ingest_table.show()
-
-
-# %%
-if not sql_ingest_table_exists:
-    sql_ingest_table = spark.createDataFrame(spark.sparkContext.emptyRDD(), ingest_table.schema)
-    write_sql(
-        table = sql_ingest_table,
-        table_name = sql_ingest_table_name,
-        schema = sql_schema,
-        database = sql_database,
-        server = sql_server,
-        user = sql_id,
-        password = sql_pass,
-        mode = 'overwrite',
+    ingest_table = spark.createDataFrame(files_meta)
+    ingest_table = ingest_table.select(
+        col('table_name'),
+        col('crd_number').cast(StringType()),
+        to_date(col('date'), format='yyyy-MM-dd').alias('file_date'),
+        col('is_full_load').cast(BooleanType()),
+        lit(firm_name).cast('firm_name'),
+        lit(storage_account_name).cast('storage_account_name'),
+        col('root').alias('root_folder'),
+        col('file').alias('file_name'),
+        to_json(col('criteria')).alias('xml_criteria'),
+        to_json(col('rowTags')).alias('xml_rowtags'),
+        to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
+        lit(True).cast(BooleanType()).alias('is_ingested'),
+        to_timestamp(lit(None)).alias('full_load_date'),
     )
 
-# %%
+    ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names_with_load_n_date)
 
-# Union all files
+    if is_pc: ingest_table.show()
 
-new_files = ingest_table.alias('t'
-    ).join(sql_ingest_table, ingest_table[MD5KeyIndicator]==sql_ingest_table[MD5KeyIndicator], how='left_anti'
-    ).select('t.*')
-
-union_columns = new_files.columns
-all_files = new_files.select(union_columns).union(sql_ingest_table.select(union_columns)).sort(key_column_names_with_load_n_date)
-
-# Filter out old files
-
-full_files = all_files.where('is_full_load').withColumn('row_number', 
-        row_number().over(Window.partitionBy(key_column_names_with_load).orderBy(col('file_date').desc(), col(MD5KeyIndicator).desc()))
-    ).where(col('row_number')==lit(1))
-
-all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names, how='left').select('a.*', col('f.file_date').alias('max_date'))
-
-all_files = all_files.withColumn('is_ingested', 
-        when(col('ingestion_date').isNull() & col('max_date').isNotNull() & (col('file_date')<col('max_date')), lit(False)).otherwise(col('is_ingested'))
-    )
-
-
-all_files.show()
+    if not sql_ingest_table_exists:
+        sql_ingest_table_exists = True
+        sql_ingest_table = spark.createDataFrame(spark.sparkContext.emptyRDD(), ingest_table.schema)
+        write_sql(
+            table = sql_ingest_table,
+            table_name = sql_ingest_table_name,
+            schema = sql_schema,
+            database = sql_database,
+            server = sql_server,
+            user = sql_id,
+            password = sql_pass,
+            mode = 'overwrite',
+        )
+    
+    return ingest_table
 
 
 
-# %%
+# %% Get Seletec Files
 
+@catch_error(logger)
+def get_selected_files(ingest_table):
+    # Union all files
+    new_files = ingest_table.alias('t'
+        ).join(sql_ingest_table, ingest_table[MD5KeyIndicator]==sql_ingest_table[MD5KeyIndicator], how='left_anti'
+        ).select('t.*')
 
+    union_columns = new_files.columns
+    all_files = new_files.select(union_columns).union(sql_ingest_table.select(union_columns)).sort(key_column_names_with_load_n_date)
 
+    # Filter out old files
+    full_files = all_files.where('is_full_load').withColumn('row_number', 
+            row_number().over(Window.partitionBy(key_column_names_with_load).orderBy(col('file_date').desc(), col(MD5KeyIndicator).desc()))
+        ).where(col('row_number')==lit(1))
 
-# %% Selected Files keys - grouped
+    all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names, how='left').select('a.*', col('f.file_date').alias('max_date')) \
+        .withColumn('full_load_date', col('max_date')).drop('max_date')
 
-group_columns = ['table_name', 'crd_number']
-new_files_group = new_files.select(*[col(c) for c in group_columns]).distinct()
+    all_files = all_files.withColumn('is_ingested', 
+            when(col('ingestion_date').isNull() & col('full_load_date').isNotNull() & (col('file_date')<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
+        )
 
-
-# %%
-
-for ingest_row in new_files_group.rdd.toLocalIterator():
-    files_group = new_files
-    for c in group_columns:
-        files_group = files_group.where(col(c)==lit(ingest_row[c]))
-
-    files_group.show()
-
-
-
-
-# %%
-
-
-"""
-file_meta = ingest_row.asDict()
-file_meta['criteria'] = json.loads(file_meta['xml_criteria'])
-file_meta['rowTags'] = json.loads(file_meta['xml_rowtags'])
-file_meta['date'] = datetime.strftime(file_meta['file_date'], r'%Y-%m-%d')
-pprint(file_meta)
-"""
-
-
-
-
-
-# %%
-
-
-
+    # Select and Order Files for ingestion
+    selected_files = all_files.where(col('ingestion_date').isNull()).where('is_ingested') \
+        .orderBy(col('crd_number').desc(), col('table_name').desc(), col('is_full_load').desc(), col('file_date').asc())
+    
+    return all_files, selected_files
 
 
 
@@ -592,32 +542,69 @@ pprint(file_meta)
 
 @catch_error(logger)
 def process_all_files():
+    all_files_per_firm = {}
+
     for firm in firms:
-        crd_number = firm['crd_number']
-        firm_name = firm['firm_name']
-        firm_folder = crd_number
-        folder_path = os.path.join(data_path_folder, firm_folder)
-        print(f"\n\nFirm: {firm_name}, Firm CRD Number: {crd_number}")
+        folder_path = os.path.join(data_path_folder, firm['crd_number'])
+        print(f"\n\nFirm: {firm['firm_name']}, Firm CRD Number: {firm['crd_number']}")
 
         if not os.path.isdir(folder_path):
             print(f'Path does not exist: {folder_path}   -> SKIPPING')
             continue
 
-        files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=crd_number)
+        files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=firm['crd_number'])
         if not files_meta:
             continue
 
-        storage_account_name = to_storage_account_name(firm_name=firm_name)
+        storage_account_name = to_storage_account_name(firm_name=firm['firm_name'])
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-        for file_meta in files_meta:
+        ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name)
+        all_files, selected_files = get_selected_files(ingest_table)
+        all_files_per_firm[firm] = all_files
+
+        for ingest_row in selected_files.rdd.toLocalIterator():
             if is_pc and 'IndividualInformationReport'.upper() in file_meta['table_name'].upper():
                 continue
-            process_one_file(file_meta=file_meta, firm_name=firm_name, storage_account_name=storage_account_name)
+            file_meta = ingest_row.asDict()
+            file_meta['criteria'] = json.loads(file_meta['xml_criteria'])
+            file_meta['rowTags'] = json.loads(file_meta['xml_rowtags'])
+            file_meta['date'] = datetime.strftime(file_meta['file_date'], r'%Y-%m-%d')
+            pprint(file_meta)
+            xml_table_list = process_one_file(file_meta=file_meta)
+
+            # TODO: join tables if they are same table_name and CRD number, and collect all the tables
+
+    """ TODO: DO THIS PER FIRM to save space
+    write_xml_table_list_to_azure(
+        xml_table_list= xml_table_list,
+        file_name = file_meta['file'],
+        file_date = file_meta['date'],
+        firm_name = firm_name,
+        storage_account_name = storage_account_name,
+        is_full_load = file_meta['is_full_load'],
+        crd_number = crd_number,
+        )
+"""
 
 
 
-process_all_files()
+    return all_files_per_firm
+
+
+
+
+all_files_per_firm = process_all_files()
+
+# TODO: all_files_per_firm -> sql_ingest_table append
+
+
+
+
+
+
+
+
 
 
 # %% Save Tableinfo
