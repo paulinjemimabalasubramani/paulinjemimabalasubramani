@@ -40,7 +40,9 @@ from modules.data_functions import  remove_column_spaces, add_elt_columns, execu
 from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table, flatten_df, flatten_n_divide_df
 
 
-from pyspark.sql.functions import col, lit, to_date, to_json, to_timestamp, from_json
+import pyspark.sql.functions as F
+from pyspark.sql.functions import col, lit, to_date, to_json, to_timestamp, when, row_number
+from pyspark.sql.window import Window
 from pyspark.sql.types import StringType, BooleanType
 
 
@@ -466,6 +468,16 @@ if sql_ingest_table_exists:
 
 # %%
 
+#with open('./logs/files_meta.json', 'w', encoding='utf-8') as f:
+#    json.dump(files_meta, f, ensure_ascii=False, indent=4)
+
+
+with open('./logs/files_meta.json', 'r', encoding='utf-8') as f:
+    files_meta = json.load(f)
+
+
+# %%
+
 ingest_table = spark.createDataFrame(files_meta)
 ingest_table = ingest_table.select(
     col('table_name'),
@@ -476,12 +488,14 @@ ingest_table = ingest_table.select(
     col('file').alias('file_name'),
     to_json(col('criteria')).alias('xml_criteria'),
     to_json(col('rowTags')).alias('xml_rowtags'),
-    to_timestamp(lit(execution_date)).alias('ingestion_date'),
+    to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
     lit(True).cast(BooleanType()).alias('is_ingested'),
 )
 
-key_column_names = ['table_name', 'crd_number', 'ingestion_date', 'is_full_load']
-ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names)
+key_column_names = ['table_name', 'crd_number']
+key_column_names_with_load = key_column_names + ['is_full_load']
+key_column_names_with_load_n_date = key_column_names_with_load + ['file_date']
+ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names_with_load_n_date)
 
 ingest_table.show()
 
@@ -502,24 +516,47 @@ if not sql_ingest_table_exists:
 
 # %%
 
-selected_files = ingest_table.alias('t'
+# Union all files
+
+new_files = ingest_table.alias('t'
     ).join(sql_ingest_table, ingest_table[MD5KeyIndicator]==sql_ingest_table[MD5KeyIndicator], how='left_anti'
     ).select('t.*')
 
+union_columns = new_files.columns
+all_files = new_files.select(union_columns).union(sql_ingest_table.select(union_columns)).sort(key_column_names_with_load_n_date)
 
-selected_files.show()
+# Filter out old files
+
+full_files = all_files.where('is_full_load').withColumn('row_number', 
+        row_number().over(Window.partitionBy(key_column_names_with_load).orderBy(col('file_date').desc(), col(MD5KeyIndicator).desc()))
+    ).where(col('row_number')==lit(1))
+
+all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names, how='left').select('a.*', col('f.file_date').alias('max_date'))
+
+all_files = all_files.withColumn('is_ingested', 
+        when(col('ingestion_date').isNull() & col('max_date').isNotNull() & (col('file_date')<col('max_date')), lit(False)).otherwise(col('is_ingested'))
+    )
+
+
+all_files.show()
+
+
+
+# %%
+
+
 
 
 # %% Selected Files keys - grouped
 
 group_columns = ['table_name', 'crd_number']
-selected_files_group = selected_files.select(*[col(c) for c in group_columns]).distinct()
+new_files_group = new_files.select(*[col(c) for c in group_columns]).distinct()
 
 
 # %%
 
-for ingest_row in selected_files_group.rdd.toLocalIterator():
-    files_group = selected_files
+for ingest_row in new_files_group.rdd.toLocalIterator():
+    files_group = new_files
     for c in group_columns:
         files_group = files_group.where(col(c)==lit(ingest_row[c]))
 
