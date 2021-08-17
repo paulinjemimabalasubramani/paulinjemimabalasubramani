@@ -51,14 +51,14 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-save_xml_to_adls_flag = False
-save_tableinfo_adls_flag = False
-flatten_n_divide_flag = False
+save_xml_to_adls_flag = True
+save_tableinfo_adls_flag = True
+flatten_n_divide_flag = False # Always keep it False
 
 if not is_pc:
     save_xml_to_adls_flag = True
     save_tableinfo_adls_flag = True
-    flatten_n_divide_flag = False
+    flatten_n_divide_flag = False # Always keep it False
 
 date_start = '2021-01-01'
 
@@ -273,9 +273,9 @@ def get_all_finra_file_xml_meta(folder_path, date_start:str, crd_number:str, inc
 # %% Write xml table list to Azure
 
 @catch_error(logger)
-def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, firm_name:str, storage_account_name:str):
+def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_account_name:str):
     if not xml_table_list:
-        print(f"No data to write -> {file_name}")
+        print(f"\nNo data to write\n")
         return
 
     for table_name, xml_table in xml_table_list.items():
@@ -289,7 +289,6 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, firm_name:
         if is_pc: # and manual_iteration:
             local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
             print(fr'Save to local {local_path}')
-            xml_table.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
             xml_table.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
 
         if save_xml_to_adls_flag:
@@ -439,14 +438,14 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
 
     ingest_table = spark.createDataFrame(files_meta)
     ingest_table = ingest_table.select(
-        col('table_name'),
+        col('table_name').cast(StringType()),
         col('crd_number').cast(StringType()),
         to_date(col('date'), format='yyyy-MM-dd').alias('file_date'),
         col('is_full_load').cast(BooleanType()),
-        lit(firm_name).cast('firm_name'),
-        lit(storage_account_name).cast('storage_account_name'),
-        col('root').alias('root_folder'),
-        col('file').alias('file_name'),
+        lit(firm_name).cast(StringType()).alias('firm_name'),
+        lit(storage_account_name).cast(StringType()).alias('storage_account_name'),
+        col('root').cast(StringType()).alias('root_folder'),
+        col('file').cast(StringType()).alias('file_name'),
         to_json(col('criteria')).alias('xml_criteria'),
         to_json(col('rowTags')).alias('xml_rowtags'),
         to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
@@ -455,8 +454,6 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
     )
 
     ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names_with_load_n_date)
-
-    if is_pc: ingest_table.show()
 
     if not sql_ingest_table_exists:
         sql_ingest_table_exists = True
@@ -529,9 +526,8 @@ if is_pc and False:
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name)
-    all_files, new_files, selected_files = get_selected_files(ingest_table)
+    new_files, selected_files = get_selected_files(ingest_table)
     all_files_per_firm[firm] = all_files
-
 
 
 
@@ -541,7 +537,7 @@ if is_pc and False:
 
 @catch_error(logger)
 def process_all_files():
-    global sql_ingest_table
+    all_new_files = None
 
     for firm in firms: # Assumes each firm has different Firm CRD Number
         folder_path = os.path.join(data_path_folder, firm['crd_number'])
@@ -558,20 +554,33 @@ def process_all_files():
         storage_account_name = to_storage_account_name(firm_name=firm['firm_name'])
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
+        print('Getting New Files')
         ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name)
         new_files, selected_files = get_selected_files(ingest_table)
-        union_columns = sql_ingest_table.columns
-        sql_ingest_table = sql_ingest_table.select(union_columns).union(new_files.select(union_columns))
 
+        print(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
+
+        if all_new_files:
+            union_columns = new_files.columns
+            all_new_files = all_new_files.select(union_columns).union(new_files.select(union_columns))
+        else:
+            all_new_files = new_files
+
+        print("Iterating over Selected Files")
         xml_table_list_union = {}
         for ingest_row in selected_files.rdd.toLocalIterator():
-            if is_pc and 'IndividualInformationReport'.upper() in file_meta['table_name'].upper():
-                continue
             file_meta = ingest_row.asDict()
             file_meta['criteria'] = json.loads(file_meta['xml_criteria'])
             file_meta['rowTags'] = json.loads(file_meta['xml_rowtags'])
             file_meta['date'] = datetime.strftime(file_meta['file_date'], r'%Y-%m-%d')
+            file_meta['root'] = file_meta['root_folder']
+            file_meta['file'] = file_meta['file_name']
             pprint(file_meta)
+
+            if is_pc and False and 'IndividualInformationReport'.upper() in file_meta['table_name'].upper():
+                print(f"\nSkipping {file_meta['table_name']} in PC\n")
+                continue
+
             xml_table_list = process_one_file(file_meta=file_meta)
 
             for table_name, table in xml_table_list.items():
@@ -587,32 +596,24 @@ def process_all_files():
                     xml_table_list_union[table_name] = table
 
         write_xml_table_list_to_azure(
-            xml_table_list = xml_table_list,
-            file_name = file_meta['file'],
+            xml_table_list = xml_table_list_union,
             firm_name = firm['firm_name'],
             storage_account_name = storage_account_name,
         )
 
-        write_sql(
-            table = new_files,
-            table_name = sql_ingest_table_name,
-            schema = sql_schema,
-            database = sql_database,
-            server = sql_server,
-            user = sql_id,
-            password = sql_pass,
-            mode = 'append',
-        )
+    print('\nFinished processing all Files and Firms\n')
+    return all_new_files
 
 
-process_all_files()
+all_new_files = process_all_files()
+
 
 
 
 # %% Save Tableinfo
 
 @catch_error(logger)
-def save_tableinfo():
+def save_tableinfo(all_new_files):
     if not tableinfo:
         print('No data in TableInfo --> Skipping write to Azure')
         return
@@ -640,9 +641,20 @@ def save_tableinfo():
                 file_format = file_format,
             )
 
+        write_sql(
+            table = all_new_files,
+            table_name = sql_ingest_table_name,
+            schema = sql_schema,
+            database = sql_database,
+            server = sql_server,
+            user = sql_id,
+            password = sql_pass,
+            mode = 'append',
+        )
 
 
-save_tableinfo()
+
+save_tableinfo(all_new_files)
 
 
 # %%
