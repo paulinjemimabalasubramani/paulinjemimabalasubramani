@@ -586,7 +586,9 @@ def process_all_files():
             for table_name, table in xml_table_list.items():
                 if table_name in xml_table_list_union.keys():
                     table_prev = xml_table_list_union[table_name]
-                    primary_key_columns = [c for c in table_prev.columns if c.upper in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
+                    primary_key_columns = [c for c in table_prev.columns if c.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
+                    if not primary_key_columns:
+                        raise ValueError(f'No Primary Key Found for {table_name}')
                     table_prev = table_prev.alias('tp'
                         ).join(table, primary_key_columns, how='left_anti'
                         ).select('tp.*')
