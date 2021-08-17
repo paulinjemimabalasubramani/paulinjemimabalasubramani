@@ -289,7 +289,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, file_name:str, firm_name:
         if is_pc: # and manual_iteration:
             local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
             print(fr'Save to local {local_path}')
-            #xml_table.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
+            xml_table.coalesce(1).write.csv( path = fr'{local_path}.csv',  mode='overwrite', header='true')
             xml_table.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
 
         if save_xml_to_adls_flag:
@@ -431,35 +431,6 @@ def process_one_file(file_meta):
 
 
 
-# %% Testing
-"""
-if is_pc and True:
-    crd_number = '25803'
-    firm = [f for f in firms if f['crd_number']==crd_number][0]
-
-    crd_number = firm['crd_number']
-    firm_name = firm['firm_name']
-    firm_folder = crd_number
-    folder_path = os.path.join(data_path_folder, firm_folder)
-    print(f"\n\nFirm: {firm_name}, Firm CRD Number: {crd_number}")
-
-    if not os.path.isdir(folder_path):
-        print(f'Path does not exist: {folder_path}   -> SKIPPING')
-
-    files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=crd_number)
-
-    storage_account_name = to_storage_account_name(firm_name=firm_name)
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
-"""
-
-#with open('./logs/files_meta.json', 'w', encoding='utf-8') as f:
-#    json.dump(files_meta, f, ensure_ascii=False, indent=4)
-
-
-#with open('./logs/files_meta.json', 'r', encoding='utf-8') as f:
-#    files_meta = json.load(f)
-
-
 # %% Create Ingest Table from files_meta
 
 @catch_error(logger)
@@ -530,10 +501,38 @@ def get_selected_files(ingest_table):
         )
 
     # Select and Order Files for ingestion
-    selected_files = all_files.where(col('ingestion_date').isNull()).where('is_ingested') \
-        .orderBy(col('crd_number').desc(), col('table_name').desc(), col('is_full_load').desc(), col('file_date').asc())
-    
-    return all_files, selected_files
+    new_files = all_files.where(col('ingestion_date').isNull()).withColumn('ingestion_date', to_timestamp(lit(execution_date)))
+    selected_files = new_files.where('is_ingested').orderBy(col('crd_number').desc(), col('table_name').desc(), col('is_full_load').desc(), col('file_date').asc())
+
+    return new_files, selected_files
+
+
+
+# %% Testing
+
+if is_pc and False:
+    crd_number = '25803'
+    firm = [f for f in firms if f['crd_number']==crd_number][0]
+
+    crd_number = firm['crd_number']
+    firm_name = firm['firm_name']
+    firm_folder = crd_number
+    folder_path = os.path.join(data_path_folder, firm_folder)
+    print(f"\n\nFirm: {firm_name}, Firm CRD Number: {crd_number}")
+
+    if not os.path.isdir(folder_path):
+        print(f'Path does not exist: {folder_path}   -> SKIPPING')
+
+    files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=crd_number)
+
+    storage_account_name = to_storage_account_name(firm_name=firm_name)
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name)
+    all_files, new_files, selected_files = get_selected_files(ingest_table)
+    all_files_per_firm[firm] = all_files
+
+
 
 
 
@@ -542,9 +541,9 @@ def get_selected_files(ingest_table):
 
 @catch_error(logger)
 def process_all_files():
-    all_files_per_firm = {}
+    global sql_ingest_table
 
-    for firm in firms:
+    for firm in firms: # Assumes each firm has different Firm CRD Number
         folder_path = os.path.join(data_path_folder, firm['crd_number'])
         print(f"\n\nFirm: {firm['firm_name']}, Firm CRD Number: {firm['crd_number']}")
 
@@ -560,9 +559,11 @@ def process_all_files():
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
         ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name)
-        all_files, selected_files = get_selected_files(ingest_table)
-        all_files_per_firm[firm] = all_files
+        new_files, selected_files = get_selected_files(ingest_table)
+        union_columns = sql_ingest_table.columns
+        sql_ingest_table = sql_ingest_table.select(union_columns).union(new_files.select(union_columns))
 
+        xml_table_list_union = {}
         for ingest_row in selected_files.rdd.toLocalIterator():
             if is_pc and 'IndividualInformationReport'.upper() in file_meta['table_name'].upper():
                 continue
@@ -573,37 +574,38 @@ def process_all_files():
             pprint(file_meta)
             xml_table_list = process_one_file(file_meta=file_meta)
 
-            # TODO: join tables if they are same table_name and CRD number, and collect all the tables
+            for table_name, table in xml_table_list.items():
+                if table_name in xml_table_list_union.keys():
+                    table_prev = xml_table_list_union[table_name]
+                    table_prev = table_prev.alias('tp'
+                        ).join(table, table_prev[MD5KeyIndicator]==table[MD5KeyIndicator], how='left_anti'
+                        ).select('tp.*')
+                    union_columns = table_prev.columns
+                    table_prev = table_prev.select(union_columns).union(table.select(union_columns))
+                    xml_table_list_union[table_name] = table_prev
+                else:
+                    xml_table_list_union[table_name] = table
 
-    """ TODO: DO THIS PER FIRM to save space
-    write_xml_table_list_to_azure(
-        xml_table_list= xml_table_list,
-        file_name = file_meta['file'],
-        file_date = file_meta['date'],
-        firm_name = firm_name,
-        storage_account_name = storage_account_name,
-        is_full_load = file_meta['is_full_load'],
-        crd_number = crd_number,
+        write_xml_table_list_to_azure(
+            xml_table_list = xml_table_list,
+            file_name = file_meta['file'],
+            firm_name = firm['firm_name'],
+            storage_account_name = storage_account_name,
         )
-"""
+
+        write_sql(
+            table = new_files,
+            table_name = sql_ingest_table_name,
+            schema = sql_schema,
+            database = sql_database,
+            server = sql_server,
+            user = sql_id,
+            password = sql_pass,
+            mode = 'append',
+        )
 
 
-
-    return all_files_per_firm
-
-
-
-
-all_files_per_firm = process_all_files()
-
-# TODO: all_files_per_firm -> sql_ingest_table append
-
-
-
-
-
-
-
+process_all_files()
 
 
 
