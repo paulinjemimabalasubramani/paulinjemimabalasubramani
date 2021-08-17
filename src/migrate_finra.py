@@ -438,8 +438,8 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
 
     ingest_table = spark.createDataFrame(files_meta)
     ingest_table = ingest_table.select(
-        col('table_name').cast(StringType()),
         col('crd_number').cast(StringType()),
+        col('table_name').cast(StringType()),
         to_date(col('date'), format='yyyy-MM-dd').alias('file_date'),
         col('is_full_load').cast(BooleanType()),
         lit(firm_name).cast(StringType()).alias('firm_name'),
@@ -468,7 +468,7 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
             password = sql_pass,
             mode = 'overwrite',
         )
-    
+
     return ingest_table
 
 
@@ -617,7 +617,7 @@ def save_tableinfo(all_new_files):
     if not tableinfo:
         print('No data in TableInfo --> Skipping write to Azure')
         return
-        
+
     tableinfo_values = list(tableinfo.values())
 
     list_of_dict = []
@@ -641,16 +641,17 @@ def save_tableinfo(all_new_files):
                 file_format = file_format,
             )
 
-        write_sql(
-            table = all_new_files,
-            table_name = sql_ingest_table_name,
-            schema = sql_schema,
-            database = sql_database,
-            server = sql_server,
-            user = sql_id,
-            password = sql_pass,
-            mode = 'append',
-        )
+        if all_new_files:
+            write_sql(
+                table = all_new_files,
+                table_name = sql_ingest_table_name,
+                schema = sql_schema,
+                database = sql_database,
+                server = sql_server,
+                user = sql_id,
+                password = sql_pass,
+                mode = 'append',
+            )
 
 
 
