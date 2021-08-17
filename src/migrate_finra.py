@@ -60,7 +60,7 @@ if not is_pc:
     save_tableinfo_adls_flag = True
     flatten_n_divide_flag = False # Always keep it False
 
-date_start = '2021-01-01'
+date_start = '1990-01-01'
 
 domain_name = 'financial_professional'
 database = 'FINRA'
@@ -69,7 +69,7 @@ tableinfo_source = database
 sql_server = 'DSQLOLTP02'
 sql_database = 'EDIPIngestion'
 sql_schema = 'edip'
-sql_ingest_table_name = 'finra_ingest'
+sql_ingest_table_name = f'{tableinfo_source.lower()}_ingest'
 sql_key_vault_account = 'sqledipingestion'
 
 FirmCRDNumber = 'Firm_CRD_Number'
@@ -586,8 +586,9 @@ def process_all_files():
             for table_name, table in xml_table_list.items():
                 if table_name in xml_table_list_union.keys():
                     table_prev = xml_table_list_union[table_name]
+                    primary_key_columns = [c for c in table_prev.columns if c.upper in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
                     table_prev = table_prev.alias('tp'
-                        ).join(table, table_prev[MD5KeyIndicator]==table[MD5KeyIndicator], how='left_anti'
+                        ).join(table, primary_key_columns, how='left_anti'
                         ).select('tp.*')
                     union_columns = table_prev.columns
                     table_prev = table_prev.select(union_columns).union(table.select(union_columns))
