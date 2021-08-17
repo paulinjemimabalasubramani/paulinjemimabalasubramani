@@ -90,7 +90,7 @@ else:
 
 # %% Get Firms that have CRD Number
 
-firms = get_firms_with_crd(spark=spark, tableinfo_source=tableinfo_source)
+firms = get_firms_with_crd(spark=spark, tableinfo_source='FINRA') # as there is no source for SF
 
 
 if is_pc: print(firms)
