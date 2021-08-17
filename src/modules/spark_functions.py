@@ -51,6 +51,7 @@ def create_spark():
         .builder
         .appName(app_name)
         .config('fs.wasbs.impl', 'org.apache.hadoop.fs.azure.NativeAzureFileSystem')
+        .config('spark.sql.optimizer.maxIterations', '300')
         )
 
     if is_pc:
