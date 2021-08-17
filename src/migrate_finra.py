@@ -575,7 +575,6 @@ def process_all_files():
             file_meta['date'] = datetime.strftime(file_meta['file_date'], r'%Y-%m-%d')
             file_meta['root'] = file_meta['root_folder']
             file_meta['file'] = file_meta['file_name']
-            pprint(file_meta)
 
             if is_pc and False and 'IndividualInformationReport'.upper() in file_meta['table_name'].upper():
                 print(f"\nSkipping {file_meta['table_name']} in PC\n")
