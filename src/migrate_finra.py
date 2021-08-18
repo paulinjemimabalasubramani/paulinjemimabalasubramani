@@ -18,7 +18,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys, tempfile, shutil, json
+import os, sys, tempfile, shutil, json, copy
 from collections import defaultdict
 from datetime import datetime
 from pprint import pprint
@@ -420,7 +420,7 @@ def process_one_file(file_meta):
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
             for root1, dirs1, files1 in os.walk(tmpdir):
                 for file1 in files1:
-                    file_meta1 = json.loads(json.dumps(file_meta))
+                    file_meta1 = copy.deepcopy(file_meta)
                     file_meta1['root'] = root1
                     file_meta1['file'] = file1
                     return process_finra_file(file_meta=file_meta1)
