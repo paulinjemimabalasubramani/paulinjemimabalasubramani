@@ -5,11 +5,13 @@ Library for Azure Functions
 
 # %% Import Libraries
 
-import os
+from collections import defaultdict
+import os, json, re
 
 from .common_functions import make_logging, catch_error
 from .config import is_pc
-from .data_functions import partitionBy
+from .data_functions import partitionBy, metadata_FirmSourceMap, elt_audit_columns, column_regex, execution_date, partitionBy_value
+from .spark_functions import IDKeyIndicator, MD5KeyIndicator
 
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
@@ -229,6 +231,71 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
     print(f'\nNumber of Tables in {tableinfo_source}/{tableinfo_name} is {len(table_rows)}')
 
     return tableinfo, table_rows
+
+
+
+# %% Get Firms with CRD Number
+
+@catch_error(logger)
+def get_firms_with_crd(spark, tableinfo_source):
+    storage_account_name = to_storage_account_name()
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    firms_table = read_adls_gen2(
+        spark = spark,
+        storage_account_name = storage_account_name,
+        container_name = tableinfo_container_name,
+        container_folder = '',
+        table_name = metadata_FirmSourceMap,
+        file_format = file_format
+    )
+
+    firms_table = firms_table.filter(
+        (col('Source') == lit(tableinfo_source.upper()).cast("string")) & 
+        (col('IsActive') == lit(1))
+    )
+
+    firms_table = firms_table.select('Firm', 'SourceKey') \
+        .withColumnRenamed('Firm', 'firm_name') \
+        .withColumnRenamed('SourceKey', 'crd_number')
+
+    firms = firms_table.toJSON().map(lambda j: json.loads(j)).collect()
+
+    assert firms, 'No Firms Found!'
+    return firms
+
+
+
+
+# %% Add Table to tableinfo
+
+@catch_error(logger)
+def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_name:str, tableinfo_source:str):
+    for ix, (col_name, col_type) in enumerate(table.dtypes):
+        if col_name in elt_audit_columns or col_name == partitionBy:
+            continue
+
+        var_col_type = 'variant' if ':' in col_type else col_type
+
+        tableinfo['SourceDatabase'].append(tableinfo_source)
+        tableinfo['SourceSchema'].append(firm_name)
+        tableinfo['TableName'].append(table_name)
+        tableinfo['SourceColumnName'].append(col_name)
+        tableinfo['SourceDataType'].append(var_col_type)
+        tableinfo['SourceDataLength'].append(0)
+        tableinfo['SourceDataPrecision'].append(0)
+        tableinfo['SourceDataScale'].append(0)
+        tableinfo['OrdinalPosition'].append(ix+1)
+        tableinfo['CleanType'].append(var_col_type)
+        tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
+        tableinfo['TargetDataType'].append(var_col_type)
+        tableinfo['IsNullable'].append(0 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 1)
+        tableinfo['KeyIndicator'].append(1 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 0)
+        tableinfo['IsActive'].append(1)
+        tableinfo['CreatedDateTime'].append(execution_date)
+        tableinfo['ModifiedDateTime'].append(execution_date)
+        tableinfo[partitionBy].append(partitionBy_value)
+
 
 
 

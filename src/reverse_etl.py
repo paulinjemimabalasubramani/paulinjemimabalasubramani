@@ -27,7 +27,7 @@ from pprint import pprint
 
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, write_sql, read_snowflake
-from modules.azure_functions import  get_azure_sp
+from modules.azure_functions import get_azure_sp
 from modules.snowflake_ddl import snowflake_ddl_params
 from modules.config import is_pc
 
@@ -45,6 +45,7 @@ logger = make_logging(__name__)
 sql_server = 'DSQLOLTP02'
 sql_database = 'FinancialProfessional'
 sql_schema = 'edip'
+sql_key_vault_account = sql_server
 
 sf_account = snowflake_ddl_params.snowflake_account
 sf_role = snowflake_ddl_params.snowflake_role
@@ -63,7 +64,7 @@ snowflake_ddl_params.spark = spark
 
 # %% Read Key Vault Data
 
-_, sql_id, sql_pass = get_azure_sp(sql_server.lower())
+_, sql_id, sql_pass = get_azure_sp(sql_key_vault_account.lower())
 _, sf_id, sf_pass = get_azure_sp(snowflake_ddl_params.sf_key_vault_account.lower())
 
 
@@ -137,7 +138,8 @@ def reverse_etl_all_tables():
             database = sql_database,
             server = sql_server,
             user = sql_id,
-            password = sql_pass
+            password = sql_pass,
+            mode = 'overwrite',
         )
     
     print('Finished Reverse ETL for all tables')

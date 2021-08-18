@@ -51,6 +51,7 @@ def create_spark():
         .builder
         .appName(app_name)
         .config('fs.wasbs.impl', 'org.apache.hadoop.fs.azure.NativeAzureFileSystem')
+        .config('spark.sql.optimizer.maxIterations', '300')
         )
 
     if is_pc:
@@ -112,7 +113,7 @@ def read_sql(spark, schema:str, table_name:str, database:str, server:str, user:s
 # %% Write table to SQL server
 
 @catch_error(logger)
-def write_sql(table, table_name:str, schema:str, database:str, server:str, user:str, password:str):
+def write_sql(table, table_name:str, schema:str, database:str, server:str, user:str, password:str, mode:str='overwrite'):
     """
     Write table to SQL server
     """
@@ -121,7 +122,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
 
     url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
 
-    table.write.mode("overwrite") \
+    table.write.mode(mode) \
         .format("jdbc") \
         .option("url", url) \
         .option("driver", 'com.microsoft.sqlserver.jdbc.SQLServerDriver') \
@@ -217,11 +218,34 @@ def add_id_key(table, key_column_names:list):
 # %% Add MD5 Key
 
 @catch_error(logger)
-def add_md5_key(table):
-    coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in table.columns]
+def add_md5_key(table, key_column_names:list=[]):
+    if not key_column_names:
+        key_column_names = table.columns
+    coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
     table = table.withColumn(MD5KeyIndicator, md5(concat_ws('_', *coalesce_list)))
     return table
 
+
+
+# %% Get SQL Table Names
+
+@catch_error(logger)
+def get_sql_table_names(spark, schema:str, database:str, server:str, user:str, password:str):
+    sql_tables = read_sql(
+        spark = spark, 
+        user = user, 
+        password = password, 
+        schema = 'INFORMATION_SCHEMA', 
+        table_name = 'TABLES', 
+        database = database, 
+        server = server,
+        )
+
+    sql_tables = sql_tables.filter((col('TABLE_SCHEMA') == lit(schema)) & (col('TABLE_TYPE')==lit('BASE TABLE')))
+
+    table_names = sql_tables.select('TABLE_NAME').distinct().rdd.flatMap(lambda x: x).collect()
+
+    return table_names, sql_tables
 
 
 

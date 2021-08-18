@@ -22,7 +22,7 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-strftime = "%Y-%m-%d %H:%M:%S"  # http://strftime.org/
+strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
 execution_date = datetime.now().strftime(strftime)
 
 column_regex = r'[\W]+'

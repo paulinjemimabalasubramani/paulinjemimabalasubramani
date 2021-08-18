@@ -14,14 +14,7 @@ from .config import is_pc
 from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_adls_gen2, get_azure_sp, \
     file_format, container_name, to_storage_account_name
 
-
-
-# %% Import Snowflake
-
 from snowflake.connector import connect as snowflake_connect
-
-
-# %% Spark Libraries
 
 from pyspark.sql.types import StringType
 from pyspark.sql import functions as F

@@ -35,6 +35,7 @@ logger = make_logging(__name__)
 # %% Parameters
 
 sql_server = 'TSQLOLTP01'
+sql_key_vault_account = sql_server
 
 storage_account_name = to_storage_account_name()
 domain_name = 'financial_professional'
@@ -60,7 +61,7 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 # %% Read SQL Config
 
-_, sql_id, sql_pass = get_azure_sp(sql_server.lower())
+_, sql_id, sql_pass = get_azure_sp(sql_key_vault_account.lower())
 
 
 

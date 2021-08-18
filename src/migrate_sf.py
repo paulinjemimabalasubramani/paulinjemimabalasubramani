@@ -14,7 +14,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys, tempfile, shutil, json, re
+import os, sys, tempfile, shutil, json
 from collections import defaultdict
 from datetime import datetime
 from pprint import pprint
@@ -29,12 +29,11 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_csv, add_md5_key, IDKeyIndicator, MD5KeyIndicator
 from modules.config import is_pc
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
-    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, read_adls_gen2
-from modules.data_functions import  to_string, remove_column_spaces, add_elt_columns, execution_date, column_regex, partitionBy, \
-    metadata_FirmSourceMap, partitionBy_value, strftime
+    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, add_table_to_tableinfo
+from modules.data_functions import  remove_column_spaces, add_elt_columns, execution_date, partitionBy, strftime
 
 
-from pyspark.sql.functions import col, lit, md5, concat_ws, monotonically_increasing_id
+from pyspark.sql.functions import col, lit
 
 
 
@@ -69,6 +68,12 @@ FirmCRDNumber = 'Firm_CRD_Number'
 spark = create_spark()
 
 
+# %% Create tableinfo
+
+tableinfo = defaultdict(list)
+
+
+
 # %% Get Paths
 
 print(f'Main Path: {os.path.realpath(os.path.dirname(__file__))}')
@@ -83,39 +88,10 @@ else:
 
 
 
-# %% Get Firms
+# %% Get Firms that have CRD Number
 
-@catch_error(logger)
-def get_firms():
-    storage_account_name = to_storage_account_name()
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
+firms = get_firms_with_crd(spark=spark, tableinfo_source='FINRA') # as there is no source for SF
 
-    firms_table = read_adls_gen2(
-        spark = spark,
-        storage_account_name = storage_account_name,
-        container_name = tableinfo_container_name,
-        container_folder = '',
-        table_name = metadata_FirmSourceMap,
-        file_format = file_format
-    )
-
-    firms_table = firms_table.filter(
-        (col('Source') == lit('FINRA'.upper()).cast("string")) & 
-        (col('IsActive') == lit(1))
-    )
-
-    firms_table = firms_table.select('Firm', 'SourceKey') \
-        .withColumnRenamed('Firm', 'firm_name') \
-        .withColumnRenamed('SourceKey', 'crd_number')
-
-    firms = firms_table.toJSON().map(lambda j: json.loads(j)).collect()
-
-    assert firms, 'No Firms Found!'
-    return firms
-
-
-
-firms = get_firms()
 
 if is_pc: print(firms)
 
@@ -165,37 +141,6 @@ def get_all_csv_files_meta(folder_path, date_start:str, crd_number:str, inclusiv
 
 
 
-
-# %% Create tableinfo
-
-tableinfo = defaultdict(list)
-
-@catch_error(logger)
-def add_table_to_tableinfo(csv_table, firm_name, table_name):
-    for ix, (col_name, col_type) in enumerate(csv_table.dtypes):
-        var_col_type = 'variant' if ':' in col_type else col_type
-
-        tableinfo['SourceDatabase'].append(database)
-        tableinfo['SourceSchema'].append(firm_name)
-        tableinfo['TableName'].append(table_name)
-        tableinfo['SourceColumnName'].append(col_name)
-        tableinfo['SourceDataType'].append(var_col_type)
-        tableinfo['SourceDataLength'].append(0)
-        tableinfo['SourceDataPrecision'].append(0)
-        tableinfo['SourceDataScale'].append(0)
-        tableinfo['OrdinalPosition'].append(ix+1)
-        tableinfo['CleanType'].append(var_col_type)
-        tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
-        tableinfo['TargetDataType'].append(var_col_type)
-        tableinfo['IsNullable'].append(0 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 1)
-        tableinfo['KeyIndicator'].append(1 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 0)
-        tableinfo['IsActive'].append(1)
-        tableinfo['CreatedDateTime'].append(execution_date)
-        tableinfo['ModifiedDateTime'].append(execution_date)
-        tableinfo[partitionBy].append(partitionBy_value)
-
-
-
 # %% Write CSV table list to Azure
 
 @catch_error(logger)
@@ -219,7 +164,7 @@ def write_csv_table_list_to_azure(csv_table_list:dict, file_name:str, reception_
         if not id_columns:
             table1 = add_md5_key(table1)
 
-        add_table_to_tableinfo(csv_table=table1, firm_name=firm_name, table_name=table_name)
+        add_table_to_tableinfo(tableinfo=tableinfo, table=table1, firm_name=firm_name, table_name=table_name, tableinfo_source=tableinfo_source)
 
         table1 = add_elt_columns(
             table_to_add = table1,
