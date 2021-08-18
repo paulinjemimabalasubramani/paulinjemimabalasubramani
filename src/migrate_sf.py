@@ -14,7 +14,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys, tempfile, shutil, json
+import os, sys, tempfile, shutil, copy
 from collections import defaultdict
 from datetime import datetime
 from pprint import pprint
@@ -243,7 +243,7 @@ def process_one_file(file_meta, firm_name:str, storage_account_name:str):
             k = 0
             for root1, dirs1, files1 in os.walk(tmpdir):
                 for file1 in files1:
-                    file_meta1 = json.loads(json.dumps(file_meta))
+                    file_meta1 = copy.deepcopy(file_meta)
                     file_meta1['root'] = root1
                     file_meta1['file'] = file1
                     process_csv_file(file_meta=file_meta1, firm_name=firm_name, storage_account_name=storage_account_name)
