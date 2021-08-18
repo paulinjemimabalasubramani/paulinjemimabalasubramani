@@ -83,6 +83,7 @@ key_column_names = ['crd_number', 'table_name']
 key_column_names_with_load = key_column_names + ['is_full_load']
 key_column_names_with_load_n_date = key_column_names_with_load + ['file_date']
 
+tmpdirs = []
 
 
 
@@ -411,21 +412,33 @@ def process_finra_file(file_meta):
 
 @catch_error(logger)
 def process_one_file(file_meta):
+    global tmpdirs
     file_path = os.path.join(file_meta['root'], file_meta['file'])
     print(f'\nProcessing {file_path}')
 
     if file_path.lower().endswith('.zip'):
-        with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
-            print(f'\nExtracting {file_path} to {tmpdir}')
-            shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
-            for root1, dirs1, files1 in os.walk(tmpdir):
-                for file1 in files1:
-                    file_meta1 = copy.deepcopy(file_meta)
-                    file_meta1['root'] = root1
-                    file_meta1['file'] = file1
-                    return process_finra_file(file_meta=file_meta1)
+        tmpdir = tempfile.TemporaryDirectory(dir=os.path.dirname(file_path))
+        tmpdirs.append(tmpdir)
+        print(f'\nExtracting {file_path} to {tmpdir.name}')
+        shutil.unpack_archive(filename=file_path, extract_dir=tmpdir.name)
+        for root1, dirs1, files1 in os.walk(tmpdir.name):
+            for file1 in files1:
+                file_meta1 = copy.deepcopy(file_meta)
+                file_meta1['root'] = root1
+                file_meta1['file'] = file1
+                return process_finra_file(file_meta=file_meta1)
     else:
         return process_finra_file(file_meta=file_meta)
+
+
+
+# %% Remove temporary folders
+
+@catch_error(logger)
+def cleanup_tmpdirs():
+    global tmpdirs
+    while len(tmpdirs)>0:
+        tmpdirs.pop(0).cleanup()
 
 
 
@@ -602,6 +615,8 @@ def process_all_files():
             firm_name = firm['firm_name'],
             storage_account_name = storage_account_name,
         )
+        
+        cleanup_tmpdirs()
 
     print('\nFinished processing all Files and Firms\n')
     return all_new_files
