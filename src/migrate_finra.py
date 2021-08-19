@@ -457,6 +457,7 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
         col('is_full_load').cast(BooleanType()),
         lit(firm_name).cast(StringType()).alias('firm_name'),
         lit(storage_account_name).cast(StringType()).alias('storage_account_name'),
+        lit(None).cast(StringType()).alias('remote_source'),
         col('root').cast(StringType()).alias('root_folder'),
         col('file').cast(StringType()).alias('file_name'),
         to_json(col('criteria')).alias('xml_criteria'),
