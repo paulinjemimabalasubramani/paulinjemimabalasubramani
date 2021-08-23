@@ -16,6 +16,7 @@ from .spark_functions import IDKeyIndicator, MD5KeyIndicator
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
 
+from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
 
 
@@ -142,6 +143,14 @@ def setup_spark_adls_gen2_connection(spark, storage_account_name):
 
 
 
+# %% Azure Data Path Creator
+
+@catch_error(logger)
+def azure_data_path_create(container_name:str, storage_account_name:str, container_folder:str, table_name:str):
+    return f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table_name}"
+
+
+
 # %% Save table_to_save to ADLS Gen 2 using 'Service Principals'
 
 @catch_error(logger)
@@ -156,7 +165,7 @@ def save_adls_gen2(
     """
     Save table_to_save to ADLS Gen 2
     """
-    data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table_name}"
+    data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
     print(f"Write {file_format} -> {data_path}")
 
     if file_format == 'text':
@@ -165,10 +174,48 @@ def save_adls_gen2(
         table_to_save.coalesce(1).write.json(path=data_path, mode='overwrite')
     elif file_format == 'csv':
         table_to_save.coalesce(1).write.csv(path=data_path, header='true', mode='overwrite')
+    elif file_format == 'delta':
+        # spark.sql(f"VACUUM delta.`{data_path}` RETAIN 240 HOURS")
+        partitionBy_value = table_to_save.select(F.max(col(partitionBy))).collect()[0][0]
+        userMetadata = f'{partitionBy}={partitionBy_value}'
+        table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
     else:
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
 
     print(f'Finished Writing {container_folder}/{table_name}')
+
+
+
+
+# %% Get partition string for a Table
+
+@catch_error(logger)
+def get_partition(spark, domain_name:str, source_system:str, schema_name:str, table_name:str):
+    storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    data_type = 'data'
+    container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
+    data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
+    print(f'Reading partition data for {data_path}')
+
+    hist = spark.sql(f"DESCRIBE HISTORY delta.`{data_path}`")
+    maxversion = hist.select(F.max(col('version'))).collect()[0][0]
+    userMetadata = hist.where(col('version')==lit(maxversion)).collect()[0]['userMetadata']
+
+    if userMetadata and ('=' in userMetadata):
+        print(f'Taking userMetadata {userMetadata}')
+        return userMetadata
+    else:
+        partitionBy_value = spark.sql(f"SELECT MAX({partitionBy}) FROM delta.`{data_path}`").collect()[0][0]
+        if not partitionBy_value:
+            print(f'{data_path} is EMPTY -> SKIPPING')
+            return
+
+        PARTITION = f'{partitionBy}={partitionBy_value}'
+        print(f'No userMetadata found, using MAX({partitionBy}): {partitionBy_value}')
+        return PARTITION
+
 
 
 
@@ -184,7 +231,7 @@ def read_adls_gen2(spark,
     """
     Read table from ADLS Gen 2
     """
-    data_path = f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table_name}"
+    data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
 
     print(f'Reading -> {data_path}')
 

@@ -9,15 +9,14 @@ from functools import wraps
 from collections import defaultdict
 
 from .common_functions import make_logging, catch_error
-from .data_functions import elt_audit_columns, partitionBy, execution_date
+from .data_functions import elt_audit_columns, execution_date
 from .config import is_pc
-from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_adls_gen2, get_azure_sp, \
-    file_format, container_name, to_storage_account_name
+from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, get_azure_sp, \
+    container_name, to_storage_account_name
 
 from snowflake.connector import connect as snowflake_connect
 
 from pyspark.sql.types import StringType
-from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
 
 
@@ -163,33 +162,6 @@ USE SCHEMA {SCHEMA_NAME};
     return SCHEMA_NAME, TABLE_NAME, sqlstr
 
 
-# %% Get partition string for a Table
-
-@catch_error(logger)
-def get_partition(source_system:str, schema_name:str, table_name:str):
-    data_type = 'data'
-    container_folder = f"{data_type}/{wid.domain_name}/{source_system}/{schema_name}"
-
-    storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
-    setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
-
-    table_for_paritition = read_adls_gen2(
-        spark = wid.spark,
-        storage_account_name = storage_account_name,
-        container_name = container_name,
-        container_folder = container_folder,
-        table_name = table_name,
-        file_format = file_format
-    )
-
-    PARTITION_LIST = table_for_paritition.select(F.max(col(partitionBy)).alias('part')).collect()
-    PARTITION = PARTITION_LIST[0]['part']
-    if PARTITION:
-        return PARTITION.replace(':', '%3A') #.replace(' ', '%20')
-    else:
-        print(f'{container_folder}/{table_name} is EMPTY - SKIPPING')
-        return None
-
 
 # %% Action Step
 
@@ -316,10 +288,11 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
     else:
         elt_stage_name = schema_name.upper()
 
-    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '@{wid.elt_stage_schema}.{elt_stage_name}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
+    INGEST_STAGE_NAME = f'@{wid.elt_stage_schema}.{elt_stage_name}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{PARTITION}/'
+    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '{INGEST_STAGE_NAME}' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
 
     ingest_data = {
-        "INGEST_STAGE_NAME": f'@{wid.elt_stage_schema}.{elt_stage_name}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/', 
+        "INGEST_STAGE_NAME": INGEST_STAGE_NAME, 
         "EXECUTION_DATE": execution_date,
         "FULL_OBJECT_NAME": TABLE_NAME,
         "COPY_COMMAND": sqlstr,
@@ -532,9 +505,11 @@ def step3(source_system:str, schema_name:str, table_name:str, column_names:list,
     else:
         elt_stage_name = schema_name.upper()
 
+    INGEST_STAGE_NAME = f'@{wid.elt_stage_schema}.{elt_stage_name}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{PARTITION}/'
+
     step = f"""
 COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
-FROM '@{wid.elt_stage_schema}.{elt_stage_name}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{partitionBy}={PARTITION}/'
+FROM '{INGEST_STAGE_NAME}'
 FILE_FORMAT = (type='{wid.FILE_FORMAT}')
 PATTERN = '{wid.wild_card}'
 ON_ERROR = CONTINUE;
@@ -892,9 +867,9 @@ def iterate_over_all_tables(tableinfo, table_rows):
         source_system = table['SourceDatabase']
         print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
-        column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo, source_system, schema_name, table_name)
+        column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo=tableinfo, source_system=source_system, schema_name=schema_name, table_name=table_name)
 
-        PARTITION = get_partition(source_system, schema_name, table_name)
+        PARTITION = get_partition(spark=wid.spark, domain_name=wid.domain_name, source_system=source_system, schema_name=schema_name, table_name=table_name)
         if PARTITION:
             step1(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step2(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)

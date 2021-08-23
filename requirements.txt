@@ -9,4 +9,3 @@ azure-identity==1.6.0
 azure-keyvault==4.1.0
 snowflake-connector-python==2.4.5
 snowflake-sqlalchemy==1.2.4
-delta-spark==1.0.0
