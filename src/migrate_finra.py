@@ -105,15 +105,16 @@ tableinfo = defaultdict(list)
 
 # %% Get Paths
 
-print(f'Main Path: {os.path.realpath(os.path.dirname(__file__))}')
+python_dirname = os.path.dirname(__file__)
+print(f'Main Path: {os.path.realpath(python_dirname)}')
 
 if is_pc:
-    data_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../../Shared/{tableinfo_source}')
-    schema_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../config/finra_schema')
+    data_path_folder = os.path.realpath(python_dirname + f'/../../Shared/{tableinfo_source}')
+    schema_path_folder = os.path.realpath(python_dirname + f'/../config/finra_schema')
 else:
-    # /usr/local/spark/resources/fileshare/Shared
-    data_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../resources/fileshare/Shared/{tableinfo_source}')
-    schema_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../resources/fileshare/EDIP-Code/config/finra_schema')
+    # /usr/local/spark/resources/fileshare/
+    data_path_folder = os.path.realpath(python_dirname + f'/../resources/fileshare/Shared/{tableinfo_source}')
+    schema_path_folder = os.path.realpath(python_dirname + f'/../resources/fileshare/EDIP-Code/config/finra_schema')
 
 
 

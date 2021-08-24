@@ -1,25 +1,26 @@
-Firm,Source,SourceKey,SourceKeyDescription
-RAA,AG,1,FirmId
-SPF,AG,2,FirmId
-FSC,AG,6,FirmId
-WFS,AG,8,FirmId
-SAI,AG,9,FirmId
-TRD,AG,5,FirmId
-FSC,FINRA,7461,CRD Number
-SPF,FINRA,133763,CRD Number
-RAA,FINRA,23131,CRD Number
-WFS,FINRA,421,CRD Number
-SAI,FINRA,10205,CRD Number
-TRD,FINRA,25803,CRD Number
-RAA,Pershing,,CorrespondentId
-SPF,Pershing,,CorrespondentId
-FSC,Pershing,,CorrespondentId
-WFS,Pershing,,CorrespondentId
-SAI,Pershing,,CorrespondentId
-TRD,Pershing,,CorrespondentId
-RAA,NFS,,
-SPF,NFS,,
-FSC,NFS,,
-WFS,NFS,,
-SAI,NFS,,
-TRD,NFS,,
+Firm,StorageAccount,Source,SourceKey,SourceKeyDescription
+RAA,,AG,1,FirmId
+SPF,,AG,2,FirmId
+FSC,,AG,6,FirmId
+WFS,,AG,8,FirmId
+SAI,,AG,9,FirmId
+TRD,,AG,5,FirmId
+FSC,FSC,FINRA,7461,CRD Number
+SPF,SPF,FINRA,133763,CRD Number
+RAA,RAA,FINRA,23131,CRD Number
+WFS,WFS,FINRA,421,CRD Number
+SAI,SAI,FINRA,10205,CRD Number
+SAA,SAI,FINRA,110518,CRD Number
+TRD,TRD,FINRA,25803,CRD Number
+RAA,,Pershing,,CorrespondentId
+SPF,,Pershing,,CorrespondentId
+FSC,,Pershing,,CorrespondentId
+WFS,,Pershing,,CorrespondentId
+SAI,,Pershing,,CorrespondentId
+TRD,,Pershing,,CorrespondentId
+RAA,,NFS,,
+SPF,,NFS,,
+FSC,,NFS,,
+WFS,,NFS,,
+SAI,,NFS,,
+TRD,,NFS,,
