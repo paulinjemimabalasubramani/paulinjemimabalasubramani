@@ -31,8 +31,8 @@ with DAG(
     airflow_app_name,
     default_args = default_args,
     description = description_DAG,
-    schedule_interval = '0 13 * * *',
-    start_date = days_ago(1),
+    schedule_interval = None,
+    start_date = None,
 ) as dag:
     current_datetime = datetime.now()
     info = "CAT"

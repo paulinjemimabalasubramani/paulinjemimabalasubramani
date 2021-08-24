@@ -164,7 +164,14 @@ def write_csv_table_list_to_azure(csv_table_list:dict, file_name:str, reception_
         if not id_columns:
             table1 = add_md5_key(table1)
 
-        add_table_to_tableinfo(tableinfo=tableinfo, table=table1, firm_name=firm_name, table_name=table_name, tableinfo_source=tableinfo_source)
+        add_table_to_tableinfo(
+            tableinfo = tableinfo,
+            table = table1,
+            firm_name = firm_name,
+            table_name = table_name,
+            tableinfo_source = tableinfo_source,
+            storage_account_name = storage_account_name,
+            )
 
         table1 = add_elt_columns(
             table_to_add = table1,

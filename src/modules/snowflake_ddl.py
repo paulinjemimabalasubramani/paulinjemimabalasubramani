@@ -865,11 +865,12 @@ def iterate_over_all_tables(tableinfo, table_rows):
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
+        storage_account_name = table['StorageAccount']
         print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
         column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo=tableinfo, source_system=source_system, schema_name=schema_name, table_name=table_name)
 
-        PARTITION = get_partition(spark=wid.spark, domain_name=wid.domain_name, source_system=source_system, schema_name=schema_name, table_name=table_name)
+        PARTITION = get_partition(spark=wid.spark, domain_name=wid.domain_name, source_system=source_system, schema_name=schema_name, table_name=table_name, storage_account_name=storage_account_name)
         if PARTITION:
             step1(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step2(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)

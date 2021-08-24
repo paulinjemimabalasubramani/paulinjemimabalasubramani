@@ -65,6 +65,7 @@ def select_tableinfo_columns(tableinfo):
         'SourceDataScale',
         'OrdinalPosition',
         'CleanType',
+        'StorageAccount',
         'TargetColumnName',
         'TargetDataType',
         'IsNullable',
@@ -190,8 +191,7 @@ def save_adls_gen2(
 # %% Get partition string for a Table
 
 @catch_error(logger)
-def get_partition(spark, domain_name:str, source_system:str, schema_name:str, table_name:str):
-    storage_account_name = to_storage_account_name(firm_name=schema_name, source_system=source_system)
+def get_partition(spark, domain_name:str, source_system:str, schema_name:str, table_name:str, storage_account_name:str):
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     data_type = 'data'
@@ -269,7 +269,8 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
     table_list = tableinfo.select(
         col('SourceDatabase'),
         col('SourceSchema'),
-        col('TableName')
+        col('TableName'),
+        col('StorageAccount'),
         ).distinct()
 
     if is_pc: table_list.show(5)
@@ -302,9 +303,10 @@ def get_firms_with_crd(spark, tableinfo_source):
         (col('IsActive') == lit(1))
     )
 
-    firms_table = firms_table.select('Firm', 'SourceKey') \
+    firms_table = firms_table.select('Firm', 'SourceKey', 'StorageAccount') \
         .withColumnRenamed('Firm', 'firm_name') \
-        .withColumnRenamed('SourceKey', 'crd_number')
+        .withColumnRenamed('SourceKey', 'crd_number') \
+        .withColumnRenamed('StorageAccount', 'storage_account_name')
 
     firms = firms_table.toJSON().map(lambda j: json.loads(j)).collect()
 
@@ -317,7 +319,7 @@ def get_firms_with_crd(spark, tableinfo_source):
 # %% Add Table to tableinfo
 
 @catch_error(logger)
-def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_name:str, tableinfo_source:str):
+def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_name:str, tableinfo_source:str, storage_account_name:str):
     for ix, (col_name, col_type) in enumerate(table.dtypes):
         if col_name in elt_audit_columns or col_name == partitionBy:
             continue
@@ -334,6 +336,7 @@ def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_na
         tableinfo['SourceDataScale'].append(0)
         tableinfo['OrdinalPosition'].append(ix+1)
         tableinfo['CleanType'].append(var_col_type)
+        tableinfo['StorageAccount'].append(storage_account_name)
         tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
         tableinfo['TargetDataType'].append(var_col_type)
         tableinfo['IsNullable'].append(0 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 1)

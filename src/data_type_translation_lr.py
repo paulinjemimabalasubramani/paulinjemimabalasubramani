@@ -233,10 +233,11 @@ def rename_columns(columns):
 
     for key, val in column_map.items():
         columns = columns.withColumnRenamed(key, val)
-    
+
     columns = columns.withColumn('IsNullable', F.when(F.upper(col('IS_NULLABLE'))=='YES', lit(1)).otherwise(lit(0)).cast(IntegerType()))
     columns = columns.withColumn('KeyIndicator', F.when((F.upper(col('CONSTRAINT_TYPE'))=='PRIMARY KEY') & (col('SourceColumnName')==col('KEY_COLUMN_NAME')), lit(1)).otherwise(lit(0)).cast(IntegerType()))
     columns = columns.withColumn('CleanType', col('SourceDataType'))
+    columns = columns.withColumn('StorageAccount', lit(storage_account_name).cast(StringType()))
     columns = columns.withColumn('TargetColumnName', F.regexp_replace(col('SourceColumnName'), column_regex, '_'))
     columns = columns.withColumn('IsActive', lit(1).cast(IntegerType()))
     columns = columns.withColumn('CreatedDateTime', lit(created_datetime).cast(StringType()))
@@ -245,6 +246,7 @@ def rename_columns(columns):
 
     if is_pc: columns.printSchema()
     return columns
+
 
 
 columns = rename_columns(columns)

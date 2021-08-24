@@ -40,21 +40,35 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-config_path = os.path.dirname(__file__)+'/../config/lookup_files/'
-
-data_type_translation_path = os.path.realpath(config_path + 'DataTypeTranslation.csv')
-assert os.path.isfile(data_type_translation_path), f"File not found: {data_type_translation_path}"
-
-master_ingest_list_path = os.path.realpath(config_path + 'LNR_Tables.csv')
-assert os.path.isfile(master_ingest_list_path), f"File not found: {master_ingest_list_path}"
-
-firm_source_map_path = os.path.realpath(config_path + 'Firm_Source_Map.csv')
-assert os.path.isfile(firm_source_map_path), f"File not found: {firm_source_map_path}"
-
 storage_account_name = to_storage_account_name()
 
 created_datetime = execution_date
 modified_datetime = execution_date
+
+
+
+# %% Get Paths
+
+python_dirname = os.path.dirname(__file__)
+print(f'Main Path: {os.path.realpath(python_dirname)}')
+
+if is_pc:
+    config_path = os.path.realpath(python_dirname + f'/../config/lookup_files')
+else:
+    # /usr/local/spark/resources/fileshare/
+    config_path = os.path.realpath(python_dirname + f'/../resources/fileshare/EDIP-Code/config/lookup_files')
+
+
+data_type_translation_path = os.path.join(config_path, 'DataTypeTranslation.csv')
+assert os.path.isfile(data_type_translation_path), f"File not found: {data_type_translation_path}"
+
+master_ingest_list_path = os.path.join(config_path, 'LNR_Tables.csv')
+assert os.path.isfile(master_ingest_list_path), f"File not found: {master_ingest_list_path}"
+
+firm_source_map_path = os.path.join(config_path, 'Firm_Source_Map.csv')
+assert os.path.isfile(firm_source_map_path), f"File not found: {firm_source_map_path}"
+
+
 
 
 # %% Create Session
