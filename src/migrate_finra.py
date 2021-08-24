@@ -163,25 +163,25 @@ def extract_data_from_finra_file_path(file_path:str, crd_number:str):
     dirname = os.path.dirname(file_path)
     sp = basename.split("_")
 
+    ans = {
+        'file': basename,
+        'root': dirname,
+        'date_modified': datetime.fromtimestamp(os.path.getmtime(file_path)),
+    }
+
     if basename.startswith("INDIVIDUAL_-_DUAL_REGISTRATIONS_-_FIRMS_DOWNLOAD_-_"):
-        ans = {
+        ans = {**ans,
             'crd_number': crd_number,
             'table_name': DualRegistrations_name,
             'date': datetime.strftime(datetime.strptime(execution_date, strftime), r'%Y-%m-%d'),
-            'file': basename,
-            'root': dirname,
-            'date_modified': datetime.fromtimestamp(os.path.getmtime(file_path)),
         }
         return ans
 
     try:
-        ans = {
+        ans = {**ans,
             'crd_number': sp[0],
             'table_name': sp[1],
             'date': sp[2].rsplit('.', 1)[0],
-            'file': basename,
-            'root': dirname,
-            'date_modified': datetime.fromtimestamp(os.path.getmtime(file_path)),
         }
 
         if ans['table_name'].upper() == 'IndividualInformationReportDelta'.upper():
