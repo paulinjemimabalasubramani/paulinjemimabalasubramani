@@ -158,15 +158,19 @@ if sql_ingest_table_exists:
 # %% Name extract
 
 @catch_error(logger)
-def extract_data_from_finra_file_name(file_name:str, crd_number:str):
-    basename = os.path.basename(file_name)
+def extract_data_from_finra_file_path(file_path:str, crd_number:str):
+    basename = os.path.basename(file_path)
+    dirname = os.path.dirname(file_path)
     sp = basename.split("_")
 
     if basename.startswith("INDIVIDUAL_-_DUAL_REGISTRATIONS_-_FIRMS_DOWNLOAD_-_"):
         ans = {
             'crd_number': crd_number,
             'table_name': DualRegistrations_name,
-            'date': datetime.strftime(datetime.strptime(execution_date, strftime), r'%Y-%m-%d')
+            'date': datetime.strftime(datetime.strptime(execution_date, strftime), r'%Y-%m-%d'),
+            'file': basename,
+            'root': dirname,
+            'date_modified': datetime.fromtimestamp(os.path.getmtime(file_path)),
         }
         return ans
 
@@ -174,12 +178,19 @@ def extract_data_from_finra_file_name(file_name:str, crd_number:str):
         ans = {
             'crd_number': sp[0],
             'table_name': sp[1],
-            'date': sp[2].rsplit('.', 1)[0]
+            'date': sp[2].rsplit('.', 1)[0],
+            'file': basename,
+            'root': dirname,
+            'date_modified': datetime.fromtimestamp(os.path.getmtime(file_path)),
         }
+
+        if ans['table_name'].upper() == 'IndividualInformationReportDelta'.upper():
+            ans['table_name'] = 'IndividualInformationReport'
+
         _ = datetime.strptime(ans['date'], r'%Y-%m-%d')
         assert len(sp)==3 or (len(sp)==4 and sp[1].upper()==finra_individual_delta_name.upper())
     except:
-        print(f'Cannot parse file name: {file_name}')
+        print(f'Cannot parse file name: {file_path}')
         return
 
     return ans
@@ -190,59 +201,70 @@ def extract_data_from_finra_file_name(file_name:str, crd_number:str):
 
 @catch_error(logger)
 def get_finra_file_xml_meta(file_path:str, crd_number:str):
+    global sql_ingest_table_exists, sql_ingest_table
     rowTag = '?xml'
     csv_flag = False
 
-    file_meta = extract_data_from_finra_file_name(file_name=file_path, crd_number=crd_number)
+    file_meta = extract_data_from_finra_file_path(file_path=file_path, crd_number=crd_number)
     if not file_meta:
         return
 
-    if file_meta['table_name'].upper() == DualRegistrations_name.upper():
-        csv_flag = True
-        xml_table = read_csv(spark=spark, file_path=file_path)
-        criteria = {
-            reportDate_name: file_meta['date'],
-            firmCRDNumber_name: file_meta['crd_number'],
-            }
-    elif file_path.lower().endswith('.zip'):
-        with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
-            shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
-            k = 0
-            for root1, dirs1, files1 in os.walk(tmpdir):
-                for file1 in files1:
-                    file_path1 = os.path.join(root1, file1)
-                    xml_table = read_xml(spark=spark, file_path=file_path1, rowTag=rowTag)
-                    criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
-                    k += 1
-                    break
-                if k>0: break
-    else:
-        xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag)
-        criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
+    fcol = None
+    if sql_ingest_table_exists:
+        filtersql = sql_ingest_table.where(
+            (col('crd_number')==lit(file_meta['crd_number'])) &
+            (col('table_name')==lit(file_meta['table_name'])) &
+            (col('file_date')==to_date(lit(file_meta['date']), format='yyyy-MM-dd')) &
+            (col('file_name')==lit(file_meta['file'])) &
+            (col('root_folder')==lit(file_meta['root']))
+            )
+        if filtersql.count()>0:
+            fcol = filtersql.limit(1).collect()[0]
+            criteria = json.loads(fcol['xml_criteria'])
+            rowTags = json.loads(fcol['xml_rowtags'])
 
-    if not criteria.get(reportDate_name):
-        criteria[reportDate_name] = criteria['_postingDate']
+    if not fcol:
+        if file_meta['table_name'].upper() == DualRegistrations_name.upper():
+            csv_flag = True
+            xml_table = read_csv(spark=spark, file_path=file_path)
+            criteria = {
+                reportDate_name: file_meta['date'],
+                firmCRDNumber_name: file_meta['crd_number'],
+                }
+        elif file_path.lower().endswith('.zip'):
+            with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
+                shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
+                k = 0
+                for root1, dirs1, files1 in os.walk(tmpdir):
+                    for file1 in files1:
+                        file_path1 = os.path.join(root1, file1)
+                        xml_table = read_xml(spark=spark, file_path=file_path1, rowTag=rowTag)
+                        criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
+                        k += 1
+                        break
+                    if k>0: break
+        else:
+            xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag)
+            criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
 
-    if criteria[firmCRDNumber_name] != file_meta['crd_number']:
-        print(f"\n{file_path}\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{file_meta['crd_number']}'\n")
-        file_meta['crd_number'] = criteria[firmCRDNumber_name]
+        if not criteria.get(reportDate_name):
+            criteria[reportDate_name] = criteria['_postingDate']
 
-    if criteria[reportDate_name] != file_meta['date']:
-        print(f"\n{file_path}\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{file_meta['date']}'\n")
-        file_meta['date'] = criteria[reportDate_name]
+        if criteria[firmCRDNumber_name] != file_meta['crd_number']:
+            print(f"\n{file_path}\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{file_meta['crd_number']}'\n")
+            file_meta['crd_number'] = criteria[firmCRDNumber_name]
 
-    rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
-    assert len(rowTags) == 1 or csv_flag, f"\n{file_path}\nXML File has rowTags {rowTags} is not valid\n"
+        if criteria[reportDate_name] != file_meta['date']:
+            print(f"\n{file_path}\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{file_meta['date']}'\n")
+            file_meta['date'] = criteria[reportDate_name]
 
-    if file_meta['table_name'].upper() == 'IndividualInformationReportDelta'.upper():
-        file_meta['table_name'] = 'IndividualInformationReport'
+        rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
+        assert len(rowTags) == 1 or csv_flag, f"\n{file_path}\nXML File has rowTags {rowTags} is not valid\n"
 
     file_meta['is_full_load'] = criteria.get('_IIRType') == 'FULL' or file_meta['table_name'].upper() in ['BranchInformationReport'.upper(), DualRegistrations_name.upper()]
 
     file_meta = {
         **file_meta,
-        'root': os.path.dirname(file_path),
-        'file': os.path.basename(file_path),
         'criteria': criteria,
         'rowTags': rowTags,
     }
@@ -473,6 +495,7 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
         to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
         lit(True).cast(BooleanType()).alias('is_ingested'),
         to_timestamp(lit(None)).alias('full_load_date'),
+        to_timestamp(col('date_modified')).alias('date_modified'),
     )
 
     ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names_with_load_n_date)
@@ -532,9 +555,6 @@ def get_selected_files(ingest_table):
 if is_pc and False:
     crd_number = '25803'
     firm = [f for f in firms if f['crd_number']==crd_number][0]
-
-
-
 
 
 
