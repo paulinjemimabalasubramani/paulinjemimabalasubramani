@@ -32,7 +32,7 @@ with DAG(
     default_args = default_args,
     description = description_DAG,
     schedule_interval = None,
-    start_date = None,
+    start_date = days_ago(1),
 ) as dag:
     current_datetime = datetime.now()
     info = "CAT"
