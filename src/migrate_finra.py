@@ -122,7 +122,7 @@ else:
 
 firms = get_firms_with_crd(spark=spark, tableinfo_source=tableinfo_source)
 
-if is_pc: print(firms)
+if is_pc: pprint(firms)
 
 
 
@@ -283,7 +283,14 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
     for table_name, xml_table in xml_table_list.items():
         print(f'\nWriting {table_name} to Azure...')
 
-        add_table_to_tableinfo(tableinfo=tableinfo, table=xml_table, firm_name=firm_name, table_name=table_name, tableinfo_source=tableinfo_source)
+        add_table_to_tableinfo(
+            tableinfo = tableinfo, 
+            table = xml_table, 
+            firm_name = firm_name, 
+            table_name = table_name, 
+            tableinfo_source = tableinfo_source, 
+            storage_account_name = storage_account_name,
+            )
 
         data_type = 'data'
         container_folder = f'{data_type}/{domain_name}/{database}/{firm_name}'
@@ -526,23 +533,7 @@ if is_pc and False:
     crd_number = '25803'
     firm = [f for f in firms if f['crd_number']==crd_number][0]
 
-    crd_number = firm['crd_number']
-    firm_name = firm['firm_name']
-    firm_folder = crd_number
-    folder_path = os.path.join(data_path_folder, firm_folder)
-    print(f"\n\nFirm: {firm_name}, Firm CRD Number: {crd_number}")
 
-    if not os.path.isdir(folder_path):
-        print(f'Path does not exist: {folder_path}   -> SKIPPING')
-
-    files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=crd_number)
-
-    storage_account_name = to_storage_account_name(firm_name=firm_name)
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-    ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name)
-    new_files, selected_files = get_selected_files(ingest_table)
-    all_files_per_firm[firm] = all_files
 
 
 
@@ -566,7 +557,7 @@ def process_all_files():
         if not files_meta:
             continue
 
-        storage_account_name = to_storage_account_name(firm_name=firm['firm_name'])
+        storage_account_name = to_storage_account_name(firm_name=firm['storage_account_name'])
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
         print('Getting New Files')
