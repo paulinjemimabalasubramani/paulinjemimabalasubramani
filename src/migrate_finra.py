@@ -109,11 +109,11 @@ print(f'Main Path: {os.path.realpath(os.path.dirname(__file__))}')
 
 if is_pc:
     data_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../../Shared/{tableinfo_source}')
-    schema_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../config/{tableinfo_source}')
+    schema_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../config/finra_schema')
 else:
     # /usr/local/spark/resources/fileshare/Shared
     data_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../resources/fileshare/Shared/{tableinfo_source}')
-    schema_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../resources/fileshare/EDIP-Code/config/{tableinfo_source}')
+    schema_path_folder = os.path.realpath(os.path.dirname(__file__) + f'/../resources/fileshare/EDIP-Code/config/finra_schema')
 
 
 

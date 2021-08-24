@@ -40,7 +40,7 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-config_path = os.path.dirname(__file__)+'/../config/'
+config_path = os.path.dirname(__file__)+'/../config/lookup_files/'
 
 data_type_translation_path = os.path.realpath(config_path + 'DataTypeTranslation.csv')
 assert os.path.isfile(data_type_translation_path), f"File not found: {data_type_translation_path}"
