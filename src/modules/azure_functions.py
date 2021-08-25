@@ -178,7 +178,10 @@ def save_adls_gen2(
     elif file_format == 'delta':
         # spark.sql(f"VACUUM delta.`{data_path}` RETAIN 240 HOURS")
         partitionBy_value = table_to_save.select(F.max(col(partitionBy))).collect()[0][0]
-        userMetadata = f'{partitionBy}={partitionBy_value}'
+        if partitionBy_value:
+            userMetadata = f'{partitionBy}={partitionBy_value}'
+        else:
+            userMetadata = None
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
     else:
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
