@@ -7,7 +7,8 @@ Common Library for translating data types from source database to target databas
 
 from .common_functions import make_logging, catch_error
 from .config import is_pc
-from .data_functions import column_regex, partitionBy, partitionBy_value
+from .data_functions import column_regex, partitionBy, partitionBy_value, execution_date
+from .azure_functions import select_tableinfo_columns
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
@@ -21,6 +22,8 @@ logger = make_logging(__name__)
 # %% Parameters
 
 
+created_datetime = execution_date
+modified_datetime = execution_date
 
 
 # %% Join master_ingest_list with sql tables
@@ -166,6 +169,36 @@ def add_precision(columns):
 
     if is_pc: columns.printSchema()
     return columns
+
+
+
+# %% Prepare TableInfo
+
+@catch_error(logger)
+def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str):
+
+    # Join master_ingest_list with sql tables
+    tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
+
+    # filter columns by selected tables
+    columns = filter_columns_by_tables(sql_columns=sql_columns, tables=tables)
+
+    # Join with table constraints and column usage
+    columns = join_tables_with_constraints(columns=columns, sql_table_constraints=sql_table_constraints, sql_key_column_usage=sql_key_column_usage)
+
+    # Rename Columns
+    columns = rename_columns(columns=columns, storage_account_name=storage_account_name, created_datetime=created_datetime, modified_datetime=modified_datetime)
+
+    # Add TargetDataType
+    columns = add_TargetDataType(columns=columns, translation=translation)
+
+    # Add Precision
+    columns = add_precision(columns=columns)
+
+    # Select Relevant columns only
+    tableinfo = select_tableinfo_columns(tableinfo=columns)
+
+    return tableinfo
 
 
 

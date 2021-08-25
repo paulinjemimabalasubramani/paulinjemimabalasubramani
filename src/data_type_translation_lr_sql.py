@@ -22,14 +22,12 @@ from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_sql
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, read_adls_gen2, \
-    get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, select_tableinfo_columns
-from modules.data_functions import execution_date, metadata_DataTypeTranslation, metadata_MasterIngestList, \
+    get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name
+from modules.data_functions import metadata_DataTypeTranslation, metadata_MasterIngestList, \
     partitionBy
-from modules.data_type_translation import join_master_ingest_list_sql_tables, filter_columns_by_tables, join_tables_with_constraints, \
-    rename_columns, add_TargetDataType, add_precision
+from modules.data_type_translation import prepare_tableinfo
 
 
-from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
 
 
@@ -46,9 +44,6 @@ sql_server = 'TSQLOLTP01'
 sql_database = 'LR' # TABLE_CATALOG
 
 tableinfo_source = sql_database
-
-created_datetime = execution_date
-modified_datetime = execution_date
 
 
 # %% Create Session
@@ -128,37 +123,18 @@ if is_pc: sql_key_column_usage.show(5)
 
 
 
-# %% Process Columns
+# %% Prepare TableInfo
 
-# Join master_ingest_list with sql tables
-tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
-
-# filter columns by selected tables
-columns = filter_columns_by_tables(sql_columns=sql_columns, tables=tables)
-
-# Join with table constraints and column usage
-columns = join_tables_with_constraints(columns=columns, sql_table_constraints=sql_table_constraints, sql_key_column_usage=sql_key_column_usage)
-
-# Rename Columns
-columns = rename_columns(columns=columns, storage_account_name=storage_account_name, created_datetime=created_datetime, modified_datetime=modified_datetime)
-
-# Add TargetDataType
-columns = add_TargetDataType(columns=columns, translation=translation)
-
-# Add Precision
-columns = add_precision(columns=columns)
-
-# Select Relevant columns only
-columns = select_tableinfo_columns(columns=columns)
+tableinfo = prepare_tableinfo()
 
 
 
 # %% Table Info to ADLS Gen 2
 
 @catch_error(logger)
-def save_table_info_to_adls_gen2(columns):
+def save_table_info_to_adls_gen2(tableinfo):
     save_adls_gen2(
-            table_to_save = columns,
+            table_to_save = tableinfo,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = tableinfo_source,
@@ -168,7 +144,7 @@ def save_table_info_to_adls_gen2(columns):
         )
 
 
-save_table_info_to_adls_gen2(columns)
+save_table_info_to_adls_gen2(tableinfo)
 
 
 
