@@ -125,7 +125,15 @@ if is_pc: sql_key_column_usage.show(5)
 
 # %% Prepare TableInfo
 
-tableinfo = prepare_tableinfo()
+tableinfo = prepare_tableinfo(
+    master_ingest_list = master_ingest_list,
+    translation = translation,
+    sql_tables = sql_tables,
+    sql_columns = sql_columns,
+    sql_table_constraints = sql_table_constraints,
+    sql_key_column_usage = sql_key_column_usage,
+    storage_account_name = storage_account_name,
+    )
 
 
 
