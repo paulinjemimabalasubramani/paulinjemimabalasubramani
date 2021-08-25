@@ -34,8 +34,6 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-ingest_from_files = True
-
 sql_server = 'TSQLOLTP01'
 sql_key_vault_account = sql_server
 

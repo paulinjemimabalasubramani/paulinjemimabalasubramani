@@ -25,6 +25,7 @@ from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_
     get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name, select_tableinfo_columns
 from modules.data_functions import execution_date, column_regex, metadata_DataTypeTranslation, metadata_MasterIngestList, \
     partitionBy, partitionBy_value
+from modules.data_type_translation import join_master_ingest_list_sql_tables
 
 
 from pyspark.sql import functions as F
@@ -128,32 +129,9 @@ if is_pc: sql_key_column_usage.show(5)
 
 # %% Join master_ingest_list with sql tables
 
-@catch_error(logger)
-def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
-    tables = master_ingest_list.join(
-        sql_tables,
-        (master_ingest_list.TABLE_NAME == sql_tables.TABLE_NAME) &
-        (master_ingest_list.TABLE_SCHEMA == sql_tables.TABLE_SCHEMA),
-        how = 'left'
-        ).select(
-            master_ingest_list.TABLE_NAME, 
-            master_ingest_list.TABLE_SCHEMA,
-            sql_tables.TABLE_NAME.alias('SQL_TABLE_NAME'),
-            sql_tables.TABLE_TYPE,
-            sql_tables.TABLE_CATALOG,
-        )
-
-    if is_pc: tables.printSchema()
-    if is_pc: tables.show(5)
-
-    # Check if there is a table in the master_ingest_list that is not in the sql_tables
-    null_rows = tables.filter(col('SQL_TABLE_NAME').isNull()).select(col('TABLE_NAME')).collect()
-    assert not null_rows, f"There are some tables in master_ingest_list that are not in sql_tables: {[x[0] for x in null_rows]}"
-
-    return tables
-
-
 tables = join_master_ingest_list_sql_tables(master_ingest_list, sql_tables)
+
+
 
 # %% filter columns by selected tables
 
@@ -165,7 +143,7 @@ def filter_columns_by_tables(sql_columns, tables):
         (tables.TABLE_SCHEMA == sql_columns.TABLE_SCHEMA) &
         (tables.TABLE_CATALOG == sql_columns.TABLE_CATALOG),
         how = 'left'
-    ).select('sql_columns.*')
+    ).select('sql_columns.*').where(col('TABLE_NAME').isNotNull())
 
     if is_pc: columns.printSchema()
     return columns
