@@ -30,6 +30,8 @@ modified_datetime = execution_date
 
 @catch_error(logger)
 def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
+    sql_tables = sql_tables.where(col('TABLE_TYPE')==lit('BASE TABLE'))
+
     tables = master_ingest_list.join(
         sql_tables,
         (master_ingest_list.TABLE_NAME == sql_tables.TABLE_NAME) &
@@ -48,7 +50,8 @@ def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
 
     # Check if there is a table in the master_ingest_list that is not in the sql_tables
     null_rows = tables.filter(col('SQL_TABLE_NAME').isNull()).select(col('TABLE_NAME')).collect()
-    assert not null_rows, f"There are some tables in master_ingest_list that are not in sql_tables: {[x[0] for x in null_rows]}"
+    if null_rows:
+        print(f"There are some tables in master_ingest_list that are not in sql_tables: {[x[0] for x in null_rows]}")
 
     return tables
 

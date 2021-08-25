@@ -9,10 +9,8 @@ from datetime import datetime
 import re
 
 from .common_functions import make_logging, catch_error
-from .config import is_pc
 
 from pyspark.sql.functions import col, lit
-from pyspark.sql import functions as F
 from pyspark.sql.types import IntegerType
 
 

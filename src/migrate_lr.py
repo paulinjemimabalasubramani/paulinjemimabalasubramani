@@ -24,8 +24,8 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_sql
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, get_azure_sp, \
     container_name, file_format, to_storage_account_name, tableinfo_name
-from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy
-
+from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy, is_pc
+from modules.data_type_translation import prepare_tableinfo
 
 
 # %% Logging
@@ -46,9 +46,50 @@ reception_date = execution_date
 tableinfo_source = 'LR'
 
 
+# %% Get Paths
+
+python_dirname = os.path.dirname(__file__)
+print(f'Main Path: {os.path.realpath(python_dirname)}')
+
+if is_pc:
+    data_path_folder = os.path.realpath(python_dirname + f'/../../Shared/{tableinfo_source}')
+else:
+    # /usr/local/spark/resources/fileshare/
+    data_path_folder = os.path.realpath(python_dirname + f'/../resources/fileshare/Shared/{tableinfo_source}')
+
+
+
 # %% Create Session
 
 spark = create_spark()
+
+
+# %% check if ingest_from_files
+
+if ingest_from_files:
+
+
+
+
+
+
+
+
+
+
+    tableinfo = prepare_tableinfo(
+        master_ingest_list = master_ingest_list,
+        translation = translation,
+        sql_tables = sql_tables,
+        sql_columns = sql_columns,
+        sql_table_constraints = sql_table_constraints,
+        sql_key_column_usage = sql_key_column_usage,
+        storage_account_name = storage_account_name,
+        )
+
+
+
+
 
 
 # %% Read metadata.TableInfo
