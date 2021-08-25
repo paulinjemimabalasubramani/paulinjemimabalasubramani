@@ -619,16 +619,16 @@ def process_all_files():
                         ).select('tp.*')
                     union_columns = table_prev.columns
                     table_prev = table_prev.select(union_columns).union(table.select(union_columns))
-                    xml_table_list_union[table_name] = table_prev
+                    xml_table_list_union[table_name] = table_prev.distinct()
                 else:
-                    xml_table_list_union[table_name] = table
+                    xml_table_list_union[table_name] = table.distinct()
 
         write_xml_table_list_to_azure(
             xml_table_list = xml_table_list_union,
             firm_name = firm['firm_name'],
             storage_account_name = storage_account_name,
         )
-        
+
         cleanup_tmpdirs()
 
     print('\nFinished processing all Files and Firms\n')
