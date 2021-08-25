@@ -13,6 +13,7 @@ http://10.128.25.82:8282/
 # %% Import Libraries
 
 import os, sys
+from pprint import pprint
 
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
@@ -21,11 +22,16 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import make_logging, catch_error
+from modules.config import data_path, is_pc
 from modules.spark_functions import create_spark, read_sql
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, get_azure_sp, \
     container_name, file_format, to_storage_account_name, tableinfo_name
-from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy, is_pc
-from modules.data_type_translation import prepare_tableinfo
+from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy
+from modules.data_type_translation import prepare_tableinfo, get_DataTypeTranslation_table
+
+
+from pyspark.sql.functions import col, lit
+
 
 
 # %% Logging
@@ -45,17 +51,11 @@ domain_name = 'financial_professional'
 reception_date = execution_date
 tableinfo_source = 'LR'
 
+data_type_translation_id = 'sqlserver_snowflake'
+INFORMATION_SCHEMA = 'INFORMATION_SCHEMA'.upper()
 
-# %% Get Paths
+data_path_folder = os.path.join(data_path, tableinfo_source)
 
-python_dirname = os.path.dirname(__file__)
-print(f'Main Path: {os.path.realpath(python_dirname)}')
-
-if is_pc:
-    data_path_folder = os.path.realpath(python_dirname + f'/../../Shared/{tableinfo_source}')
-else:
-    # /usr/local/spark/resources/fileshare/
-    data_path_folder = os.path.realpath(python_dirname + f'/../resources/fileshare/Shared/{tableinfo_source}')
 
 
 
@@ -64,19 +64,77 @@ else:
 spark = create_spark()
 
 
+
+# %% Get Files Meta
+
+@catch_error(logger)
+def get_files_meta():
+    files_meta = []
+    for root, dirs, files in os.walk(data_path_folder):
+        for file in files:
+            file_name, file_ext = os.path.splitext(file)
+            if (file_ext.lower() in ['.txt', '.csv']) and ('_' in file_name):
+                file_meta = {
+                    'file': file,
+                    'root': root,
+                    'path': os.path.join(root, file)
+                }
+
+                if file_name.upper().startswith(INFORMATION_SCHEMA + '_'):
+                    schema = INFORMATION_SCHEMA
+                    table = file_name[len(INFORMATION_SCHEMA)+1:].upper()
+                else:
+                    _loc = file_name.find("_")
+                    schema = file_name[:_loc].lower()
+                    table = file_name[_loc+1:].lower()
+
+                file_meta = {
+                    **file_meta,
+                    'schema': schema,
+                    'table': table,
+                }
+
+                files_meta.append(file_meta)
+
+    if is_pc: pprint(files_meta)
+    return files_meta
+
+
+
+# %% Create Master Ingest List
+
+@catch_error(logger)
+def create_master_ingest_list(files_meta):
+    files_meta_for_master_ingest_list =[{
+        'TABLE_SCHEMA': file_meta['schema'],
+        'TABLE_NAME': file_meta['table'],
+        } for file_meta in files_meta if file_meta['schema'].upper()!=INFORMATION_SCHEMA]
+
+    master_ingest_list = spark.createDataFrame(files_meta_for_master_ingest_list)
+
+    print(f'Total of {master_ingest_list.count()} tables to ingest')
+    return master_ingest_list
+
+
+
+
 # %% check if ingest_from_files
 
 if ingest_from_files:
+    storage_account_name = to_storage_account_name()
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    files_meta = get_files_meta()
+    master_ingest_list = create_master_ingest_list(files_meta=files_meta)
+    translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
 
 
 
 
+# %%
 
 
-
-
-
-
+if ingest_from_files:
     tableinfo = prepare_tableinfo(
         master_ingest_list = master_ingest_list,
         translation = translation,

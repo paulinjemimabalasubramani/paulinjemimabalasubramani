@@ -7,8 +7,10 @@ Common Library for translating data types from source database to target databas
 
 from .common_functions import make_logging, catch_error
 from .config import is_pc
-from .data_functions import column_regex, partitionBy, partitionBy_value, execution_date
-from .azure_functions import select_tableinfo_columns
+from .data_functions import column_regex, partitionBy, partitionBy_value, execution_date, metadata_DataTypeTranslation, \
+    metadata_MasterIngestList
+from .azure_functions import select_tableinfo_columns, tableinfo_container_name, read_adls_gen2, to_storage_account_name, \
+    file_format
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
@@ -21,9 +23,59 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-
 created_datetime = execution_date
 modified_datetime = execution_date
+
+
+
+# %% Get DataTypeTranslation table
+
+@catch_error(logger)
+def get_DataTypeTranslation_table(spark, data_type_translation_id:str):
+    storage_account_name = to_storage_account_name()
+
+    translation = read_adls_gen2(
+        spark = spark,
+        storage_account_name = storage_account_name,
+        container_name = tableinfo_container_name,
+        container_folder = '',
+        table_name = metadata_DataTypeTranslation,
+        file_format = file_format
+    )
+
+    translation = translation.filter(
+        (col('DataTypeTranslationID') == lit(data_type_translation_id).cast("string")) & 
+        (col('IsActive') == lit(1))
+    )
+
+    if is_pc: translation.show(5)
+    return translation
+
+
+
+# %% Get Master Ingest List
+
+@catch_error(logger)
+def get_master_ingest_list(spark, tableinfo_source:str):
+    storage_account_name = to_storage_account_name()
+
+    master_ingest_list = read_adls_gen2(
+        spark = spark,
+        storage_account_name = storage_account_name,
+        container_name = tableinfo_container_name,
+        container_folder = tableinfo_source,
+        table_name = metadata_MasterIngestList,
+        file_format = file_format
+    )
+
+    master_ingest_list = master_ingest_list.filter(
+        col('IsActive')==lit(1)
+    )
+
+    if is_pc: master_ingest_list.show(5)
+    return master_ingest_list
+
+
 
 
 # %% Join master_ingest_list with sql tables

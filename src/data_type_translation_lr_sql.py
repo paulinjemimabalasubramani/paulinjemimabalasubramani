@@ -21,11 +21,10 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.config import is_pc
 from modules.spark_functions import create_spark, read_sql
-from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, read_adls_gen2, \
+from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, \
     get_azure_sp, file_format, tableinfo_container_name, to_storage_account_name
-from modules.data_functions import metadata_DataTypeTranslation, metadata_MasterIngestList, \
-    partitionBy
-from modules.data_type_translation import prepare_tableinfo
+from modules.data_functions import partitionBy
+from modules.data_type_translation import prepare_tableinfo, get_DataTypeTranslation_table, get_master_ingest_list
 
 
 from pyspark.sql.functions import col, lit
@@ -61,40 +60,13 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 # %% Get Master Ingest List
 
-master_ingest_list = read_adls_gen2(
-    spark = spark,
-    storage_account_name = storage_account_name,
-    container_name = tableinfo_container_name,
-    container_folder = tableinfo_source,
-    table_name = metadata_MasterIngestList,
-    file_format = file_format
-)
-
-master_ingest_list = master_ingest_list.filter(
-    col('IsActive')==lit(1)
-)
-
-if is_pc: master_ingest_list.show(5)
+master_ingest_list = get_master_ingest_list(spark=spark, tableinfo_source=tableinfo_source)
 
 
 
 # %% Get DataTypeTranslation table
 
-translation = read_adls_gen2(
-    spark = spark,
-    storage_account_name = storage_account_name,
-    container_name = tableinfo_container_name,
-    container_folder = '',
-    table_name = metadata_DataTypeTranslation,
-    file_format = file_format
-)
-
-translation = translation.filter(
-    (col('DataTypeTranslationID') == lit(data_type_translation_id).cast("string")) & 
-    (col('IsActive') == lit(1))
-)
-
-if is_pc: translation.show(5)
+translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
 
 
 
