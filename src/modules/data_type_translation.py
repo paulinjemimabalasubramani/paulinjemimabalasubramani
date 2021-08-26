@@ -5,12 +5,17 @@ Common Library for translating data types from source database to target databas
 
 # %% Import Libraries
 
+import os
+from pprint import pprint
+from collections import defaultdict
+
 from .common_functions import make_logging, catch_error
 from .config import is_pc
 from .data_functions import column_regex, partitionBy, partitionBy_value, execution_date, metadata_DataTypeTranslation, \
     metadata_MasterIngestList
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, read_adls_gen2, to_storage_account_name, \
     file_format
+from .spark_functions import read_csv
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
@@ -26,6 +31,7 @@ logger = make_logging(__name__)
 created_datetime = execution_date
 modified_datetime = execution_date
 
+INFORMATION_SCHEMA = 'INFORMATION_SCHEMA'.upper()
 
 
 # %% Get DataTypeTranslation table
@@ -105,6 +111,7 @@ def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
     if null_rows:
         print(f"There are some tables in master_ingest_list that are not in sql_tables: {[x[0] for x in null_rows]}")
 
+    tables = tables.where(col('SQL_TABLE_NAME').isNotNull())
     return tables
 
 
@@ -227,13 +234,149 @@ def add_precision(columns):
 
 
 
+# %% Get Files Meta
+
+@catch_error(logger)
+def get_files_meta(data_path_folder:str, default_schema:str='dbo'):
+    files_meta = []
+    for root, dirs, files in os.walk(data_path_folder):
+        for file in files:
+            file_name, file_ext = os.path.splitext(file)
+            if (file_ext.lower() in ['.txt', '.csv']):
+                file_meta = {
+                    'file': file,
+                    'root': root,
+                    'path': os.path.join(root, file)
+                }
+
+                if file_name.upper().startswith(INFORMATION_SCHEMA + '_'):
+                    schema = INFORMATION_SCHEMA
+                    table = file_name[len(INFORMATION_SCHEMA)+1:].upper().strip()
+                elif '_' in file_name:
+                    _loc = file_name.find("_")
+                    schema = file_name[:_loc].lower().strip()
+                    table = file_name[_loc+1:].lower().strip()
+                else:
+                    schema = default_schema.strip()
+                    table = file_name.strip()
+
+                file_meta = {
+                    **file_meta,
+                    'schema': schema,
+                    'table': table,
+                }
+
+                if schema !='' and table !='':
+                    files_meta.append(file_meta)
+
+    if is_pc: pprint(files_meta)
+    return files_meta
+
+
+
+# %% Create Master Ingest List
+
+@catch_error(logger)
+def create_master_ingest_list(spark, files_meta):
+    files_meta_for_master_ingest_list =[{
+        'TABLE_SCHEMA': file_meta['schema'],
+        'TABLE_NAME': file_meta['table'],
+        } for file_meta in files_meta if file_meta['schema'].upper()!=INFORMATION_SCHEMA]
+
+    if not files_meta_for_master_ingest_list:
+        print('No tables found, exiting program.')
+        exit()
+
+    master_ingest_list = spark.createDataFrame(files_meta_for_master_ingest_list)
+
+    print(f'Total of {master_ingest_list.count()} tables to ingest')
+    return master_ingest_list
+
+
+# %% create INFORMATION_SCHEMA.TABLES if not exists
+
+@catch_error(logger)
+def create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables, master_ingest_list, tableinfo_source:str):
+    if sql_tables and ('TABLE_NAME' in sql_tables.columns) and ('TABLE_SCHEMA' in sql_tables.columns):
+        if 'TABLE_TYPE' not in sql_tables.columns:
+            print('TABLE_TYPE is not found in INFORMATION_SCHEMA.TABLES, assuming all BASE TABLE')
+            sql_tables = sql_tables.withColumn('TABLE_TYPE', lit('BASE TABLE'))
+
+        if 'TABLE_CATALOG' not in sql_tables.columns:
+            print(f'TABLE_CATALOG is not found in INFORMATION_SCHEMA.TABLES, assuming all {tableinfo_source}')
+            sql_tables = sql_tables.withColumn('TABLE_CATALOG', lit(tableinfo_source))
+    else:
+        print('INFORMATION_SCHEMA.TABLES is not found, ingesting all tables by default')
+        sql_tables = (master_ingest_list
+            .select(['TABLE_NAME', 'TABLE_SCHEMA'])
+            .withColumn('TABLE_TYPE', lit('BASE TABLE'))
+            .withColumn('TABLE_CATALOG', lit(tableinfo_source))
+            )
+    return sql_tables
+
+
+
+# %% create INFORMATION_SCHEMA.COLUMNS if not exists
+
+@catch_error(logger)
+def create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(sql_columns, master_ingest_list, tableinfo_source:str):
+    if (sql_columns and 
+        ('TABLE_NAME' in sql_columns.columns) and 
+        ('TABLE_SCHEMA' in sql_columns.columns) and
+        ('COLUMN_NAME' in sql_columns.columns)
+        ):
+        if 'TABLE_TYPE' not in sql_tables.columns:
+            print('TABLE_TYPE is not found in INFORMATION_SCHEMA.TABLES, assuming all BASE TABLE')
+            sql_tables = sql_tables.withColumn('TABLE_TYPE', lit('BASE TABLE'))
+
+        if 'TABLE_CATALOG' not in sql_tables.columns:
+            print(f'TABLE_CATALOG is not found in INFORMATION_SCHEMA.TABLES, assuming all {tableinfo_source}')
+            sql_tables = sql_tables.withColumn('TABLE_CATALOG', lit(tableinfo_source))
+    else:
+        print('INFORMATION_SCHEMA.TABLES is not found, ingesting all tables by default')
+        sql_tables = (master_ingest_list
+            .select(['TABLE_NAME', 'TABLE_SCHEMA'])
+            .withColumn('TABLE_TYPE', lit('BASE TABLE'))
+            .withColumn('TABLE_CATALOG', lit(tableinfo_source))
+            )
+    return sql_tables
+
+
+
+# %% Get Table and Column Metadata from information_schema
+
+@catch_error(logger)
+def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, master_ingest_list):
+    schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINTS']
+
+    schemas_meta = [file_meta for file_meta in files_meta if file_meta['schema'].upper()==INFORMATION_SCHEMA]
+    sql_meta = {schema_table_name: [schema_meta for schema_meta in schemas_meta if schema_meta['table'].upper()==schema_table_name.upper()] for schema_table_name in schema_table_names}
+
+    schema_tables = defaultdict()
+    for schema_table_name in schema_table_names:
+        schema_meta = sql_meta[schema_table_name]
+        if schema_meta:
+            schema_table = read_csv(spark=spark, file_path=schema_meta[0]['path'])
+            if is_pc: schema_table.printSchema()
+        else:
+            schema_table = None
+        schema_tables[schema_table_name] = schema_table
+
+    schema_tables['TABLES'] = create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables=schema_tables['TABLES'], master_ingest_list=master_ingest_list, tableinfo_source=tableinfo_source)
+
+
+
+    return schema_tables
+
+
+
 # %% Prepare TableInfo
 
 @catch_error(logger)
-def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str):
+def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str, tableinfo_source:str):
 
     # Join master_ingest_list with sql tables
-    tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
+    tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables, tableinfo_source=tableinfo_source)
 
     # filter columns by selected tables
     columns = filter_columns_by_tables(sql_columns=sql_columns, tables=tables)
@@ -256,5 +399,7 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
     return tableinfo
 
 
+
+# %%
 
 

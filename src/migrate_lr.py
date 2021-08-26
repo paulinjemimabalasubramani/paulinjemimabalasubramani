@@ -28,7 +28,8 @@ from modules.spark_functions import create_spark, read_sql, read_csv
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, get_azure_sp, \
     container_name, file_format, to_storage_account_name, tableinfo_name, tableinfo_container_name
 from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy
-from modules.data_type_translation import prepare_tableinfo, get_DataTypeTranslation_table
+from modules.data_type_translation import prepare_tableinfo, get_DataTypeTranslation_table, get_files_meta, \
+    create_master_ingest_list, get_sql_schema_tables_from_files
 
 
 
@@ -38,7 +39,7 @@ logger = make_logging(__name__)
 
 # %% Parameters
 
-ingest_from_files = True
+ingest_from_files_flag = True
 
 sql_server = 'TSQLOLTP01'
 sql_key_vault_account = sql_server
@@ -50,7 +51,6 @@ reception_date = execution_date
 tableinfo_source = 'LR'
 
 data_type_translation_id = 'sqlserver_snowflake'
-INFORMATION_SCHEMA = 'INFORMATION_SCHEMA'.upper()
 
 data_path_folder = os.path.join(data_path, tableinfo_source)
 
@@ -63,89 +63,10 @@ spark = create_spark()
 
 
 
-# %% Get Files Meta
-
-@catch_error(logger)
-def get_files_meta():
-    files_meta = []
-    for root, dirs, files in os.walk(data_path_folder):
-        for file in files:
-            file_name, file_ext = os.path.splitext(file)
-            if (file_ext.lower() in ['.txt', '.csv']) and ('_' in file_name):
-                file_meta = {
-                    'file': file,
-                    'root': root,
-                    'path': os.path.join(root, file)
-                }
-
-                if file_name.upper().startswith(INFORMATION_SCHEMA + '_'):
-                    schema = INFORMATION_SCHEMA
-                    table = file_name[len(INFORMATION_SCHEMA)+1:].upper()
-                else:
-                    _loc = file_name.find("_")
-                    schema = file_name[:_loc].lower()
-                    table = file_name[_loc+1:].lower()
-
-                file_meta = {
-                    **file_meta,
-                    'schema': schema,
-                    'table': table,
-                }
-
-                files_meta.append(file_meta)
-
-    if is_pc: pprint(files_meta)
-    return files_meta
-
-
-
-# %% Create Master Ingest List
-
-@catch_error(logger)
-def create_master_ingest_list(files_meta):
-    files_meta_for_master_ingest_list =[{
-        'TABLE_SCHEMA': file_meta['schema'],
-        'TABLE_NAME': file_meta['table'],
-        } for file_meta in files_meta if file_meta['schema'].upper()!=INFORMATION_SCHEMA]
-
-    master_ingest_list = spark.createDataFrame(files_meta_for_master_ingest_list)
-
-    print(f'Total of {master_ingest_list.count()} tables to ingest')
-    return master_ingest_list
-
-
-
-
-# %% Get Table and Column Metadata from information_schema
-
-@catch_error(logger)
-def get_sql_schema_tables_from_files(files_meta):
-    schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINTS']
-
-    schemas_meta = [file_meta for file_meta in files_meta if file_meta['schema'].upper()==INFORMATION_SCHEMA]
-    sql_meta = {schema_table_name: [schema_meta for schema_meta in schemas_meta if schema_meta['table'].upper()==schema_table_name.upper()] for schema_table_name in schema_table_names}
-
-    schema_tables = defaultdict()
-    for schema_table_name in schema_table_names:
-        schema_meta = sql_meta[schema_table_name]
-        if schema_meta:
-            schema_table = read_csv(spark=spark, file_path=schema_meta[0]['path'])
-            if is_pc: schema_table.printSchema()
-        else:
-            schema_table = None
-        schema_tables[schema_table_name] = schema_table
-
-    return schema_tables
-
-
-
-
-
-
 # %% check if ingest_from_files
 
-if ingest_from_files:
-    files_meta = get_files_meta()
+if ingest_from_files_flag:
+    files_meta = get_files_meta(data_path_folder=data_path_folder, default_schema=tableinfo_source)
     if not files_meta:
         print('No files found, exiting program.')
         exit()
@@ -153,9 +74,9 @@ if ingest_from_files:
     storage_account_name = to_storage_account_name()
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-    master_ingest_list = create_master_ingest_list(files_meta=files_meta)
+    master_ingest_list = create_master_ingest_list(spark=spark, files_meta=files_meta)
     translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
-    schema_tables = get_sql_schema_tables_from_files(files_meta=files_meta)
+    schema_tables = get_sql_schema_tables_from_files(spark=spark, files_meta=files_meta, tableinfo_source=tableinfo_source, master_ingest_list=master_ingest_list)
 
 
 
@@ -163,7 +84,7 @@ if ingest_from_files:
 # %%
 
 
-if ingest_from_files:
+if ingest_from_files_flag:
     tableinfo = prepare_tableinfo(
         master_ingest_list = master_ingest_list,
         translation = translation,
@@ -172,6 +93,7 @@ if ingest_from_files:
         sql_table_constraints = schema_tables['TABLE_CONSTRAINTS'],
         sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
         storage_account_name = storage_account_name,
+        tableinfo_source = tableinfo_source,
         )
 
     save_adls_gen2(
