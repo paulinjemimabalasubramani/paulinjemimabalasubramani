@@ -8,6 +8,7 @@ Common Library for translating data types from source database to target databas
 import os
 from pprint import pprint
 from collections import defaultdict
+from typing import cast
 
 from .common_functions import make_logging, catch_error
 from .config import is_pc
@@ -15,11 +16,12 @@ from .data_functions import column_regex, partitionBy, partitionBy_value, execut
     metadata_MasterIngestList
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, read_adls_gen2, to_storage_account_name, \
     file_format
-from .spark_functions import read_csv
+from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit
+from pyspark.sql.functions import col, lit, row_number
 from pyspark.sql.types import IntegerType, StringType
+from pyspark.sql.window import Window
 
 
 # %% Logging
@@ -116,6 +118,17 @@ def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
 
 
 
+# %% Add columns if not exists
+
+@catch_error(logger)
+def add_columns_if_not_exists(table, table_name:str, columns:dict):
+    for column_name, column_value in columns.keys():
+        if column_name not in table.columns:
+            print(f'{column_name} is not found in {table_name}, adding the column with value = {column_value}')
+            table = table.withColumn(column_name, column_value)
+    return table
+
+
 
 # %% filter columns by selected tables
 
@@ -138,35 +151,61 @@ def filter_columns_by_tables(sql_columns, tables):
 
 @catch_error(logger)
 def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_usage):
-    columns = columns.alias('columns').join(
-        sql_table_constraints,
-        (columns.TABLE_NAME == sql_table_constraints.TABLE_NAME) &
-        (columns.TABLE_SCHEMA == sql_table_constraints.TABLE_SCHEMA) &
-        (columns.TABLE_CATALOG == sql_table_constraints.TABLE_CATALOG) &
-        (sql_table_constraints.CONSTRAINT_TYPE == 'PRIMARY KEY'),
-        how = 'left'
-        ).select(
-            'columns.*', 
-            sql_table_constraints.CONSTRAINT_TYPE, 
-            sql_table_constraints.CONSTRAINT_NAME
-            )
-    
-    columns = columns.alias('columns').join(
-        sql_key_column_usage,
-        (columns.TABLE_NAME == sql_key_column_usage.TABLE_NAME) &
-        (columns.TABLE_SCHEMA == sql_key_column_usage.TABLE_SCHEMA) &
-        (columns.TABLE_CATALOG == sql_key_column_usage.TABLE_CATALOG) &
-        (columns.COLUMN_NAME == sql_key_column_usage.COLUMN_NAME) &
-        (columns.CONSTRAINT_NAME == sql_key_column_usage.CONSTRAINT_NAME)
-        ,
-        how = 'left'
-        ).select(
-            'columns.*',
-            sql_key_column_usage.COLUMN_NAME.alias('KEY_COLUMN_NAME')
-        )
-    
+    if (sql_table_constraints and sql_key_column_usage and
+        ('TABLE_NAME' in sql_table_constraints.columns) and
+        ('TABLE_SCHEMA' in sql_table_constraints.columns) and
+        ('TABLE_CATALOG' in sql_table_constraints.columns) and
+        ('CONSTRAINT_TYPE' in sql_table_constraints.columns) and
+        ('CONSTRAINT_NAME' in sql_table_constraints.columns) and
+        ('TABLE_NAME' in sql_key_column_usage.columns) and
+        ('TABLE_SCHEMA' in sql_key_column_usage.columns) and
+        ('TABLE_CATALOG' in sql_key_column_usage.columns) and
+        ('COLUMN_NAME' in sql_key_column_usage.columns) and
+        ('CONSTRAINT_NAME' in sql_key_column_usage.columns)
+        ):
+
+        constraints = sql_table_constraints.where(col('CONSTRAINT_TYPE')==lit('PRIMARY KEY')).alias('constraints') \
+            .join(
+            sql_key_column_usage.alias('usage'),
+            (col('constraints.TABLE_CATALOG') == col('usage.TABLE_CATALOG')) &
+            (col('constraints.TABLE_SCHEMA') == col('usage.TABLE_SCHEMA')) &
+            (col('constraints.TABLE_NAME') == col('usage.TABLE_NAME')) &
+            (col('constraints.CONSTRAINT_NAME') == col('usage.CONSTRAINT_NAME')),
+            how = 'inner'
+            ).select('constraints.*', 'usage.COLUMN_NAME').distinct()
+
+        columns = columns.alias('columns').join(
+            constraints.alias('constraints'),
+            (columns.TABLE_NAME == constraints.TABLE_NAME) &
+            (columns.TABLE_SCHEMA == constraints.TABLE_SCHEMA) &
+            (columns.TABLE_CATALOG == constraints.TABLE_CATALOG) &
+            (columns.COLUMN_NAME == constraints.COLUMN_NAME),
+            how = 'left'
+            ).select(
+                'columns.*', 
+                col('constraints.COLUMN_NAME').alias('KEY_COLUMN_NAME')
+                )
+    else:
+        print(f'{INFORMATION_SCHEMA}.TABLE_CONSTRAINTS and/or {INFORMATION_SCHEMA}.KEY_COLUMN_USAGE are not found, using default no constraints')
+        columnspk = columns.where(F.upper(col('COLUMN_NAME'))==lit(IDKeyIndicator)).distinct()
+        columns = columns.alias('columns').join(
+            columnspk.alias('columnspk'),
+            (columns.TABLE_NAME == columnspk.TABLE_NAME) &
+            (columns.TABLE_SCHEMA == columnspk.TABLE_SCHEMA) &
+            (columns.TABLE_CATALOG == columnspk.TABLE_CATALOG) & 
+            (columns.COLUMN_NAME == columnspk.COLUMN_NAME),
+            how = 'left'
+            ).select(
+                'columns.*', 
+                col('columnspk.COLUMN_NAME').alias('KEY_COLUMN_NAME'),
+                )
+
+        # TODO: add MD5 Key indicator for tables that does not have any keys.
+
     if is_pc: columns.printSchema()
     return columns
+
+
 
 
 
@@ -190,7 +229,7 @@ def rename_columns(columns, storage_account_name:str, created_datetime:str, modi
         columns = columns.withColumnRenamed(key, val)
 
     columns = columns.withColumn('IsNullable', F.when(F.upper(col('IS_NULLABLE'))=='YES', lit(1)).otherwise(lit(0)).cast(IntegerType()))
-    columns = columns.withColumn('KeyIndicator', F.when((F.upper(col('CONSTRAINT_TYPE'))=='PRIMARY KEY') & (col('SourceColumnName')==col('KEY_COLUMN_NAME')), lit(1)).otherwise(lit(0)).cast(IntegerType()))
+    columns = columns.withColumn('KeyIndicator', F.when(col('SourceColumnName')==col('KEY_COLUMN_NAME'), lit(1)).otherwise(lit(0)).cast(IntegerType()))
     columns = columns.withColumn('CleanType', col('SourceDataType'))
     columns = columns.withColumn('StorageAccount', lit(storage_account_name).cast(StringType()))
     columns = columns.withColumn('TargetColumnName', F.regexp_replace(col('SourceColumnName'), column_regex, '_'))
@@ -293,25 +332,24 @@ def create_master_ingest_list(spark, files_meta):
     return master_ingest_list
 
 
+
+
 # %% create INFORMATION_SCHEMA.TABLES if not exists
 
 @catch_error(logger)
 def create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables, master_ingest_list, tableinfo_source:str):
-    if sql_tables and ('TABLE_NAME' in sql_tables.columns) and ('TABLE_SCHEMA' in sql_tables.columns):
-        if 'TABLE_TYPE' not in sql_tables.columns:
-            print('TABLE_TYPE is not found in INFORMATION_SCHEMA.TABLES, assuming all BASE TABLE')
-            sql_tables = sql_tables.withColumn('TABLE_TYPE', lit('BASE TABLE'))
 
-        if 'TABLE_CATALOG' not in sql_tables.columns:
-            print(f'TABLE_CATALOG is not found in INFORMATION_SCHEMA.TABLES, assuming all {tableinfo_source}')
-            sql_tables = sql_tables.withColumn('TABLE_CATALOG', lit(tableinfo_source))
-    else:
-        print('INFORMATION_SCHEMA.TABLES is not found, ingesting all tables by default')
-        sql_tables = (master_ingest_list
-            .select(['TABLE_NAME', 'TABLE_SCHEMA'])
-            .withColumn('TABLE_TYPE', lit('BASE TABLE'))
-            .withColumn('TABLE_CATALOG', lit(tableinfo_source))
-            )
+    if not (sql_tables and ('TABLE_NAME' in sql_tables.columns) and ('TABLE_SCHEMA' in sql_tables.columns)):
+        print(f'{INFORMATION_SCHEMA}.TABLES is not found, ingesting all tables by default')
+        sql_tables = master_ingest_list.select(['TABLE_NAME', 'TABLE_SCHEMA'])
+
+    columns = {
+        'TABLE_TYPE': lit('BASE TABLE'),
+        'TABLE_CATALOG': lit(tableinfo_source),
+        }
+
+    sql_tables = add_columns_if_not_exists(table=sql_tables, table_name=INFORMATION_SCHEMA+'.TABLES', columns=columns)
+
     return sql_tables
 
 
@@ -319,27 +357,38 @@ def create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables, master_ingest_lis
 # %% create INFORMATION_SCHEMA.COLUMNS if not exists
 
 @catch_error(logger)
-def create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(sql_columns, master_ingest_list, tableinfo_source:str):
-    if (sql_columns and 
+def create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark, sql_columns, master_ingest_list, tableinfo_source:str, files_meta):
+    if not (sql_columns and 
         ('TABLE_NAME' in sql_columns.columns) and 
         ('TABLE_SCHEMA' in sql_columns.columns) and
         ('COLUMN_NAME' in sql_columns.columns)
         ):
-        if 'TABLE_TYPE' not in sql_tables.columns:
-            print('TABLE_TYPE is not found in INFORMATION_SCHEMA.TABLES, assuming all BASE TABLE')
-            sql_tables = sql_tables.withColumn('TABLE_TYPE', lit('BASE TABLE'))
+        print(f'{INFORMATION_SCHEMA}.TABLES is not found, ingesting all tables by default')
+        columns_list = []
+        for file_meta in files_meta:
+            if file_meta['schema'].upper()!=INFORMATION_SCHEMA:
+                csv_table = read_csv(spark=spark, file_path=file_meta['path'])
+                for column_name in csv_table.columns:
+                    columns_list.append({
+                        'TABLE_NAME': file_meta['table'],
+                        'TABLE_SCHEMA': file_meta['schema'],
+                        'COLUMN_NAME': column_name,
+                    })
+        sql_columns = spark.createDataFrame(columns_list)
 
-        if 'TABLE_CATALOG' not in sql_tables.columns:
-            print(f'TABLE_CATALOG is not found in INFORMATION_SCHEMA.TABLES, assuming all {tableinfo_source}')
-            sql_tables = sql_tables.withColumn('TABLE_CATALOG', lit(tableinfo_source))
-    else:
-        print('INFORMATION_SCHEMA.TABLES is not found, ingesting all tables by default')
-        sql_tables = (master_ingest_list
-            .select(['TABLE_NAME', 'TABLE_SCHEMA'])
-            .withColumn('TABLE_TYPE', lit('BASE TABLE'))
-            .withColumn('TABLE_CATALOG', lit(tableinfo_source))
-            )
-    return sql_tables
+    columns = {
+        'TABLE_CATALOG': lit(tableinfo_source),
+        'DATA_TYPE': lit('char'),
+        'CHARACTER_MAXIMUM_LENGTH': lit(0),
+        'NUMERIC_PRECISION': lit(0),
+        'NUMERIC_SCALE': lit(0),
+        'ORDINAL_POSITION': row_number().over(Window.partitionBy(['TABLE_NAME', 'TABLE_SCHEMA']).orderBy(col('COLUMN_NAME').asc())),
+        'IsNullable': lit('YES'),
+        }
+
+    sql_columns = add_columns_if_not_exists(table=sql_columns, table_name=INFORMATION_SCHEMA+'.COLUMNS', columns=columns)
+
+    return sql_columns
 
 
 
@@ -363,7 +412,7 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
         schema_tables[schema_table_name] = schema_table
 
     schema_tables['TABLES'] = create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables=schema_tables['TABLES'], master_ingest_list=master_ingest_list, tableinfo_source=tableinfo_source)
-
+    schema_tables['COLUMNS'] = create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark=spark, sql_columns=schema_tables['COLUMNS'], master_ingest_list=master_ingest_list, tableinfo_source=tableinfo_source, files_meta=files_meta)
 
 
     return schema_tables
@@ -376,7 +425,7 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
 def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str, tableinfo_source:str):
 
     # Join master_ingest_list with sql tables
-    tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables, tableinfo_source=tableinfo_source)
+    tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
 
     # filter columns by selected tables
     columns = filter_columns_by_tables(sql_columns=sql_columns, tables=tables)

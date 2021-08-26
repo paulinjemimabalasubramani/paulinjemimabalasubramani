@@ -28,9 +28,6 @@ from modules.data_functions import partitionBy
 from modules.data_type_translation import prepare_tableinfo, get_DataTypeTranslation_table, get_master_ingest_list
 
 
-from pyspark.sql.functions import col, lit
-
-
 
 # %% Logging
 logger = make_logging(__name__)
@@ -108,6 +105,7 @@ tableinfo = prepare_tableinfo(
     sql_table_constraints = schema_tables['TABLE_CONSTRAINTS'],
     sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
     storage_account_name = storage_account_name,
+    tableinfo_source = tableinfo_source,
     )
 
 
