@@ -21,7 +21,7 @@ from .config import is_pc, extraClassPath
 
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce
+from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim
 
 
 
@@ -192,6 +192,18 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     return xml_table_load
 
 
+
+# %% Trim String Columns
+
+@catch_error(logger)
+def trim_string_columns(table):
+    for colname, coltype in table.dtypes:
+        if coltype.lower() == 'string':
+            table = table.withColumn(colname, trim(col(colname)))
+    return table
+
+
+
 # %% Read CSV File
 
 @catch_error(logger)
@@ -205,6 +217,9 @@ def read_csv(spark, file_path:str):
         .option('header', 'true')
         .load(file_path)
     )
+
+    csv_table = trim_string_columns(table=csv_table)
+
     print('Finished reading CSV file\n')
     return csv_table
 

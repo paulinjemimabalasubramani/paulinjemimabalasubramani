@@ -12,6 +12,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 import os, sys
+from collections import defaultdict
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
@@ -43,6 +44,8 @@ sql_server = 'TSQLOLTP01'
 sql_database = 'LR' # TABLE_CATALOG
 
 tableinfo_source = sql_database
+
+INFORMATION_SCHEMA = 'INFORMATION_SCHEMA'.upper()
 
 
 # %% Create Session
@@ -77,21 +80,21 @@ _, sql_id, sql_pass = get_azure_sp(sql_server.lower())
 
 # %% Get Table and Column Metadata from information_schema
 
-sql_tables = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table_name='TABLES', database=sql_database, server=sql_server)
-if is_pc: sql_tables.printSchema()
-if is_pc: sql_tables.show(5)
+@catch_error(logger)
+def get_sql_schema_tables():
+    schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINTS']
 
-sql_columns = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table_name='COLUMNS', database=sql_database, server=sql_server)
-if is_pc: sql_columns.printSchema()
-if is_pc: sql_columns.show(5)
+    schema_tables = defaultdict()
+    for schema_table_name in schema_table_names:
+        schema_tables[schema_table_name] = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=INFORMATION_SCHEMA, table_name=schema_table_name, database=sql_database, server=sql_server)
+        if is_pc: schema_tables[schema_table_name].printSchema()
+        if is_pc: schema_tables[schema_table_name].show(5)
+    
+    return schema_tables
 
-sql_table_constraints = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table_name='TABLE_CONSTRAINTS', database=sql_database, server=sql_server)
-if is_pc: sql_table_constraints.printSchema()
-if is_pc: sql_table_constraints.show(5)
 
-sql_key_column_usage = read_sql(spark=spark, user=sql_id, password=sql_pass, schema='INFORMATION_SCHEMA', table_name='KEY_COLUMN_USAGE', database=sql_database, server=sql_server)
-if is_pc: sql_key_column_usage.printSchema()
-if is_pc: sql_key_column_usage.show(5)
+
+schema_tables = get_sql_schema_tables()
 
 
 
@@ -100,10 +103,10 @@ if is_pc: sql_key_column_usage.show(5)
 tableinfo = prepare_tableinfo(
     master_ingest_list = master_ingest_list,
     translation = translation,
-    sql_tables = sql_tables,
-    sql_columns = sql_columns,
-    sql_table_constraints = sql_table_constraints,
-    sql_key_column_usage = sql_key_column_usage,
+    sql_tables = schema_tables['TABLES'],
+    sql_columns = schema_tables['COLUMNS'],
+    sql_table_constraints = schema_tables['TABLE_CONSTRAINTS'],
+    sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
     storage_account_name = storage_account_name,
     )
 
@@ -111,20 +114,16 @@ tableinfo = prepare_tableinfo(
 
 # %% Table Info to ADLS Gen 2
 
-@catch_error(logger)
-def save_table_info_to_adls_gen2(tableinfo):
-    save_adls_gen2(
-            table_to_save = tableinfo,
-            storage_account_name = storage_account_name,
-            container_name = tableinfo_container_name,
-            container_folder = tableinfo_source,
-            table_name = tableinfo_name,
-            partitionBy = partitionBy,
-            file_format = file_format,
-        )
 
-
-save_table_info_to_adls_gen2(tableinfo)
+save_adls_gen2(
+        table_to_save = tableinfo,
+        storage_account_name = storage_account_name,
+        container_name = tableinfo_container_name,
+        container_folder = tableinfo_source,
+        table_name = tableinfo_name,
+        partitionBy = partitionBy,
+        file_format = file_format,
+    )
 
 
 

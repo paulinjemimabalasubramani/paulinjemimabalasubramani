@@ -14,6 +14,7 @@ http://10.128.25.82:8282/
 
 import os, sys
 from pprint import pprint
+from collections import defaultdict
 
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
@@ -23,14 +24,11 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import make_logging, catch_error
 from modules.config import data_path, is_pc
-from modules.spark_functions import create_spark, read_sql
+from modules.spark_functions import create_spark, read_sql, read_csv
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, read_tableinfo, get_azure_sp, \
-    container_name, file_format, to_storage_account_name, tableinfo_name
+    container_name, file_format, to_storage_account_name, tableinfo_name, tableinfo_container_name
 from modules.data_functions import to_string, remove_column_spaces, add_elt_columns, execution_date, partitionBy
 from modules.data_type_translation import prepare_tableinfo, get_DataTypeTranslation_table
-
-
-from pyspark.sql.functions import col, lit
 
 
 
@@ -118,15 +116,46 @@ def create_master_ingest_list(files_meta):
 
 
 
+# %% Get Table and Column Metadata from information_schema
+
+@catch_error(logger)
+def get_sql_schema_tables_from_files(files_meta):
+    schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINTS']
+
+    schemas_meta = [file_meta for file_meta in files_meta if file_meta['schema'].upper()==INFORMATION_SCHEMA]
+    sql_meta = {schema_table_name: [schema_meta for schema_meta in schemas_meta if schema_meta['table'].upper()==schema_table_name.upper()] for schema_table_name in schema_table_names}
+
+    schema_tables = defaultdict()
+    for schema_table_name in schema_table_names:
+        schema_meta = sql_meta[schema_table_name]
+        if schema_meta:
+            schema_table = read_csv(spark=spark, file_path=schema_meta[0]['path'])
+            if is_pc: schema_table.printSchema()
+        else:
+            schema_table = None
+        schema_tables[schema_table_name] = schema_table
+
+    return schema_tables
+
+
+
+
+
+
 # %% check if ingest_from_files
 
 if ingest_from_files:
+    files_meta = get_files_meta()
+    if not files_meta:
+        print('No files found, exiting program.')
+        exit()
+
     storage_account_name = to_storage_account_name()
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-    files_meta = get_files_meta()
     master_ingest_list = create_master_ingest_list(files_meta=files_meta)
     translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
+    schema_tables = get_sql_schema_tables_from_files(files_meta=files_meta)
 
 
 
@@ -138,14 +167,22 @@ if ingest_from_files:
     tableinfo = prepare_tableinfo(
         master_ingest_list = master_ingest_list,
         translation = translation,
-        sql_tables = sql_tables,
-        sql_columns = sql_columns,
-        sql_table_constraints = sql_table_constraints,
-        sql_key_column_usage = sql_key_column_usage,
+        sql_tables = schema_tables['TABLES'],
+        sql_columns = schema_tables['COLUMNS'],
+        sql_table_constraints = schema_tables['TABLE_CONSTRAINTS'],
+        sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
         storage_account_name = storage_account_name,
         )
 
-
+    save_adls_gen2(
+            table_to_save = tableinfo,
+            storage_account_name = storage_account_name,
+            container_name = tableinfo_container_name,
+            container_folder = tableinfo_source,
+            table_name = tableinfo_name,
+            partitionBy = partitionBy,
+            file_format = file_format,
+        )
 
 
 
