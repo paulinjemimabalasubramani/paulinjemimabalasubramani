@@ -32,7 +32,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names
-from modules.config import is_pc
+from modules.config import is_pc, data_path, config_path
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
     to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, get_azure_sp, add_table_to_tableinfo
 from modules.data_functions import  remove_column_spaces, add_elt_columns, execution_date, partitionBy, strftime
@@ -85,6 +85,8 @@ key_column_names_with_load_n_date = key_column_names_with_load + ['file_date']
 
 tmpdirs = []
 
+data_path_folder = os.path.join(data_path, tableinfo_source)
+schema_path_folder = os.path.join(config_path, 'finra_schema')
 
 
 # %% Initiate Spark
@@ -100,21 +102,6 @@ _, sql_id, sql_pass = get_azure_sp(sql_key_vault_account.lower())
 # %% Create tableinfo
 
 tableinfo = defaultdict(list)
-
-
-
-# %% Get Paths
-
-python_dirname = os.path.dirname(__file__)
-print(f'Main Path: {os.path.realpath(python_dirname)}')
-
-if is_pc:
-    data_path_folder = os.path.realpath(python_dirname + f'/../../Shared/{tableinfo_source}')
-    schema_path_folder = os.path.realpath(python_dirname + f'/../config/finra_schema')
-else:
-    # /usr/local/spark/resources/fileshare/
-    data_path_folder = os.path.realpath(python_dirname + f'/../resources/fileshare/Shared/{tableinfo_source}')
-    schema_path_folder = os.path.realpath(python_dirname + f'/../resources/fileshare/EDIP-Code/config/finra_schema')
 
 
 

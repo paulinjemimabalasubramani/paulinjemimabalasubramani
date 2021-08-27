@@ -340,7 +340,7 @@ def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_na
         tableinfo['OrdinalPosition'].append(ix+1)
         tableinfo['CleanType'].append(var_col_type)
         tableinfo['StorageAccount'].append(storage_account_name)
-        tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
+        tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name.strip()))
         tableinfo['TargetDataType'].append(var_col_type)
         tableinfo['IsNullable'].append(0 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 1)
         tableinfo['KeyIndicator'].append(1 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 0)

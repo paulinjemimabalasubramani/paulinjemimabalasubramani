@@ -285,7 +285,7 @@ def add_table_to_tableinfo(xml_table, firm_name, table_name):
         tableinfo['SourceDataScale'].append(0)
         tableinfo['OrdinalPosition'].append(ix+1)
         tableinfo['CleanType'].append(col_type)
-        tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name))
+        tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name.strip()))
         tableinfo['TargetDataType'].append('string')
         tableinfo['IsNullable'].append(0 if col_name in [KeyIndicator] else 1)
         tableinfo['KeyIndicator'].append(1 if col_name in [KeyIndicator] else 0)

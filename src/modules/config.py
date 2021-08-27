@@ -39,14 +39,25 @@ if is_pc:
     sys.path.insert(0, '%HADOOP_HOME%\bin')
     sys.path.insert(0, '%JAVA_HOME%\bin')
 
-    drivers_path = os.path.realpath(os.path.dirname(__file__)+'/../../drivers')
-    config_path = os.path.realpath(os.path.dirname(__file__)+'/../../config')
+    python_dirname = os.path.dirname(__file__)
+    drivers_path = os.path.realpath(python_dirname + '/../../drivers')
+    config_path = os.path.realpath(python_dirname + '/../../config')
+    data_path = os.path.realpath(python_dirname + '/../../../Shared')
+
     joinstr = ';' # for extraClassPath
 
 else:
-    drivers_path = '/usr/local/spark/resources/fileshare/EDIP-Code/drivers'
-    config_path = '/usr/local/spark/resources/fileshare/EDIP-Code/config'
+    fileshare = '/usr/local/spark/resources/fileshare'
+    drivers_path = fileshare + '/EDIP-Code/drivers'
+    config_path = fileshare + '/EDIP-Code/config'
+    data_path = fileshare + '/Shared'
+
     joinstr = ':' # for extraClassPath
+
+
+print(f'\nDrivers Path: {drivers_path}')
+print(f'Config Path: {config_path}')
+print(f'Data Path: {data_path}\n')
 
 
 

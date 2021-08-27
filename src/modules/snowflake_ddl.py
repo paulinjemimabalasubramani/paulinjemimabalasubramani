@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from .common_functions import make_logging, catch_error
 from .data_functions import elt_audit_columns, execution_date
-from .config import is_pc
+from .config import is_pc, data_path
 from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, get_azure_sp, \
     container_name, to_storage_account_name
 
@@ -70,6 +70,8 @@ class module_params_class:
     cicd_file = None
     cicd_str_per_step = defaultdict(str)
 
+    cicd_folder_path = os.path.join(data_path, 'CICD')
+
 
 
 wid = module_params_class()
@@ -81,16 +83,7 @@ if not is_pc:
     wid.create_or_replace = False
     wid.create_cicd_file = True
 
-
-if is_pc:
-    wid.shared_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../../Shared')
-else:
-    # /usr/local/spark/resources/fileshare/Shared
-    wid.shared_path_folder = os.path.realpath(os.path.dirname(__file__)+'/../../resources/fileshare/Shared')
-
-
 if wid.create_cicd_file:
-    wid.cicd_folder_path = os.path.join(wid.shared_path_folder, 'CICD')
     os.makedirs(name=wid.cicd_folder_path, exist_ok=True)
 
 

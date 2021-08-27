@@ -9,10 +9,8 @@ from datetime import datetime
 import re
 
 from .common_functions import make_logging, catch_error
-from .config import is_pc
 
 from pyspark.sql.functions import col, lit
-from pyspark.sql import functions as F
 from pyspark.sql.types import IntegerType
 
 
@@ -40,7 +38,7 @@ def remove_column_spaces(table_to_remove):
     """
     Removes spaces from column names
     """
-    new_table_to_remove = table_to_remove.select([col(c).alias(re.sub(column_regex, '_', c)) for c in table_to_remove.columns])
+    new_table_to_remove = table_to_remove.select([col(c).alias(re.sub(column_regex, '_', c.strip())) for c in table_to_remove.columns])
     return new_table_to_remove
 
 

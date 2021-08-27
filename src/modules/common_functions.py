@@ -9,6 +9,22 @@ import os, logging, platform, psutil
 from functools import wraps
 
 
+# %% Get System Info in String
+
+def system_info():
+    uname = platform.uname()
+
+    sysinfo  = f"System:    {uname.system}\n"
+    sysinfo += f"Node:      {uname.node}\n"
+    sysinfo += f"Release:   {uname.release}\n"
+    sysinfo += f"Version:   {uname.version}\n"
+    sysinfo += f"Machine:   {uname.machine}\n"
+    sysinfo += f"Processor: {uname.processor}\n"
+    sysinfo += f"RAM:       "+str(round(psutil.virtual_memory().total / (1024.0 **3)))+" GB\n"
+
+    return sysinfo
+
+
 
 # %% Wrapper/Decorator function for catching errors
 
@@ -19,20 +35,12 @@ def catch_error(logger=None):
             try:
                 response = fn(*args, **kwargs)
             except Exception as e:
-                uname = platform.uname()
-
                 exception_message  = f"\n"
                 exception_message += f"\nException occurred inside '{fn.__name__}'"
                 exception_message += f"\nException Message: {e}"
-                exception_message += f"\n"
-                exception_message += f"\nSystem:    {uname.system}"
-                exception_message += f"\nNode:      {uname.node}"
-                exception_message += f"\nRelease:   {uname.release}"
-                exception_message += f"\nVersion:   {uname.version}"
-                exception_message += f"\nMachine:   {uname.machine}"
-                exception_message += f"\nProcessor: {uname.processor}"
-                exception_message += f"\nRAM:       "+str(round(psutil.virtual_memory().total / (1024.0 **3)))+" GB"
                 exception_message += f"\n\n"
+                exception_message += system_info()
+                exception_message += f"\n"
                 print(exception_message)
 
                 if logger:

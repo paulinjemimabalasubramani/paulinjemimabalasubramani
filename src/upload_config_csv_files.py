@@ -20,7 +20,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, read_csv
-from modules.config import is_pc
+from modules.config import is_pc, config_path
 from modules.data_functions import remove_column_spaces, execution_date, metadata_DataTypeTranslation, metadata_MasterIngestList, \
     metadata_FirmSourceMap, partitionBy, partitionBy_value
 from modules.azure_functions import setup_spark_adls_gen2_connection, to_storage_account_name, file_format, save_adls_gen2, \
@@ -45,27 +45,15 @@ storage_account_name = to_storage_account_name()
 created_datetime = execution_date
 modified_datetime = execution_date
 
+lookup_files_path = os.path.join(config_path, 'lookup_files')
 
-
-# %% Get Paths
-
-python_dirname = os.path.dirname(__file__)
-print(f'Main Path: {os.path.realpath(python_dirname)}')
-
-if is_pc:
-    config_path = os.path.realpath(python_dirname + f'/../config/lookup_files')
-else:
-    # /usr/local/spark/resources/fileshare/
-    config_path = os.path.realpath(python_dirname + f'/../resources/fileshare/EDIP-Code/config/lookup_files')
-
-
-data_type_translation_path = os.path.join(config_path, 'DataTypeTranslation.csv')
+data_type_translation_path = os.path.join(lookup_files_path, 'DataTypeTranslation.csv')
 assert os.path.isfile(data_type_translation_path), f"File not found: {data_type_translation_path}"
 
-master_ingest_list_path = os.path.join(config_path, 'LNR_Tables.csv')
+master_ingest_list_path = os.path.join(lookup_files_path, 'LNR_Tables.csv')
 assert os.path.isfile(master_ingest_list_path), f"File not found: {master_ingest_list_path}"
 
-firm_source_map_path = os.path.join(config_path, 'Firm_Source_Map.csv')
+firm_source_map_path = os.path.join(lookup_files_path, 'Firm_Source_Map.csv')
 assert os.path.isfile(firm_source_map_path), f"File not found: {firm_source_map_path}"
 
 
