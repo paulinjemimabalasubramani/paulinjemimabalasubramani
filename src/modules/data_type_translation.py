@@ -5,7 +5,7 @@ Common Library for translating data types from source database to target databas
 
 # %% Import Libraries
 
-import os
+import os, re
 from pprint import pprint
 from collections import defaultdict
 from typing import cast
@@ -311,19 +311,19 @@ def get_files_meta(data_path_folder:str, default_schema:str='dbo'):
 
                 if file_name.upper().startswith(INFORMATION_SCHEMA + '_'):
                     schema = INFORMATION_SCHEMA
-                    table = file_name[len(INFORMATION_SCHEMA)+1:].upper().strip()
+                    table = file_name[len(INFORMATION_SCHEMA)+1:].upper()
                 elif '_' in file_name:
                     _loc = file_name.find("_")
-                    schema = file_name[:_loc].lower().strip()
-                    table = file_name[_loc+1:].lower().strip()
+                    schema = file_name[:_loc].lower()
+                    table = file_name[_loc+1:].lower()
                 else:
-                    schema = default_schema.strip()
-                    table = file_name.strip()
+                    schema = default_schema.lower()
+                    table = file_name.lower()
 
                 file_meta = {
                     **file_meta,
-                    'schema': schema,
-                    'table': table,
+                    'schema': re.sub(column_regex, '_', schema.strip()),
+                    'table': re.sub(column_regex, '_', table.strip()),
                 }
 
                 if schema !='' and table !='':
