@@ -443,7 +443,7 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
 # %% Prepare TableInfo
 
 @catch_error(logger)
-def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str, tableinfo_source:str):
+def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str):
 
     print('Join master_ingest_list with sql tables')
     tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
@@ -501,7 +501,6 @@ def ingest_from_files(spark, data_path_folder:str, default_schema:str, tableinfo
         sql_table_constraints = schema_tables['TABLE_CONSTRAINTS'],
         sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
         storage_account_name = storage_account_name,
-        tableinfo_source = tableinfo_source,
         )
 
     save_adls_gen2(

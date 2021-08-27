@@ -54,6 +54,12 @@ file_format = 'delta' # Default File Format
 
 @catch_error(logger)
 def select_tableinfo_columns(tableinfo):
+    tableinfo = (tableinfo
+        .withColumn('SourceSchema', F.lower(col('SourceSchema')))
+        .withColumn('TableName', F.lower(col('TableName')))
+        .withColumn('SourceDatabase', F.upper(col('SourceDatabase')))
+        )
+
     column_names = [
         'SourceDatabase',
         'SourceSchema',
