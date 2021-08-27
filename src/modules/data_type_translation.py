@@ -253,7 +253,7 @@ def rename_columns(columns, storage_account_name:str, created_datetime:str, modi
     columns = columns.withColumn('KeyIndicator', F.when(col('SourceColumnName')==col('KEY_COLUMN_NAME'), lit(1)).otherwise(lit(0)).cast(IntegerType()))
     columns = columns.withColumn('CleanType', col('SourceDataType'))
     columns = columns.withColumn('StorageAccount', lit(storage_account_name).cast(StringType()))
-    columns = columns.withColumn('TargetColumnName', F.regexp_replace(col('SourceColumnName'), column_regex, '_'))
+    columns = columns.withColumn('TargetColumnName', F.regexp_replace(F.trim(col('SourceColumnName')), column_regex, '_'))
     columns = columns.withColumn('IsActive', lit(1).cast(IntegerType()))
     columns = columns.withColumn('CreatedDateTime', lit(created_datetime).cast(StringType()))
     columns = columns.withColumn('ModifiedDateTime', lit(modified_datetime).cast(StringType()))

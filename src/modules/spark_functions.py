@@ -18,7 +18,7 @@ import os, platform
 
 from .common_functions import make_logging, catch_error, system_info
 from .config import is_pc, extraClassPath
-
+from .data_functions import remove_column_spaces
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim
@@ -218,6 +218,7 @@ def read_csv(spark, file_path:str):
         .load(file_path)
     )
 
+    csv_table = remove_column_spaces(table_to_remove=csv_table)
     csv_table = trim_string_columns(table=csv_table)
 
     print('Finished reading CSV file\n')
