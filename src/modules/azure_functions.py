@@ -287,6 +287,11 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
     table_rows = table_list.collect()
     print(f'\nNumber of Tables in {tableinfo_source}/{tableinfo_name} is {len(table_rows)}')
 
+    print('Check if there is a table with no primary key')
+    nopk = tableinfo.groupBy(['SourceDatabase', 'SourceSchema', 'TableName']).agg(F.sum('KeyIndicator').alias('key_count')).where(F.col('key_count')==F.lit(0))
+    if is_pc: nopk.show()
+    assert nopk.count() == 0, f'Found tables with no primary keys: {nopk.collect()}'
+
     return tableinfo, table_rows
 
 
