@@ -14,8 +14,8 @@ from .common_functions import make_logging, catch_error
 from .config import is_pc
 from .data_functions import column_regex, partitionBy, partitionBy_value, execution_date, metadata_DataTypeTranslation, \
     metadata_MasterIngestList
-from .azure_functions import select_tableinfo_columns, tableinfo_container_name, read_adls_gen2, to_storage_account_name, \
-    file_format
+from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
+    to_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection
 from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator
 
 from pyspark.sql import functions as F
@@ -474,6 +474,48 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
     if is_pc: tableinfo.show(5)
 
     return tableinfo
+
+
+
+# %% ingest_from_files
+
+@catch_error(logger)
+def ingest_from_files(spark, data_path_folder:str, default_schema:str, tableinfo_source:str, data_type_translation_id:str):
+    files_meta = get_files_meta(data_path_folder=data_path_folder, default_schema=default_schema)
+    if not files_meta:
+        print('No files found, exiting program.')
+        exit()
+
+    storage_account_name = to_storage_account_name()
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    master_ingest_list = create_master_ingest_list(spark=spark, files_meta=files_meta)
+    translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
+    schema_tables = get_sql_schema_tables_from_files(spark=spark, files_meta=files_meta, tableinfo_source=tableinfo_source, master_ingest_list=master_ingest_list)
+
+    tableinfo = prepare_tableinfo(
+        master_ingest_list = master_ingest_list,
+        translation = translation,
+        sql_tables = schema_tables['TABLES'],
+        sql_columns = schema_tables['COLUMNS'],
+        sql_table_constraints = schema_tables['TABLE_CONSTRAINTS'],
+        sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
+        storage_account_name = storage_account_name,
+        tableinfo_source = tableinfo_source,
+        )
+
+    save_adls_gen2(
+            table_to_save = tableinfo,
+            storage_account_name = storage_account_name,
+            container_name = tableinfo_container_name,
+            container_folder = tableinfo_source,
+            table_name = tableinfo_name,
+            partitionBy = partitionBy,
+            file_format = file_format,
+        )
+
+    return files_meta, tableinfo
+
 
 
 
