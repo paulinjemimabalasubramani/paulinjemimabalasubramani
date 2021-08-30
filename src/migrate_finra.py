@@ -176,6 +176,8 @@ def extract_data_from_finra_file_path(file_path:str, crd_number:str):
 
         _ = datetime.strptime(ans['date'], r'%Y-%m-%d')
         assert len(sp)==3 or (len(sp)==4 and sp[1].upper()==finra_individual_delta_name.upper())
+
+        ans['table_name'] = ans['table_name'].lower()
     except:
         print(f'Cannot parse file name: {file_path}')
         return
