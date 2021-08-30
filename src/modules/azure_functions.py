@@ -322,6 +322,8 @@ def get_firms_with_crd(spark, tableinfo_source):
         .withColumnRenamed('SourceKey', 'crd_number') \
         .withColumnRenamed('StorageAccount', 'storage_account_name')
 
+    firms_table = firms_table.withColumn('Firm', F.lower(col('Firm')))
+
     firms = firms_table.toJSON().map(lambda j: json.loads(j)).collect()
 
     assert firms, 'No Firms Found!'
