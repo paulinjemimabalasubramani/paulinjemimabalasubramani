@@ -322,7 +322,7 @@ def get_firms_with_crd(spark, tableinfo_source):
         .withColumnRenamed('SourceKey', 'crd_number') \
         .withColumnRenamed('StorageAccount', 'storage_account_name')
 
-    firms_table = firms_table.withColumn('Firm', F.lower(col('Firm')))
+    firms_table = firms_table.withColumn('firm_name', F.lower(col('firm_name')))
 
     firms = firms_table.toJSON().map(lambda j: json.loads(j)).collect()
 
