@@ -159,7 +159,7 @@ def extract_data_from_finra_file_path(file_path:str, crd_number:str):
     if basename.startswith("INDIVIDUAL_-_DUAL_REGISTRATIONS_-_FIRMS_DOWNLOAD_-_"):
         ans = {**ans,
             'crd_number': crd_number,
-            'table_name': DualRegistrations_name,
+            'table_name': DualRegistrations_name.lower(),
             'date': datetime.strftime(datetime.strptime(execution_date, strftime), r'%Y-%m-%d'),
         }
         return ans
