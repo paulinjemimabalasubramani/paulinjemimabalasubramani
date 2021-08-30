@@ -5,7 +5,7 @@ Common Library for translating data types from source database to target databas
 
 # %% Import Libraries
 
-import os
+import os, re
 from pprint import pprint
 from collections import defaultdict
 from typing import cast
@@ -13,10 +13,10 @@ from typing import cast
 from .common_functions import make_logging, catch_error
 from .config import is_pc
 from .data_functions import column_regex, partitionBy, partitionBy_value, execution_date, metadata_DataTypeTranslation, \
-    metadata_MasterIngestList
-from .azure_functions import select_tableinfo_columns, tableinfo_container_name, read_adls_gen2, to_storage_account_name, \
-    file_format
-from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator
+    metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns
+from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
+    to_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name
+from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit, row_number
@@ -311,19 +311,19 @@ def get_files_meta(data_path_folder:str, default_schema:str='dbo'):
 
                 if file_name.upper().startswith(INFORMATION_SCHEMA + '_'):
                     schema = INFORMATION_SCHEMA
-                    table = file_name[len(INFORMATION_SCHEMA)+1:].upper().strip()
+                    table = file_name[len(INFORMATION_SCHEMA)+1:].upper()
                 elif '_' in file_name:
                     _loc = file_name.find("_")
-                    schema = file_name[:_loc].lower().strip()
-                    table = file_name[_loc+1:].lower().strip()
+                    schema = file_name[:_loc].lower()
+                    table = file_name[_loc+1:].lower()
                 else:
-                    schema = default_schema.strip()
-                    table = file_name.strip()
+                    schema = default_schema.lower()
+                    table = file_name.lower()
 
                 file_meta = {
                     **file_meta,
-                    'schema': schema,
-                    'table': table,
+                    'schema': re.sub(column_regex, '_', schema.strip()),
+                    'table': re.sub(column_regex, '_', table.strip()),
                 }
 
                 if schema !='' and table !='':
@@ -443,7 +443,7 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
 # %% Prepare TableInfo
 
 @catch_error(logger)
-def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str, tableinfo_source:str):
+def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str):
 
     print('Join master_ingest_list with sql tables')
     tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
@@ -474,6 +474,96 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
     if is_pc: tableinfo.show(5)
 
     return tableinfo
+
+
+
+# %% ingest_from_files
+
+@catch_error(logger)
+def ingest_from_files(spark, data_path_folder:str, default_schema:str, tableinfo_source:str, data_type_translation_id:str):
+    files_meta = get_files_meta(data_path_folder=data_path_folder, default_schema=default_schema)
+    if not files_meta:
+        print('No files found, exiting program.')
+        exit()
+
+    storage_account_name = to_storage_account_name()
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    master_ingest_list = create_master_ingest_list(spark=spark, files_meta=files_meta)
+    translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
+    schema_tables = get_sql_schema_tables_from_files(spark=spark, files_meta=files_meta, tableinfo_source=tableinfo_source, master_ingest_list=master_ingest_list)
+
+    tableinfo = prepare_tableinfo(
+        master_ingest_list = master_ingest_list,
+        translation = translation,
+        sql_tables = schema_tables['TABLES'],
+        sql_columns = schema_tables['COLUMNS'],
+        sql_table_constraints = schema_tables['TABLE_CONSTRAINTS'],
+        sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
+        storage_account_name = storage_account_name,
+        )
+
+    save_adls_gen2(
+            table_to_save = tableinfo,
+            storage_account_name = storage_account_name,
+            container_name = tableinfo_container_name,
+            container_folder = tableinfo_source,
+            table_name = tableinfo_name,
+            partitionBy = partitionBy,
+            file_format = file_format,
+        )
+
+    return files_meta, tableinfo
+
+
+
+# %% Loop over all tables
+
+@catch_error(logger)
+def iterate_over_all_tables_migration(spark, table_rows, files_meta:list, ingest_from_files_flag:bool, domain_name:str,
+                                    sql_id:str, sql_pass:str, sql_server:str, storage_account_name:str, tableinfo_source:str):
+
+    table_count = len(table_rows)
+
+    for i, r in enumerate(table_rows):
+        table = r['TableName']
+        schema = r['SourceSchema']
+        database = r['SourceDatabase']
+
+        print(f"\nTable {i+1} of {table_count}: {schema}.{table}")
+
+        data_type = 'data'
+        container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
+
+        if ingest_from_files_flag:
+            file_path = [file_meta for file_meta in files_meta if file_meta['table'].lower()==table.lower() and file_meta['schema'].lower()==schema.lower()][0]['path']
+            sql_table = read_csv(spark=spark, file_path=file_path)
+            sql_table = add_md5_key(sql_table)
+        else:
+            sql_table = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=schema, table_name=table, database=database, server=sql_server)
+
+        sql_table = to_string(sql_table, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
+        sql_table = remove_column_spaces(sql_table)
+        sql_table = add_elt_columns(
+            table_to_add = sql_table,
+            reception_date = execution_date,
+            source = tableinfo_source,
+            is_full_load = True,
+            dml_type = 'I',
+            )
+
+        save_adls_gen2(
+            table_to_save = sql_table,
+            storage_account_name = storage_account_name,
+            container_name = container_name,
+            container_folder = container_folder,
+            table_name = table,
+            partitionBy = partitionBy,
+            file_format = file_format
+        )
+
+    print('Finished Migrating All Tables')
+
 
 
 

@@ -54,6 +54,12 @@ file_format = 'delta' # Default File Format
 
 @catch_error(logger)
 def select_tableinfo_columns(tableinfo):
+    tableinfo = (tableinfo
+        .withColumn('SourceSchema', F.lower(col('SourceSchema')))
+        .withColumn('TableName', F.lower(col('TableName')))
+        .withColumn('SourceDatabase', F.upper(col('SourceDatabase')))
+        )
+
     column_names = [
         'SourceDatabase',
         'SourceSchema',
@@ -110,7 +116,7 @@ def get_azure_key_vault():
     vault_endpoint = "https://ag-kv-west2-secondary.vault.azure.net/"
 
     credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
-    client = SecretClient(vault_endpoint, credential)
+    client = SecretClient(vault_endpoint, credential, logging_enable=True)
     return azure_tenant_id, client
 
 
@@ -280,6 +286,11 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
 
     table_rows = table_list.collect()
     print(f'\nNumber of Tables in {tableinfo_source}/{tableinfo_name} is {len(table_rows)}')
+
+    print('Check if there is a table with no primary key')
+    nopk = tableinfo.groupBy(['SourceDatabase', 'SourceSchema', 'TableName']).agg(F.sum('KeyIndicator').alias('key_count')).where(F.col('key_count')==F.lit(0))
+    if is_pc: nopk.show()
+    assert nopk.count() == 0, f'Found tables with no primary keys: {nopk.collect()}'
 
     return tableinfo, table_rows
 

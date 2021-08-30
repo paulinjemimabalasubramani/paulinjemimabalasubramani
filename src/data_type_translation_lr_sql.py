@@ -105,7 +105,6 @@ tableinfo = prepare_tableinfo(
     sql_table_constraints = schema_tables['TABLE_CONSTRAINTS'],
     sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
     storage_account_name = storage_account_name,
-    tableinfo_source = tableinfo_source,
     )
 
 
