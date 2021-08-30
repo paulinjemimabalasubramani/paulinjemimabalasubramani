@@ -42,6 +42,7 @@ class module_params_class:
     snowflake_curated_database = f'{envionment}_CURATED_{domain_abbr}'.upper()
 
     common_elt_stage_name = 'AGGR'
+    common_storage_account = to_storage_account_name()
 
     snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'.upper()
     engineer_role = f"AD_SNOWFLAKE_{envionment}_ENGINEER".upper()
@@ -272,11 +273,11 @@ def write_CICD_file_per_step():
 # %% Create Ingest Files
 
 @catch_error(logger)
-def create_ingest_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
+def create_ingest_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_name:str):
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    if source_system.upper() in ['LR']:
+    if storage_account_name.upper() == wid.common_storage_account.upper():
         elt_stage_name = wid.common_elt_stage_name
     else:
         elt_stage_name = schema_name.upper()
@@ -489,11 +490,11 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 
 @catch_error(logger)
 @action_step(3)
-def step3(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str):
+def step3(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_name:str):
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    if source_system.upper() in ['LR']:
+    if storage_account_name.upper() == wid.common_storage_account.upper():
         elt_stage_name = wid.common_elt_stage_name
     else:
         elt_stage_name = schema_name.upper()
@@ -867,7 +868,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
         if PARTITION:
             step1(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step2(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
-            step3(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
+            step3(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION, storage_account_name=storage_account_name)
             step4(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
             step5(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
             step6(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, pk_column_names=pk_column_names)
@@ -875,7 +876,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             write_CICD_file_per_table(source_system=source_system, schema_name=schema_name, table_name=table_name)
-            ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION)
+            ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION, storage_account_name=storage_account_name)
             ingest_data_list[source_system].append(ingest_data)
 
     write_CICD_file_per_step()

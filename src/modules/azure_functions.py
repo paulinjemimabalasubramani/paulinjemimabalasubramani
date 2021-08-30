@@ -31,11 +31,11 @@ def to_storage_account_name(firm_name:str=None, source_system:str=''):
     """
     Converts firm_name to storage_account_name
     """
-    if firm_name and source_system.upper() not in ['LR']:
+    if firm_name and source_system.upper() not in ['LR', 'MIPS', 'SF']:
         account = firm_name
     else:
         account = 'aggr' # Default Aggregate Account
-    
+
     return f"ag{account}lakescd".lower()
 
 
