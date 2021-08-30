@@ -116,7 +116,7 @@ def get_azure_key_vault():
     vault_endpoint = "https://ag-kv-west2-secondary.vault.azure.net/"
 
     credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
-    client = SecretClient(vault_endpoint, credential)
+    client = SecretClient(vault_endpoint, credential, logging_enable=True)
     return azure_tenant_id, client
 
 
