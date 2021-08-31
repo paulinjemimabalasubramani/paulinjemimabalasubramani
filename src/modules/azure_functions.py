@@ -82,6 +82,7 @@ def select_tableinfo_columns(tableinfo):
         'OrdinalPosition',
         'CleanType',
         'StorageAccount',
+        'StorageAccountAbbr',
         'TargetColumnName',
         'TargetDataType',
         'IsNullable',
