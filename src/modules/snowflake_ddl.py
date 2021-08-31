@@ -734,7 +734,7 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
         if data_type.upper().startswith('variant'.upper()):
             return f'PARSE_JSON({column_name})'
         elif data_type.upper().startswith('string'.upper()) or data_type.upper().startswith('varchar'.upper()):
-            return f"IFNULL({column_name}, '')"
+            return f"COALESCE({column_name}, '')"
         else:
             return column_name
 
@@ -765,13 +765,15 @@ TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) = TRIM(COALESCE({wid.
 )
 WHEN MATCHED
 AND TRIM(COALESCE({wid.src_alias}.{wid.hash_column_name},'N/A')) != TRIM(COALESCE({wid.tgt_alias}.{wid.hash_column_name},'N/A'))
+AND TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) != 'N/A'
 THEN
   UPDATE
   SET
      {merge_update_columns}
     ,{wid.tgt_alias}.{wid.hash_column_name} = {wid.src_alias}.{wid.hash_column_name}
 
-WHEN NOT MATCHED 
+WHEN NOT MATCHED
+AND TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) != 'N/A'
 THEN
   INSERT
   (
