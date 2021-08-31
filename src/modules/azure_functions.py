@@ -372,6 +372,7 @@ def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_na
 ####Send Date to Azure Log API
 
 # Build the API signature
+@catch_error(logger)
 def build_signature(customer_id, shared_key, date, content_length, method, content_type, resource):
     x_headers = 'x-ms-date:' + date
     string_to_hash = method + "\n" + str(content_length) + "\n" + content_type + "\n" + x_headers + "\n" + resource
@@ -382,6 +383,7 @@ def build_signature(customer_id, shared_key, date, content_length, method, conte
     return authorization
 
 # Build and send a request to the POST API
+@catch_error(logger)
 def post_data(customer_id, shared_key, body, log_type):
     method = 'POST'
     content_type = 'application/json'
