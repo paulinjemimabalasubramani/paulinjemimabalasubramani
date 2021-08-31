@@ -61,7 +61,7 @@ def to_string(table_to_convert_columns, col_types=['timestamp']):
 
 # %% Add ELT Audit Columns
 
-elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'SOURCE', 'ELT_LOAD_TYPE', 'ELT_DELETE_IND', 'DML_TYPE']
+elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'ELT_SOURCE', 'ELT_LOAD_TYPE', 'ELT_DELETE_IND', 'DML_TYPE']
 partitionBy = 'PARTITION_DATE'
 partitionBy_value = re.sub(column_regex, '_', execution_date)
 
@@ -73,7 +73,7 @@ def add_elt_columns(table_to_add, reception_date:str, source:str, is_full_load:b
     """
     table_to_add = table_to_add.withColumn('RECEPTION_DATE', lit(str(reception_date)))
     table_to_add = table_to_add.withColumn('EXECUTION_DATE', lit(str(execution_date)))
-    table_to_add = table_to_add.withColumn('SOURCE', lit(str(source)))
+    table_to_add = table_to_add.withColumn('ELT_SOURCE', lit(str(source)))
     table_to_add = table_to_add.withColumn('ELT_LOAD_TYPE', lit(str("FULL" if is_full_load else "INCREMENTAL")))
     table_to_add = table_to_add.withColumn('ELT_DELETE_IND', lit(0).cast(IntegerType()))
 

@@ -25,7 +25,7 @@ from modules.config import data_path
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo, get_azure_sp, \
     to_storage_account_name, tableinfo_name
-from modules.data_type_translation import ingest_from_files, iterate_over_all_tables_migration
+from modules.migrate_files import ingest_from_files, iterate_over_all_tables_migration
 
 
 

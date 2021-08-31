@@ -286,7 +286,7 @@ def get_all_finra_file_xml_meta(folder_path, date_start:str, crd_number:str, inc
 # %% Write xml table list to Azure
 
 @catch_error(logger)
-def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_account_name:str):
+def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_account_name:str, storage_account_abbr:str):
     if not xml_table_list:
         print(f"\nNo data to write\n")
         return
@@ -301,6 +301,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
             table_name = table_name, 
             tableinfo_source = tableinfo_source, 
             storage_account_name = storage_account_name,
+            storage_account_abbr = storage_account_abbr,
             )
 
         data_type = 'data'
@@ -465,7 +466,7 @@ def cleanup_tmpdirs():
 # %% Create Ingest Table from files_meta
 
 @catch_error(logger)
-def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name:str):
+def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str):
     global sql_ingest_table_exists, sql_ingest_table
 
     ingest_table = spark.createDataFrame(files_meta)
@@ -476,6 +477,7 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
         col('is_full_load').cast(BooleanType()),
         lit(firm_name).cast(StringType()).alias('firm_name'),
         lit(storage_account_name).cast(StringType()).alias('storage_account_name'),
+        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr'),
         lit(None).cast(StringType()).alias('remote_source'),
         col('root').cast(StringType()).alias('root_folder'),
         col('file').cast(StringType()).alias('file_name'),
@@ -566,11 +568,11 @@ def process_all_files():
         if not files_meta:
             continue
 
-        storage_account_name = to_storage_account_name(firm_name=firm['storage_account_name'])
+        storage_account_name = to_storage_account_name(firm_name=firm['storage_account_abbr'])
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
         print('Getting New Files')
-        ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name)
+        ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name, storage_account_abbr=firm['storage_account_abbr'])
         new_files, selected_files = get_selected_files(ingest_table)
 
         print(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
@@ -616,6 +618,7 @@ def process_all_files():
             xml_table_list = xml_table_list_union,
             firm_name = firm['firm_name'],
             storage_account_name = storage_account_name,
+            storage_account_abbr = firm['storage_account_abbr']
         )
 
         cleanup_tmpdirs()

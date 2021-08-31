@@ -15,7 +15,8 @@ from .config import is_pc
 from .data_functions import column_regex, partitionBy, partitionBy_value, execution_date, metadata_DataTypeTranslation, \
     metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
-    to_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name
+    default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
+    default_storage_account_abbr
 from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql
 
 from pyspark.sql import functions as F
@@ -40,7 +41,7 @@ INFORMATION_SCHEMA = 'INFORMATION_SCHEMA'.upper()
 
 @catch_error(logger)
 def get_DataTypeTranslation_table(spark, data_type_translation_id:str):
-    storage_account_name = to_storage_account_name()
+    storage_account_name = default_storage_account_name
 
     translation = read_adls_gen2(
         spark = spark,
@@ -65,7 +66,7 @@ def get_DataTypeTranslation_table(spark, data_type_translation_id:str):
 
 @catch_error(logger)
 def get_master_ingest_list(spark, tableinfo_source:str):
-    storage_account_name = to_storage_account_name()
+    storage_account_name = default_storage_account_name
 
     master_ingest_list = read_adls_gen2(
         spark = spark,
@@ -233,7 +234,7 @@ def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_
 # %% Rename Columns
 
 @catch_error(logger)
-def rename_columns(columns, storage_account_name:str, created_datetime:str, modified_datetime:str):
+def rename_columns(columns, storage_account_name:str, created_datetime:str, modified_datetime:str, storage_account_abbr:str):
     column_map = {
         'TABLE_CATALOG': 'SourceDatabase',
         'TABLE_SCHEMA' : 'SourceSchema',
@@ -253,6 +254,7 @@ def rename_columns(columns, storage_account_name:str, created_datetime:str, modi
     columns = columns.withColumn('KeyIndicator', F.when(col('SourceColumnName')==col('KEY_COLUMN_NAME'), lit(1)).otherwise(lit(0)).cast(IntegerType()))
     columns = columns.withColumn('CleanType', col('SourceDataType'))
     columns = columns.withColumn('StorageAccount', lit(storage_account_name).cast(StringType()))
+    columns = columns.withColumn('StorageAccountAbbr', lit(storage_account_abbr).cast(StringType()))
     columns = columns.withColumn('TargetColumnName', F.regexp_replace(F.trim(col('SourceColumnName')), column_regex, '_'))
     columns = columns.withColumn('IsActive', lit(1).cast(IntegerType()))
     columns = columns.withColumn('CreatedDateTime', lit(created_datetime).cast(StringType()))
@@ -443,7 +445,7 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
 # %% Prepare TableInfo
 
 @catch_error(logger)
-def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str):
+def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str, storage_account_abbr:str):
 
     print('Join master_ingest_list with sql tables')
     tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
@@ -458,7 +460,7 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
     if is_pc: columns.show(5)
 
     print('Rename Columns')
-    columns = rename_columns(columns=columns, storage_account_name=storage_account_name, created_datetime=created_datetime, modified_datetime=modified_datetime)
+    columns = rename_columns(columns=columns, storage_account_name=storage_account_name, created_datetime=created_datetime, modified_datetime=modified_datetime, storage_account_abbr=storage_account_abbr)
     if is_pc: columns.show(5)
 
     print('Add TargetDataType')
@@ -486,7 +488,7 @@ def ingest_from_files(spark, data_path_folder:str, default_schema:str, tableinfo
         print('No files found, exiting program.')
         exit()
 
-    storage_account_name = to_storage_account_name()
+    storage_account_name = default_storage_account_name
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     master_ingest_list = create_master_ingest_list(spark=spark, files_meta=files_meta)
@@ -501,6 +503,7 @@ def ingest_from_files(spark, data_path_folder:str, default_schema:str, tableinfo
         sql_table_constraints = schema_tables['TABLE_CONSTRAINTS'],
         sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
         storage_account_name = storage_account_name,
+        storage_account_abbr = default_storage_account_abbr,
         )
 
     save_adls_gen2(

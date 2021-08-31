@@ -12,7 +12,7 @@ from .common_functions import make_logging, catch_error
 from .data_functions import elt_audit_columns, execution_date
 from .config import is_pc, data_path
 from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, get_azure_sp, \
-    container_name, to_storage_account_name
+    container_name, to_storage_account_name, default_storage_account_abbr, default_storage_account_name
 
 from snowflake.connector import connect as snowflake_connect
 
@@ -41,8 +41,8 @@ class module_params_class:
     snowflake_raw_database = f'{envionment}_RAW_{domain_abbr}'.upper()
     snowflake_curated_database = f'{envionment}_CURATED_{domain_abbr}'.upper()
 
-    common_elt_stage_name = 'AGGR'
-    common_storage_account = to_storage_account_name()
+    common_elt_stage_name = default_storage_account_abbr
+    common_storage_account = default_storage_account_name
 
     snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'.upper()
     engineer_role = f"AD_SNOWFLAKE_{envionment}_ENGINEER".upper()
@@ -79,10 +79,10 @@ wid = module_params_class()
 snowflake_ddl_params = wid
 
 if not is_pc:
-    wid.save_to_adls = False
-    wid.execute_at_snowflake = False
-    wid.create_or_replace = False
-    wid.create_cicd_file = True
+    wid.save_to_adls = False # Default False
+    wid.execute_at_snowflake = False # Default False
+    wid.create_or_replace = True # Default False - Use True for Schema Change Update
+    wid.create_cicd_file = True # Default True
 
 if wid.create_cicd_file:
     os.makedirs(name=wid.cicd_folder_path, exist_ok=True)
@@ -269,27 +269,33 @@ def write_CICD_file_per_step():
 
 
 
+# %% COPY INTO statement
+
+@catch_error(logger)
+def create_copy_into_sql(source_system:str, schema_name:str, table_name:str, PARTITION:str, storage_account_abbr:str):
+    layer = 'RAW'
+    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
+    
+    INGEST_STAGE_NAME = f'@{wid.elt_stage_schema}.{storage_account_abbr}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{PARTITION}/'
+
+    copy_into_sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '{INGEST_STAGE_NAME}' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
+
+    return SCHEMA_NAME, TABLE_NAME, INGEST_STAGE_NAME, copy_into_sqlstr, sqlstr
+
+
+
 
 # %% Create Ingest Files
 
 @catch_error(logger)
-def create_ingest_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_name:str):
-    layer = 'RAW'
-    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
-
-    if storage_account_name.upper() == wid.common_storage_account.upper():
-        elt_stage_name = wid.common_elt_stage_name
-    else:
-        elt_stage_name = schema_name.upper()
-
-    INGEST_STAGE_NAME = f'@{wid.elt_stage_schema}.{elt_stage_name}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{PARTITION}/'
-    sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '{INGEST_STAGE_NAME}' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
+def create_ingest_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_abbr:str):
+    SCHEMA_NAME, TABLE_NAME, INGEST_STAGE_NAME, copy_into_sqlstr, sqlstr = create_copy_into_sql(source_system=source_system, schema_name=schema_name, table_name=table_name, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
 
     ingest_data = {
         "INGEST_STAGE_NAME": INGEST_STAGE_NAME, 
         "EXECUTION_DATE": execution_date,
         "FULL_OBJECT_NAME": TABLE_NAME,
-        "COPY_COMMAND": sqlstr,
+        "COPY_COMMAND": copy_into_sqlstr,
         "INGEST_SCHEMA": SCHEMA_NAME,
         "SOURCE_SYSTEM": source_system,
         "ELT_STAGE_SCHEMA": wid.elt_stage_schema
@@ -394,7 +400,7 @@ ALTER PIPE {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_s
 def create_source_level_tables(ingest_data_list:defaultdict):
     print(f'\nCreate Source Level Tables')
     for source_system, ingest_data_per_source_system in ingest_data_list.items():
-        storage_account_name = to_storage_account_name()
+        storage_account_name = default_storage_account_name
         setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
         container_folder = f'metadata/{wid.domain_name}/{source_system}'
 
@@ -490,23 +496,12 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 
 @catch_error(logger)
 @action_step(3)
-def step3(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_name:str):
-    layer = 'RAW'
-    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
-
-    if storage_account_name.upper() == wid.common_storage_account.upper():
-        elt_stage_name = wid.common_elt_stage_name
-    else:
-        elt_stage_name = schema_name.upper()
-
-    INGEST_STAGE_NAME = f'@{wid.elt_stage_schema}.{elt_stage_name}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{PARTITION}/'
+def step3(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_abbr:str):
+    
+    SCHEMA_NAME, TABLE_NAME, INGEST_STAGE_NAME, copy_into_sqlstr, sqlstr = create_copy_into_sql(source_system=source_system, schema_name=schema_name, table_name=table_name, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
 
     step = f"""
-COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
-FROM '{INGEST_STAGE_NAME}'
-FILE_FORMAT = (type='{wid.FILE_FORMAT}')
-PATTERN = '{wid.wild_card}'
-ON_ERROR = CONTINUE;
+{copy_into_sqlstr}
 
 SET SOURCE_SYSTEM = '{SCHEMA_NAME}';
 SET TARGET_TABLE = '{SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}';
@@ -739,7 +734,7 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
         if data_type.upper().startswith('variant'.upper()):
             return f'PARSE_JSON({column_name})'
         elif data_type.upper().startswith('string'.upper()) or data_type.upper().startswith('varchar'.upper()):
-            return f"IFNULL({column_name}, '')"
+            return f"COALESCE({column_name}, '')"
         else:
             return column_name
 
@@ -770,13 +765,15 @@ TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) = TRIM(COALESCE({wid.
 )
 WHEN MATCHED
 AND TRIM(COALESCE({wid.src_alias}.{wid.hash_column_name},'N/A')) != TRIM(COALESCE({wid.tgt_alias}.{wid.hash_column_name},'N/A'))
+AND TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) != 'N/A'
 THEN
   UPDATE
   SET
      {merge_update_columns}
     ,{wid.tgt_alias}.{wid.hash_column_name} = {wid.src_alias}.{wid.hash_column_name}
 
-WHEN NOT MATCHED 
+WHEN NOT MATCHED
+AND TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) != 'N/A'
 THEN
   INSERT
   (
@@ -860,6 +857,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
         storage_account_name = table['StorageAccount']
+        storage_account_abbr = table['StorageAccountAbbr']
         print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
         column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo=tableinfo, source_system=source_system, schema_name=schema_name, table_name=table_name)
@@ -868,7 +866,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
         if PARTITION:
             step1(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step2(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
-            step3(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION, storage_account_name=storage_account_name)
+            step3(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
             step4(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
             step5(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
             step6(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, pk_column_names=pk_column_names)
@@ -876,7 +874,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             write_CICD_file_per_table(source_system=source_system, schema_name=schema_name, table_name=table_name)
-            ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION, storage_account_name=storage_account_name)
+            ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
             ingest_data_list[source_system].append(ingest_data)
 
     write_CICD_file_per_step()
