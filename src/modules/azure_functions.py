@@ -29,6 +29,17 @@ import base64
 logger = make_logging(__name__)
 
 
+# %% Parameters
+
+
+tableinfo_container_name = "tables"
+container_name = "ingress" # Default Container Name
+tableinfo_name = 'metadata.TableInfo'
+file_format = 'delta' # Default File Format
+default_storage_account_abbr = 'AGGR'
+
+
+
 # %% firm_name to storage_account_name
 
 @catch_error(logger)
@@ -39,19 +50,13 @@ def to_storage_account_name(firm_name:str=None, source_system:str=''):
     if firm_name and source_system.upper() not in ['LR', 'MIPS', 'SF']:
         account = firm_name
     else:
-        account = 'aggr' # Default Aggregate Account
+        account = default_storage_account_abbr # Default Aggregate Account
 
     return f"ag{account}lakescd".lower()
 
 
 
-# %% Parameters
-
-storage_account_name = to_storage_account_name() # Default Storage Account Name
-tableinfo_container_name = "tables"
-container_name = "ingress" # Default Container Name
-tableinfo_name = 'metadata.TableInfo'
-file_format = 'delta' # Default File Format
+default_storage_account_name = to_storage_account_name() # Default Storage Account Name
 
 
 
@@ -265,11 +270,11 @@ def read_adls_gen2(spark,
 
 catch_error(logger)
 def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
+    setup_spark_adls_gen2_connection(spark, default_storage_account_name)
 
     tableinfo = read_adls_gen2(
         spark = spark,
-        storage_account_name = storage_account_name,
+        storage_account_name = default_storage_account_name,
         container_name = tableinfo_container_name,
         container_folder = tableinfo_source,
         table_name = tableinfo_name,
@@ -285,6 +290,7 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
         col('SourceSchema'),
         col('TableName'),
         col('StorageAccount'),
+        col('StorageAccountAbbr'),
         ).distinct()
 
     if is_pc: table_list.show(5)
@@ -325,7 +331,7 @@ def get_firms_with_crd(spark, tableinfo_source):
     firms_table = firms_table.select('Firm', 'SourceKey', 'StorageAccount') \
         .withColumnRenamed('Firm', 'firm_name') \
         .withColumnRenamed('SourceKey', 'crd_number') \
-        .withColumnRenamed('StorageAccount', 'storage_account_name')
+        .withColumnRenamed('StorageAccount', 'storage_account_abbr')
 
     firms_table = firms_table.withColumn('firm_name', F.lower(col('firm_name')))
 
@@ -340,7 +346,7 @@ def get_firms_with_crd(spark, tableinfo_source):
 # %% Add Table to tableinfo
 
 @catch_error(logger)
-def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_name:str, tableinfo_source:str, storage_account_name:str):
+def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_name:str, tableinfo_source:str, storage_account_name:str, storage_account_abbr:str):
     for ix, (col_name, col_type) in enumerate(table.dtypes):
         if col_name in elt_audit_columns or col_name == partitionBy:
             continue
@@ -358,6 +364,7 @@ def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_na
         tableinfo['OrdinalPosition'].append(ix+1)
         tableinfo['CleanType'].append(var_col_type)
         tableinfo['StorageAccount'].append(storage_account_name)
+        tableinfo['StorageAccountAbbr'].append(storage_account_abbr)
         tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name.strip()))
         tableinfo['TargetDataType'].append(var_col_type)
         tableinfo['IsNullable'].append(0 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 1)
