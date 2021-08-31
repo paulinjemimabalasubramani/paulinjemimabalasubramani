@@ -79,10 +79,10 @@ wid = module_params_class()
 snowflake_ddl_params = wid
 
 if not is_pc:
-    wid.save_to_adls = False
-    wid.execute_at_snowflake = False
-    wid.create_or_replace = False
-    wid.create_cicd_file = True
+    wid.save_to_adls = False # Default False
+    wid.execute_at_snowflake = False # Default False
+    wid.create_or_replace = True # Default False - Use True for Schema Change Update
+    wid.create_cicd_file = True # Default True
 
 if wid.create_cicd_file:
     os.makedirs(name=wid.cicd_folder_path, exist_ok=True)
