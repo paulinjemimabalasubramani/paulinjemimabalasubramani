@@ -45,7 +45,7 @@ with DAG(
     )
     LogMove = BashOperator(
     task_id='Send_a_log',
-    bash_command="python /usr/local/spark/app/Send_Logs_To_Azure.py",
+    bash_command="python /usr/local/spark/app/test_log.py",
     )
     
 
