@@ -25,7 +25,7 @@ from modules.spark_functions import create_spark, read_sql
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, \
     get_azure_sp, file_format, tableinfo_container_name, default_storage_account_name, default_storage_account_abbr
 from modules.data_functions import partitionBy
-from modules.data_type_translation import prepare_tableinfo, get_DataTypeTranslation_table, get_master_ingest_list
+from modules.migrate_files import prepare_tableinfo, get_DataTypeTranslation_table, get_master_ingest_list
 
 
 
