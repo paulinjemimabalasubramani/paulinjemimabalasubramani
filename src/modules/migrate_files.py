@@ -261,6 +261,8 @@ def rename_columns(columns, storage_account_name:str, created_datetime:str, modi
     columns = columns.withColumn('ModifiedDateTime', lit(modified_datetime).cast(StringType()))
     columns = columns.withColumn(partitionBy, lit(partitionBy_value).cast(StringType()))
 
+    columns = columns.withColumn('SourceColumnName', F.regexp_replace(F.trim(col('SourceColumnName')), column_regex, '_'))
+
     if is_pc: columns.printSchema()
     return columns
 
