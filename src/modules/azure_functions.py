@@ -169,6 +169,29 @@ def azure_data_path_create(container_name:str, storage_account_name:str, contain
 
 
 
+
+# %% Azure Table Save Logger
+
+@catch_error(logger)
+def log_saved_data(
+        table_to_save,
+        storage_account_name:str,
+        container_name:str,
+        container_folder:str,
+        table_name:str,
+        partitionBy:str=None,
+        file_format:str=file_format):
+    data = {"TimeGenerated": datetime.now(), "Table": table_to_save,  "Storage_Account": storage_account_name, "Container": container_name, "Folder": container_folder, "Table": table_name, "Partitioning": partitionedBy, "Format": fileformat}
+    log_data = json.loads(data)
+	tenant_id, customer_id, shared_key = get_azure_sp(loganalytics)
+	log_type = "AirlfowSavedTables"
+	post_data(customer_id, shared_key, log_data, log_type)
+
+
+
+
+
+
 # %% Save table_to_save to ADLS Gen 2 using 'Service Principals'
 
 @catch_error(logger)
@@ -202,7 +225,7 @@ def save_adls_gen2(
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
     else:
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
-
+    log_saved_data(table_to_save,storage_account_name,container_name,container_folder,table_name,partitionBy,file_format)
     print(f'Finished Writing {container_folder}/{table_name}')
 
 
