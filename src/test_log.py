@@ -15,7 +15,7 @@ log_data = {'a':1}
 log_type = 'test_log_type'
 
 customer_id = '4600d8ac-b3ed-400e-88fc-f87d24f3470c'
-shared_key = 'iWnQWu49tOZr/Io1RAbvDskx/L7BsAeXNtS/pDti9RG4IsUXBT4WeKUu18Lo/jt9c1C/aAohBxBH6zMVoMPMIw=='
+shared_key = 'Nbiap5Jtd/G88ElQvmR8GAKDcVMFvyvO6KQllg/uGFKbVz/pWlEYKFrifz5kbO6/oygT8LuXzUOuFcvOEY/QtA=='
 
 print(f'\ncustomer_id: {customer_id}')
 print(f'\nshared_key: {shared_key}')
