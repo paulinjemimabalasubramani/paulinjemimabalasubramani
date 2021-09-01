@@ -6,7 +6,7 @@ Common Library for creating and executing (if required) Snowflake DDL Steps and 
 # %% Import Libraries
 import json, os
 from functools import wraps
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 from .common_functions import make_logging, catch_error
 from .data_functions import elt_audit_columns, execution_date
@@ -125,16 +125,20 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
         (col('SourceSchema') == schema_name) &
         (col('SourceDatabase') == source_system)
         )
-    
+
     column_names = sorted(filtered_tableinfo.select('TargetColumnName').rdd.flatMap(lambda x: x).collect())
-    src_column_names = filtered_tableinfo.select('TargetColumnName', 'SourceColumnName').collect()
-    src_column_dict = {c['TargetColumnName']:c['SourceColumnName'] for c in src_column_names}
-    data_types = filtered_tableinfo.select('TargetColumnName', 'TargetDataType').collect()
-    data_types_dict = {c['TargetColumnName']:c['TargetDataType'] for c in data_types}
 
     pk_column_names = sorted(filtered_tableinfo.filter(
         (col('KeyIndicator') == lit(1))
         ).select('TargetColumnName').rdd.flatMap(lambda x: x).collect())
+
+    src_column_names = filtered_tableinfo.select('TargetColumnName', 'SourceColumnName').collect()
+    src_column_dict = {c['TargetColumnName']:c['SourceColumnName'] for c in src_column_names}
+    src_column_dict = OrderedDict(sorted(src_column_dict.items(), key=lambda x:x[0], reverse=False))
+
+    data_types = filtered_tableinfo.select('TargetColumnName', 'TargetDataType').collect()
+    data_types_dict = {c['TargetColumnName']:c['TargetDataType'] for c in data_types}
+    data_types_dict = OrderedDict(sorted(data_types_dict.items(), key=lambda x:x[0], reverse=False))
 
     return column_names, pk_column_names, src_column_dict, data_types_dict
 
@@ -571,7 +575,7 @@ FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}, job_id => '_l
 
 @catch_error(logger)
 @action_step(4)
-def step4(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
+def step4(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:OrderedDict):
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -579,9 +583,8 @@ def step4(source_system:str, schema_name:str, table_name:str, column_names:list,
     if not wid.cicd_str_per_step[cicd_source_system]:
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
-    sorted_src_column_dict = sorted(src_column_dict.items())
     column_list_src = '\n  ,'.join(
-        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in sorted_src_column_dict] +
+        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
@@ -604,7 +607,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 
 @catch_error(logger)
 @action_step(5)
-def step5(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:dict):
+def step5(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:OrderedDict):
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -612,9 +615,8 @@ def step5(source_system:str, schema_name:str, table_name:str, column_names:list,
     if not wid.cicd_str_per_step[cicd_source_system]:
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
-    sorted_src_column_dict = sorted(src_column_dict.items())
     column_list_src = '\n  ,'.join(
-        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in sorted_src_column_dict] +
+        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
@@ -682,7 +684,7 @@ WHERE top_slice = 1;
 
 @catch_error(logger)
 @action_step(7)
-def step7(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
+def step7(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:OrderedDict):
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -690,9 +692,8 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
     if not wid.cicd_str_per_step[cicd_source_system]:
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
-    sorted_data_types_dict = sorted(data_types_dict.items())
     column_list_types = '\n  ,'.join(
-        [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in sorted_data_types_dict] +
+        [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in data_types_dict] +
         [f'{c} VARCHAR(50)' for c in elt_audit_columns]
         )
 
@@ -718,7 +719,7 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
 
 @catch_error(logger)
 @action_step(8)
-def step8(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:dict):
+def step8(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:OrderedDict):
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -727,8 +728,8 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
-    sorted_data_types_dict = sorted(data_types_dict.items())
-    column_list = '\n    ,'.join([target_column_name for target_column_name, target_data_type in sorted_data_types_dict] + elt_audit_columns)
+
+    column_list = '\n    ,'.join([target_column_name for target_column_name, target_data_type in data_types_dict] + elt_audit_columns)
 
     def fval(column_name:str, data_type:str):
         if data_type.upper().startswith('variant'.upper()):
@@ -738,11 +739,11 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
         else:
             return column_name
 
-    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in sorted_data_types_dict])
+    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict])
     merge_update_elt_columns = '\n    ,'.join([f'{wid.tgt_alias}.{c} = {wid.src_alias}.{c}' for c in elt_audit_columns])
     merge_update_columns    += '\n    ,' + merge_update_elt_columns
 
-    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in sorted_data_types_dict])
+    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict])
     column_list_with_alias_elt = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in elt_audit_columns])
     column_list_with_alias    += '\n    ,' + column_list_with_alias_elt
 
@@ -825,7 +826,7 @@ def step9(source_system:str, schema_name:str, table_name:str, column_names:list)
     stream_name = f'{SCHEMA_NAME}_RAW.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}'
 
     step = f"""
-CREATE TASK IF NOT EXISTS {task_name}
+{create_or_replace_func('TASK')} {task_name}
 WAREHOUSE = {wid.snowflake_raw_warehouse}
 SCHEDULE = '1 minute'
 WHEN
