@@ -180,8 +180,7 @@ def log_saved_data(
         table_name:str,
         partitionBy:str=None,
         file_format:str=file_format):
-    data = {"TimeGenerated": datetime.now(), "Table": table_to_save,  "Storage_Account": storage_account_name, "Container": container_name, "Folder": container_folder, "Table": table_name, "Partitioning": partitionBy, "Format": file_format}
-    log_data = json.loads(data)
+    log_data = {"TimeGenerated": datetime.now(), "Table": table_to_save,  "Storage_Account": storage_account_name, "Container": container_name, "Folder": container_folder, "Table": table_name, "Partitioning": partitionBy, "Format": file_format}
     tenant_id,customer_id,shared_key = get_azure_sp("loganalytics")
     log_type = "AirlfowSavedTables"
     post_data(customer_id, shared_key, log_data, log_type)
