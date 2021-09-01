@@ -84,6 +84,7 @@ if not ingest_from_files_flag:
 
 iterate_over_all_tables_migration(
     spark = spark,
+    tableinfo = tableinfo,
     table_rows = table_rows,
     files_meta = files_meta,
     ingest_from_files_flag = ingest_from_files_flag,

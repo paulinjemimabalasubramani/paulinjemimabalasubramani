@@ -520,31 +520,51 @@ def ingest_from_files(spark, data_path_folder:str, default_schema:str, tableinfo
 
 
 
+# %% Keep same column case sensitivity between tableinfo and actual table columns
+
+@catch_error(logger)
+def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, table_name:str, sql_table):
+    tableinfo_SourceColumnName = tableinfo.where(
+        (col('SourceDatabase')==lit(database)) &
+        (col('SourceSchema')==lit(schema)) &
+        (col('TableName')==lit(table_name))
+        ).distinct().select('SourceColumnName').rdd.flatMap(lambda x: x).collect()
+    sql_table_columns_lower = {c.lower():c for c in sql_table.columns}
+    column_map = {tc:sql_table_columns_lower[tc.lower()] for tc in tableinfo_SourceColumnName}
+    
+    for new_name, existing_name in column_map.items():
+        sql_table = sql_table.withColumnRenamed(existing_name, new_name)
+    
+    return sql_table
+
+
+
+
 # %% Loop over all tables
 
 @catch_error(logger)
-def iterate_over_all_tables_migration(spark, table_rows, files_meta:list, ingest_from_files_flag:bool, domain_name:str,
+def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:list, ingest_from_files_flag:bool, domain_name:str,
                                     sql_id:str, sql_pass:str, sql_server:str, storage_account_name:str, tableinfo_source:str):
 
     table_count = len(table_rows)
 
     for i, r in enumerate(table_rows):
-        table = r['TableName']
-        schema = r['SourceSchema']
         database = r['SourceDatabase']
-
-        print(f"\nTable {i+1} of {table_count}: {schema}.{table}")
+        schema = r['SourceSchema']
+        table_name = r['TableName']
+        print(f"\nTable {i+1} of {table_count}: {schema}.{table_name}")
 
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
 
         if ingest_from_files_flag:
-            file_path = [file_meta for file_meta in files_meta if file_meta['table'].lower()==table.lower() and file_meta['schema'].lower()==schema.lower()][0]['path']
+            file_path = [file_meta for file_meta in files_meta if file_meta['table'].lower()==table_name.lower() and file_meta['schema'].lower()==schema.lower()][0]['path']
             sql_table = read_csv(spark=spark, file_path=file_path)
             sql_table = add_md5_key(sql_table)
         else:
-            sql_table = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=schema, table_name=table, database=database, server=sql_server)
+            sql_table = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=schema, table_name=table_name, database=database, server=sql_server)
 
+        sql_table = keep_same_case_sensitive_column_names(tableinfo=tableinfo, database=database, schema=schema, table_name=table_name, sql_table=sql_table)
         sql_table = to_string(sql_table, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
         sql_table = remove_column_spaces(sql_table)
         sql_table = add_elt_columns(
@@ -560,7 +580,7 @@ def iterate_over_all_tables_migration(spark, table_rows, files_meta:list, ingest
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = container_folder,
-            table_name = table,
+            table_name = table_name,
             partitionBy = partitionBy,
             file_format = file_format
         )
