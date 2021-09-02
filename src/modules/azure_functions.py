@@ -223,7 +223,7 @@ def save_adls_gen2(
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
     else:
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
-    log_saved_data(table_to_save,storage_account_name,container_name,container_folder,table_name,partitionBy,file_format)
+    log_saved_data(storage_account_name,container_name,container_folder,table_name,partitionBy,file_format)
     print(f'Finished Writing {container_folder}/{table_name}')
 
 
