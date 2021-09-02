@@ -172,7 +172,7 @@ def azure_data_path_create(container_name:str, storage_account_name:str, contain
 # %% Azure Table Save Logger
 
 @catch_error(logger)
-def log_saved_data(
+def log_saved_table_data(
         storage_account_name:str,
         container_name:str,
         container_folder:str,
@@ -223,7 +223,7 @@ def save_adls_gen2(
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
     else:
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
-    log_saved_data(storage_account_name,container_name,container_folder,table_name,partitionBy,file_format)
+    log_saved_table_data(storage_account_name,container_name,container_folder,table_name,partitionBy,file_format)
     print(f'Finished Writing {container_folder}/{table_name}')
 
 
