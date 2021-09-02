@@ -299,7 +299,8 @@ def log_ingest_data(ingest_data, source_system:str, schema_name:str, table_name:
     log_data = {"TimeGenerated": str(timestamp), "Storage_Account": storage_account_abbr, "Source_System": source_system, "Schema_Name": schema_name, "Table": table_name, "Ingest_Data": ingest_data, "Partition": partition}
     tenant_id,customer_id,shared_key = get_azure_sp("loganalytics")
     log_type = "AirflowIngestData"
-    post_data(customer_id, shared_key, log_data, log_type)
+    log_dump = json.dumps(log_data)
+    post_data(customer_id, shared_key, log_dump, log_type)
 
 # %% Create Ingest Files
 
