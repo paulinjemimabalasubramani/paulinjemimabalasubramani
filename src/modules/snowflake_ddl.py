@@ -8,21 +8,19 @@ import json, os
 from functools import wraps
 from collections import defaultdict, OrderedDict
 
+from requests.api import post
+
 from .common_functions import make_logging, catch_error
 from .data_functions import elt_audit_columns, execution_date
 from .config import is_pc, data_path
 from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, get_azure_sp, \
-    container_name, to_storage_account_name, default_storage_account_abbr, default_storage_account_name
+    container_name, to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data
 
 from snowflake.connector import connect as snowflake_connect
 from datetime import datetime
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import col, lit
-import sys
-import requests
-import hashlib
-import hmac
-import base64
+
 
 # %% Logging
 logger = make_logging(__name__)
@@ -291,16 +289,6 @@ def create_copy_into_sql(source_system:str, schema_name:str, table_name:str, PAR
     return SCHEMA_NAME, TABLE_NAME, INGEST_STAGE_NAME, copy_into_sqlstr, sqlstr
 
 
-# %% Log Ingest Commands To Snowflake Into Log Analytics
-
-@catch_error(logger)
-def log_ingest_data(ingest_data, source_system:str, schema_name:str, table_name:str, storage_account_abbr:str, partition:str):
-    timestamp = datetime.now()
-    log_data = {"TimeGenerated": str(timestamp), "Storage_Account": storage_account_abbr, "Source_System": source_system, "Schema_Name": schema_name, "Table": table_name, "Ingest_Data": ingest_data, "Partition": partition}
-    tenant_id,customer_id,shared_key = get_azure_sp("loganalytics")
-    log_type = "AirflowIngestData"
-    log_dump = json.dumps(log_data)
-    post_data(customer_id, shared_key, log_dump, log_type)
 
 # %% Create Ingest Files
 
@@ -317,7 +305,15 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
         "SOURCE_SYSTEM": source_system,
         "ELT_STAGE_SCHEMA": wid.elt_stage_schema
     }
-    log_ingest_data(ingest_data, source_system, schema_name, table_name, storage_account_abbr, PARTITION)
+
+    log_data = {
+        **ingest_data,
+        "STORAGE_ACCOUNT_ABBR": storage_account_abbr,
+        "STORAGE_ACCOUNT": to_storage_account_name(firm_name=storage_account_abbr),
+        "PARTITION": PARTITION,
+        }
+
+    post_log_data(log_data=log_data, log_type='AirflowIngestData')
 
     return ingest_data
 
@@ -409,6 +405,14 @@ ALTER PIPE {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_s
 
     print(f'\nTriggering Snowpipe\n{sqlstr}\n')
     exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
+
+    log_data = {
+        'sqlstr': sqlstr,
+        'source_system': source_system,
+    }
+
+    post_log_data(log_data=log_data, log_type='AirflowSnowflakeRequests')
+
 
 
 
