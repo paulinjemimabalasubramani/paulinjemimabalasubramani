@@ -18,7 +18,11 @@ from snowflake.connector import connect as snowflake_connect
 
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import col, lit
-
+import sys
+import requests
+import hashlib
+import hmac
+import base64
 
 # %% Logging
 logger = make_logging(__name__)
@@ -287,7 +291,15 @@ def create_copy_into_sql(source_system:str, schema_name:str, table_name:str, PAR
     return SCHEMA_NAME, TABLE_NAME, INGEST_STAGE_NAME, copy_into_sqlstr, sqlstr
 
 
+# %% Log Ingest Commands To Snowflake Into Log Analytics
 
+@catch_error(logger)
+def log_ingest_data(ingest_data, source_system:str, schema_name:str, table_name:str, storage_account_abbr:str, partition:str):
+    timestamp = datetime.now()
+    log_data = {"TimeGenerated": str(timestamp), "Storage_Account": storage_account_abbr, "Source_System": source_system, "Schema_Name": schema_name, "Table": table_name, "Ingest_Data": ingest_data, "Partition": partition}
+    tenant_id,customer_id,shared_key = get_azure_sp("loganalytics")
+    log_type = "AirflowIngestData"
+    post_data(customer_id, shared_key, log_data, log_type)
 
 # %% Create Ingest Files
 
@@ -304,6 +316,7 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
         "SOURCE_SYSTEM": source_system,
         "ELT_STAGE_SCHEMA": wid.elt_stage_schema
     }
+    log_ingest_data(ingest_data, source_system, schema_name, table_name, storage_account_abbr, PARTITION)
 
     return ingest_data
 
