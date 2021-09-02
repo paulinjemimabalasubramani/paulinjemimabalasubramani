@@ -584,7 +584,7 @@ def step4(source_system:str, schema_name:str, table_name:str, column_names:list,
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     column_list_src = '\n  ,'.join(
-        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict] +
+        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
@@ -616,7 +616,7 @@ def step5(source_system:str, schema_name:str, table_name:str, column_names:list,
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     column_list_src = '\n  ,'.join(
-        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict] +
+        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
@@ -693,7 +693,7 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*4
 
     column_list_types = '\n  ,'.join(
-        [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in data_types_dict] +
+        [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in data_types_dict.items()] +
         [f'{c} VARCHAR(50)' for c in elt_audit_columns]
         )
 
@@ -729,7 +729,7 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
 
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
 
-    column_list = '\n    ,'.join([target_column_name for target_column_name, target_data_type in data_types_dict] + elt_audit_columns)
+    column_list = '\n    ,'.join([target_column_name for target_column_name, target_data_type in data_types_dict.items()] + elt_audit_columns)
 
     def fval(column_name:str, data_type:str):
         if data_type.upper().startswith('variant'.upper()):
@@ -739,11 +739,11 @@ def step8(source_system:str, schema_name:str, table_name:str, column_names:list,
         else:
             return column_name
 
-    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict])
+    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict.items()])
     merge_update_elt_columns = '\n    ,'.join([f'{wid.tgt_alias}.{c} = {wid.src_alias}.{c}' for c in elt_audit_columns])
     merge_update_columns    += '\n    ,' + merge_update_elt_columns
 
-    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict])
+    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{c}', target_data_type) for c, target_data_type in data_types_dict.items()])
     column_list_with_alias_elt = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in elt_audit_columns])
     column_list_with_alias    += '\n    ,' + column_list_with_alias_elt
 
