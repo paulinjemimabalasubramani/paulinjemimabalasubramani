@@ -18,7 +18,7 @@ from azure.keyvault.secrets import SecretClient
 from datetime import datetime
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
-from pyspark.sql import SparkSession
+import sys
 import json
 import requests
 import hashlib
