@@ -419,7 +419,8 @@ def post_data(customer_id, shared_key, body, log_type):
     method = 'POST'
     content_type = 'application/json'
     resource = '/api/logs'
-    rfc1123date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+#   rfc1123date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+    rfc1123date = "Thu, 02 Sep 2021 05:13:07 GMT"
     print(f'{rfc1123date}')
     content_length = len(body)
     signature = build_signature(customer_id, shared_key, rfc1123date, content_length, method, content_type, resource)
