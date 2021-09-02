@@ -420,7 +420,7 @@ def post_data(customer_id, shared_key, body, log_type):
     body = json.dumps(body)
     content_type = 'application/json'
     resource = '/api/logs'
-    rfc1123date = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+    rfc1123date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
     content_length = len(body)
     signature = build_signature(customer_id, shared_key, rfc1123date, content_length, method, content_type, resource)
     uri = 'https://' + customer_id + '.ods.opinsights.azure.com' + resource + '?api-version=2016-04-01'
