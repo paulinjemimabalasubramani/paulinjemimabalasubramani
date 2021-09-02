@@ -15,7 +15,7 @@ from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, g
     container_name, to_storage_account_name, default_storage_account_abbr, default_storage_account_name
 
 from snowflake.connector import connect as snowflake_connect
-
+from datetime import datetime
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import col, lit
 import sys
