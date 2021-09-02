@@ -18,6 +18,7 @@ from azure.keyvault.secrets import SecretClient
 from datetime import datetime
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
+from pyspark.sql import SparkSession
 import json
 import requests
 import hashlib
@@ -173,6 +174,7 @@ def azure_data_path_create(container_name:str, storage_account_name:str, contain
 
 @catch_error(logger)
 def log_saved_table_data(
+        table_to_save,
         storage_account_name:str,
         container_name:str,
         container_folder:str,
@@ -180,7 +182,10 @@ def log_saved_table_data(
         partitionBy:str=None,
         file_format:str=file_format):
     timestamp = datetime.now()
-    log_data = {"TimeGenerated": str(timestamp), "Storage_Account": storage_account_name, "Container": container_name, "Folder": container_folder, "Table": table_name, "Partitioning": partitionBy, "Format": file_format}
+    row_count = str(table_to_save.count())
+    col_count = str(len(table_to_save.columns))
+    table_size = sys.getsizeof(table_to_save)
+    log_data = {"TimeGenerated": str(timestamp), "Storage_Account": storage_account_name, "Container": container_name, "Folder": container_folder, "Table": table_name, "Partitioning": partitionBy, "Format": file_format, "Row_Count": row_count, "Number_of_Columns": col_count, "Table_Size": table_size}
     tenant_id,customer_id,shared_key = get_azure_sp("loganalytics")
     log_type = "AirlfowSavedTables"
     post_data(customer_id, shared_key, log_data, log_type)
@@ -223,7 +228,7 @@ def save_adls_gen2(
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
     else:
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
-    log_saved_table_data(storage_account_name,container_name,container_folder,table_name,partitionBy,file_format)
+    log_saved_table_data(table_to_save, storage_account_name,container_name,container_folder,table_name,partitionBy,file_format)
     print(f'Finished Writing {container_folder}/{table_name}')
 
 
