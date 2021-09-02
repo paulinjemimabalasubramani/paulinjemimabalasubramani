@@ -144,6 +144,10 @@ def get_azure_sp(storage_account_name:str):
 
 
 
+_, log_customer_id, log_shared_key = get_azure_sp("loganalytics")
+
+
+
 # %% Set up Spark to ADLS Connection
 
 @catch_error(logger)
@@ -166,32 +170,6 @@ def setup_spark_adls_gen2_connection(spark, storage_account_name):
 @catch_error(logger)
 def azure_data_path_create(container_name:str, storage_account_name:str, container_folder:str, table_name:str):
     return f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table_name}"
-
-
-
-
-# %% Azure Table Save Logger
-
-@catch_error(logger)
-def log_saved_table_data(
-        table_to_save,
-        storage_account_name:str,
-        container_name:str,
-        container_folder:str,
-        table_name:str,
-        partitionBy:str=None,
-        file_format:str=file_format):
-    timestamp = datetime.now()
-    row_count = str(table_to_save.count())
-    col_count = str(len(table_to_save.columns))
-    table_size = sys.getsizeof(table_to_save)
-    log_data = {"TimeGenerated": str(timestamp), "Storage_Account": storage_account_name, "Container": container_name, "Folder": container_folder, "Table": table_name, "Partitioning": partitionBy, "Format": file_format, "Row_Count": row_count, "Number_of_Columns": col_count, "Table_Size": table_size}
-    tenant_id,customer_id,shared_key = get_azure_sp("loganalytics")
-    log_type = "AirlfowSavedTables"
-    post_data(customer_id, shared_key, log_data, log_type)
-
-
-
 
 
 
@@ -228,7 +206,21 @@ def save_adls_gen2(
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
     else:
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
-    log_saved_table_data(table_to_save, storage_account_name,container_name,container_folder,table_name,partitionBy,file_format)
+
+    log_data = {
+        "Storage_Account": storage_account_name,
+        "Container": container_name,
+        "Folder": container_folder,
+        "Table": table_name,
+        "Partitioning": partitionBy,
+        "Format": file_format,
+        "Row_Count": table_to_save.count(),
+        "Number_of_Columns": len(table_to_save.columns),
+        "Table_Size": sys.getsizeof(table_to_save),
+        }
+
+    post_log_data(log_data=log_data, log_type='AirlfowSavedTables')
+
     print(f'Finished Writing {container_folder}/{table_name}')
 
 
@@ -404,52 +396,52 @@ def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_na
 
 
 
-# %%
-####Send Date to Azure Log API
+# %% Build the API signature
 
-# Build the API signature
 @catch_error(logger)
-def build_signature(customer_id, shared_key, date, content_length, method, content_type, resource):
+def build_log_signature(customer_id, shared_key, date, content_length, method, content_type, resource):
     x_headers = 'x-ms-date:' + date
     string_to_hash = method + "\n" + str(content_length) + "\n" + content_type + "\n" + x_headers + "\n" + resource
-    bytes_to_hash = bytes(string_to_hash, encoding="utf-8")  
+    bytes_to_hash = bytes(string_to_hash, encoding="utf-8")
     decoded_key = base64.b64decode(shared_key)
     encoded_hash = base64.b64encode(hmac.new(decoded_key, bytes_to_hash, digestmod=hashlib.sha256).digest()).decode()
-    authorization = "SharedKey {}:{}".format(customer_id,encoded_hash)
+    authorization = "SharedKey {}:{}".format(customer_id, encoded_hash)
     return authorization
 
-# Build and send a request to the POST API
+
+
+# %% Build and send a request to the POST API
+
 @catch_error(logger)
-def post_data(customer_id, shared_key, body, log_type):
+def post_log_data(log_data:dict, log_type:str):
+    log_data = {
+        'TimeGenerated': datetime.now(),
+        **log_data}
+
     method = 'POST'
-    body = json.dumps(body, sort_keys=True, default=str)
+    body = json.dumps(log_data, sort_keys=True, default=str)
     content_type = 'application/json'
     resource = '/api/logs'
     rfc1123date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
     content_length = len(body)
-    signature = build_signature(customer_id, shared_key, rfc1123date, content_length, method, content_type, resource)
-    uri = 'https://' + customer_id + '.ods.opinsights.azure.com' + resource + '?api-version=2016-04-01'
+    signature = build_log_signature(customer_id=log_customer_id, shared_key=log_shared_key, date=rfc1123date, content_length=content_length, method=method, content_type=content_type, resource=resource)
+    uri = 'https://' + log_customer_id + '.ods.opinsights.azure.com' + resource + '?api-version=2016-04-01'
 
     headers = {
         'content-type': content_type,
         'Authorization': signature,
         'Log-Type': log_type,
-        'x-ms-date': rfc1123date
+        'x-ms-date': rfc1123date,
     }
 
-    response = requests.post(uri,data=body, headers=headers)
+    response = requests.post(uri, data=body, headers=headers)
     if (response.status_code >= 200 and response.status_code <= 299):
-        print('Accepted')
+        print('\nLog Accepted\n')
     else:
-        print("Response code: {}".format(response.status_code))
+        print(f"\nLog Response code: {response.status_code}\n")
 
-###Example
-## Update the customer ID to your Log Analytics workspace ID
-#customer_id = 'xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
 
-## For the shared key, use either the primary or the secondary Connected Sources client authentication key   
-#shared_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-## The log type is the name of the event that is being submitted
-#log_type = 'WebMonitorTest'
-#post_data(customer_id, shared_key, body, log_type)
+# %%
+
+
