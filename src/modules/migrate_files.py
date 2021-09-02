@@ -35,6 +35,7 @@ created_datetime = execution_date
 modified_datetime = execution_date
 
 INFORMATION_SCHEMA = 'INFORMATION_SCHEMA'.upper()
+schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINTS']
 
 
 # %% Get DataTypeTranslation table
@@ -421,8 +422,6 @@ def create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark, sql_columns, tableinf
 
 @catch_error(logger)
 def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, master_ingest_list):
-    schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINTS']
-
     schemas_meta = [file_meta for file_meta in files_meta if file_meta['schema'].upper()==INFORMATION_SCHEMA]
     sql_meta = {schema_table_name: [schema_meta for schema_meta in schemas_meta if schema_meta['table'].upper()==schema_table_name.upper()] for schema_table_name in schema_table_names}
 
@@ -481,21 +480,43 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
 
 
 
-# %% ingest_from_files
+# %% Get Table and Column Metadata from information_schema
 
 @catch_error(logger)
-def ingest_from_files(spark, data_path_folder:str, default_schema:str, tableinfo_source:str, data_type_translation_id:str):
-    files_meta = get_files_meta(data_path_folder=data_path_folder, default_schema=default_schema)
-    if not files_meta:
-        print('No files found, exiting program.')
-        exit()
+def get_sql_schema_tables(spark, sql_id:str, sql_pass:str, sql_server:str, sql_database:str):
+    schema_tables = defaultdict()
+    for schema_table_name in schema_table_names:
+        schema_tables[schema_table_name] = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=INFORMATION_SCHEMA, table_name=schema_table_name, database=sql_database, server=sql_server)
+        if is_pc: schema_tables[schema_table_name].printSchema()
+        if is_pc: schema_tables[schema_table_name].show(5)
+    
+    return schema_tables
+
+
+
+
+# %% Make TableInfo
+
+@catch_error(logger)
+def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, default_schema:str, tableinfo_source:str, \
+    data_type_translation_id:str, sql_id:str, sql_pass:str, sql_server:str, sql_database:str):
 
     storage_account_name = default_storage_account_name
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-    master_ingest_list = create_master_ingest_list(spark=spark, files_meta=files_meta)
     translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
-    schema_tables = get_sql_schema_tables_from_files(spark=spark, files_meta=files_meta, tableinfo_source=tableinfo_source, master_ingest_list=master_ingest_list)
+
+    if ingest_from_files_flag:
+        files_meta = get_files_meta(data_path_folder=data_path_folder, default_schema=default_schema)
+        if not files_meta:
+            print('No files found, exiting program.')
+            exit()
+        master_ingest_list = create_master_ingest_list(spark=spark, files_meta=files_meta)
+        schema_tables = get_sql_schema_tables_from_files(spark=spark, files_meta=files_meta, tableinfo_source=tableinfo_source, master_ingest_list=master_ingest_list)
+    else:
+        files_meta = []
+        master_ingest_list = get_master_ingest_list(spark=spark, tableinfo_source=tableinfo_source)
+        schema_tables = get_sql_schema_tables(spark=spark, sql_id=sql_id, sql_pass=sql_pass, sql_server=sql_server, sql_database=sql_database)
 
     tableinfo = prepare_tableinfo(
         master_ingest_list = master_ingest_list,
