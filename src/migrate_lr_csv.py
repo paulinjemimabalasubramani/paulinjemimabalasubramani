@@ -43,7 +43,7 @@ sql_key_vault_account = sql_server
 storage_account_name = default_storage_account_name
 domain_name = 'financial_professional'
 
-tableinfo_source = 'MIPS'
+tableinfo_source = 'LR'
 sql_database = tableinfo_source # TABLE_CATALOG
 
 data_type_translation_id = 'sqlserver_snowflake'
