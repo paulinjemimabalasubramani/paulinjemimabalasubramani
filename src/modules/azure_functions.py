@@ -176,6 +176,7 @@ def log_saved_data(
         table_to_save,
         storage_account_name:str,
         container_name:str,
+        container_folder:str,
         table_name:str,
         partitionBy:str=None,
         file_format:str=file_format):
@@ -417,7 +418,7 @@ def build_signature(customer_id, shared_key, date, content_length, method, conte
 @catch_error(logger)
 def post_data(customer_id, shared_key, body, log_type):
     method = 'POST'
-    body = json.dumps(body)
+    body = json.dumps(body, sort_keys=True, default=str)
     content_type = 'application/json'
     resource = '/api/logs'
     rfc1123date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
