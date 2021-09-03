@@ -5,6 +5,7 @@ Library for common generic functions
 
 # %% Import Libraries
 import os, sys, logging, platform, psutil, yaml
+from pprint import pprint
 
 from datetime import datetime
 
@@ -41,25 +42,6 @@ if is_pc:
     data_path = os.path.realpath(python_dirname + '/../../../Shared')
 
     joinstr = ';' # for extraClassPath
-
-
-
-
-# %% Get System Info in String
-
-def system_info():
-    uname = platform.uname()
-
-    sysinfo  = f"OS         {platform.system()}\n"
-    sysinfo += f"System:    {uname.system}\n"
-    sysinfo += f"Node:      {uname.node}\n"
-    sysinfo += f"Release:   {uname.release}\n"
-    sysinfo += f"Version:   {uname.version}\n"
-    sysinfo += f"Machine:   {uname.machine}\n"
-    sysinfo += f"Processor: {uname.processor}\n"
-    sysinfo += f"RAM:       " + str(round(psutil.virtual_memory().total / (1024.0 **3))) + " GB\n"
-
-    return sysinfo
 
 
 
@@ -123,9 +105,30 @@ def make_logging(module_name:str):
     return logger
 
 
-
 logger = make_logging(__name__)
 
+
+
+# %% Get System Info in String
+
+def system_info():
+    uname = platform.uname()
+
+    sysinfo = {
+        'Python_Version': platform.python_version(),
+        'Operating_System': uname.system,
+        'Network_Name': uname.node,
+        'OS_Release': uname.release,
+        'OS_Version': uname.version,
+        'Machine_Type': uname.machine,
+        'Processor': uname.processor,
+        'RAM': str(round(psutil.virtual_memory().total / (1024.0 **3))) + " GB"
+    }
+
+    return sysinfo
+
+
+pprint(system_info())
 #logger.info(system_info())
 
 
@@ -141,10 +144,13 @@ def get_extraClassPath():
     
     extraClassPath = joinstr.join(drivers)
 
-    print(f'\nDrivers Path: {drivers_path}')
-    print(f'Config Path: {config_path}')
-    print(f'Data Path: {data_path}')
-    print(f'extraClassPath: {extraClassPath}\n')
+    path_log = {
+        'Drivers_Path': drivers_path,
+        'Config_Path': config_path,
+        'Data_Path': data_path,
+        'extraClassPath': extraClassPath,
+    }
+    pprint(path_log)
     return extraClassPath
 
 

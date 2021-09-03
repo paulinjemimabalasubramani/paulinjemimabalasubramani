@@ -13,10 +13,11 @@ https://spark.apache.org/docs/latest/configuration
 """
 
 # %% libraries
-import os, platform, re
+import os, re
+from pprint import pp, pprint
 
 
-from .common_functions import make_logging, catch_error, system_info, is_pc, extraClassPath, execution_date
+from .common_functions import make_logging, catch_error, is_pc, extraClassPath, execution_date
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim
@@ -110,12 +111,11 @@ def create_spark():
     spark = spark.getOrCreate()
     spark.getActiveSession()
 
-    print(f'\n{platform.sys.version}')
-    print(f'Python version = {platform.python_version()}')
-    print(f"Spark version  = {spark.version}")
-    print(f"Hadoop version = {spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}\n")
-    print(system_info(),'\n')
-
+    spark_version = {
+        'Spark_Version': spark.version,
+        'Hadoop_Version': spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion(),
+    }
+    pprint(spark_version)
     return spark
 
 
