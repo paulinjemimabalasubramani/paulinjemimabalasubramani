@@ -17,27 +17,21 @@ https://docs.databricks.com/_static/notebooks/snowflake-python.html
 
 import os, sys
 
+from pprint import pprint
+
+
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from pprint import pprint
-
-
-from modules.common_functions import make_logging, catch_error
+from modules.common_functions import logger, catch_error, get_secrets
 from modules.spark_functions import create_spark, write_sql, read_snowflake
-from modules.azure_functions import get_azure_sp
 from modules.snowflake_ddl import snowflake_ddl_params
-from modules.config import is_pc
 
 
 from pyspark.sql.functions import col, lit
 
-
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 # %% Parameters
@@ -64,8 +58,8 @@ snowflake_ddl_params.spark = spark
 
 # %% Read Key Vault Data
 
-_, sql_id, sql_pass = get_azure_sp(sql_key_vault_account.lower())
-_, sf_id, sf_pass = get_azure_sp(snowflake_ddl_params.sf_key_vault_account.lower())
+_, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower(), logger=logger)
+_, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(), logger=logger)
 
 
 
@@ -73,7 +67,7 @@ _, sf_id, sf_pass = get_azure_sp(snowflake_ddl_params.sf_key_vault_account.lower
 
 @catch_error(logger)
 def get_sf_table_list(schema_name:str):
-    print('\nGet List of Tables and Columns from Information Schema...')
+    logger.info('Get List of Tables and Columns from Information Schema...')
     tables = read_snowflake(
         spark = spark,
         table_name = 'TABLES',
@@ -104,8 +98,8 @@ def get_sf_table_list(schema_name:str):
 
     table_names = columns.select('TABLE_NAME').distinct().rdd.flatMap(lambda x: x).collect()
 
-    print(f'Total of {len(table_names)} tables')
-    pprint(table_names)
+    logger.info(f'Total of {len(table_names)} tables')
+    logger.info(table_names)
     return table_names, columns
 
 
@@ -142,7 +136,7 @@ def reverse_etl_all_tables():
             mode = 'overwrite',
         )
     
-    print('Finished Reverse ETL for all tables')
+    logger.info('Finished Reverse ETL for all tables')
 
 
 

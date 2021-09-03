@@ -14,7 +14,7 @@ from airflow.utils.dates import days_ago
 # %% Parameters
 spark_master = "spark://spark:7077"
 spark_app_name = "Upload Lookup Files"
-airflow_app_name = "upload_lookup"
+airflow_app_name = "upload_lookup_files"
 description_DAG = 'Upload Lookup Files'
 file_path = "/usr/local/spark/resources/data/airflow.cfg"
 

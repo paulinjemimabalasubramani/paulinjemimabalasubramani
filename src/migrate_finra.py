@@ -29,13 +29,11 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import make_logging, catch_error
+from modules.common_functions import logger, catch_error, is_pc, data_path, config_path, execution_date, strftime, get_secrets
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
-    IDKeyIndicator, MD5KeyIndicator, get_sql_table_names
-from modules.config import is_pc, data_path, config_path
+    IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
-    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, get_azure_sp, add_table_to_tableinfo
-from modules.data_functions import  remove_column_spaces, add_elt_columns, execution_date, partitionBy, strftime
+    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, add_table_to_tableinfo
 from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table, flatten_df, flatten_n_divide_df
 
 
@@ -44,9 +42,6 @@ from pyspark.sql.functions import col, lit, to_date, to_json, to_timestamp, when
 from pyspark.sql.window import Window
 from pyspark.sql.types import StringType, BooleanType
 
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 # %% Parameters
@@ -95,7 +90,7 @@ spark = create_spark()
 
 # %% Read Key Vault Data
 
-_, sql_id, sql_pass = get_azure_sp(sql_key_vault_account.lower())
+_, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower(), logger=logger)
 
 
 
@@ -179,7 +174,7 @@ def extract_data_from_finra_file_path(file_path:str, crd_number:str):
 
         ans['table_name'] = ans['table_name'].lower()
     except:
-        print(f'Cannot parse file name: {file_path}')
+        logger.warning(f'Cannot parse file name: {file_path}')
         return
 
     return ans
@@ -240,15 +235,15 @@ def get_finra_file_xml_meta(file_path:str, crd_number:str):
             criteria[reportDate_name] = criteria['_postingDate']
 
         if criteria[firmCRDNumber_name] != file_meta['crd_number']:
-            print(f"\n{file_path}\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{file_meta['crd_number']}'\n")
+            logger.warning(f"{file_path}\nFirm CRD Number in Criteria '{criteria[firmCRDNumber_name]}' does not match to the CRD Number in the file name '{file_meta['crd_number']}'")
             file_meta['crd_number'] = criteria[firmCRDNumber_name]
 
         if criteria[reportDate_name] != file_meta['date']:
-            print(f"\n{file_path}\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{file_meta['date']}'\n")
+            logger.warning(f"{file_path}\nReport/Posting Date in Criteria '{criteria[reportDate_name]}' does not match to the date in the file name '{file_meta['date']}'")
             file_meta['date'] = criteria[reportDate_name]
 
         rowTags = [c for c in xml_table.columns if c not in ['Criteria']]
-        assert len(rowTags) == 1 or csv_flag, f"\n{file_path}\nXML File has rowTags {rowTags} is not valid\n"
+        assert len(rowTags) == 1 or csv_flag, f"{file_path}\nXML File has rowTags {rowTags} is not valid"
 
     file_meta['is_full_load'] = criteria.get('_IIRType') == 'FULL' or file_meta['table_name'].upper() in ['BranchInformationReport'.upper(), DualRegistrations_name.upper()]
 
@@ -267,7 +262,7 @@ def get_finra_file_xml_meta(file_path:str, crd_number:str):
 
 @catch_error(logger)
 def get_all_finra_file_xml_meta(folder_path, date_start:str, crd_number:str, inclusive:bool=True):
-    print(f'\nGetting list of candidate files from {folder_path}')
+    logger.info(f'Getting list of candidate files from {folder_path}')
     files_meta = []
     for root, dirs, files in os.walk(folder_path):
         for file in files:
@@ -277,7 +272,7 @@ def get_all_finra_file_xml_meta(folder_path, date_start:str, crd_number:str, inc
             if file_meta and (date_start<file_meta['date'] or (date_start==file_meta['date'] and inclusive)):
                 files_meta.append(file_meta)
 
-    print(f'Finished getting list of files. Total Files = {len(files_meta)}\n')
+    logger.info(f'Finished getting list of files. Total Files = {len(files_meta)}')
     return files_meta
 
 
@@ -288,11 +283,11 @@ def get_all_finra_file_xml_meta(folder_path, date_start:str, crd_number:str, inc
 @catch_error(logger)
 def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_account_name:str, storage_account_abbr:str):
     if not xml_table_list:
-        print(f"\nNo data to write\n")
+        logger.warning(f"No data to write")
         return
 
     for table_name, xml_table in xml_table_list.items():
-        print(f'\nWriting {table_name} to Azure...')
+        logger.info(f'Writing {table_name} to Azure...')
 
         add_table_to_tableinfo(
             tableinfo = tableinfo, 
@@ -309,7 +304,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
 
         if is_pc: # and manual_iteration:
             local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
-            print(fr'Save to local {local_path}')
+            pprint(fr'Save to local {local_path}')
             xml_table.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
 
         if save_xml_to_adls_flag:
@@ -323,7 +318,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
                 file_format = file_format
             )
 
-    print('Done writing to Azure')
+    logger.info('Done writing to Azure')
 
 
 
@@ -337,14 +332,14 @@ def read_xml_file(table_name:str, file_path:str, rowTag:str):
     if table_name.upper() == DualRegistrations_name.upper():
         xml_table = read_csv(spark=spark, file_path=file_path)
     elif os.path.isfile(schema_path):
-        print(f"Loading schema from file: {schema_file}")
+        logger.info(f"Loading schema from file: {schema_file}")
         with open(schema_path, 'r') as f:
             base = json.load(f)
         schema = base_to_schema(base)
         xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag, schema=schema)
     else:
-        print(f"Looking for Schema File Location: {schema_path}")
-        print(f"No manual schema defined for {table_name}. Using default schema.")
+        logger.info(f"Looking for Schema File Location: {schema_path}")
+        logger.warning(f"No manual schema defined for {table_name}. Using default schema.")
         xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag)
 
     if is_pc: xml_table.printSchema()
@@ -414,10 +409,10 @@ def process_columns_for_elt(table_list, file_meta):
 def process_finra_file(file_meta):
     file_path = os.path.join(file_meta['root'], file_meta['file'])
 
-    print('\n', file_meta['crd_number'], file_meta['table_name'], file_meta['date'])
+    logger.info(file_meta['crd_number'], file_meta['table_name'], file_meta['date'])
 
     rowTags = file_meta['rowTags']
-    print(f'\nrowTags: {rowTags}\n')
+    logger.info(f'rowTags: {rowTags}')
 
     xml_table = read_xml_file(table_name=file_meta['table_name'], file_path=file_path, rowTag=rowTags[0])
     xml_table_list = get_xml_table_list(xml_table=xml_table, table_name=file_meta['table_name'], crd_number=file_meta['crd_number'])
@@ -434,12 +429,12 @@ def process_finra_file(file_meta):
 def process_one_file(file_meta):
     global tmpdirs
     file_path = os.path.join(file_meta['root'], file_meta['file'])
-    print(f'\nProcessing {file_path}')
+    logger.info(f'Processing {file_path}')
 
     if file_path.lower().endswith('.zip'):
         tmpdir = tempfile.TemporaryDirectory(dir=os.path.dirname(file_path))
         tmpdirs.append(tmpdir)
-        print(f'\nExtracting {file_path} to {tmpdir.name}')
+        logger.info(f'Extracting {file_path} to {tmpdir.name}')
         shutil.unpack_archive(filename=file_path, extract_dir=tmpdir.name)
         for root1, dirs1, files1 in os.walk(tmpdir.name):
             for file1 in files1:
@@ -558,10 +553,10 @@ def process_all_files():
 
     for firm in firms: # Assumes each firm has different Firm CRD Number
         folder_path = os.path.join(data_path_folder, firm['crd_number'])
-        print(f"\n\nFirm: {firm['firm_name']}, Firm CRD Number: {firm['crd_number']}")
+        logger.info(f"Firm: {firm['firm_name']}, Firm CRD Number: {firm['crd_number']}")
 
         if not os.path.isdir(folder_path):
-            print(f'Path does not exist: {folder_path}   -> SKIPPING')
+            logger.warning(f'Path does not exist: {folder_path}   -> SKIPPING')
             continue
 
         files_meta = get_all_finra_file_xml_meta(folder_path=folder_path, date_start=date_start, crd_number=firm['crd_number'])
@@ -571,11 +566,11 @@ def process_all_files():
         storage_account_name = to_storage_account_name(firm_name=firm['storage_account_abbr'])
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-        print('Getting New Files')
+        logger.info('Getting New Files')
         ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name, storage_account_abbr=firm['storage_account_abbr'])
         new_files, selected_files = get_selected_files(ingest_table)
 
-        print(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
+        logger.info(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
 
         if all_new_files:
             union_columns = new_files.columns
@@ -583,7 +578,7 @@ def process_all_files():
         else:
             all_new_files = new_files
 
-        print("Iterating over Selected Files")
+        logger.info("Iterating over Selected Files")
         xml_table_list_union = {}
         for ingest_row in selected_files.rdd.toLocalIterator():
             file_meta = ingest_row.asDict()
@@ -594,7 +589,7 @@ def process_all_files():
             file_meta['file'] = file_meta['file_name']
 
             if is_pc and False and 'IndividualInformationReport'.upper() in file_meta['table_name'].upper():
-                print(f"\nSkipping {file_meta['table_name']} in PC\n")
+                pprint(f"Skipping {file_meta['table_name']} in PC")
                 continue
 
             xml_table_list = process_one_file(file_meta=file_meta)
@@ -623,7 +618,7 @@ def process_all_files():
 
         cleanup_tmpdirs()
 
-    print('\nFinished processing all Files and Firms\n')
+    logger.info('Finished processing all Files and Firms')
     return all_new_files
 
 
@@ -637,7 +632,7 @@ all_new_files = process_all_files()
 @catch_error(logger)
 def save_tableinfo(all_new_files):
     if not tableinfo:
-        print('No data in TableInfo --> Skipping write to Azure')
+        logger.warning('No data in TableInfo --> Skipping write to Azure')
         return
 
     tableinfo_values = list(tableinfo.values())

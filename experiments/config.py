@@ -5,9 +5,9 @@ Library for retrieving and storing configuration data
 
 # %% libraries
 
-import os, sys, platform
+import os, sys
 
-from .common_functions import make_logging, catch_error
+from .common_functions import make_logging, catch_error, is_pc
 
 import yaml
 
@@ -15,15 +15,6 @@ import yaml
 
 # %% Logging
 logger = make_logging(__name__)
-
-
-# %% App and Environment Info
-app_info = f'Running python on {platform.system()}'
-
-print(app_info)
-logger.info(app_info)
-
-is_pc = platform.system().lower() == 'windows'
 
 
 
@@ -88,7 +79,7 @@ class Config:
         except Exception as e:
             except_str = f'Error File was not read: {file_path}'
             print(except_str)
-            logger.error(except_str, exc_info=True)
+            #logger.error(except_str, exc_info=True)
             return
 
         for name, value in contents.items():

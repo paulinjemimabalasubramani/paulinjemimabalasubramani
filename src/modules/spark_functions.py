@@ -13,27 +13,57 @@ https://spark.apache.org/docs/latest/configuration
 """
 
 # %% libraries
-import os, platform
+import os, re
 
-
-from .common_functions import make_logging, catch_error, system_info
-from .config import is_pc, extraClassPath
-from .data_functions import remove_column_spaces
+from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim
-
-
-
-# %% Logging
-logger = make_logging(__name__)
+from pyspark.sql.types import IntegerType
 
 
 
 # %% Parameters
 
+column_regex = r'[\W]+'
+
+metadata_DataTypeTranslation = 'metadata.DataTypeTranslation'
+metadata_MasterIngestList = 'metadata.MasterIngestList'
+metadata_FirmSourceMap = 'metadata.FirmSourceMap'
+
 MD5KeyIndicator = 'MD5_KEY'
 IDKeyIndicator = 'ID'
+
+elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'ELT_SOURCE', 'ELT_LOAD_TYPE', 'ELT_DELETE_IND', 'DML_TYPE']
+partitionBy = 'PARTITION_DATE'
+partitionBy_value = re.sub(column_regex, '_', execution_date)
+
+
+
+# %% Add ELT Audit Columns
+
+@catch_error(logger)
+def add_elt_columns(table_to_add, reception_date:str, source:str, is_full_load:bool, dml_type:str=None):
+    """
+    Add ELT Audit Columns
+    """
+    table_to_add = table_to_add.withColumn('RECEPTION_DATE', lit(str(reception_date)))
+    table_to_add = table_to_add.withColumn('EXECUTION_DATE', lit(str(execution_date)))
+    table_to_add = table_to_add.withColumn('ELT_SOURCE', lit(str(source)))
+    table_to_add = table_to_add.withColumn('ELT_LOAD_TYPE', lit(str("FULL" if is_full_load else "INCREMENTAL")))
+    table_to_add = table_to_add.withColumn('ELT_DELETE_IND', lit(0).cast(IntegerType()))
+
+    if is_full_load:
+        DML_TYPE = 'I'
+    else:
+        DML_TYPE = dml_type.upper()
+
+    if DML_TYPE not in ['U', 'I', 'D']:
+        raise ValueError(f'DML_TYPE = {DML_TYPE}')
+
+    table_to_add = table_to_add.withColumn('DML_TYPE', lit(str(DML_TYPE)))
+    table_to_add = table_to_add.withColumn(partitionBy, lit(str(partitionBy_value)))
+    return table_to_add
 
 
 
@@ -75,13 +105,40 @@ def create_spark():
     spark = spark.getOrCreate()
     spark.getActiveSession()
 
-    print(f'\n{platform.sys.version}')
-    print(f'Python version = {platform.python_version()}')
-    print(f"Spark version  = {spark.version}")
-    print(f"Hadoop version = {spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}\n")
-    print(system_info(),'\n')
-
+    logger.info({
+        'Spark_Version': spark.version,
+        'Hadoop_Version': spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion(),
+    })
     return spark
+
+
+
+# %% Remove Column Spaces
+
+@catch_error(logger)
+def remove_column_spaces(table_to_remove):
+    """
+    Removes spaces from column names
+    """
+    new_table_to_remove = table_to_remove.select([col(c).alias(re.sub(column_regex, '_', c.strip())) for c in table_to_remove.columns])
+    return new_table_to_remove
+
+
+
+# %% Convert timestamp's or other types to string
+
+@catch_error(logger)
+def to_string(table_to_convert_columns, col_types=['timestamp']):
+    """
+    Convert timestamp's or other types to string - as it cause errors otherwise.
+    """
+    string_type = 'string'
+    for col_name, col_type in table_to_convert_columns.dtypes:
+        if (not col_types or col_type in col_types) and (col_type != string_type):
+            logger.info(f"Converting {col_name} from '{col_type}' to 'string' type")
+            table_to_convert_columns = table_to_convert_columns.withColumn(col_name, col(col_name).cast(string_type))
+    
+    return table_to_convert_columns
 
 
 
@@ -93,7 +150,7 @@ def read_sql(spark, schema:str, table_name:str, database:str, server:str, user:s
     Read a table from SQL server
     """
     sql_table_name = f'{schema}.{table_name}'
-    print(f"Reading SQL: server='{server}', database='{database}', table='{sql_table_name}'")
+    logger.info(f"Reading SQL: server='{server}', database='{database}', table='{sql_table_name}'")
 
     url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
 
@@ -122,7 +179,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
     Write table to SQL server
     """
     sql_table_name = f'{schema}.{table_name}'
-    print(f"\nWriting to SQL Server: server='{server}', database='{database}', table='{sql_table_name}'")
+    logger.info(f"Writing to SQL Server: server='{server}', database='{database}', table='{sql_table_name}'")
 
     url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
 
@@ -137,7 +194,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
         .option("hostNameInCertificate", "*.database.windows.net") \
         .save()
 
-    print('Finished Writing to SQL Server\n')
+    logger.info('Finished Writing to SQL Server')
 
 
 
@@ -145,7 +202,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
 
 @catch_error(logger)
 def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:str, role:str, account:str, user:str, password:str):
-    print(f"\nReading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
+    logger.info(f"Reading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
     sf_options = {
         'sfUrl': f'{account}.snowflakecomputing.com',
         'sfUser': user,
@@ -162,7 +219,7 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
         .option('dbtable', table_name) \
         .load()
 
-    print('Finished Reading from Snowflake\n')
+    logger.info('Finished Reading from Snowflake')
     return table
 
 
@@ -174,7 +231,7 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     """
     Read XML Files using Spark
     """
-    print(f'\nReading XML file: {file_path}')
+    logger.info(f'Reading XML file: {file_path}')
     xml_table = (spark.read
         .format("com.databricks.spark.xml")
         .option("rowTag", rowTag)
@@ -188,7 +245,7 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
         xml_table = xml_table.schema(schema=schema)
 
     xml_table_load = xml_table.load(file_path)
-    print('Finished reading XML file\n')
+    logger.info('Finished reading XML file')
     return xml_table_load
 
 
@@ -211,7 +268,7 @@ def read_csv(spark, file_path:str):
     """
     Read CSV File using Spark
     """
-    print(f'\nReading CSV file: {file_path}')
+    logger.info(f'Reading CSV file: {file_path}')
     csv_table = (spark.read
         .format('csv')
         .option('header', 'true')
@@ -221,7 +278,7 @@ def read_csv(spark, file_path:str):
     csv_table = remove_column_spaces(table_to_remove=csv_table)
     csv_table = trim_string_columns(table=csv_table)
 
-    print('Finished reading CSV file\n')
+    logger.info('Finished reading CSV file')
     return csv_table
 
 
@@ -233,6 +290,7 @@ def add_id_key(table, key_column_names:list):
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
     table = table.withColumn(MD5KeyIndicator, concat_ws('_', *coalesce_list)) # TODO: Change this to IDKeyIndicator later when we can add schema change
     return table
+
 
 
 # %% Add MD5 Key

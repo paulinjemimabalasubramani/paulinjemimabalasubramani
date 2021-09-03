@@ -10,23 +10,18 @@ from pprint import pprint
 from collections import defaultdict
 from typing import cast
 
-from .common_functions import make_logging, catch_error
-from .config import is_pc
-from .data_functions import column_regex, partitionBy, partitionBy_value, execution_date, metadata_DataTypeTranslation, \
-    metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns
+from .common_functions import logger, catch_error, is_pc, execution_date
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
     default_storage_account_abbr
-from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql
+from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
+    metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit, row_number
 from pyspark.sql.types import IntegerType, StringType
 from pyspark.sql.window import Window
 
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 # %% Parameters
@@ -113,7 +108,7 @@ def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
     # Check if there is a table in the master_ingest_list that is not in the sql_tables
     null_rows = tables.filter(col('SQL_TABLE_NAME').isNull()).select(col('TABLE_NAME')).collect()
     if null_rows:
-        print(f"There are some tables in master_ingest_list that are not in sql_tables: {[x[0] for x in null_rows]}")
+        logger.warning(f"There are some tables in master_ingest_list that are not in sql_tables: {[x[0] for x in null_rows]}")
 
     tables = tables.where(col('SQL_TABLE_NAME').isNotNull())
     return tables
@@ -127,7 +122,7 @@ def add_columns_if_not_exists(table, table_name:str, columns:dict):
     COLUMNS = [c.upper() for c in table.columns]
     for column_name, column_value in columns.items():
         if column_name.upper() not in COLUMNS:
-            print(f'{column_name} is not found in {table_name}, adding the column with value = {column_value}')
+            logger.warning(f'{column_name} is not found in {table_name}, adding the column with value = {column_value}')
             table = table.withColumn(column_name, column_value)
     return table
 
@@ -193,7 +188,7 @@ def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_
                 col('constraints.COLUMN_NAME').alias('KEY_COLUMN_NAME')
                 )
     else:
-        print(f'{INFORMATION_SCHEMA}.TABLE_CONSTRAINTS and/or {INFORMATION_SCHEMA}.KEY_COLUMN_USAGE are not found, using default no constraints')
+        logger.warning(f'{INFORMATION_SCHEMA}.TABLE_CONSTRAINTS and/or {INFORMATION_SCHEMA}.KEY_COLUMN_USAGE are not found, using default no constraints')
         columns = columns.withColumn('KEY_COLUMN_NAME', F.when(F.upper(col('COLUMN_NAME'))==lit(IDKeyIndicator), col('COLUMN_NAME')).otherwise(lit(None)).cast(StringType()))
 
         columnspk = (columns
@@ -349,12 +344,12 @@ def create_master_ingest_list(spark, files_meta):
         } for file_meta in files_meta if file_meta['schema'].upper()!=INFORMATION_SCHEMA]
 
     if not files_meta_for_master_ingest_list:
-        print('No tables found, exiting program.')
+        logger.warning('No tables found, exiting program.')
         exit()
 
     master_ingest_list = spark.createDataFrame(files_meta_for_master_ingest_list)
 
-    print(f'Total of {master_ingest_list.count()} tables to ingest')
+    logger.info(f'Total of {master_ingest_list.count()} tables to ingest')
     return master_ingest_list
 
 
@@ -366,7 +361,7 @@ def create_master_ingest_list(spark, files_meta):
 def create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables, master_ingest_list, tableinfo_source:str):
 
     if not (sql_tables and ('TABLE_NAME' in sql_tables.columns) and ('TABLE_SCHEMA' in sql_tables.columns)):
-        print(f'{INFORMATION_SCHEMA}.TABLES is not found, ingesting all tables by default')
+        logger.warning(f'{INFORMATION_SCHEMA}.TABLES is not found, ingesting all tables by default')
         sql_tables = master_ingest_list.select(['TABLE_NAME', 'TABLE_SCHEMA'])
 
     columns = {
@@ -389,7 +384,7 @@ def create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark, sql_columns, tableinf
         ('TABLE_SCHEMA' in sql_columns.columns) and
         ('COLUMN_NAME' in sql_columns.columns)
         ):
-        print(f'{INFORMATION_SCHEMA}.TABLES is not found, ingesting all tables by default')
+        logger.warning(f'{INFORMATION_SCHEMA}.TABLES is not found, ingesting all tables by default')
         columns_list = []
         for file_meta in files_meta:
             if file_meta['schema'].upper()!=INFORMATION_SCHEMA:
@@ -448,31 +443,31 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
 @catch_error(logger)
 def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str, storage_account_abbr:str):
 
-    print('Join master_ingest_list with sql tables')
+    logger.info('Join master_ingest_list with sql tables')
     tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
     if is_pc: tables.show(5)
 
-    print('filter columns by selected tables')
+    logger.info('Filter columns by selected tables')
     columns = filter_columns_by_tables(sql_columns=sql_columns, tables=tables)
     if is_pc: columns.show(5)
 
-    print('Join with table constraints and column usage')
+    logger.info('Join with table constraints and column usage')
     columns = join_tables_with_constraints(columns=columns, sql_table_constraints=sql_table_constraints, sql_key_column_usage=sql_key_column_usage)
     if is_pc: columns.show(5)
 
-    print('Rename Columns')
+    logger.info('Rename Columns')
     columns = rename_columns(columns=columns, storage_account_name=storage_account_name, created_datetime=created_datetime, modified_datetime=modified_datetime, storage_account_abbr=storage_account_abbr)
     if is_pc: columns.show(5)
 
-    print('Add TargetDataType')
+    logger.info('Add TargetDataType')
     columns = add_TargetDataType(columns=columns, translation=translation)
     if is_pc: columns.show(5)
 
-    print('Add Precision')
+    logger.info('Add Precision')
     columns = add_precision(columns=columns)
     if is_pc: columns.show(5)
 
-    print('Select Relevant columns only')
+    logger.info('Select Relevant columns only')
     tableinfo = select_tableinfo_columns(tableinfo=columns)
     if is_pc: tableinfo.show(5)
 
@@ -509,7 +504,7 @@ def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, def
     if ingest_from_files_flag:
         files_meta = get_files_meta(data_path_folder=data_path_folder, default_schema=default_schema)
         if not files_meta:
-            print('No files found, exiting program.')
+            logger.warning('No files found, exiting program.')
             exit()
         master_ingest_list = create_master_ingest_list(spark=spark, files_meta=files_meta)
         schema_tables = get_sql_schema_tables_from_files(spark=spark, files_meta=files_meta, tableinfo_source=tableinfo_source, master_ingest_list=master_ingest_list)
@@ -575,7 +570,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
         database = r['SourceDatabase']
         schema = r['SourceSchema']
         table_name = r['TableName']
-        print(f"\nTable {i+1} of {table_count}: {schema}.{table_name}")
+        logger.info(f"Table {i+1} of {table_count}: {schema}.{table_name}")
 
         data_type = 'data'
         container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
@@ -608,7 +603,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
             file_format = file_format
         )
 
-    print('Finished Migrating All Tables')
+    logger.info('Finished Migrating All Tables')
 
 
 
