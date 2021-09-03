@@ -26,7 +26,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, get_secrets
+from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end
 from modules.spark_functions import create_spark, write_sql, read_snowflake
 from modules.snowflake_ddl import snowflake_ddl_params
 
@@ -144,6 +144,11 @@ def reverse_etl_all_tables():
 reverse_etl_all_tables()
 
 
-# %%
 
+# %% Mark Execution End
+
+mark_execution_end()
+
+
+# %%
 

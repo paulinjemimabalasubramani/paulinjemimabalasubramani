@@ -19,7 +19,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, is_pc, config_path, execution_date
+from modules.common_functions import logger, catch_error, is_pc, config_path, execution_date, mark_execution_end
 from modules.spark_functions import create_spark, read_csv, remove_column_spaces, metadata_DataTypeTranslation, metadata_MasterIngestList, \
     metadata_FirmSourceMap, partitionBy, partitionBy_value
 from modules.azure_functions import setup_spark_adls_gen2_connection, to_storage_account_name, file_format, save_adls_gen2, \
@@ -187,6 +187,11 @@ firm_source_map = get_firm_source_map(
 if is_pc: firm_source_map.show(5)
 
 
-# %%
 
+# %% Mark Execution End
+
+mark_execution_end()
+
+
+# %%
 

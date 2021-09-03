@@ -367,6 +367,26 @@ extraClassPath = get_extraClassPath(drivers_path=drivers_path, join_drivers_by=j
 
 
 
+# %% Mark Execution End
+
+def mark_execution_end():
+    execution_date_end = datetime.now()
+    timedelta1 = execution_date_end - execution_date_start
+
+    h=timedelta1.seconds//3600
+    m=(timedelta1.seconds-h*3600)//60
+    s=timedelta1.seconds-h*3600-m*60
+    total_time = f'{timedelta1.days} day(s), {h} hour(s), {m} minute(s), {s} second(s)'
+
+    logger.info({
+        'execution_date_start': execution_date,
+        'execution_date_end': execution_date_end.strftime(strftime),
+        'total_seconds': timedelta1.seconds,
+        'total_time': total_time,
+    })
+
+
+
 # %%
 
 
