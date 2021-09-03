@@ -10,8 +10,8 @@ from collections import defaultdict, OrderedDict
 
 from requests.api import post
 
-from .common_functions import make_logging, catch_error, is_pc, data_path
-from .data_functions import elt_audit_columns, execution_date
+from .common_functions import make_logging, catch_error, is_pc, data_path, execution_date
+from .spark_functions import elt_audit_columns
 from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, get_azure_sp, \
     container_name, to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data
 

@@ -6,10 +6,15 @@ Library for common generic functions
 # %% Import Libraries
 import os, sys, logging, platform, psutil, yaml
 
+from datetime import datetime
+
 from functools import wraps
 
 
 # %% Parameters
+
+strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
+execution_date = datetime.now().strftime(strftime)
 
 is_pc = platform.system().lower() == 'windows'
 
