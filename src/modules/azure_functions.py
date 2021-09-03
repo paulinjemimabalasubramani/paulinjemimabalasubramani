@@ -136,7 +136,7 @@ def save_adls_gen2(
     """
     file_format = file_format.lower()
     data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
-    print(f"Write {file_format} -> {data_path}")
+    logger.info(f"Write {file_format} -> {data_path}")
 
     if file_format == 'text':
         table_to_save.coalesce(1).write.save(path=data_path, format=file_format, mode='overwrite', header='false')
@@ -169,7 +169,7 @@ def save_adls_gen2(
 
     post_log_data(log_data=log_data, log_type='AirlfowSavedTables')
 
-    print(f'Finished Writing {container_folder}/{table_name}')
+    logger.info(f'Finished Writing {container_folder}/{table_name}')
 
 
 
@@ -183,23 +183,23 @@ def get_partition(spark, domain_name:str, source_system:str, schema_name:str, ta
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
     data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
-    print(f'Reading partition data for {data_path}')
+    logger.info(f'Reading partition data for {data_path}')
 
     hist = spark.sql(f"DESCRIBE HISTORY delta.`{data_path}`")
     maxversion = hist.select(F.max(col('version'))).collect()[0][0]
     userMetadata = hist.where(col('version')==lit(maxversion)).collect()[0]['userMetadata']
 
     if userMetadata and ('=' in userMetadata):
-        print(f'Taking userMetadata {userMetadata}')
+        logger.info(f'Taking userMetadata {userMetadata}')
         return userMetadata
     else:
         partitionBy_value = spark.sql(f"SELECT MAX({partitionBy}) FROM delta.`{data_path}`").collect()[0][0]
         if not partitionBy_value:
-            print(f'{data_path} is EMPTY -> SKIPPING')
+            logger.warning(f'{data_path} is EMPTY -> SKIPPING')
             return
 
         PARTITION = f'{partitionBy}={partitionBy_value}'
-        print(f'No userMetadata found, using MAX({partitionBy}): {partitionBy_value}')
+        logger.warning(f'No userMetadata found, using MAX({partitionBy}): {partitionBy_value}')
         return PARTITION
 
 
@@ -219,7 +219,7 @@ def read_adls_gen2(spark,
     """
     data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
 
-    print(f'Reading -> {data_path}')
+    logger.info(f'Reading -> {data_path}')
 
     table_read = (spark.read
         .format(file_format)
@@ -263,9 +263,9 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
     if is_pc: table_list.show(5)
 
     table_rows = table_list.collect()
-    print(f'\nNumber of Tables in {tableinfo_source}/{tableinfo_name} is {len(table_rows)}')
+    logger.info(f'\nNumber of Tables in {tableinfo_source}/{tableinfo_name} is {len(table_rows)}')
 
-    print('Check if there is a table with no primary key')
+    logger.info('Check if there is a table with no primary key')
     nopk = tableinfo.groupBy(['SourceDatabase', 'SourceSchema', 'TableName']).agg(F.sum('KeyIndicator').alias('key_count')).where(F.col('key_count')==F.lit(0))
     if is_pc: nopk.show()
     assert nopk.count() == 0, f'Found tables with no primary keys: {nopk.collect()}'

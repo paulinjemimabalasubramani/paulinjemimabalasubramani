@@ -20,7 +20,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import data_path, get_secrets
+from modules.common_functions import data_path, get_secrets, logger
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo, default_storage_account_name, tableinfo_name
 from modules.migrate_files import make_tableinfo, iterate_over_all_tables_migration
@@ -55,7 +55,7 @@ spark = create_spark()
 
 sql_id, sql_pass = None, None
 if not ingest_from_files_flag:
-    _, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower())
+    _, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower(), logger=logger)
 
 
 # %% Make TableInfo

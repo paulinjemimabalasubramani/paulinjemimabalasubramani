@@ -90,7 +90,7 @@ spark = create_spark()
 
 # %% Read Key Vault Data
 
-_, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower())
+_, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower(), logger=logger)
 
 
 

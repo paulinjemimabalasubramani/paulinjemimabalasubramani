@@ -17,8 +17,9 @@ from azure.keyvault.secrets import SecretClient
 
 # %% Parameters
 
+execution_date_start = datetime.now()
 strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
-execution_date = datetime.now().strftime(strftime)
+execution_date = execution_date_start.strftime(strftime)
 
 is_pc = platform.system().lower() == 'windows'
 
@@ -57,13 +58,12 @@ def catch_error(logger=None):
             try:
                 response = fn(*args, **kwargs)
             except Exception as e:
-                exception_message  = f"\n\nException occurred inside '{fn.__name__}'"
-                exception_message += f"\nException Message: {e}\n"
-                print(exception_message)
+                exception_message  = f"Exception occurred inside '{fn.__name__}'"
+                exception_message += f"\nException Message: {e}"
+                pprint(exception_message)
 
                 if logger:
-                    #logger.error(exception_message)
-                    pass
+                    logger.error(exception_message)
                 raise e
             return response
         return inner
@@ -74,34 +74,51 @@ def catch_error(logger=None):
 # %% Get Environment Variable
 
 @catch_error()
-def get_env(variable_name:str):
-    value = os.environ.get(variable_name)
-    if not value:
-        raise ValueError(f'Environment variable does not exist: {variable_name}')
+def get_env(variable_name:str, logger=None):
+    try:
+        value = os.environ.get(variable_name)
+        if not value:
+            raise ValueError(f'Environment variable does not exist: {variable_name}')
+
+    except Exception as e:
+        if logger:
+            logger.error(str(e))
+        else:
+            pprint(e)
+        raise e
+
     return value
 
 
 
-# %% Config Class
+# %% Config Class to load data from Config Files
 class Config:
     """
     Class for retrieving and storing configuration data
     """
     @catch_error()
-    def __init__(self, file_path:str, defaults:dict={}):
-        for name, value in defaults.items():
-            setattr(self, name, value) # Write defaults
-
+    def __init__(self, file_path:str, defaults:dict={}, logger=None):
         try:
-            with open(file_path, 'r') as f:
-                contents = yaml.load(f, Loader=yaml.FullLoader)
-        except Exception as e:
-            except_str = f'Error File was not read: {file_path}'
-            print(except_str)
-            return
+            for name, value in defaults.items():
+                setattr(self, name, value) # Write defaults
 
-        for name, value in contents.items():
-            setattr(self, name, value) # Overwrite defaults from file
+            try:
+                with open(file_path, 'r') as f:
+                    contents = yaml.load(f, Loader=yaml.FullLoader)
+            except Exception as e:
+                except_str = f'Error File was not read: {file_path}'
+                pprint(except_str)
+                return
+
+            for name, value in contents.items():
+                setattr(self, name, value) # Overwrite defaults from file
+
+        except Exception as e:
+            if logger:
+                logger.error(str(e))
+            else:
+                pprint(e)
+            raise e
 
 
 
@@ -109,14 +126,23 @@ class Config:
 # %% Get Azure Key Vault
 
 @catch_error()
-def get_azure_key_vault():
-    azure_tenant_id = get_env("AZURE_TENANT_ID")
-    azure_client_id = get_env("AZURE_KV_ID")
-    azure_client_secret = get_env("AZURE_KV_SECRET")
-    vault_endpoint = "https://ag-kv-west2-secondary.vault.azure.net/"
+def get_azure_key_vault(logger=None):
+    try:
+        azure_tenant_id = get_env('AZURE_TENANT_ID', logger=logger)
+        azure_client_id = get_env('AZURE_KV_ID', logger=logger)
+        azure_client_secret = get_env('AZURE_KV_SECRET', logger=logger)
+        vault_endpoint = 'https://ag-kv-west2-secondary.vault.azure.net/'
 
-    credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
-    client = SecretClient(vault_endpoint, credential, logging_enable=True)
+        credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
+        client = SecretClient(vault_endpoint, credential, logging_enable=True)
+
+    except Exception as e:
+        if logger:
+            logger.error(str(e))
+        else:
+            pprint(e)
+        raise e
+
     return azure_tenant_id, client
 
 
@@ -124,12 +150,21 @@ def get_azure_key_vault():
 # %% Get Secrets
 
 @catch_error()
-def get_secrets(account_name:str):
-    account_name = account_name.lower()
-    azure_tenant_id, client = get_azure_key_vault()
+def get_secrets(account_name:str, logger=None):
+    try:
+        account_name = account_name.lower()
+        azure_tenant_id, client = get_azure_key_vault()
 
-    sp_id = client.get_secret(f"qa-{account_name}-id").value
-    sp_pass = client.get_secret(f"qa-{account_name}-pass").value
+        sp_id = client.get_secret(f"qa-{account_name}-id").value
+        sp_pass = client.get_secret(f"qa-{account_name}-pass").value
+
+    except Exception as e:
+        if logger:
+            logger.error(str(e))
+        else:
+            pprint(e)
+        raise e
+
     return azure_tenant_id, sp_id, sp_pass
 
 
@@ -141,13 +176,22 @@ _, log_customer_id, log_shared_key = get_secrets("loganalytics")
 # %% Build the API signature
 
 @catch_error()
-def build_log_signature(customer_id, shared_key, date, content_length, method, content_type, resource):
-    x_headers = 'x-ms-date:' + date
-    string_to_hash = method + "\n" + str(content_length) + "\n" + content_type + "\n" + x_headers + "\n" + resource
-    bytes_to_hash = bytes(string_to_hash, encoding="utf-8")
-    decoded_key = base64.b64decode(shared_key)
-    encoded_hash = base64.b64encode(hmac.new(decoded_key, bytes_to_hash, digestmod=hashlib.sha256).digest()).decode()
-    authorization = "SharedKey {}:{}".format(customer_id, encoded_hash)
+def build_log_signature(customer_id, shared_key, date, content_length, method, content_type, resource, logger=None):
+    try:
+        x_headers = 'x-ms-date:' + date
+        string_to_hash = method + "\n" + str(content_length) + "\n" + content_type + "\n" + x_headers + "\n" + resource
+        bytes_to_hash = bytes(string_to_hash, encoding="utf-8")
+        decoded_key = base64.b64decode(shared_key)
+        encoded_hash = base64.b64encode(hmac.new(decoded_key, bytes_to_hash, digestmod=hashlib.sha256).digest()).decode()
+        authorization = "SharedKey {}:{}".format(customer_id, encoded_hash)
+
+    except Exception as e:
+        if logger:
+            logger.error(str(e))
+        else:
+            pprint(e)
+        raise e
+
     return authorization
 
 
@@ -155,78 +199,126 @@ def build_log_signature(customer_id, shared_key, date, content_length, method, c
 # %% Build and send a request to the POST API
 
 @catch_error()
-def post_log_data(log_data:dict, log_type:str):
-    log_data = {
-        'TimeGenerated': datetime.now(),
-        **log_data}
+def post_log_data(log_data:dict, log_type:str, logger=None):
+    try:
+        log_data = {
+            'TimeGenerated': datetime.now(),
+            **log_data}
 
-    method = 'POST'
-    body = json.dumps(log_data, sort_keys=True, default=str)
-    content_type = 'application/json'
-    resource = '/api/logs'
-    rfc1123date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
-    content_length = len(body)
-    signature = build_log_signature(customer_id=log_customer_id, shared_key=log_shared_key, date=rfc1123date, content_length=content_length, method=method, content_type=content_type, resource=resource)
-    uri = 'https://' + log_customer_id + '.ods.opinsights.azure.com' + resource + '?api-version=2016-04-01'
+        method = 'POST'
+        body = json.dumps(log_data, sort_keys=True, default=str)
+        content_type = 'application/json'
+        resource = '/api/logs'
+        rfc1123date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+        content_length = len(body)
+        signature = build_log_signature(customer_id=log_customer_id, shared_key=log_shared_key, date=rfc1123date, content_length=content_length, method=method, content_type=content_type, resource=resource)
+        uri = 'https://' + log_customer_id + '.ods.opinsights.azure.com' + resource + '?api-version=2016-04-01'
 
-    headers = {
-        'content-type': content_type,
-        'Authorization': signature,
-        'Log-Type': log_type,
-        'x-ms-date': rfc1123date,
-    }
+        headers = {
+            'content-type': content_type,
+            'Authorization': signature,
+            'Log-Type': log_type,
+            'x-ms-date': rfc1123date,
+        }
 
-    response = requests.post(uri, data=body, headers=headers)
-    if (response.status_code >= 200 and response.status_code <= 299):
-        print('\nLog Accepted\n')
-    else:
-        print(f"\nLog Response code: {response.status_code}\n")
+        response = requests.post(uri, data=body, headers=headers)
+        if (response.status_code >= 200 and response.status_code <= 299):
+            #pprint('Log Accepted')
+            return True
+        else:
+            pprint(f"Log Response code: {response.status_code}")
+            return False
+
+    except Exception as e:
+        if logger:
+            logger.error(str(e))
+        else:
+            pprint(e)
+        raise e
+
 
 
 
 # %% Create file with associated directory tree
 
 @catch_error()
-def write_file(file_path:str, contents, mode = 'w'):
+def write_file(file_path:str, contents, mode = 'w', logger=None):
     """
     Create file with associated directory tree
     if directory does not exist, then create the directory as well.
     """
-    dirname = os.path.dirname(file_path)
-    if dirname:
-        os.makedirs(dirname, exist_ok=True)
+    try:
+        dirname = os.path.dirname(file_path)
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
 
-    with open(file_path, mode) as f:
-        f.write(contents)
+        with open(file_path, mode) as f:
+            f.write(contents)
+
+    except Exception as e:
+        if logger:
+            logger.error(str(e))
+        else:
+            pprint(e)
+        raise e
 
 
 
 # %% Create Logger with custom configuration
 
-@catch_error()
-def make_logging(module_name:str):
-    logger = logging.getLogger(module_name)
+class CreateLogger:
 
-    log_file = f'./logs/data_eng.log'
+    @catch_error()
+    def __init__(self):
+        self.log_type = 'AirflowPrintedLogs'
+        self.logger = logging.getLogger(__name__)
 
-    write_file(file_path=log_file, contents='', mode='a')
+        self.log_file = f'./logs/data_eng.log'
+        write_file(file_path=self.log_file, contents='', mode='a')
 
-    logging.basicConfig(
-        filename = log_file, 
-        filemode = 'a',
-        format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-        datefmt = '%d-%b-%y %H:%M:%S',
-        level = logging.INFO,
-        )
-
-    return logger
-
+        logging.basicConfig(
+            filename = self.log_file, 
+            filemode = 'a',
+            format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
+            datefmt = '%d-%b-%y %H:%M:%S',
+            level = logging.INFO,
+            )
 
 
-logger = make_logging(__name__)
+    @catch_error()
+    def log(self, msg, msg_type):
+        log_data = {
+            'msg': msg,
+            'msg_type': msg_type,
+        }
+        pprint(log_data)
+        return post_log_data(log_data=log_data, log_type=self.log_type)
 
-#logger.error(except_str, exc_info=True)
-#logger.info(system_info())
+
+    @catch_error()
+    def info(self, msg):
+        if not self.log(msg=msg, msg_type='INFO'):
+            self.logger.info(msg)
+
+
+    @catch_error()
+    def warning(self, msg):
+        if not self.log(msg=msg, msg_type='WARNING'):
+            self.logger.warning(msg)
+
+
+    @catch_error()
+    def error(self, msg):
+        if not self.log(msg=msg, msg_type='ERROR'):
+            self.logger.error(msg, exc_info=True)
+
+
+
+logger = CreateLogger()
+
+
+logger.info({'execution_date': execution_date})
+
 
 
 
@@ -273,8 +365,7 @@ def system_info():
 
 
 
-pprint(system_info())
-#logger.info(system_info())
+logger.info(system_info())
 
 
 

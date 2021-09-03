@@ -7,6 +7,7 @@ Common Library for creating and executing (if required) Snowflake DDL Steps and 
 import json, os
 from functools import wraps
 from collections import defaultdict, OrderedDict
+from pprint import pprint
 
 from .common_functions import logger, catch_error, is_pc, data_path, execution_date, get_secrets
 from .spark_functions import elt_audit_columns
@@ -162,12 +163,12 @@ def action_step(step:int):
     def outer(step_fn):
         @wraps(step_fn)
         def inner(*args, **kwargs):
-            print(f"\n{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}/{kwargs['table_name']}")
+            logger.info(f"{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}/{kwargs['table_name']}")
             sqlstr = step_fn(*args, **kwargs)
 
             if is_pc and False:
-                print(sqlstr)
-            
+                pprint(sqlstr)
+
             if wid.save_to_adls:
                 storage_account_name = to_storage_account_name(firm_name=kwargs['schema_name'], source_system=kwargs['source_system'])
                 setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
@@ -182,7 +183,7 @@ def action_step(step:int):
                 )
 
             if wid.execute_at_snowflake:
-                print(f"Executing Snowflake SQL String: {kwargs['source_system']}/step_{step}/{kwargs['schema_name']}/{kwargs['table_name']}")
+                logger.info(f"Executing Snowflake SQL String: {kwargs['source_system']}/step_{step}/{kwargs['schema_name']}/{kwargs['table_name']}")
                 exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
 
         return inner
@@ -197,7 +198,7 @@ def action_source_level_tables(table_name:str):
     def outer(fn):
         @wraps(fn)
         def inner(*args, **kwargs):
-            print(f"\nSource Level Table {kwargs['container_folder']}/{table_name}")
+            logger.info(f"Source Level Table {kwargs['container_folder']}/{table_name}")
             sqlstr = fn(*args, **kwargs)
             if wid.save_to_adls or True:
                 save_adls_gen2(
@@ -210,7 +211,7 @@ def action_source_level_tables(table_name:str):
                 )
 
             if wid.execute_at_snowflake:
-                print(f"Executing Snowflake SQL String: {kwargs['container_folder']}/{table_name}")
+                logger.info(f"Executing Snowflake SQL String: {kwargs['container_folder']}/{table_name}")
                 exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
             
             if wid.create_cicd_file:
@@ -240,7 +241,7 @@ def write_CICD_file_per_table(source_system:str, schema_name:str, table_name:str
 
     file_path = os.path.join(file_folder_path, f'{TABLE_NAME}.sql')
 
-    print(f'\nWriting: {file_path}\n')
+    logger.info(f'Writing: {file_path}')
     with open(file_path, 'w') as f:
         f.write(wid.cicd_file)
 
@@ -262,7 +263,7 @@ def write_CICD_file_per_step():
 
         file_path = os.path.join(file_folder_path, f'{file_name}.sql')
 
-        print(f'\nWriting: {file_path}\n')
+        logger.info(f'Writing: {file_path}')
         with open(file_path, 'w') as f:
             f.write(cicd_str)
 
@@ -396,7 +397,7 @@ USE WAREHOUSE {wid.snowflake_raw_warehouse};
 ALTER PIPE {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_stage_name}_{wid.domain_abbr}_{source_system}_INGEST_REQUEST_PIPE REFRESH;
 """
 
-    print(f'\nTriggering Snowpipe\n{sqlstr}\n')
+    logger.info(f'Triggering Snowpipe{sqlstr}')
     exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
 
     log_data = {
@@ -413,7 +414,7 @@ ALTER PIPE {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_s
 
 @catch_error(logger)
 def create_source_level_tables(ingest_data_list:defaultdict):
-    print(f'\nCreate Source Level Tables')
+    logger.info(f'Create Source Level Tables')
     for source_system, ingest_data_per_source_system in ingest_data_list.items():
         storage_account_name = default_storage_account_name
         setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
@@ -870,7 +871,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
         source_system = table['SourceDatabase']
         storage_account_name = table['StorageAccount']
         storage_account_abbr = table['StorageAccountAbbr']
-        print(f'\nProcessing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
+        logger.info(f'Processing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
         column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo=tableinfo, source_system=source_system, schema_name=schema_name, table_name=table_name)
 
@@ -890,7 +891,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
             ingest_data_list[source_system].append(ingest_data)
 
     write_CICD_file_per_step()
-    print('Finished Iterating over all tables')
+    logger.info('Finished Iterating over all tables')
     return ingest_data_list
 
 

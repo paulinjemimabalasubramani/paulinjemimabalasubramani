@@ -14,7 +14,6 @@ https://spark.apache.org/docs/latest/configuration
 
 # %% libraries
 import os, re
-from pprint import pprint
 
 from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date
 
@@ -106,11 +105,10 @@ def create_spark():
     spark = spark.getOrCreate()
     spark.getActiveSession()
 
-    spark_version = {
+    logger.info({
         'Spark_Version': spark.version,
         'Hadoop_Version': spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion(),
-    }
-    pprint(spark_version)
+    })
     return spark
 
 
@@ -137,7 +135,7 @@ def to_string(table_to_convert_columns, col_types=['timestamp']):
     string_type = 'string'
     for col_name, col_type in table_to_convert_columns.dtypes:
         if (not col_types or col_type in col_types) and (col_type != string_type):
-            print(f"Converting {col_name} from '{col_type}' to 'string' type")
+            logger.info(f"Converting {col_name} from '{col_type}' to 'string' type")
             table_to_convert_columns = table_to_convert_columns.withColumn(col_name, col(col_name).cast(string_type))
     
     return table_to_convert_columns
@@ -152,7 +150,7 @@ def read_sql(spark, schema:str, table_name:str, database:str, server:str, user:s
     Read a table from SQL server
     """
     sql_table_name = f'{schema}.{table_name}'
-    print(f"Reading SQL: server='{server}', database='{database}', table='{sql_table_name}'")
+    logger.info(f"Reading SQL: server='{server}', database='{database}', table='{sql_table_name}'")
 
     url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
 
@@ -181,7 +179,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
     Write table to SQL server
     """
     sql_table_name = f'{schema}.{table_name}'
-    print(f"\nWriting to SQL Server: server='{server}', database='{database}', table='{sql_table_name}'")
+    logger.info(f"\nWriting to SQL Server: server='{server}', database='{database}', table='{sql_table_name}'")
 
     url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
 
@@ -196,7 +194,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
         .option("hostNameInCertificate", "*.database.windows.net") \
         .save()
 
-    print('Finished Writing to SQL Server\n')
+    logger.info('Finished Writing to SQL Server\n')
 
 
 
@@ -204,7 +202,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
 
 @catch_error(logger)
 def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:str, role:str, account:str, user:str, password:str):
-    print(f"\nReading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
+    logger.info(f"\nReading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
     sf_options = {
         'sfUrl': f'{account}.snowflakecomputing.com',
         'sfUser': user,
@@ -221,7 +219,7 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
         .option('dbtable', table_name) \
         .load()
 
-    print('Finished Reading from Snowflake\n')
+    logger.info('Finished Reading from Snowflake\n')
     return table
 
 
@@ -233,7 +231,7 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     """
     Read XML Files using Spark
     """
-    print(f'\nReading XML file: {file_path}')
+    logger.info(f'\nReading XML file: {file_path}')
     xml_table = (spark.read
         .format("com.databricks.spark.xml")
         .option("rowTag", rowTag)
@@ -247,7 +245,7 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
         xml_table = xml_table.schema(schema=schema)
 
     xml_table_load = xml_table.load(file_path)
-    print('Finished reading XML file\n')
+    logger.info('Finished reading XML file\n')
     return xml_table_load
 
 
@@ -270,7 +268,7 @@ def read_csv(spark, file_path:str):
     """
     Read CSV File using Spark
     """
-    print(f'\nReading CSV file: {file_path}')
+    logger.info(f'\nReading CSV file: {file_path}')
     csv_table = (spark.read
         .format('csv')
         .option('header', 'true')
@@ -280,7 +278,7 @@ def read_csv(spark, file_path:str):
     csv_table = remove_column_spaces(table_to_remove=csv_table)
     csv_table = trim_string_columns(table=csv_table)
 
-    print('Finished reading CSV file\n')
+    logger.info('Finished reading CSV file\n')
     return csv_table
 
 

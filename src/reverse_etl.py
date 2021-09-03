@@ -17,12 +17,12 @@ https://docs.databricks.com/_static/notebooks/snowflake-python.html
 
 import os, sys
 
+from pprint import pprint
+
+
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
-
-
-from pprint import pprint
 
 
 from modules.common_functions import logger, catch_error, get_secrets
@@ -58,8 +58,8 @@ snowflake_ddl_params.spark = spark
 
 # %% Read Key Vault Data
 
-_, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower())
-_, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower())
+_, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower(), logger=logger)
+_, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(), logger=logger)
 
 
 
