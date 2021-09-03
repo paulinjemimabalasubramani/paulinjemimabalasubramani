@@ -25,9 +25,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from pprint import pprint
 
 
-from modules.common_functions import make_logging, catch_error
+from modules.common_functions import make_logging, catch_error, get_secrets
 from modules.spark_functions import create_spark, write_sql, read_snowflake
-from modules.azure_functions import get_azure_sp
 from modules.snowflake_ddl import snowflake_ddl_params
 
 
@@ -63,8 +62,8 @@ snowflake_ddl_params.spark = spark
 
 # %% Read Key Vault Data
 
-_, sql_id, sql_pass = get_azure_sp(sql_key_vault_account.lower())
-_, sf_id, sf_pass = get_azure_sp(snowflake_ddl_params.sf_key_vault_account.lower())
+_, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower())
+_, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower())
 
 
 

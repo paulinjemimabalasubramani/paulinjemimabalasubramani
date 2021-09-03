@@ -8,17 +8,15 @@ import json, os
 from functools import wraps
 from collections import defaultdict, OrderedDict
 
-from requests.api import post
-
-from .common_functions import make_logging, catch_error, is_pc, data_path, execution_date
+from .common_functions import make_logging, catch_error, is_pc, data_path, execution_date, get_secrets
 from .spark_functions import elt_audit_columns
-from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, get_azure_sp, \
-    container_name, to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data
+from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
+    to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data
 
 from snowflake.connector import connect as snowflake_connect
-from datetime import datetime
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import col, lit
+
 
 
 # %% Logging
@@ -101,7 +99,7 @@ def connect_to_snowflake(
         snowflake_role:str=None,
         ):
 
-    _, snowflake_user, snowflake_pass = get_azure_sp(key_vault_account)
+    _, snowflake_user, snowflake_pass = get_secrets(key_vault_account)
 
     snowflake_connection = snowflake_connect(
         user = snowflake_user,

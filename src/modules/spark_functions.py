@@ -14,8 +14,7 @@ https://spark.apache.org/docs/latest/configuration
 
 # %% libraries
 import os, re
-from pprint import pp, pprint
-
+from pprint import pprint
 
 from .common_functions import make_logging, catch_error, is_pc, extraClassPath, execution_date
 

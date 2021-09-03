@@ -6,15 +6,12 @@ Library for Azure Functions
 # %% Import Libraries
 
 from collections import defaultdict
-import os, json, re, sys, json, requests, hashlib, hmac, base64
+import json, re, sys
 
-from .common_functions import make_logging, catch_error, is_pc, execution_date
+from .common_functions import make_logging, catch_error, is_pc, execution_date, get_secrets, post_log_data
 from .spark_functions import IDKeyIndicator, MD5KeyIndicator, partitionBy, metadata_FirmSourceMap, \
     elt_audit_columns, column_regex, partitionBy_value
 
-from azure.identity import ClientSecretCredential
-from azure.keyvault.secrets import SecretClient
-from datetime import datetime
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
 
@@ -101,53 +98,12 @@ def select_tableinfo_columns(tableinfo):
 
 
 
-# %% Get Environment Variable
-
-@catch_error(logger)
-def get_env(variable_name:str):
-    value = os.environ.get(variable_name)
-    if not value:
-        raise ValueError(f'Environment variable does not exist: {variable_name}')
-    return value
-
-
-
-# %% Get Azure Key Vault
-
-@catch_error(logger)
-def get_azure_key_vault():
-    azure_tenant_id = get_env("AZURE_TENANT_ID")
-    azure_client_id = get_env("AZURE_KV_ID")
-    azure_client_secret = get_env("AZURE_KV_SECRET")
-    vault_endpoint = "https://ag-kv-west2-secondary.vault.azure.net/"
-
-    credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
-    client = SecretClient(vault_endpoint, credential, logging_enable=True)
-    return azure_tenant_id, client
-
-
-
-# %% Get Azure Service Principals
-
-@catch_error(logger)
-def get_azure_sp(storage_account_name:str):
-    azure_tenant_id, client = get_azure_key_vault()
-
-    sp_id = client.get_secret(f"qa-{storage_account_name}-id").value
-    sp_pass = client.get_secret(f"qa-{storage_account_name}-pass").value
-    return azure_tenant_id, sp_id, sp_pass
-
-
-
-_, log_customer_id, log_shared_key = get_azure_sp("loganalytics")
-
-
 
 # %% Set up Spark to ADLS Connection
 
 @catch_error(logger)
 def setup_spark_adls_gen2_connection(spark, storage_account_name):
-    azure_tenant_id, sp_id, sp_pass = get_azure_sp(storage_account_name)
+    azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
 
     #spark.conf.set(f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net", storage_account_access_key)
 
@@ -388,53 +344,6 @@ def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_na
         tableinfo['CreatedDateTime'].append(execution_date)
         tableinfo['ModifiedDateTime'].append(execution_date)
         tableinfo[partitionBy].append(partitionBy_value)
-
-
-
-
-# %% Build the API signature
-
-@catch_error(logger)
-def build_log_signature(customer_id, shared_key, date, content_length, method, content_type, resource):
-    x_headers = 'x-ms-date:' + date
-    string_to_hash = method + "\n" + str(content_length) + "\n" + content_type + "\n" + x_headers + "\n" + resource
-    bytes_to_hash = bytes(string_to_hash, encoding="utf-8")
-    decoded_key = base64.b64decode(shared_key)
-    encoded_hash = base64.b64encode(hmac.new(decoded_key, bytes_to_hash, digestmod=hashlib.sha256).digest()).decode()
-    authorization = "SharedKey {}:{}".format(customer_id, encoded_hash)
-    return authorization
-
-
-
-# %% Build and send a request to the POST API
-
-@catch_error(logger)
-def post_log_data(log_data:dict, log_type:str):
-    log_data = {
-        'TimeGenerated': datetime.now(),
-        **log_data}
-
-    method = 'POST'
-    body = json.dumps(log_data, sort_keys=True, default=str)
-    content_type = 'application/json'
-    resource = '/api/logs'
-    rfc1123date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
-    content_length = len(body)
-    signature = build_log_signature(customer_id=log_customer_id, shared_key=log_shared_key, date=rfc1123date, content_length=content_length, method=method, content_type=content_type, resource=resource)
-    uri = 'https://' + log_customer_id + '.ods.opinsights.azure.com' + resource + '?api-version=2016-04-01'
-
-    headers = {
-        'content-type': content_type,
-        'Authorization': signature,
-        'Log-Type': log_type,
-        'x-ms-date': rfc1123date,
-    }
-
-    response = requests.post(uri, data=body, headers=headers)
-    if (response.status_code >= 200 and response.status_code <= 299):
-        print('\nLog Accepted\n')
-    else:
-        print(f"\nLog Response code: {response.status_code}\n")
 
 
 
