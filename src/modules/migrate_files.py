@@ -10,8 +10,7 @@ from pprint import pprint
 from collections import defaultdict
 from typing import cast
 
-from .common_functions import make_logging, catch_error
-from .config import is_pc
+from .common_functions import make_logging, catch_error, is_pc
 from .data_functions import column_regex, partitionBy, partitionBy_value, execution_date, metadata_DataTypeTranslation, \
     metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \

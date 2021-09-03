@@ -16,8 +16,7 @@ https://spark.apache.org/docs/latest/configuration
 import os, platform
 
 
-from .common_functions import make_logging, catch_error, system_info
-from .config import is_pc, extraClassPath
+from .common_functions import make_logging, catch_error, system_info, is_pc, extraClassPath
 from .data_functions import remove_column_spaces
 
 from pyspark.sql import SparkSession

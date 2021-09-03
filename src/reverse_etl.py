@@ -29,7 +29,6 @@ from modules.common_functions import make_logging, catch_error
 from modules.spark_functions import create_spark, write_sql, read_snowflake
 from modules.azure_functions import get_azure_sp
 from modules.snowflake_ddl import snowflake_ddl_params
-from modules.config import is_pc
 
 
 from pyspark.sql.functions import col, lit

@@ -6,10 +6,9 @@ Library for Azure Functions
 # %% Import Libraries
 
 from collections import defaultdict
-import os, json, re
+import os, json, re, sys, json, requests, hashlib, hmac, base64
 
-from .common_functions import make_logging, catch_error
-from .config import is_pc
+from .common_functions import make_logging, catch_error, is_pc
 from .data_functions import partitionBy, metadata_FirmSourceMap, elt_audit_columns, column_regex, execution_date, partitionBy_value
 from .spark_functions import IDKeyIndicator, MD5KeyIndicator
 
@@ -18,12 +17,8 @@ from azure.keyvault.secrets import SecretClient
 from datetime import datetime
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
-import sys
-import json
-import requests
-import hashlib
-import hmac
-import base64
+
+
 
 # %% Logging
 logger = make_logging(__name__)
@@ -187,6 +182,7 @@ def save_adls_gen2(
     """
     Save table_to_save to ADLS Gen 2
     """
+    file_format = file_format.lower()
     data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
     print(f"Write {file_format} -> {data_path}")
 

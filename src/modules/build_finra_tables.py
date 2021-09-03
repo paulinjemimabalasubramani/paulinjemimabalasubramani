@@ -6,8 +6,7 @@ Library for Building Branch Tables
 
 # %% Import Libraries
 
-from .common_functions import make_logging, catch_error
-from .config import is_pc
+from .common_functions import make_logging, catch_error, is_pc
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
 from pyspark.sql.functions import col, lit, explode, concat_ws, arrays_zip, filter, struct

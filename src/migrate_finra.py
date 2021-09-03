@@ -29,10 +29,9 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import make_logging, catch_error
+from modules.common_functions import make_logging, catch_error, is_pc, data_path, config_path
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names
-from modules.config import is_pc, data_path, config_path
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
     to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, get_azure_sp, add_table_to_tableinfo
 from modules.data_functions import  remove_column_spaces, add_elt_columns, execution_date, partitionBy, strftime
