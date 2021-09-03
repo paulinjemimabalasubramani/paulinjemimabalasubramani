@@ -18,14 +18,10 @@ import os, sys
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
-from modules.common_functions import make_logging
 from modules.spark_functions import create_spark
 from modules.azure_functions import read_tableinfo, tableinfo_name
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables, create_source_level_tables, snowflake_ddl_params
 
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 # %% Parameters

@@ -29,7 +29,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import make_logging, catch_error, is_pc, data_path, config_path, execution_date, strftime, get_secrets
+from modules.common_functions import logger, catch_error, is_pc, data_path, config_path, execution_date, strftime, get_secrets
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
@@ -42,9 +42,6 @@ from pyspark.sql.functions import col, lit, to_date, to_json, to_timestamp, when
 from pyspark.sql.window import Window
 from pyspark.sql.types import StringType, BooleanType
 
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 # %% Parameters

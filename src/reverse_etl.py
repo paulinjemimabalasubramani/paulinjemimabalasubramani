@@ -25,17 +25,13 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from pprint import pprint
 
 
-from modules.common_functions import make_logging, catch_error, get_secrets
+from modules.common_functions import logger, catch_error, get_secrets
 from modules.spark_functions import create_spark, write_sql, read_snowflake
 from modules.snowflake_ddl import snowflake_ddl_params
 
 
 from pyspark.sql.functions import col, lit
 
-
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 # %% Parameters

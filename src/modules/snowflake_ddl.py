@@ -8,7 +8,7 @@ import json, os
 from functools import wraps
 from collections import defaultdict, OrderedDict
 
-from .common_functions import make_logging, catch_error, is_pc, data_path, execution_date, get_secrets
+from .common_functions import logger, catch_error, is_pc, data_path, execution_date, get_secrets
 from .spark_functions import elt_audit_columns
 from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
     to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data
@@ -17,10 +17,6 @@ from snowflake.connector import connect as snowflake_connect
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import col, lit
 
-
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 # %% Parameters

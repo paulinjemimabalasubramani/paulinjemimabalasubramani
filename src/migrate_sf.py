@@ -20,15 +20,11 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import make_logging, data_path, get_secrets
+from modules.common_functions import data_path, get_secrets
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo, default_storage_account_name, tableinfo_name
 from modules.migrate_files import make_tableinfo, iterate_over_all_tables_migration
 
-
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 # %% Parameters

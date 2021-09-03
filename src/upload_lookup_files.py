@@ -18,7 +18,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import make_logging, catch_error, is_pc, config_path, execution_date
+from modules.common_functions import logger, catch_error, is_pc, config_path, execution_date
 from modules.spark_functions import create_spark, read_csv, remove_column_spaces, metadata_DataTypeTranslation, metadata_MasterIngestList, \
     metadata_FirmSourceMap, partitionBy, partitionBy_value
 from modules.azure_functions import setup_spark_adls_gen2_connection, to_storage_account_name, file_format, save_adls_gen2, \
@@ -28,11 +28,6 @@ from modules.azure_functions import setup_spark_adls_gen2_connection, to_storage
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
 from pyspark.sql.types import StringType, IntegerType
-
-
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 

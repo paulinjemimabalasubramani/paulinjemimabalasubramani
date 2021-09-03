@@ -8,17 +8,13 @@ Library for Azure Functions
 from collections import defaultdict
 import json, re, sys
 
-from .common_functions import make_logging, catch_error, is_pc, execution_date, get_secrets, post_log_data
+from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, post_log_data
 from .spark_functions import IDKeyIndicator, MD5KeyIndicator, partitionBy, metadata_FirmSourceMap, \
     elt_audit_columns, column_regex, partitionBy_value
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
 
-
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 # %% Parameters

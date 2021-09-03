@@ -10,7 +10,7 @@ from pprint import pprint
 from collections import defaultdict
 from typing import cast
 
-from .common_functions import make_logging, catch_error, is_pc, execution_date
+from .common_functions import logger, catch_error, is_pc, execution_date
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
     default_storage_account_abbr
@@ -22,9 +22,6 @@ from pyspark.sql.functions import col, lit, row_number
 from pyspark.sql.types import IntegerType, StringType
 from pyspark.sql.window import Window
 
-
-# %% Logging
-logger = make_logging(__name__)
 
 
 # %% Parameters
