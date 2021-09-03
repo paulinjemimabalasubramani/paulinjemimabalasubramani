@@ -16,6 +16,7 @@ https://docs.databricks.com/_static/notebooks/snowflake-python.html
 # %% Import Libraries
 
 import os, sys
+sys.parent_name = os.path.basename(__file__)
 
 from pprint import pprint
 

@@ -13,6 +13,7 @@ http://10.128.25.82:8282/
 # %% Import Libraries
 
 import os, sys
+sys.parent_name = os.path.basename(__file__)
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))

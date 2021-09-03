@@ -203,6 +203,7 @@ def post_log_data(log_data:dict, log_type:str, logger=None):
     try:
         log_data = {
             'TimeGenerated': datetime.now(),
+            'MainScript': sys.parent_name if hasattr(sys, 'parent_name') else '',
             **log_data}
 
         method = 'POST'
@@ -264,6 +265,30 @@ def write_file(file_path:str, contents, mode = 'w', logger=None):
 
 
 
+# %% Get System Info in String
+
+@catch_error()
+def system_info():
+    uname = platform.uname()
+
+    sysinfo = {
+        'Python_Version': platform.python_version(),
+        'Operating_System': uname.system,
+        'Network_Name': uname.node,
+        'OS_Release': uname.release,
+        'OS_Version': uname.version,
+        'Machine_Type': uname.machine,
+        'Processor': uname.processor,
+        'RAM': str(round(psutil.virtual_memory().total / (1024.0 **3))) + " GB",
+        'Drivers_Path': drivers_path,
+        'Config_Path': config_path,
+        'Data_Path': data_path,
+    }
+
+    return sysinfo
+
+
+
 # %% Create Logger with custom configuration
 
 class CreateLogger:
@@ -286,10 +311,11 @@ class CreateLogger:
 
 
     @catch_error()
-    def log(self, msg, msg_type):
+    def log(self, msg, msg_type, extra_log:dict={}):
         log_data = {
             'msg': msg,
             'msg_type': msg_type,
+            **extra_log,
         }
         pprint(log_data)
         return post_log_data(log_data=log_data, log_type=self.log_type)
@@ -303,13 +329,13 @@ class CreateLogger:
 
     @catch_error()
     def warning(self, msg):
-        if not self.log(msg=msg, msg_type='WARNING'):
+        if not self.log(msg=msg, msg_type='WARNING', extra_log=system_info()):
             self.logger.warning(msg)
 
 
     @catch_error()
     def error(self, msg):
-        if not self.log(msg=msg, msg_type='ERROR'):
+        if not self.log(msg=msg, msg_type='ERROR', extra_log=system_info()):
             self.logger.error(msg, exc_info=True)
 
 
@@ -318,7 +344,7 @@ logger = CreateLogger()
 
 
 logger.info({'execution_date': execution_date})
-
+logger.info(system_info())
 
 
 
@@ -338,34 +364,6 @@ def get_extraClassPath(drivers_path:str, join_drivers_by:str):
 
 
 extraClassPath = get_extraClassPath(drivers_path=drivers_path, join_drivers_by=join_drivers_by)
-
-
-
-# %% Get System Info in String
-
-@catch_error(logger)
-def system_info():
-    uname = platform.uname()
-
-    sysinfo = {
-        'Python_Version': platform.python_version(),
-        'Operating_System': uname.system,
-        'Network_Name': uname.node,
-        'OS_Release': uname.release,
-        'OS_Version': uname.version,
-        'Machine_Type': uname.machine,
-        'Processor': uname.processor,
-        'RAM': str(round(psutil.virtual_memory().total / (1024.0 **3))) + " GB",
-        'Drivers_Path': drivers_path,
-        'Config_Path': config_path,
-        'Data_Path': data_path,
-    }
-
-    return sysinfo
-
-
-
-logger.info(system_info())
 
 
 

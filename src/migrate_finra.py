@@ -19,6 +19,8 @@ http://10.128.25.82:8282/
 # %% Import Libraries
 
 import os, sys, tempfile, shutil, json, copy
+sys.parent_name = os.path.basename(__file__)
+
 from collections import defaultdict
 from datetime import datetime
 from pprint import pprint
