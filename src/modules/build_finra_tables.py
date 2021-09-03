@@ -61,7 +61,7 @@ def flatten_df(xml_table):
 
     xml_table_select = xml_table.select(cols)
     if nested:
-        if is_pc: pprint('\n' ,xml_table_select.columns)
+        if is_pc: pprint(f'\n{xml_table_select.columns}')
         xml_table_select = flatten_df(xml_table_select)
 
     return xml_table_select

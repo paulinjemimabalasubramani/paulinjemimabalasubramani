@@ -179,7 +179,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
     Write table to SQL server
     """
     sql_table_name = f'{schema}.{table_name}'
-    logger.info(f"\nWriting to SQL Server: server='{server}', database='{database}', table='{sql_table_name}'")
+    logger.info(f"Writing to SQL Server: server='{server}', database='{database}', table='{sql_table_name}'")
 
     url = f'jdbc:sqlserver://{server};databaseName={database};trustServerCertificate=true;'
 
@@ -194,7 +194,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
         .option("hostNameInCertificate", "*.database.windows.net") \
         .save()
 
-    logger.info('Finished Writing to SQL Server\n')
+    logger.info('Finished Writing to SQL Server')
 
 
 
@@ -202,7 +202,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
 
 @catch_error(logger)
 def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:str, role:str, account:str, user:str, password:str):
-    logger.info(f"\nReading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
+    logger.info(f"Reading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
     sf_options = {
         'sfUrl': f'{account}.snowflakecomputing.com',
         'sfUser': user,
@@ -219,7 +219,7 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
         .option('dbtable', table_name) \
         .load()
 
-    logger.info('Finished Reading from Snowflake\n')
+    logger.info('Finished Reading from Snowflake')
     return table
 
 
@@ -231,7 +231,7 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     """
     Read XML Files using Spark
     """
-    logger.info(f'\nReading XML file: {file_path}')
+    logger.info(f'Reading XML file: {file_path}')
     xml_table = (spark.read
         .format("com.databricks.spark.xml")
         .option("rowTag", rowTag)
@@ -245,7 +245,7 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
         xml_table = xml_table.schema(schema=schema)
 
     xml_table_load = xml_table.load(file_path)
-    logger.info('Finished reading XML file\n')
+    logger.info('Finished reading XML file')
     return xml_table_load
 
 
@@ -268,7 +268,7 @@ def read_csv(spark, file_path:str):
     """
     Read CSV File using Spark
     """
-    logger.info(f'\nReading CSV file: {file_path}')
+    logger.info(f'Reading CSV file: {file_path}')
     csv_table = (spark.read
         .format('csv')
         .option('header', 'true')
@@ -278,7 +278,7 @@ def read_csv(spark, file_path:str):
     csv_table = remove_column_spaces(table_to_remove=csv_table)
     csv_table = trim_string_columns(table=csv_table)
 
-    logger.info('Finished reading CSV file\n')
+    logger.info('Finished reading CSV file')
     return csv_table
 
 

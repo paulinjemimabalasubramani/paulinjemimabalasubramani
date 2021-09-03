@@ -67,7 +67,7 @@ _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(
 
 @catch_error(logger)
 def get_sf_table_list(schema_name:str):
-    print('\nGet List of Tables and Columns from Information Schema...')
+    logger.info('Get List of Tables and Columns from Information Schema...')
     tables = read_snowflake(
         spark = spark,
         table_name = 'TABLES',
@@ -98,8 +98,8 @@ def get_sf_table_list(schema_name:str):
 
     table_names = columns.select('TABLE_NAME').distinct().rdd.flatMap(lambda x: x).collect()
 
-    print(f'Total of {len(table_names)} tables')
-    pprint(table_names)
+    logger.info(f'Total of {len(table_names)} tables')
+    logger.info(table_names)
     return table_names, columns
 
 
@@ -136,7 +136,7 @@ def reverse_etl_all_tables():
             mode = 'overwrite',
         )
     
-    print('Finished Reverse ETL for all tables')
+    logger.info('Finished Reverse ETL for all tables')
 
 
 
