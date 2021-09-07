@@ -23,9 +23,14 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import is_pc, logger, mark_execution_end
-from modules.spark_functions import create_spark
-from modules.azure_functions import setup_spark_adls_gen2_connection, default_storage_account_name, get_firms_with_crd
+from modules.common_functions import is_pc, logger, mark_execution_end, get_secrets
+from modules.spark_functions import create_spark, read_csv
+from modules.azure_functions import setup_spark_adls_gen2_connection, default_storage_account_abbr, get_firms_with_crd, \
+    to_storage_account_name, azure_data_path_create, container_name
+
+
+from azure.identity import ClientSecretCredential
+from azure.storage.filedatalake import DataLakeServiceClient
 
 
 
@@ -50,10 +55,73 @@ if is_pc: pprint(firms)
 
 
 
-# %% 
+# %%
+
+storage_account_abbrs = {x['storage_account_abbr'] for x in firms}
+storage_account_abbrs.add(default_storage_account_abbr)
+storage_account_abbrs = sorted(list(storage_account_abbrs))
+
+
+pprint(storage_account_abbrs)
+
+
+for storage_account_abbr in storage_account_abbrs:
+    pass
+
+storage_account_abbr = storage_account_abbrs[1]
+storage_account_name = to_storage_account_name(firm_name=storage_account_abbr)
+pprint(f'Vacuuming {storage_account_name}')
+
+# %%
+
+setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+
+# %%
+
+account_url = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder='', table_name='')
+
+pprint(account_url)
+
+# %%
+
+
+azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
+
+
+# %%
 
 
 
+
+
+# %%
+
+credential = ClientSecretCredential(
+    tenant_id = azure_tenant_id,
+    client_id = sp_id,
+    client_secret = sp_pass,
+)
+
+service_client = DataLakeServiceClient(account_url=f'https://{storage_account_name}.dfs.core.windows.net', credential=credential)
+
+
+
+# %%
+
+file_system_client = service_client.get_file_system_client(file_system=container_name)
+
+paths = file_system_client.get_paths(path='')
+
+for path in paths:
+    print(path.name + '\n')
+
+
+
+
+
+
+# %%
 
 
 
