@@ -411,11 +411,14 @@ def process_columns_for_elt(table_list, file_meta):
 @catch_error(logger)
 def process_finra_file(file_meta):
     file_path = os.path.join(file_meta['root'], file_meta['file'])
-
-    logger.info(file_meta['crd_number'], file_meta['table_name'], file_meta['date'])
-
     rowTags = file_meta['rowTags']
-    logger.info(f'rowTags: {rowTags}')
+
+    logger.info({
+        'crd_number': file_meta['crd_number'],
+        'table_name': file_meta['table_name'],
+        'date': file_meta['date'],
+        'rowTags': rowTags,
+        })
 
     xml_table = read_xml_file(table_name=file_meta['table_name'], file_path=file_path, rowTag=rowTags[0])
     xml_table_list = get_xml_table_list(xml_table=xml_table, table_name=file_meta['table_name'], crd_number=file_meta['crd_number'])
