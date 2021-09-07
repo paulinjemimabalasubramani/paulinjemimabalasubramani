@@ -13,11 +13,13 @@ http://10.128.25.82:8282/
 # %% Import Libraries
 
 import os, sys
+sys.parent_name = os.path.basename(__file__)
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
+from modules.common_functions import mark_execution_end
 from modules.spark_functions import create_spark
 from modules.azure_functions import read_tableinfo, tableinfo_name
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables, create_source_level_tables, snowflake_ddl_params
@@ -58,6 +60,11 @@ create_source_level_tables(ingest_data_list=ingest_data_list)
 # %% Close Showflake connection
 
 snowflake_connection.close()
+
+
+# %% Mark Execution End
+
+mark_execution_end()
 
 
 # %%

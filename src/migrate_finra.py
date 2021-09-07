@@ -19,6 +19,8 @@ http://10.128.25.82:8282/
 # %% Import Libraries
 
 import os, sys, tempfile, shutil, json, copy
+sys.parent_name = os.path.basename(__file__)
+
 from collections import defaultdict
 from datetime import datetime
 from pprint import pprint
@@ -29,7 +31,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, is_pc, data_path, config_path, execution_date, strftime, get_secrets
+from modules.common_functions import logger, catch_error, is_pc, data_path, config_path, execution_date, strftime, get_secrets, \
+    mark_execution_end
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
@@ -673,6 +676,12 @@ def save_tableinfo(all_new_files):
 
 
 save_tableinfo(all_new_files)
+
+
+
+# %% Mark Execution End
+
+mark_execution_end()
 
 
 # %%
