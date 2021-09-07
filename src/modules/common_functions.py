@@ -199,15 +199,15 @@ def build_log_signature(customer_id, shared_key, date, content_length, method, c
 # %% Build and send a request to the POST API
 
 @catch_error()
-def post_log_data(log_data:dict, log_type:str, logger=None):
+def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=None):
     try:
         log_data = {
             'TimeGenerated': datetime.now(),
             'MainScript': sys.parent_name if hasattr(sys, 'parent_name') else '',
             **log_data}
+        body = json.dumps(log_data, sort_keys=True, default=str)
 
         method = 'POST'
-        body = json.dumps(log_data, sort_keys=True, default=str)
         content_type = 'application/json'
         resource = '/api/logs'
         rfc1123date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
@@ -225,17 +225,18 @@ def post_log_data(log_data:dict, log_type:str, logger=None):
         response = requests.post(uri, data=body, headers=headers)
         if (response.status_code >= 200 and response.status_code <= 299):
             #pprint('Log Accepted')
-            return True
+            pass
         else:
             pprint(f"Log Response code: {response.status_code}")
-            return False
+            if backup_logger_func:
+                backup_logger_func(body, exc_info=False)
 
     except Exception as e:
         if logger:
             logger.error(str(e))
         else:
             pprint(e)
-        raise e
+        #raise e
 
 
 
@@ -297,8 +298,10 @@ class CreateLogger:
     def __init__(self):
         self.log_type = 'AirflowPrintedLogs'
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
 
-        self.log_file = f'./logs/data_eng.log'
+        log_file_name_no_ext = sys.parent_name.split('.')[0] if hasattr(sys, 'parent_name') else 'logs'
+        self.log_file = os.path.join(data_path, f"logs/{log_file_name_no_ext}.log")
         write_file(file_path=self.log_file, contents='', mode='a')
 
         logging.basicConfig(
@@ -309,34 +312,40 @@ class CreateLogger:
             level = logging.INFO,
             )
 
+        other_loggers = [
+            'azure.core.pipeline.policies.http_logging_policy',
+            'azure.identity._internal.get_token_mixin',
+            ]
+
+        for other_logger in other_loggers:
+            logging.getLogger(other_logger).setLevel(logging.WARNING)
+
 
     @catch_error()
-    def log(self, msg, msg_type, extra_log:dict={}):
+    def log(self, msg, msg_type, extra_log:dict={}, backup_logger_func=None):
         log_data = {
             'msg': msg,
             'msg_type': msg_type,
             **extra_log,
         }
         pprint(log_data)
-        return post_log_data(log_data=log_data, log_type=self.log_type)
+        post_log_data(log_data=log_data, log_type=self.log_type, logger=self.logger, backup_logger_func=backup_logger_func)
 
 
     @catch_error()
     def info(self, msg):
-        if not self.log(msg=msg, msg_type='INFO'):
-            self.logger.info(msg)
+        self.log(msg=msg, msg_type='INFO', backup_logger_func=self.logger.info)
 
 
     @catch_error()
     def warning(self, msg):
-        if not self.log(msg=msg, msg_type='WARNING', extra_log=system_info()):
-            self.logger.warning(msg)
+        self.log(msg=msg, msg_type='WARNING', extra_log=system_info(), backup_logger_func=self.logger.warning)
 
 
     @catch_error()
     def error(self, msg):
-        if not self.log(msg=msg, msg_type='ERROR', extra_log=system_info()):
-            self.logger.error(msg, exc_info=True)
+        self.log(msg=msg, msg_type='ERROR', extra_log=system_info(), backup_logger_func=self.logger.error)
+
 
 
 
@@ -373,9 +382,9 @@ def mark_execution_end():
     execution_date_end = datetime.now()
     timedelta1 = execution_date_end - execution_date_start
 
-    h=timedelta1.seconds//3600
-    m=(timedelta1.seconds-h*3600)//60
-    s=timedelta1.seconds-h*3600-m*60
+    h = timedelta1.seconds // 3600
+    m = (timedelta1.seconds - h * 3600) // 60
+    s = timedelta1.seconds - h * 3600 - m * 60
     total_time = f'{timedelta1.days} day(s), {h} hour(s), {m} minute(s), {s} second(s)'
 
     logger.info({
