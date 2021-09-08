@@ -15,8 +15,6 @@ http://10.128.25.82:8282/
 import os, sys
 sys.parent_name = os.path.basename(__file__)
 
-from pprint import pprint
-
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
@@ -59,7 +57,7 @@ def get_container_names(storage_account_name:str):
 
     file_systems = service_client.list_file_systems()
     container_names = [file_system.name for file_system in file_systems]
-    print({
+    logger.info({
         'storage_account_name': storage_account_name,
         'container_names': container_names,
         })
@@ -72,7 +70,7 @@ def get_container_names(storage_account_name:str):
 @catch_error(logger)
 def get_adls_gen2_paths(storage_account_name:str, container_name:str):
     account_url = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder='', table_name='')
-    pprint(f'Getting paths from {account_url}')
+    logger.info(f'Getting paths from {account_url}')
 
     azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
 
@@ -103,19 +101,19 @@ def get_delta_table_paths(storage_account_name:str, container_name:str):
 
 @catch_error(logger)
 def vacuum_container(spark, storage_account_name:str, container_name:str, days_to_retain:int=7):
-    print(f'Start Vacuuming {container_name}@{storage_account_name}')
+    logger.info(f'Start Vacuuming {container_name}@{storage_account_name}')
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     delta_paths = get_delta_table_paths(storage_account_name=storage_account_name, container_name=container_name)
 
     for delta_path in delta_paths:
         delta_path_full = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder='', table_name=delta_path)
-        print(f'Vacuuming {delta_path_full}')
+        logger.info(f'Vacuuming {delta_path_full}')
         result = spark.sql(f"VACUUM delta.`{delta_path_full}` RETAIN {days_to_retain * 24} HOURS")
 
         if is_pc: raise ValueError('For Testing')
 
-    print(f'End Vacuuming {container_name}@{storage_account_name}')
+    logger.info(f'End Vacuuming {container_name}@{storage_account_name}')
 
 
 
@@ -124,7 +122,7 @@ def vacuum_container(spark, storage_account_name:str, container_name:str, days_t
 
 @catch_error(logger)
 def vacuum_storage_account(spark, storage_account_name:str, days_to_retain:int=7):
-    pprint(f'Vacuuming {storage_account_name}')
+    logger.info(f'Vacuuming {storage_account_name}')
     container_names = get_container_names(storage_account_name=storage_account_name)
     for container_name in container_names:
         vacuum_container(spark, storage_account_name=storage_account_name, container_name=container_name, days_to_retain=days_to_retain)
@@ -136,14 +134,13 @@ def vacuum_storage_account(spark, storage_account_name:str, days_to_retain:int=7
 @catch_error(logger)
 def get_all_storage_accounts(spark, firms_source:str, include_default:bool=True):
     firms = get_firms_with_crd(spark=spark, tableinfo_source=firms_source)
-    if is_pc: pprint(firms)
 
     storage_account_abbrs = {x['storage_account_abbr'] for x in firms}
     if include_default: storage_account_abbrs.add(default_storage_account_abbr)
     storage_account_abbrs = sorted(list(storage_account_abbrs))
     storage_account_names = [to_storage_account_name(firm_name=storage_account_abbr) for storage_account_abbr in storage_account_abbrs]
 
-    print({'storage_account_names': storage_account_names})
+    logger.info({'storage_account_names': storage_account_names})
     return storage_account_names
 
 
