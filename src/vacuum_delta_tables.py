@@ -21,10 +21,10 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import is_pc, logger, mark_execution_end, get_secrets, catch_error
+from modules.common_functions import logger, mark_execution_end, get_secrets, catch_error
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, default_storage_account_abbr, get_firms_with_crd, \
-    to_storage_account_name, azure_data_path_create, container_name
+    to_storage_account_name, azure_data_path_create
 
 
 from azure.identity import ClientSecretCredential
