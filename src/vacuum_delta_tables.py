@@ -109,9 +109,11 @@ def vacuum_container(spark, storage_account_name:str, container_name:str, days_t
     for delta_path in delta_paths:
         delta_path_full = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder='', table_name=delta_path)
         logger.info(f'Vacuuming {delta_path_full}')
-        result = spark.sql(f"VACUUM delta.`{delta_path_full}` RETAIN {days_to_retain * 24} HOURS")
 
-        if is_pc: raise ValueError('For Testing')
+        try:
+            result = spark.sql(f"VACUUM delta.`{delta_path_full}` RETAIN {days_to_retain * 24} HOURS")
+        except Exception as e:
+            logger.error(str(e))
 
     logger.info(f'End Vacuuming {container_name}@{storage_account_name}')
 
