@@ -107,6 +107,8 @@ def vacuum_container(spark, storage_account_name:str, container_name:str, days_t
     delta_paths = get_delta_table_paths(storage_account_name=storage_account_name, container_name=container_name)
 
     for delta_path in delta_paths:
+        if not delta_path.lower().startswith('data/'):
+            continue
         delta_path_full = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder='', table_name=delta_path)
         logger.info(f'Vacuuming {delta_path_full}')
 
