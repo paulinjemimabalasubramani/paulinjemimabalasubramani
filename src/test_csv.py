@@ -1,6 +1,8 @@
 # %% Import Libraries
 
 import os, sys, tempfile, shutil, json, copy
+
+
 sys.parent_name = os.path.basename('test_csv.py')
 
 from collections import defaultdict
@@ -19,6 +21,7 @@ from modules.build_finra_tables import base_to_schema, build_branch_table, build
 
 import pyspark.sql.functions as F
 from pyspark.sql.functions import col, lit, to_date, to_json, to_timestamp, when, row_number
+from pyspark.sql.types import IntegerType, StringType
 
 
 
@@ -29,12 +32,17 @@ spark = create_spark()
 
 # %%
 
-table = read_csv(spark=spark, file_path=r'C:\Shared\LR\oltp_individual.txt')
+table = read_csv(spark=spark, file_path=r'C:\Shared\LR\oltp_individual2.txt')
 
 # %%
 
-table.select('individualid').where(F.length(col('individualid'))<lit(5)).show(5)
+table.show(5)
+
 
 # %%
-table.select('individualid').where(col('individualid')<lit('')).show(5)
 
+table.select(F.max(col('individualid').cast(StringType()))).collect()[0][0]
+
+
+
+# %%
