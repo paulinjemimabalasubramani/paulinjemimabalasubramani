@@ -26,6 +26,7 @@ tableinfo_name = 'metadata.TableInfo'
 file_format = 'delta' # Default File Format
 default_storage_account_abbr = 'AGGR'
 
+azure_filesystem_uri = 'dfs.core.windows.net'
 
 
 # %% firm_name to storage_account_name
@@ -101,13 +102,13 @@ def select_tableinfo_columns(tableinfo):
 def setup_spark_adls_gen2_connection(spark, storage_account_name):
     azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
 
-    #spark.conf.set(f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net", storage_account_access_key)
+    #spark.conf.set(f"fs.azure.account.key.{storage_account_name}.{azure_filesystem_uri}", storage_account_access_key)
 
-    spark.conf.set(f"fs.azure.account.auth.type.{storage_account_name}.dfs.core.windows.net", "OAuth")
-    spark.conf.set(f"fs.azure.account.oauth.provider.type.{storage_account_name}.dfs.core.windows.net",  "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
-    spark.conf.set(f"fs.azure.account.oauth2.client.id.{storage_account_name}.dfs.core.windows.net", sp_id)
-    spark.conf.set(f"fs.azure.account.oauth2.client.secret.{storage_account_name}.dfs.core.windows.net", sp_pass)
-    spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_account_name}.dfs.core.windows.net", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token")
+    spark.conf.set(f"fs.azure.account.auth.type.{storage_account_name}.{azure_filesystem_uri}", "OAuth")
+    spark.conf.set(f"fs.azure.account.oauth.provider.type.{storage_account_name}.{azure_filesystem_uri}",  "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
+    spark.conf.set(f"fs.azure.account.oauth2.client.id.{storage_account_name}.{azure_filesystem_uri}", sp_id)
+    spark.conf.set(f"fs.azure.account.oauth2.client.secret.{storage_account_name}.{azure_filesystem_uri}", sp_pass)
+    spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_account_name}.{azure_filesystem_uri}", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token")
     spark.conf.set("fs.azure.createRemoteFileSystemDuringInitialization", "true")
 
 
@@ -116,7 +117,7 @@ def setup_spark_adls_gen2_connection(spark, storage_account_name):
 
 @catch_error(logger)
 def azure_data_path_create(container_name:str, storage_account_name:str, container_folder:str, table_name:str):
-    return f"abfs://{container_name}@{storage_account_name}.dfs.core.windows.net/{container_folder+'/' if container_folder else ''}{table_name}"
+    return f"abfs://{container_name}@{storage_account_name}.{azure_filesystem_uri}/{container_folder+'/' if container_folder else ''}{table_name}"
 
 
 

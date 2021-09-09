@@ -24,7 +24,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import logger, mark_execution_end, get_secrets, catch_error
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, default_storage_account_abbr, get_firms_with_crd, \
-    to_storage_account_name, azure_data_path_create
+    to_storage_account_name, azure_data_path_create, azure_filesystem_uri
 
 
 from azure.identity import ClientSecretCredential
@@ -53,7 +53,7 @@ def get_container_names(storage_account_name:str):
     azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
 
     credential = ClientSecretCredential(tenant_id = azure_tenant_id, client_id = sp_id, client_secret = sp_pass)
-    service_client = DataLakeServiceClient(account_url=f'https://{storage_account_name}.dfs.core.windows.net', credential=credential)
+    service_client = DataLakeServiceClient(account_url=f'https://{storage_account_name}.{azure_filesystem_uri}', credential=credential)
 
     file_systems = service_client.list_file_systems()
     container_names = [file_system.name for file_system in file_systems]
@@ -75,7 +75,7 @@ def get_adls_gen2_paths(storage_account_name:str, container_name:str):
     azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
 
     credential = ClientSecretCredential(tenant_id = azure_tenant_id, client_id = sp_id, client_secret = sp_pass)
-    service_client = DataLakeServiceClient(account_url=f'https://{storage_account_name}.dfs.core.windows.net', credential=credential)
+    service_client = DataLakeServiceClient(account_url=f'https://{storage_account_name}.{azure_filesystem_uri}', credential=credential)
 
     file_system_client = service_client.get_file_system_client(file_system=container_name)
     paths = file_system_client.get_paths(path=None, recursive=True, max_results=None)
@@ -107,6 +107,8 @@ def vacuum_container(spark, storage_account_name:str, container_name:str, days_t
     delta_paths = get_delta_table_paths(storage_account_name=storage_account_name, container_name=container_name)
 
     for delta_path in delta_paths:
+        if not delta_path.lower().startswith('data/'):
+            continue
         delta_path_full = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder='', table_name=delta_path)
         logger.info(f'Vacuuming {delta_path_full}')
 

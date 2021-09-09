@@ -271,11 +271,11 @@ def read_csv(spark, file_path:str):
     logger.info(f'Reading CSV file: {file_path}')
     csv_table = (spark.read
         .format('csv')
-        .option('delimiter', ',')
+#        .option('delimiter', ',')
         .option('header', 'true')
         .option('multiLine', 'true')
-        .option('escape', '"')
-        .option('inferSchema', 'true')
+#        .option('escape', '"')
+#        .option('inferSchema', 'true')
         .load(file_path)
     )
 
