@@ -21,6 +21,7 @@ from pyspark.sql.functions import col, lit
 
 
 # %% Parameters
+
 class module_params_class:
     save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
