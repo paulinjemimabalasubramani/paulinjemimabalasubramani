@@ -21,7 +21,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import data_path, get_secrets, logger, mark_execution_end
+from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo, default_storage_account_name, tableinfo_name
 from modules.migrate_files import make_tableinfo, iterate_over_all_tables_migration
@@ -43,7 +43,7 @@ sql_database = tableinfo_source # TABLE_CATALOG
 
 data_type_translation_id = 'sqlserver_snowflake'
 
-data_path_folder = os.path.join(data_path, tableinfo_source)
+data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
 
 
 

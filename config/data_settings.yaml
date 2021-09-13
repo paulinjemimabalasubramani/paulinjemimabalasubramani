@@ -1,0 +1,10 @@
+output_log_path: /usr/local/spark/resources/fileshare/Shared/logs
+output_cicd_path: /usr/local/spark/resources/fileshare/Shared/CICD
+
+
+data_paths_per_source:
+    FINRA: /usr/local/spark/resources/fileshare/Shared/FINRA
+    LR: /usr/local/spark/resources/fileshare/Shared/LR
+    MIPS: /usr/local/spark/resources/fileshare/Shared/MIPS
+    SF: /usr/local/spark/resources/fileshare/Shared/SF
+

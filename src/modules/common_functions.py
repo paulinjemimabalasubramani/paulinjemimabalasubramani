@@ -15,48 +15,13 @@ from azure.keyvault.secrets import SecretClient
 
 
 
-# %% Parameters
-
-execution_date_start = datetime.now()
-strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
-execution_date = execution_date_start.strftime(strftime)
-
-is_pc = platform.system().lower() == 'windows'
-
-fileshare = '/usr/local/spark/resources/fileshare'
-drivers_path = fileshare + '/EDIP-Code/drivers'
-config_path = fileshare + '/EDIP-Code/config'
-data_path = fileshare + '/Shared'
-
-join_drivers_by = ':' # for extraClassPath
-
-log_analytics_workspace_id = '' # TODO
-
-if is_pc:
-    os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.1-bin-hadoop3.2'
-    os.environ["HADOOP_HOME"] = r'C:\Spark\Hadoop'
-    os.environ["JAVA_HOME"]   = r'C:\Program Files\Java\jre1.8.0_241'
-    #os.environ["PYSPARK_PYTHON"] = r'C:\Users\smammadov\AppData\Local\Programs\Python\Python38\python.exe' # add this line as necessary
-
-    sys.path.insert(0, '%SPARK_HOME%\bin')
-    sys.path.insert(0, '%HADOOP_HOME%\bin')
-    sys.path.insert(0, '%JAVA_HOME%\bin')
-
-    python_dirname = os.path.dirname(__file__)
-    drivers_path = os.path.realpath(python_dirname + '/../../drivers')
-    config_path = os.path.realpath(python_dirname + '/../../config')
-    data_path = os.path.realpath(python_dirname + '/../../../Shared')
-
-    join_drivers_by = ';' # for extraClassPath
-
-
-
 # %% Wrapper/Decorator function for catching errors
 
-def catch_error(logger=None):
+def catch_error(logger=None, raise_error:bool=True):
     def outer(fn):
         @wraps(fn)
         def inner(*args, **kwargs):
+            response = None
             try:
                 response = fn(*args, **kwargs)
             except Exception as e:
@@ -64,9 +29,8 @@ def catch_error(logger=None):
                 exception_message += f"\nException Message: {e}"
                 pprint(exception_message)
 
-                if logger:
-                    logger.error(exception_message)
-                raise e
+                if logger: logger.error(exception_message)
+                if raise_error: raise e
             return response
         return inner
     return outer
@@ -122,6 +86,60 @@ class Config:
                 pprint(e)
             raise e
 
+    @catch_error()
+    def get_value(self, attr_name:str, default_value, check_is_pc:bool=True):
+        if not hasattr(self, attr_name) or (check_is_pc and is_pc):
+            setattr(self, attr_name, default_value) 
+        return getattr(self, attr_name)
+
+
+
+
+# %% Parameters
+
+execution_date_start = datetime.now()
+strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
+execution_date = execution_date_start.strftime(strftime)
+
+is_pc = platform.system().lower() == 'windows'
+
+log_analytics_workspace_id = '' # TODO
+
+join_drivers_by = ':' # for extraClassPath
+
+fileshare = '/usr/local/spark/resources/fileshare'
+drivers_path = fileshare + '/EDIP-Code/drivers'
+config_path = fileshare + '/EDIP-Code/config'
+data_settings_file_name = 'data_settings.yaml'
+
+defaults = {
+    'default_data_path': fileshare + '/Shared'
+}
+
+data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults=defaults)
+data_settings.data_path = data_settings.default_data_path
+
+data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
+for source in data_paths_per_source:
+    _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=os.path.join(data_settings.data_path, source))
+
+
+if is_pc:
+    os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.1-bin-hadoop3.2'
+    os.environ["HADOOP_HOME"] = r'C:\Spark\Hadoop'
+    os.environ["JAVA_HOME"]   = r'C:\Program Files\Java\jre1.8.0_241'
+    #os.environ["PYSPARK_PYTHON"] = r'C:\Users\smammadov\AppData\Local\Programs\Python\Python38\python.exe' # add this line as necessary
+
+    sys.path.insert(0, '%SPARK_HOME%\bin')
+    sys.path.insert(0, '%HADOOP_HOME%\bin')
+    sys.path.insert(0, '%JAVA_HOME%\bin')
+
+    python_dirname = os.path.dirname(__file__)
+    drivers_path = os.path.realpath(python_dirname + '/../../drivers')
+    config_path = os.path.realpath(python_dirname + '/../../config')
+    data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared')
+
+    join_drivers_by = ';' # for extraClassPath
 
 
 
@@ -157,8 +175,8 @@ def get_secrets(account_name:str, logger=None):
         account_name = account_name.lower()
         azure_tenant_id, client = get_azure_key_vault()
 
-        sp_id = client.get_secret(f"qa-{account_name}-id").value
-        sp_pass = client.get_secret(f"qa-{account_name}-pass").value
+        sp_id = client.get_secret(f'qa-{account_name}-id').value
+        sp_pass = client.get_secret(f'qa-{account_name}-pass').value
 
     except Exception as e:
         if logger:
@@ -171,7 +189,7 @@ def get_secrets(account_name:str, logger=None):
 
 
 
-azure_tenant_id, log_customer_id, log_shared_key = get_secrets("loganalytics")
+azure_tenant_id, log_customer_id, log_shared_key = get_secrets('loganalytics')
 
 
 
@@ -181,11 +199,11 @@ azure_tenant_id, log_customer_id, log_shared_key = get_secrets("loganalytics")
 def build_log_signature(customer_id, shared_key, date, content_length, method, content_type, resource, logger=None):
     try:
         x_headers = 'x-ms-date:' + date
-        string_to_hash = method + "\n" + str(content_length) + "\n" + content_type + "\n" + x_headers + "\n" + resource
-        bytes_to_hash = bytes(string_to_hash, encoding="utf-8")
+        string_to_hash = method + '\n' + str(content_length) + '\n' + content_type + '\n' + x_headers + '\n' + resource
+        bytes_to_hash = bytes(string_to_hash, encoding='utf-8')
         decoded_key = base64.b64decode(shared_key)
         encoded_hash = base64.b64encode(hmac.new(decoded_key, bytes_to_hash, digestmod=hashlib.sha256).digest()).decode()
-        authorization = "SharedKey {}:{}".format(customer_id, encoded_hash)
+        authorization = 'SharedKey {}:{}'.format(customer_id, encoded_hash)
 
     except Exception as e:
         if logger:
@@ -230,7 +248,7 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
             #pprint('Log Accepted')
             pass
         else:
-            pprint(f"Log Response code: {response.status_code}")
+            pprint(f'Log Response code: {response.status_code}')
             if backup_logger_func:
                 backup_logger_func(body, exc_info=False)
 
@@ -289,8 +307,8 @@ def get_log_data(kusto_query, logger=None):
     if not log_token:
         return
 
-    az_url = "https://api.loganalytics.io/v1/workspaces/"+ log_analytics_workspace_id + "/query"
-    query = {"query": kusto_query}
+    az_url = 'https://api.loganalytics.io/v1/workspaces/'+ log_analytics_workspace_id + '/query'
+    query = {'query': kusto_query}
 
     try:
         response = requests.get(az_url, params=query, headers=log_token)
@@ -304,7 +322,7 @@ def get_log_data(kusto_query, logger=None):
         if logger: logger.info('Kusto Query ran successfully')
         return json.loads(response.content)
     else:
-        error_log = "Unable to run Kusto Query: " + format(response.status_code)
+        error_log = 'Unable to run Kusto Query: ' + format(response.status_code)
         if logger:
             logger.error(error_log)
         else:
@@ -352,10 +370,10 @@ def system_info():
         'OS_Version': uname.version,
         'Machine_Type': uname.machine,
         'Processor': uname.processor,
-        'RAM': str(round(psutil.virtual_memory().total / (1024.0 **3))) + " GB",
+        'RAM': str(round(psutil.virtual_memory().total / (1024.0 **3))) + ' GB',
         'Drivers_Path': drivers_path,
         'Config_Path': config_path,
-        'Data_Path': data_path,
+        'Data_Path': data_settings.data_path,
     }
 
     return sysinfo
@@ -372,8 +390,10 @@ class CreateLogger:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
+        log_path = data_settings.get_value(attr_name='output_log_path', default_value=os.path.join(data_settings.data_path, 'logs'))
         log_file_name_no_ext = sys.parent_name.split('.')[0] if hasattr(sys, 'parent_name') else 'logs'
-        self.log_file = os.path.join(data_path, f"logs/{log_file_name_no_ext}.log")
+        self.log_file = os.path.join(log_path, f'{log_file_name_no_ext}.log')
+
         write_file(file_path=self.log_file, contents='', mode='a')
 
         logging.basicConfig(

@@ -31,7 +31,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, is_pc, data_path, config_path, execution_date, strftime, get_secrets, \
+from modules.common_functions import logger, catch_error, is_pc, data_settings, config_path, execution_date, strftime, get_secrets, \
     mark_execution_end
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy
@@ -83,8 +83,10 @@ key_column_names_with_load_n_date = key_column_names_with_load + ['file_date']
 
 tmpdirs = []
 
-data_path_folder = os.path.join(data_path, tableinfo_source)
+data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
+
 schema_path_folder = os.path.join(config_path, 'finra_schema')
+
 
 
 # %% Initiate Spark
