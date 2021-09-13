@@ -112,17 +112,6 @@ drivers_path = fileshare + '/EDIP-Code/drivers'
 config_path = fileshare + '/EDIP-Code/config'
 data_settings_file_name = 'data_settings.yaml'
 
-defaults = {
-    'default_data_path': fileshare + '/Shared'
-}
-
-data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults=defaults)
-data_settings.data_path = data_settings.default_data_path
-
-data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
-for source in data_paths_per_source:
-    _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=os.path.join(data_settings.data_path, source))
-
 
 if is_pc:
     os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.1-bin-hadoop3.2'
@@ -137,9 +126,24 @@ if is_pc:
     python_dirname = os.path.dirname(__file__)
     drivers_path = os.path.realpath(python_dirname + '/../../drivers')
     config_path = os.path.realpath(python_dirname + '/../../config')
-    data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared')
 
     join_drivers_by = ';' # for extraClassPath
+
+
+defaults = {
+    'default_data_path': fileshare + '/Shared'
+}
+
+data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults=defaults)
+data_settings.data_path = data_settings.default_data_path
+
+data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
+for source in data_paths_per_source:
+    _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=os.path.join(data_settings.data_path, source))
+
+
+if is_pc:
+    data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared')
 
 
 
