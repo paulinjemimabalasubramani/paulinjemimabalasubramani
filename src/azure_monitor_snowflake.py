@@ -28,7 +28,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, post_log_data, \
-    get_log_token, get_log_data
+    get_log_data
 from modules.spark_functions import create_spark, read_snowflake
 from modules.snowflake_ddl import snowflake_ddl_params
 
@@ -59,10 +59,16 @@ _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(
 
 
 
-# %%
+# %% get log token
+
+kusto_query ='SnowflakeCopyHistory_CL | summarize MAX_LOAD_TIME = max(LAST_LOAD_TIME_t) by TABLE_CATALOG_NAME_s, TABLE_SCHEMA_NAME_s, TABLE_NAME_s'
+
+prev_log_data = get_log_data(kusto_query=kusto_query, logger=logger)
 
 
-log_token = get_log_token()
+
+
+
 
 
 
@@ -100,7 +106,7 @@ def get_sf_schema_list(sf_database:str):
 
 
 
-# %%
+# %% Get Copy History Logs from Snowflake
 
 @catch_error(logger)
 def get_snowflake_copy_history(spark, sf_database:str, sf_schema:str, table_name:str, start_time:str=None):
@@ -135,7 +141,7 @@ def get_snowflake_copy_history(spark, sf_database:str, sf_schema:str, table_name
 
 
 
-# %%
+# %% Iterate over all Databases, Schemas and Tables
 
 @catch_error(logger)
 def post_all_snowflake_copy_history_log():

@@ -30,6 +30,8 @@ data_path = fileshare + '/Shared'
 
 join_drivers_by = ':' # for extraClassPath
 
+log_analytics_workspace_id = '' # TODO
+
 if is_pc:
     os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.1-bin-hadoop3.2'
     os.environ["HADOOP_HOME"] = r'C:\Spark\Hadoop'
@@ -279,10 +281,15 @@ def get_log_token(logger=None):
 
 # %% Execute Kusto Query on an Azure Log Analytics Workspace
 # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/
+# https://dev.loganalytics.io/
 
 @catch_error()
-def get_log_data(kusto_query, log_token, azure_log_customer_id, logger=None):
-    az_url = "https://api.loganalytics.io/v1/workspaces/"+ azure_log_customer_id + "/query"
+def get_log_data(kusto_query, logger=None):
+    log_token = get_log_token(logger=logger)
+    if not log_token:
+        return
+
+    az_url = "https://api.loganalytics.io/v1/workspaces/"+ log_analytics_workspace_id + "/query"
     query = {"query": kusto_query}
 
     try:
