@@ -93,7 +93,7 @@ def get_sf_schema_list(sf_database:str):
 
 # %%
 
-def get_snowflake_copy_history_sql(spark, sf_database:str, sf_schema:str, table_name:str, start_time:str=None):
+def get_snowflake_copy_history(spark, sf_database:str, sf_schema:str, table_name:str, start_time:str=None):
     if not start_time:
         start_timex = f"DATEADD(DAYS, -14, CURRENT_TIMESTAMP())"
     else:
@@ -142,9 +142,9 @@ def post_all_snowflake_copy_history_log():
                     continue
                 logging.info(f'Getting Log Data from {sf_database}.{sf_schema}.{table_name}')
 
-                table = get_snowflake_copy_history_sql(spark=spark, sf_database=sf_database, sf_schema=sf_schema, table_name=table_name, start_time=None)
+                table = get_snowflake_copy_history(spark=spark, sf_database=sf_database, sf_schema=sf_schema, table_name=table_name, start_time=None)
                 table_collect = table.toJSON().map(lambda j: json.loads(j)).collect()
-                
+
                 for log_data in table_collect:
                     post_log_data(log_data=log_data, log_type='SnowflakeCopyHistory')
 
