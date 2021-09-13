@@ -168,7 +168,7 @@ def save_adls_gen2(
         "Table_Size": sys.getsizeof(table_to_save),
         }
 
-    post_log_data(log_data=log_data, log_type='AirlfowSavedTables')
+    post_log_data(log_data=log_data, log_type='AirlfowSavedTables', logger=logger)
 
     logger.info(f'Finished Writing {container_folder}/{table_name}')
 

@@ -308,7 +308,7 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
         "PARTITION": PARTITION,
         }
 
-    post_log_data(log_data=log_data, log_type='AirflowIngestData')
+    post_log_data(log_data=log_data, log_type='AirflowIngestData', logger=logger)
 
     return ingest_data
 
@@ -406,7 +406,7 @@ ALTER PIPE {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_s
         'source_system': source_system,
     }
 
-    post_log_data(log_data=log_data, log_type='AirflowSnowflakeRequests')
+    post_log_data(log_data=log_data, log_type='AirflowSnowflakeRequests', logger=logger)
 
 
 

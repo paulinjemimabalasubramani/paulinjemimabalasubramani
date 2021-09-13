@@ -27,7 +27,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, post_log_data
+from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, post_log_data, \
+    get_log_token, get_log_data
 from modules.spark_functions import create_spark, read_snowflake
 from modules.snowflake_ddl import snowflake_ddl_params
 
@@ -55,6 +56,14 @@ snowflake_ddl_params.spark = spark
 # %% Read Key Vault Data
 
 _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(), logger=logger)
+
+
+
+# %%
+
+
+log_token = get_log_token()
+
 
 
 
@@ -93,11 +102,12 @@ def get_sf_schema_list(sf_database:str):
 
 # %%
 
+@catch_error(logger)
 def get_snowflake_copy_history(spark, sf_database:str, sf_schema:str, table_name:str, start_time:str=None):
-    if not start_time:
-        start_timex = f"DATEADD(DAYS, -14, CURRENT_TIMESTAMP())"
-    else:
+    if start_time:
         start_timex = f"DATEADD(SECONDS, 1, TO_TIMESTAMP_LTZ('{start_time}'))"
+    else:
+        start_timex = f"DATEADD(DAYS, -14, CURRENT_TIMESTAMP())"
 
     sqlstr = f"SELECT * FROM TABLE(INFORMATION_SCHEMA.COPY_HISTORY(TABLE_NAME=>'{table_name}', START_TIME=>{start_timex}));"
 
@@ -146,7 +156,7 @@ def post_all_snowflake_copy_history_log():
                 table_collect = table.toJSON().map(lambda j: json.loads(j)).collect()
 
                 for log_data in table_collect:
-                    post_log_data(log_data=log_data, log_type='SnowflakeCopyHistory')
+                    post_log_data(log_data=log_data, log_type='SnowflakeCopyHistory', logger=logger)
 
 
 
