@@ -93,14 +93,22 @@ def get_sf_table_list(schema_name:str):
         password = sf_pass,
         )
 
-    tables = tables.filter((col('TABLE_SCHEMA') == lit(schema_name)) & (col('TABLE_TYPE')==lit('BASE TABLE')))
-    columns = columns.filter(col('TABLE_SCHEMA') == lit(schema_name))
+    tables = tables.where(
+        (col('TABLE_SCHEMA')==lit(schema_name)) & 
+        (col('TABLE_TYPE')==lit('BASE TABLE')) &
+        (col('IS_TRANSIENT')==lit('NO'))
+        )
+
+    columns = columns.where(col('TABLE_SCHEMA')==lit(schema_name))
     columns = columns.alias('c').join(tables.alias('t'), columns['TABLE_NAME']==tables['TABLE_NAME'], how='inner').select('c.*')
 
     table_names = columns.select('TABLE_NAME').distinct().rdd.flatMap(lambda x: x).collect()
 
-    logger.info(f'Total of {len(table_names)} tables')
-    logger.info(table_names)
+    logger.info({
+        'schema': f'{sf_database}.{schema_name}',
+        'count_tables': len(table_names),
+        'tables': table_names,
+        })
     return table_names, columns
 
 

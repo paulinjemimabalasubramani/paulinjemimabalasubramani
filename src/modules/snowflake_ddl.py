@@ -9,7 +9,7 @@ from functools import wraps
 from collections import defaultdict, OrderedDict
 from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, data_path, execution_date, get_secrets
+from .common_functions import logger, catch_error, is_pc, data_settings, execution_date, get_secrets
 from .spark_functions import elt_audit_columns
 from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
     to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data
@@ -21,6 +21,7 @@ from pyspark.sql.functions import col, lit
 
 
 # %% Parameters
+
 class module_params_class:
     save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
@@ -67,7 +68,7 @@ class module_params_class:
     cicd_file = None
     cicd_str_per_step = defaultdict(str)
 
-    cicd_folder_path = os.path.join(data_path, 'CICD')
+    cicd_folder_path = data_settings.get_value(attr_name='output_cicd_path', default_value=os.path.join(data_settings.data_path, 'CICD'))
 
 
 
@@ -307,7 +308,7 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
         "PARTITION": PARTITION,
         }
 
-    post_log_data(log_data=log_data, log_type='AirflowIngestData')
+    post_log_data(log_data=log_data, log_type='AirflowIngestData', logger=logger)
 
     return ingest_data
 
@@ -405,7 +406,7 @@ ALTER PIPE {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_s
         'source_system': source_system,
     }
 
-    post_log_data(log_data=log_data, log_type='AirflowSnowflakeRequests')
+    post_log_data(log_data=log_data, log_type='AirflowSnowflakeRequests', logger=logger)
 
 
 

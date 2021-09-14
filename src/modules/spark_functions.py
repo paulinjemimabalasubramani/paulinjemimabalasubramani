@@ -201,7 +201,7 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
 # %% Function to Get Snowflake Table
 
 @catch_error(logger)
-def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:str, role:str, account:str, user:str, password:str):
+def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:str, role:str, account:str, user:str, password:str, is_query:bool=False):
     logger.info(f"Reading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
     sf_options = {
         'sfUrl': f'{account}.snowflakecomputing.com',
@@ -213,10 +213,15 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
         'sfSchema': schema,
         }
 
+    if is_query:
+        dbtable = 'query'
+    else:
+        dbtable = 'dbtable'
+
     table = spark.read \
         .format('snowflake') \
         .options(**sf_options) \
-        .option('dbtable', table_name) \
+        .option(dbtable, table_name) \
         .load()
 
     logger.info('Finished Reading from Snowflake')
@@ -269,7 +274,7 @@ def read_csv(spark, file_path:str):
     Read CSV File using Spark
     """
     logger.info(f'Reading CSV file: {file_path}')
-    csv_table = (spark.read
+    csv_table = (spark.read # https://github.com/databricks/spark-csv
         .format('csv')
         .option('header', 'true')
         .option('multiLine', 'true')
