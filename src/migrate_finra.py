@@ -36,8 +36,9 @@ from modules.common_functions import logger, catch_error, is_pc, data_settings, 
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
-    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, add_table_to_tableinfo
+    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, add_table_to_tableinfo, read_tableinfo
 from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table, flatten_df, flatten_n_divide_df
+from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 
 
 import pyspark.sql.functions as F
@@ -87,10 +88,13 @@ data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_sour
 
 schema_path_folder = os.path.join(config_path, 'finra_schema')
 
+PARTITION_list = defaultdict(str)
+
 
 
 # %% Initiate Spark
 spark = create_spark()
+snowflake_ddl_params.spark = spark
 
 
 # %% Read Key Vault Data
@@ -287,6 +291,8 @@ def get_all_finra_file_xml_meta(folder_path, date_start:str, crd_number:str, inc
 
 @catch_error(logger)
 def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_account_name:str, storage_account_abbr:str):
+    global PARTITION_list
+
     if not xml_table_list:
         logger.warning(f"No data to write")
         return
@@ -313,7 +319,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
             xml_table.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
 
         if save_xml_to_adls_flag:
-            save_adls_gen2(
+            userMetadata = save_adls_gen2(
                 table_to_save = xml_table,
                 storage_account_name = storage_account_name,
                 container_name = container_name,
@@ -322,6 +328,8 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
                 partitionBy = partitionBy,
                 file_format = file_format
             )
+
+            PARTITION_list[(domain_name, database, firm_name, table_name, storage_account_name)] = userMetadata
 
     logger.info('Done writing to Azure')
 
@@ -559,7 +567,7 @@ if is_pc and False:
 def process_all_files():
     all_new_files = None
 
-    for firm in firms: # Assumes each firm has different Firm CRD Number
+    for firm in firms:
         folder_path = os.path.join(data_path_folder, firm['crd_number'])
         logger.info(f"Firm: {firm['firm_name']}, Firm CRD Number: {firm['crd_number']}")
 
@@ -678,10 +686,38 @@ def save_tableinfo(all_new_files):
                 mode = 'append',
             )
 
+    return meta_tableinfo
 
 
-save_tableinfo(all_new_files)
 
+tableinfo = save_tableinfo(all_new_files)
+
+
+
+# %% Read metadata.TableInfo
+
+tableinfo, table_rows = read_tableinfo(spark, tableinfo_name=tableinfo_name, tableinfo_source=tableinfo_source, tableinfo=tableinfo)
+
+
+# %% Connect to SnowFlake
+
+snowflake_connection = connect_to_snowflake()
+snowflake_ddl_params.snowflake_connection = snowflake_connection
+
+
+# %% Iterate Over Steps for all tables
+
+ingest_data_list = iterate_over_all_tables_snowflake(tableinfo=tableinfo, table_rows=table_rows, PARTITION_list=PARTITION_list)
+
+
+# %% Create Source Level Tables
+
+create_source_level_tables(ingest_data_list=ingest_data_list)
+
+
+# %% Close Showflake connection
+
+snowflake_connection.close()
 
 
 # %% Mark Execution End

@@ -861,7 +861,7 @@ ALTER TASK {task_name} RESUME;
 # %% Iterate Over Steps for all tables
 
 @catch_error(logger)
-def iterate_over_all_tables(tableinfo, table_rows):
+def iterate_over_all_tables_snowflake(tableinfo, table_rows, PARTITION_list=None):
     n_tables = len(table_rows)
     ingest_data_list = defaultdict(list)
 
@@ -876,7 +876,7 @@ def iterate_over_all_tables(tableinfo, table_rows):
 
         column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo=tableinfo, source_system=source_system, schema_name=schema_name, table_name=table_name)
 
-        PARTITION = get_partition(spark=wid.spark, domain_name=wid.domain_name, source_system=source_system, schema_name=schema_name, table_name=table_name, storage_account_name=storage_account_name)
+        PARTITION = get_partition(spark=wid.spark, domain_name=wid.domain_name, source_system=source_system, schema_name=schema_name, table_name=table_name, storage_account_name=storage_account_name, PARTITION_list=PARTITION_list)
         if PARTITION:
             step1(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             step2(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)

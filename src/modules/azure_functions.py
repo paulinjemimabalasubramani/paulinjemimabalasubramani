@@ -139,6 +139,7 @@ def save_adls_gen2(
     data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
     logger.info(f"Write {file_format} -> {data_path}")
 
+    userMetadata = None
     if file_format == 'text':
         table_to_save.coalesce(1).write.save(path=data_path, format=file_format, mode='overwrite', header='false')
     elif file_format == 'json':
@@ -146,12 +147,9 @@ def save_adls_gen2(
     elif file_format == 'csv':
         table_to_save.coalesce(1).write.csv(path=data_path, header='true', mode='overwrite')
     elif file_format == 'delta':
-        # spark.sql(f"VACUUM delta.`{data_path}` RETAIN 240 HOURS")
         partitionBy_value = table_to_save.select(F.max(col(partitionBy))).collect()[0][0]
         if partitionBy_value:
             userMetadata = f'{partitionBy}={partitionBy_value}'
-        else:
-            userMetadata = None
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
     else:
         table_to_save.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
@@ -171,6 +169,7 @@ def save_adls_gen2(
     post_log_data(log_data=log_data, log_type='AirlfowSavedTables', logger=logger)
 
     logger.info(f'Finished Writing {container_folder}/{table_name}')
+    return userMetadata
 
 
 
@@ -178,14 +177,19 @@ def save_adls_gen2(
 # %% Get partition string for a Table
 
 @catch_error(logger)
-def get_partition(spark, domain_name:str, source_system:str, schema_name:str, table_name:str, storage_account_name:str):
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
-
+def get_partition(spark, domain_name:str, source_system:str, schema_name:str, table_name:str, storage_account_name:str, PARTITION_list=None):
     data_type = 'data'
     container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
     data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
     logger.info(f'Reading partition data for {data_path}')
 
+    if PARTITION_list:
+        PARTITION = PARTITION_list[(domain_name, source_system, schema_name, table_name, storage_account_name)]
+        if not PARTITION:
+            logger.warning(f'{data_path} is EMPTY -> SKIPPING')
+        return PARTITION
+
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
     hist = spark.sql(f"DESCRIBE HISTORY delta.`{data_path}`")
     maxversion = hist.select(F.max(col('version'))).collect()[0][0]
     userMetadata = hist.where(col('version')==lit(maxversion)).collect()[0]['userMetadata']
@@ -237,17 +241,17 @@ def read_adls_gen2(spark,
 # %% Read metadata.TableInfo
 
 catch_error(logger)
-def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str):
-    setup_spark_adls_gen2_connection(spark, default_storage_account_name)
-
-    tableinfo = read_adls_gen2(
-        spark = spark,
-        storage_account_name = default_storage_account_name,
-        container_name = tableinfo_container_name,
-        container_folder = tableinfo_source,
-        table_name = tableinfo_name,
-        file_format = file_format
-    )
+def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str, tableinfo=None):
+    if not tableinfo:
+        setup_spark_adls_gen2_connection(spark, default_storage_account_name)
+        tableinfo = read_adls_gen2(
+            spark = spark,
+            storage_account_name = default_storage_account_name,
+            container_name = tableinfo_container_name,
+            container_folder = tableinfo_source,
+            table_name = tableinfo_name,
+            file_format = file_format
+        )
 
     tableinfo = tableinfo.filter(col('IsActive')==lit(1)).distinct()
     tableinfo.persist()

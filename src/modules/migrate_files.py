@@ -564,6 +564,7 @@ def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, t
 def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:list, ingest_from_files_flag:bool, domain_name:str,
                                     sql_id:str, sql_pass:str, sql_server:str, storage_account_name:str, tableinfo_source:str):
 
+    PARTITION_list = defaultdict(str)
     table_count = len(table_rows)
 
     for i, r in enumerate(table_rows):
@@ -593,7 +594,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
             dml_type = 'I',
             )
 
-        save_adls_gen2(
+        userMetadata = save_adls_gen2(
             table_to_save = sql_table,
             storage_account_name = storage_account_name,
             container_name = container_name,
@@ -603,7 +604,10 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
             file_format = file_format
         )
 
+        PARTITION_list[(domain_name, database, schema, table_name, storage_account_name)] = userMetadata
+
     logger.info('Finished Migrating All Tables')
+    return PARTITION_list
 
 
 
