@@ -1,5 +1,5 @@
 """
-Move Snowflake information_schema history data to Azure Monitor
+Load Snowflake log data to Azure Monitor
 
 Spark Web UI:
 http://10.128.25.82:8181/
@@ -63,7 +63,7 @@ _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(
 
 kusto_query ='SnowflakeCopyHistory_CL | summarize MAX_LOAD_TIME = max(LAST_LOAD_TIME_t) by TABLE_CATALOG_NAME_s, TABLE_SCHEMA_NAME_s, TABLE_NAME_s'
 
-prev_log_data = get_log_data(kusto_query=kusto_query, logger=logger)
+# prev_log_data = get_log_data(kusto_query=kusto_query, logger=logger)
 
 
 

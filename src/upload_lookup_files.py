@@ -65,6 +65,7 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 # %% Add ELT Audit Columns for Config Tables
 
+@catch_error(logger)
 def add_config_elt_columns(config_table):
     config_table = config_table.withColumn('IsActive', lit(1).cast(IntegerType()))
     config_table = config_table.withColumn('CreatedDateTime', lit(created_datetime).cast(StringType()))
@@ -156,7 +157,7 @@ if is_pc: translation.show(5)
 
 # %% Get FirmSourceMap
 
-
+@catch_error(logger)
 def get_firm_source_map(firm_source_map_path:str):
     """
     Get Firm_Source_Map table
