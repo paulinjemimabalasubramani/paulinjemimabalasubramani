@@ -82,9 +82,9 @@ def create_spark():
         .appName(app_name)
         .config('fs.wasbs.impl', 'org.apache.hadoop.fs.azure.NativeAzureFileSystem')
         .config('spark.sql.optimizer.maxIterations', '300')
-        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
-        .config("spark.databricks.delta.vacuum.parallelDelete.enabled", "true")
+        .config('spark.sql.extensions', 'io.delta.sql.DeltaSparkSessionExtension')
+        .config('spark.sql.catalog.spark_catalog', 'org.apache.spark.sql.delta.catalog.DeltaCatalog')
+        .config('spark.databricks.delta.vacuum.parallelDelete.enabled', 'true')
         )
 
     if is_pc:

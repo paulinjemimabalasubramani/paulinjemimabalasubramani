@@ -131,7 +131,7 @@ if is_pc:
 
 
 defaults = {
-    'default_data_path': fileshare + '/Shared'
+    'default_data_path': fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else '')
 }
 
 data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults=defaults)
@@ -143,7 +143,7 @@ for source in data_paths_per_source:
 
 
 if is_pc:
-    data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared')
+    data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
 
 
 

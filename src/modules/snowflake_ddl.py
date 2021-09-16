@@ -4,7 +4,7 @@ Common Library for creating and executing (if required) Snowflake DDL Steps and 
 """
 
 # %% Import Libraries
-import json, os
+import json, os, sys
 from functools import wraps
 from collections import defaultdict, OrderedDict
 from pprint import pprint
@@ -31,18 +31,18 @@ class module_params_class:
     snowflake_account = 'advisorgroup-edip'
     sf_key_vault_account = 'snowflake'
 
-    domain_name = 'financial_professional'
-    domain_abbr = 'FP'
-    envionment = 'QA'
-    snowflake_raw_warehouse = f'{envionment}_RAW_WH'.upper()
-    snowflake_raw_database = f'{envionment}_RAW_{domain_abbr}'.upper()
-    snowflake_curated_database = f'{envionment}_CURATED_{domain_abbr}'.upper()
+    domain_name = sys.domain_name
+    domain_abbr = sys.domain_abbr
+    environment = sys.environment
+    snowflake_raw_warehouse = f'{environment}_RAW_WH'.upper()
+    snowflake_raw_database = f'{environment}_RAW_{domain_abbr}'.upper()
+    snowflake_curated_database = f'{environment}_CURATED_{domain_abbr}'.upper()
 
     common_elt_stage_name = default_storage_account_abbr
     common_storage_account = default_storage_account_name
 
-    snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'.upper()
-    engineer_role = f"AD_SNOWFLAKE_{envionment}_ENGINEER".upper()
+    snowflake_role = f'AD_SNOWFLAKE_{environment}_DBA'.upper()
+    engineer_role = f"AD_SNOWFLAKE_{environment}_ENGINEER".upper()
 
     ddl_folder = f'metadata/{domain_name}/DDL'
 
@@ -214,7 +214,7 @@ def action_source_level_tables(table_name:str):
             if wid.execute_at_snowflake:
                 logger.info(f"Executing Snowflake SQL String: {kwargs['container_folder']}/{table_name}")
                 exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
-            
+
             if wid.create_cicd_file:
                 wid.cicd_file = sqlstr
                 write_CICD_file_per_table(source_system=kwargs['source_system'], schema_name=None, table_name=table_name)

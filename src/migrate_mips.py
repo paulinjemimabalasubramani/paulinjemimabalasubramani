@@ -14,6 +14,9 @@ http://10.128.25.82:8282/
 
 import os, sys
 sys.parent_name = os.path.basename(__file__)
+sys.domain_name = 'financial_professional'
+sys.domain_abbr = 'FP'
+sys.environment = 'QA'
 
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
@@ -33,11 +36,10 @@ from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_
 
 ingest_from_files_flag = True
 
-sql_server = 'TSQLOLTP01'
+sql_server = ''
 sql_key_vault_account = sql_server
 
 storage_account_name = default_storage_account_name
-domain_name = 'financial_professional'
 
 tableinfo_source = 'MIPS'
 sql_database = tableinfo_source # TABLE_CATALOG
@@ -95,7 +97,6 @@ PARTITION_list = iterate_over_all_tables_migration(
     table_rows = table_rows,
     files_meta = files_meta,
     ingest_from_files_flag = ingest_from_files_flag,
-    domain_name = domain_name,
     sql_id = sql_id,
     sql_pass = sql_pass,
     sql_server = sql_server,

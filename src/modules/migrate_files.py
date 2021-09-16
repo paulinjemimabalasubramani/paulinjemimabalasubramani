@@ -5,7 +5,7 @@ Common Library for translating data types from source database to target databas
 
 # %% Import Libraries
 
-import os, re
+import os, sys, re
 from pprint import pprint
 from collections import defaultdict
 from typing import cast
@@ -561,8 +561,8 @@ def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, t
 # %% Loop over all tables
 
 @catch_error(logger)
-def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:list, ingest_from_files_flag:bool, domain_name:str,
-                                    sql_id:str, sql_pass:str, sql_server:str, storage_account_name:str, tableinfo_source:str):
+def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:list, ingest_from_files_flag:bool, sql_id:str,
+                                    sql_pass:str, sql_server:str, storage_account_name:str, tableinfo_source:str):
 
     PARTITION_list = defaultdict(str)
     table_count = len(table_rows)
@@ -574,7 +574,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
         logger.info(f"Table {i+1} of {table_count}: {schema}.{table_name}")
 
         data_type = 'data'
-        container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
+        container_folder = f"{data_type}/{sys.domain_name}/{database}/{schema}"
 
         if ingest_from_files_flag:
             file_path = [file_meta for file_meta in files_meta if file_meta['table'].lower()==table_name.lower() and file_meta['schema'].lower()==schema.lower()][0]['path']
@@ -604,7 +604,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
             file_format = file_format
         )
 
-        PARTITION_list[(domain_name, database, schema, table_name, storage_account_name)] = userMetadata
+        PARTITION_list[(sys.domain_name, database, schema, table_name, storage_account_name)] = userMetadata
 
     logger.info('Finished Migrating All Tables')
     return PARTITION_list

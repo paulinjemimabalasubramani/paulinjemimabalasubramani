@@ -17,6 +17,9 @@ https://docs.databricks.com/_static/notebooks/snowflake-python.html
 
 import os, sys
 sys.parent_name = os.path.basename(__file__)
+sys.domain_name = 'financial_professional'
+sys.domain_abbr = 'FP'
+sys.environment = 'QA'
 
 from pprint import pprint
 

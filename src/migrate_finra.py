@@ -20,6 +20,10 @@ http://10.128.25.82:8282/
 
 import os, sys, tempfile, shutil, json, copy
 sys.parent_name = os.path.basename(__file__)
+sys.domain_name = 'financial_professional'
+sys.domain_abbr = 'FP'
+sys.environment = 'QA'
+
 
 from collections import defaultdict
 from datetime import datetime
@@ -61,7 +65,6 @@ if not is_pc:
 
 date_start = '1990-01-01'
 
-domain_name = 'financial_professional'
 database = 'FINRA'
 tableinfo_source = database
 
@@ -311,7 +314,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
             )
 
         data_type = 'data'
-        container_folder = f'{data_type}/{domain_name}/{database}/{firm_name}'
+        container_folder = f'{data_type}/{sys.domain_name}/{database}/{firm_name}'
 
         if is_pc: # and manual_iteration:
             local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
@@ -329,7 +332,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
                 file_format = file_format
             )
 
-            PARTITION_list[(domain_name, database, firm_name, table_name, storage_account_name)] = userMetadata
+            PARTITION_list[(sys.domain_name, database, firm_name, table_name, storage_account_name)] = userMetadata
 
     logger.info('Done writing to Azure')
 
