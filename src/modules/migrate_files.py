@@ -13,7 +13,7 @@ from typing import cast
 from .common_functions import logger, catch_error, is_pc, execution_date
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
-    default_storage_account_abbr
+    default_storage_account_abbr, metadata_folder, azure_container_folder_path
 from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
     metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value
 
@@ -43,7 +43,7 @@ def get_DataTypeTranslation_table(spark, data_type_translation_id:str):
         spark = spark,
         storage_account_name = storage_account_name,
         container_name = tableinfo_container_name,
-        container_folder = '',
+        container_folder = metadata_folder,
         table_name = metadata_DataTypeTranslation,
         file_format = file_format
     )
@@ -68,7 +68,7 @@ def get_master_ingest_list(spark, tableinfo_source:str):
         spark = spark,
         storage_account_name = storage_account_name,
         container_name = tableinfo_container_name,
-        container_folder = tableinfo_source,
+        container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
         table_name = metadata_MasterIngestList,
         file_format = file_format
     )
@@ -528,7 +528,7 @@ def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, def
             table_to_save = tableinfo,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
-            container_folder = tableinfo_source,
+            container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
             table_name = tableinfo_name,
             partitionBy = partitionBy,
             file_format = file_format,

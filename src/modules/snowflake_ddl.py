@@ -11,8 +11,8 @@ from pprint import pprint
 
 from .common_functions import logger, catch_error, is_pc, data_settings, execution_date, get_secrets
 from .spark_functions import elt_audit_columns
-from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
-    to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data
+from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
+    to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder
 
 from snowflake.connector import connect as snowflake_connect
 from pyspark.sql.types import StringType
@@ -44,7 +44,7 @@ class module_params_class:
     snowflake_role = f'AD_SNOWFLAKE_{environment}_DBA'.upper()
     engineer_role = f"AD_SNOWFLAKE_{environment}_ENGINEER".upper()
 
-    ddl_folder = f'metadata/{domain_name}/DDL'
+    ddl_folder = f'{metadata_folder}/{domain_name}/DDL'
 
     variant_label = '_VARIANT'
     variant_alias = 'SRC'
@@ -201,7 +201,7 @@ def action_source_level_tables(table_name:str):
         def inner(*args, **kwargs):
             logger.info(f"Source Level Table {kwargs['container_folder']}/{table_name}")
             sqlstr = fn(*args, **kwargs)
-            if wid.save_to_adls or True:
+            if wid.save_to_adls:
                 save_adls_gen2(
                     table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
                     storage_account_name = kwargs['storage_account_name'],
@@ -419,7 +419,7 @@ def create_source_level_tables(ingest_data_list:defaultdict):
     for source_system, ingest_data_per_source_system in ingest_data_list.items():
         storage_account_name = default_storage_account_name
         setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
-        container_folder = f'metadata/{wid.domain_name}/{source_system}'
+        container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=wid.domain_name, source_or_database=source_system)
 
         create_ingest_data_table(
             ingest_data_per_source_system = ingest_data_per_source_system,
@@ -438,7 +438,7 @@ def create_source_level_tables(ingest_data_list:defaultdict):
             container_folder = container_folder,
             storage_account_name = storage_account_name,
             )
-        
+
         trigger_snowpipe(
             source_system = source_system,
             )

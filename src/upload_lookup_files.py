@@ -23,7 +23,7 @@ from modules.common_functions import logger, catch_error, is_pc, config_path, ex
 from modules.spark_functions import create_spark, read_csv, remove_column_spaces, metadata_DataTypeTranslation, metadata_MasterIngestList, \
     metadata_FirmSourceMap, partitionBy, partitionBy_value
 from modules.azure_functions import setup_spark_adls_gen2_connection, to_storage_account_name, file_format, save_adls_gen2, \
-    tableinfo_container_name
+    tableinfo_container_name, metadata_folder, azure_container_folder_path
 
 
 from pyspark.sql import functions as F
@@ -44,8 +44,8 @@ lookup_files_path = os.path.join(config_path, 'lookup_files')
 data_type_translation_path = os.path.join(lookup_files_path, 'DataTypeTranslation.csv')
 assert os.path.isfile(data_type_translation_path), f"File not found: {data_type_translation_path}"
 
-master_ingest_list_path = os.path.join(lookup_files_path, 'LNR_Tables.csv')
-assert os.path.isfile(master_ingest_list_path), f"File not found: {master_ingest_list_path}"
+FP_LR_master_ingest_list_path = os.path.join(lookup_files_path, 'LNR_Tables.csv')
+assert os.path.isfile(FP_LR_master_ingest_list_path), f"File not found: {FP_LR_master_ingest_list_path}"
 
 firm_source_map_path = os.path.join(lookup_files_path, 'Firm_Source_Map.csv')
 assert os.path.isfile(firm_source_map_path), f"File not found: {firm_source_map_path}"
@@ -79,7 +79,7 @@ def add_config_elt_columns(config_table):
 # %% Get Master Ingest List
 
 @catch_error(logger)
-def get_master_ingest_list_csv(master_ingest_list_path:str, tableinfo_source:str=None):
+def get_master_ingest_list_csv(master_ingest_list_path:str, domain_name:str, tableinfo_source:str):
     """
     Get List of Tables of interest
     """
@@ -103,7 +103,7 @@ def get_master_ingest_list_csv(master_ingest_list_path:str, tableinfo_source:str
             table_to_save = master_ingest_list,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
-            container_folder = tableinfo_source,
+            container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=domain_name, source_or_database=tableinfo_source),
             table_name = metadata_MasterIngestList,
             partitionBy = partitionBy,
             file_format = file_format,
@@ -114,7 +114,8 @@ def get_master_ingest_list_csv(master_ingest_list_path:str, tableinfo_source:str
 
 
 master_ingest_list = get_master_ingest_list_csv(
-    master_ingest_list_path = master_ingest_list_path,
+    master_ingest_list_path = FP_LR_master_ingest_list_path,
+    domain_name = 'financial_professional',
     tableinfo_source = 'LR',
     )
 
@@ -138,7 +139,7 @@ def get_translation(data_type_translation_path:str):
             table_to_save = translation,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
-            container_folder = '',
+            container_folder = metadata_folder,
             table_name = metadata_DataTypeTranslation,
             partitionBy = partitionBy,
             file_format = file_format,
@@ -172,7 +173,7 @@ def get_firm_source_map(firm_source_map_path:str):
             table_to_save = firm_source_map,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
-            container_folder = '',
+            container_folder = metadata_folder,
             table_name = metadata_FirmSourceMap,
             partitionBy = partitionBy,
             file_format = file_format,

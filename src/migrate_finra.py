@@ -40,7 +40,8 @@ from modules.common_functions import logger, catch_error, is_pc, data_settings, 
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
-    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, add_table_to_tableinfo, read_tableinfo
+    to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, add_table_to_tableinfo, read_tableinfo, \
+    metadata_folder, azure_container_folder_path
 from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table, flatten_df, flatten_n_divide_df
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 
@@ -671,7 +672,7 @@ def save_tableinfo(all_new_files):
                 table_to_save = meta_tableinfo,
                 storage_account_name = storage_account_name,
                 container_name = tableinfo_container_name,
-                container_folder = tableinfo_source,
+                container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
                 table_name = tableinfo_name,
                 partitionBy = partitionBy,
                 file_format = file_format,

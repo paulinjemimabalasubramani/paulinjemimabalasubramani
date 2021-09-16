@@ -27,9 +27,9 @@ from pyspark.sql.types import IntegerType
 
 column_regex = r'[\W]+'
 
-metadata_DataTypeTranslation = 'metadata.DataTypeTranslation'
-metadata_MasterIngestList = 'metadata.MasterIngestList'
-metadata_FirmSourceMap = 'metadata.FirmSourceMap'
+metadata_DataTypeTranslation = 'DataTypeTranslation'
+metadata_MasterIngestList = 'MasterIngestList'
+metadata_FirmSourceMap = 'FirmSourceMap'
 
 MD5KeyIndicator = 'MD5_KEY'
 IDKeyIndicator = 'ID'
