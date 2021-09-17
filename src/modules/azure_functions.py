@@ -22,7 +22,10 @@ from pyspark.sql.functions import col, lit
 
 tableinfo_container_name = "tables"
 container_name = "ingress" # Default Container Name
-tableinfo_name = 'metadata.TableInfo'
+tableinfo_name = 'TableInfo'
+metadata_folder = 'metadata'
+data_folder = 'data'
+
 file_format = 'delta' # Default File Format
 default_storage_account_abbr = 'AGGR'
 
@@ -118,6 +121,12 @@ def setup_spark_adls_gen2_connection(spark, storage_account_name):
 @catch_error(logger)
 def azure_data_path_create(container_name:str, storage_account_name:str, container_folder:str, table_name:str):
     return f"abfs://{container_name}@{storage_account_name}.{azure_filesystem_uri}/{container_folder+'/' if container_folder else ''}{table_name}"
+
+
+@catch_error(logger)
+def azure_container_folder_path(data_type:str, domain_name:str='', source_or_database:str='', firm_or_schema:str=''):
+    sl = lambda x: '/'+x if x else ''
+    return f"{data_type}{sl(domain_name)}{sl(source_or_database)}{sl(firm_or_schema)}"
 
 
 
@@ -248,7 +257,7 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str, tableinfo=No
             spark = spark,
             storage_account_name = default_storage_account_name,
             container_name = tableinfo_container_name,
-            container_folder = tableinfo_source,
+            container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
             table_name = tableinfo_name,
             file_format = file_format
         )
@@ -290,7 +299,7 @@ def get_firms_with_crd(spark, tableinfo_source):
         spark = spark,
         storage_account_name = storage_account_name,
         container_name = tableinfo_container_name,
-        container_folder = '',
+        container_folder = metadata_folder,
         table_name = metadata_FirmSourceMap,
         file_format = file_format
     )

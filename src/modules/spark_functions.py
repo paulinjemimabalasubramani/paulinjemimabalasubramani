@@ -27,9 +27,9 @@ from pyspark.sql.types import IntegerType
 
 column_regex = r'[\W]+'
 
-metadata_DataTypeTranslation = 'metadata.DataTypeTranslation'
-metadata_MasterIngestList = 'metadata.MasterIngestList'
-metadata_FirmSourceMap = 'metadata.FirmSourceMap'
+metadata_DataTypeTranslation = 'DataTypeTranslation'
+metadata_MasterIngestList = 'MasterIngestList'
+metadata_FirmSourceMap = 'FirmSourceMap'
 
 MD5KeyIndicator = 'MD5_KEY'
 IDKeyIndicator = 'ID'
@@ -82,9 +82,9 @@ def create_spark():
         .appName(app_name)
         .config('fs.wasbs.impl', 'org.apache.hadoop.fs.azure.NativeAzureFileSystem')
         .config('spark.sql.optimizer.maxIterations', '300')
-        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
-        .config("spark.databricks.delta.vacuum.parallelDelete.enabled", "true")
+        .config('spark.sql.extensions', 'io.delta.sql.DeltaSparkSessionExtension')
+        .config('spark.sql.catalog.spark_catalog', 'org.apache.spark.sql.delta.catalog.DeltaCatalog')
+        .config('spark.databricks.delta.vacuum.parallelDelete.enabled', 'true')
         )
 
     if is_pc:

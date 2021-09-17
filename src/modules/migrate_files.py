@@ -5,7 +5,7 @@ Common Library for translating data types from source database to target databas
 
 # %% Import Libraries
 
-import os, re
+import os, sys, re
 from pprint import pprint
 from collections import defaultdict
 from typing import cast
@@ -13,7 +13,7 @@ from typing import cast
 from .common_functions import logger, catch_error, is_pc, execution_date
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
-    default_storage_account_abbr
+    default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder
 from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
     metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value
 
@@ -43,7 +43,7 @@ def get_DataTypeTranslation_table(spark, data_type_translation_id:str):
         spark = spark,
         storage_account_name = storage_account_name,
         container_name = tableinfo_container_name,
-        container_folder = '',
+        container_folder = metadata_folder,
         table_name = metadata_DataTypeTranslation,
         file_format = file_format
     )
@@ -68,7 +68,7 @@ def get_master_ingest_list(spark, tableinfo_source:str):
         spark = spark,
         storage_account_name = storage_account_name,
         container_name = tableinfo_container_name,
-        container_folder = tableinfo_source,
+        container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
         table_name = metadata_MasterIngestList,
         file_format = file_format
     )
@@ -528,7 +528,7 @@ def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, def
             table_to_save = tableinfo,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
-            container_folder = tableinfo_source,
+            container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
             table_name = tableinfo_name,
             partitionBy = partitionBy,
             file_format = file_format,
@@ -561,8 +561,8 @@ def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, t
 # %% Loop over all tables
 
 @catch_error(logger)
-def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:list, ingest_from_files_flag:bool, domain_name:str,
-                                    sql_id:str, sql_pass:str, sql_server:str, storage_account_name:str, tableinfo_source:str):
+def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:list, ingest_from_files_flag:bool, sql_id:str,
+                                    sql_pass:str, sql_server:str, storage_account_name:str, tableinfo_source:str):
 
     PARTITION_list = defaultdict(str)
     table_count = len(table_rows)
@@ -573,8 +573,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
         table_name = r['TableName']
         logger.info(f"Table {i+1} of {table_count}: {schema}.{table_name}")
 
-        data_type = 'data'
-        container_folder = f"{data_type}/{domain_name}/{database}/{schema}"
+        container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=database, firm_or_schema=schema)
 
         if ingest_from_files_flag:
             file_path = [file_meta for file_meta in files_meta if file_meta['table'].lower()==table_name.lower() and file_meta['schema'].lower()==schema.lower()][0]['path']
@@ -604,7 +603,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
             file_format = file_format
         )
 
-        PARTITION_list[(domain_name, database, schema, table_name, storage_account_name)] = userMetadata
+        PARTITION_list[(sys.domain_name, database, schema, table_name, storage_account_name)] = userMetadata
 
     logger.info('Finished Migrating All Tables')
     return PARTITION_list

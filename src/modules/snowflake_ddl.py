@@ -4,15 +4,15 @@ Common Library for creating and executing (if required) Snowflake DDL Steps and 
 """
 
 # %% Import Libraries
-import json, os
+import json, os, sys
 from functools import wraps
 from collections import defaultdict, OrderedDict
 from pprint import pprint
 
 from .common_functions import logger, catch_error, is_pc, data_settings, execution_date, get_secrets
 from .spark_functions import elt_audit_columns
-from .azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
-    to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data
+from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
+    to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder
 
 from snowflake.connector import connect as snowflake_connect
 from pyspark.sql.types import StringType
@@ -25,26 +25,26 @@ from pyspark.sql.functions import col, lit
 class module_params_class:
     save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
-    create_or_replace = False # Default False - Use True for Schema Change Update
+    create_or_replace = True # Default False - Use True for Schema Change Update
     create_cicd_file = True # Default True
 
     snowflake_account = 'advisorgroup-edip'
     sf_key_vault_account = 'snowflake'
 
-    domain_name = 'financial_professional'
-    domain_abbr = 'FP'
-    envionment = 'QA'
-    snowflake_raw_warehouse = f'{envionment}_RAW_WH'.upper()
-    snowflake_raw_database = f'{envionment}_RAW_{domain_abbr}'.upper()
-    snowflake_curated_database = f'{envionment}_CURATED_{domain_abbr}'.upper()
+    domain_name = sys.domain_name
+    domain_abbr = sys.domain_abbr
+    environment = sys.environment
+    snowflake_raw_warehouse = f'{environment}_RAW_WH'.upper()
+    snowflake_raw_database = f'{environment}_RAW_{domain_abbr}'.upper()
+    snowflake_curated_database = f'{environment}_CURATED_{domain_abbr}'.upper()
 
     common_elt_stage_name = default_storage_account_abbr
     common_storage_account = default_storage_account_name
 
-    snowflake_role = f'AD_SNOWFLAKE_{envionment}_DBA'.upper()
-    engineer_role = f"AD_SNOWFLAKE_{envionment}_ENGINEER".upper()
+    snowflake_role = f'AD_SNOWFLAKE_{environment}_DBA'.upper()
+    engineer_role = f"AD_SNOWFLAKE_{environment}_ENGINEER".upper()
 
-    ddl_folder = f'metadata/{domain_name}/DDL'
+    ddl_folder = 'DDL'
 
     variant_label = '_VARIANT'
     variant_alias = 'SRC'
@@ -178,7 +178,7 @@ def action_step(step:int):
                     table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
                     storage_account_name = storage_account_name,
                     container_name = container_name,
-                    container_folder = f"{wid.ddl_folder}/{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}",
+                    container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=wid.domain_name, source_or_database=f"{wid.ddl_folder}/{kwargs['source_system']}", firm_or_schema=f"step_{step}/{kwargs['schema_name']}"),
                     table_name = kwargs['table_name'],
                     file_format = 'text'
                 )
@@ -201,7 +201,7 @@ def action_source_level_tables(table_name:str):
         def inner(*args, **kwargs):
             logger.info(f"Source Level Table {kwargs['container_folder']}/{table_name}")
             sqlstr = fn(*args, **kwargs)
-            if wid.save_to_adls or True:
+            if wid.save_to_adls:
                 save_adls_gen2(
                     table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
                     storage_account_name = kwargs['storage_account_name'],
@@ -214,7 +214,7 @@ def action_source_level_tables(table_name:str):
             if wid.execute_at_snowflake:
                 logger.info(f"Executing Snowflake SQL String: {kwargs['container_folder']}/{table_name}")
                 exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
-            
+
             if wid.create_cicd_file:
                 wid.cicd_file = sqlstr
                 write_CICD_file_per_table(source_system=kwargs['source_system'], schema_name=None, table_name=table_name)
@@ -419,7 +419,7 @@ def create_source_level_tables(ingest_data_list:defaultdict):
     for source_system, ingest_data_per_source_system in ingest_data_list.items():
         storage_account_name = default_storage_account_name
         setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
-        container_folder = f'metadata/{wid.domain_name}/{source_system}'
+        container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=wid.domain_name, source_or_database=source_system)
 
         create_ingest_data_table(
             ingest_data_per_source_system = ingest_data_per_source_system,
@@ -438,7 +438,7 @@ def create_source_level_tables(ingest_data_list:defaultdict):
             container_folder = container_folder,
             storage_account_name = storage_account_name,
             )
-        
+
         trigger_snowpipe(
             source_system = source_system,
             )

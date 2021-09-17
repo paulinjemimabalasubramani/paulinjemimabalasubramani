@@ -1,5 +1,5 @@
 """
-Move Snowflake information_schema history data to Azure Monitor
+Load Snowflake log data to Azure Monitor
 
 Spark Web UI:
 http://10.128.25.82:8181/
@@ -18,6 +18,9 @@ https://docs.databricks.com/_static/notebooks/snowflake-python.html
 import logging
 import os, sys, json
 sys.parent_name = os.path.basename(__file__)
+sys.domain_name = 'financial_professional'
+sys.domain_abbr = 'FP'
+sys.environment = 'QA'
 
 from pprint import pprint
 
@@ -43,7 +46,8 @@ sf_account = snowflake_ddl_params.snowflake_account
 sf_role = snowflake_ddl_params.snowflake_role
 sf_warehouse = snowflake_ddl_params.snowflake_raw_warehouse
 
-sf_databases = ['QA_RAW_FP']
+sf_databases = [snowflake_ddl_params.snowflake_raw_database]
+
 
 
 # %% Create Session
@@ -63,7 +67,7 @@ _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(
 
 kusto_query ='SnowflakeCopyHistory_CL | summarize MAX_LOAD_TIME = max(LAST_LOAD_TIME_t) by TABLE_CATALOG_NAME_s, TABLE_SCHEMA_NAME_s, TABLE_NAME_s'
 
-prev_log_data = get_log_data(kusto_query=kusto_query, logger=logger)
+# prev_log_data = get_log_data(kusto_query=kusto_query, logger=logger)
 
 
 
@@ -113,7 +117,7 @@ def get_snowflake_copy_history(spark, sf_database:str, sf_schema:str, table_name
     if start_time:
         start_timex = f"DATEADD(SECONDS, 1, TO_TIMESTAMP_LTZ('{start_time}'))"
     else:
-        start_timex = f"DATEADD(DAYS, -14, CURRENT_TIMESTAMP())"
+        start_timex = f"DATEADD(HOURS, -2, CURRENT_TIMESTAMP())"
 
     sqlstr = f"SELECT * FROM TABLE(INFORMATION_SCHEMA.COPY_HISTORY(TABLE_NAME=>'{table_name}', START_TIME=>{start_timex}));"
 

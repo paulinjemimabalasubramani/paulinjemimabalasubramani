@@ -1,5 +1,5 @@
 """
-Library for Building Branch Tables
+Library for Building Custom FINRA Tables
 
 """
 
@@ -29,7 +29,7 @@ def base_to_schema(base:dict):
             v = ArrayType(base_to_schema(val[0]), True)
         else:
             v = val
-        
+
         st.append(StructField(key, v, True))
     return StructType(st)
 
