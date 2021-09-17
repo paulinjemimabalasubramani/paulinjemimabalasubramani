@@ -18,6 +18,9 @@ https://docs.databricks.com/_static/notebooks/snowflake-python.html
 import logging
 import os, sys, json
 sys.parent_name = os.path.basename(__file__)
+sys.domain_name = 'financial_professional'
+sys.domain_abbr = 'FP'
+sys.environment = 'QA'
 
 from pprint import pprint
 
@@ -43,7 +46,8 @@ sf_account = snowflake_ddl_params.snowflake_account
 sf_role = snowflake_ddl_params.snowflake_role
 sf_warehouse = snowflake_ddl_params.snowflake_raw_warehouse
 
-sf_databases = ['QA_RAW_FP']
+sf_databases = [snowflake_ddl_params.snowflake_raw_database]
+
 
 
 # %% Create Session
@@ -113,7 +117,7 @@ def get_snowflake_copy_history(spark, sf_database:str, sf_schema:str, table_name
     if start_time:
         start_timex = f"DATEADD(SECONDS, 1, TO_TIMESTAMP_LTZ('{start_time}'))"
     else:
-        start_timex = f"DATEADD(DAYS, -14, CURRENT_TIMESTAMP())"
+        start_timex = f"DATEADD(HOURS, -2, CURRENT_TIMESTAMP())"
 
     sqlstr = f"SELECT * FROM TABLE(INFORMATION_SCHEMA.COPY_HISTORY(TABLE_NAME=>'{table_name}', START_TIME=>{start_timex}));"
 

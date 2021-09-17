@@ -299,7 +299,7 @@ def get_firms_with_crd(spark, tableinfo_source):
         spark = spark,
         storage_account_name = storage_account_name,
         container_name = tableinfo_container_name,
-        container_folder = '',
+        container_folder = metadata_folder,
         table_name = metadata_FirmSourceMap,
         file_format = file_format
     )

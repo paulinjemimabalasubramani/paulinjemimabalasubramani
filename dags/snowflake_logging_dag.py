@@ -31,7 +31,7 @@ with DAG(
     airflow_app_name,
     default_args = default_args,
     description = description_DAG,
-    schedule_interval = '0 13 * * *',
+    schedule_interval = '0 */2 * * *', # every 2 hours
     start_date = days_ago(1),
 ) as dag:
     current_datetime = datetime.now()
