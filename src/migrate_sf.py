@@ -16,7 +16,6 @@ import os, sys
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'financial_professional'
 sys.domain_abbr = 'FP'
-sys.environment = 'QA'
 
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary

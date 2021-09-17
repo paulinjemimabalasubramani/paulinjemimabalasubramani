@@ -33,7 +33,7 @@ class module_params_class:
 
     domain_name = sys.domain_name
     domain_abbr = sys.domain_abbr
-    environment = sys.environment
+    environment = data_settings.environment
     snowflake_raw_warehouse = f'{environment}_RAW_WH'.upper()
     snowflake_raw_database = f'{environment}_RAW_{domain_abbr}'.upper()
     snowflake_curated_database = f'{environment}_CURATED_{domain_abbr}'.upper()

@@ -131,7 +131,8 @@ if is_pc:
 
 
 defaults = {
-    'default_data_path': fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else '')
+    'default_data_path': fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''),
+    'environment': sys.environment if hasattr(sys, 'environment') else 'QA',
 }
 
 data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults=defaults)
