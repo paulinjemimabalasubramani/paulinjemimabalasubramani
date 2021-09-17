@@ -1,3 +1,5 @@
+environment: QA
+
 output_log_path: /usr/local/spark/resources/fileshare/Shared/logs
 output_cicd_path: /usr/local/spark/resources/fileshare/Shared/CICD
 

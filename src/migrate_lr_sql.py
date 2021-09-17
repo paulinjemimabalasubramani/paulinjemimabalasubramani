@@ -16,7 +16,6 @@ import os, sys
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'financial_professional'
 sys.domain_abbr = 'FP'
-sys.environment = 'QA'
 
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
@@ -48,6 +47,10 @@ data_type_translation_id = 'sqlserver_snowflake'
 
 data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
 
+logger.info({
+    'tableinfo_source': tableinfo_source,
+    'data_path_folder': data_path_folder,
+})
 
 
 # %% Create Session
