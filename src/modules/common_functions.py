@@ -138,13 +138,15 @@ defaults = {
 data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults=defaults)
 data_settings.data_path = data_settings.default_data_path
 
-data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
-for source in data_paths_per_source:
-    _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=os.path.join(data_settings.data_path, source))
-
-
 if is_pc:
     data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
+
+data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
+for source, source_path in data_paths_per_source.items():
+    _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=source_path)
+
+    if is_pc:
+        setattr(data_settings, f'data_path_{source}', os.path.join(data_settings.data_path, source))
 
 
 
@@ -451,7 +453,9 @@ logger = CreateLogger()
 
 logger.info({'execution_date': execution_date})
 logger.info(system_info())
-
+logger.info({
+    'data_paths_per_source': data_paths_per_source,
+})
 
 
 # %% get extraClassPath:

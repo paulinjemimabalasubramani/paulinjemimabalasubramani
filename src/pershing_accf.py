@@ -15,7 +15,7 @@ http://10.128.25.82:8282/
 import os, sys
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'client_and_account'
-sys.domain_abbr = 'CNA'
+sys.domain_abbr = 'CA'
 
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary

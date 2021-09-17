@@ -93,6 +93,11 @@ schema_path_folder = os.path.join(config_path, 'finra_schema')
 
 PARTITION_list = defaultdict(str)
 
+logger.info({
+    'tableinfo_source': tableinfo_source,
+    'data_path_folder': data_path_folder,
+    'schema_path_folder': schema_path_folder,
+})
 
 
 # %% Initiate Spark

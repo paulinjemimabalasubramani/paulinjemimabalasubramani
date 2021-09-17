@@ -47,6 +47,10 @@ data_type_translation_id = 'sqlserver_snowflake'
 
 data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
 
+logger.info({
+    'tableinfo_source': tableinfo_source,
+    'data_path_folder': data_path_folder,
+})
 
 
 # %% Create Session
