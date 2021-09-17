@@ -13,7 +13,7 @@ from typing import cast
 from .common_functions import logger, catch_error, is_pc, execution_date
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
-    default_storage_account_abbr, metadata_folder, azure_container_folder_path
+    default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder
 from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
     metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value
 
@@ -573,8 +573,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
         table_name = r['TableName']
         logger.info(f"Table {i+1} of {table_count}: {schema}.{table_name}")
 
-        data_type = 'data'
-        container_folder = f"{data_type}/{sys.domain_name}/{database}/{schema}"
+        container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=database, firm_or_schema=schema)
 
         if ingest_from_files_flag:
             file_path = [file_meta for file_meta in files_meta if file_meta['table'].lower()==table_name.lower() and file_meta['schema'].lower()==schema.lower()][0]['path']

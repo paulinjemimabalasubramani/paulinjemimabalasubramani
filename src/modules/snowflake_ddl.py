@@ -25,7 +25,7 @@ from pyspark.sql.functions import col, lit
 class module_params_class:
     save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
-    create_or_replace = False # Default False - Use True for Schema Change Update
+    create_or_replace = True # Default False - Use True for Schema Change Update
     create_cicd_file = True # Default True
 
     snowflake_account = 'advisorgroup-edip'
@@ -44,7 +44,7 @@ class module_params_class:
     snowflake_role = f'AD_SNOWFLAKE_{environment}_DBA'.upper()
     engineer_role = f"AD_SNOWFLAKE_{environment}_ENGINEER".upper()
 
-    ddl_folder = f'{metadata_folder}/{domain_name}/DDL'
+    ddl_folder = 'DDL'
 
     variant_label = '_VARIANT'
     variant_alias = 'SRC'
@@ -178,7 +178,7 @@ def action_step(step:int):
                     table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
                     storage_account_name = storage_account_name,
                     container_name = container_name,
-                    container_folder = f"{wid.ddl_folder}/{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}",
+                    container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=wid.domain_name, source_or_database=f"{wid.ddl_folder}/{kwargs['source_system']}", firm_or_schema=f"step_{step}/{kwargs['schema_name']}"),
                     table_name = kwargs['table_name'],
                     file_format = 'text'
                 )

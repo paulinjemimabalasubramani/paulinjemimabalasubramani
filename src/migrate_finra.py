@@ -41,7 +41,7 @@ from modules.spark_functions import create_spark, read_sql, write_sql, read_csv,
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
     to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, add_table_to_tableinfo, read_tableinfo, \
-    metadata_folder, azure_container_folder_path
+    metadata_folder, azure_container_folder_path, data_folder
 from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table, flatten_df, flatten_n_divide_df
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 
@@ -314,8 +314,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
             storage_account_abbr = storage_account_abbr,
             )
 
-        data_type = 'data'
-        container_folder = f'{data_type}/{sys.domain_name}/{database}/{firm_name}'
+        container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=database, firm_or_schema=firm_name)
 
         if is_pc: # and manual_iteration:
             local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
