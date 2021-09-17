@@ -25,7 +25,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end
 from modules.spark_functions import create_spark
-from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo, default_storage_account_name, tableinfo_name
+from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name
 
 
 

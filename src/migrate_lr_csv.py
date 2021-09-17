@@ -25,7 +25,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end
 from modules.spark_functions import create_spark
-from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo, default_storage_account_name, tableinfo_name
+from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name
 from modules.migrate_files import make_tableinfo, iterate_over_all_tables_migration
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 
@@ -84,7 +84,7 @@ files_meta, tableinfo = make_tableinfo(
 
 # %% Read metadata.TableInfo
 
-tableinfo, table_rows = read_tableinfo(spark, tableinfo_name=tableinfo_name, tableinfo_source=tableinfo_source, tableinfo=tableinfo)
+table_rows = read_tableinfo_rows(tableinfo_name=tableinfo_name, tableinfo_source=tableinfo_source, tableinfo=tableinfo)
 
 
 # %% Setup spark to ADLS Gen2 connection

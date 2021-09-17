@@ -415,6 +415,10 @@ ALTER PIPE {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_s
 
 @catch_error(logger)
 def create_source_level_tables(ingest_data_list:defaultdict):
+    if not ingest_data_list:
+        logger.warning('No data in ingest_data_list -> skipping')
+        return
+
     logger.info(f'Create Source Level Tables')
     for source_system, ingest_data_per_source_system in ingest_data_list.items():
         storage_account_name = default_storage_account_name
@@ -862,6 +866,10 @@ ALTER TASK {task_name} RESUME;
 
 @catch_error(logger)
 def iterate_over_all_tables_snowflake(tableinfo, table_rows, PARTITION_list=None):
+    if not tableinfo:
+        logger.warning('No data in TableInfo -> Skipping Snowflake Steps')
+        return
+
     n_tables = len(table_rows)
     ingest_data_list = defaultdict(list)
 
