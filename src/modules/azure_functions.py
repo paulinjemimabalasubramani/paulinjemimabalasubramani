@@ -250,17 +250,10 @@ def read_adls_gen2(spark,
 # %% Read metadata.TableInfo
 
 catch_error(logger)
-def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str, tableinfo=None):
+def read_tableinfo_rows(tableinfo_name:str, tableinfo_source:str, tableinfo):
     if not tableinfo:
-        setup_spark_adls_gen2_connection(spark, default_storage_account_name)
-        tableinfo = read_adls_gen2(
-            spark = spark,
-            storage_account_name = default_storage_account_name,
-            container_name = tableinfo_container_name,
-            container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
-            table_name = tableinfo_name,
-            file_format = file_format
-        )
+        logger.warning('No TableInfo to read -> skipping')
+        return
 
     tableinfo = tableinfo.filter(col('IsActive')==lit(1)).distinct()
     tableinfo.persist()
@@ -284,7 +277,7 @@ def read_tableinfo(spark, tableinfo_name:str, tableinfo_source:str, tableinfo=No
     if is_pc: nopk.show()
     assert nopk.count() == 0, f'Found tables with no primary keys: {nopk.collect()}'
 
-    return tableinfo, table_rows
+    return table_rows
 
 
 
