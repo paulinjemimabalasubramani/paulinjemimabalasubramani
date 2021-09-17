@@ -453,9 +453,7 @@ logger = CreateLogger()
 
 logger.info({'execution_date': execution_date})
 logger.info(system_info())
-logger.info({
-    'data_paths_per_source': data_paths_per_source,
-})
+
 
 
 # %% get extraClassPath:
