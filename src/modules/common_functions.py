@@ -203,14 +203,14 @@ azure_tenant_id, log_customer_id, log_shared_key = get_secrets('loganalytics')
 # %% Build the API signature
 
 @catch_error()
-def build_log_signature(customer_id, shared_key, date, content_length, method, content_type, resource, logger=None):
+def build_log_signature(customer_id:str, shared_key:str, rfc1123date:str, content_length:int, method:str, content_type:str, resource:str, logger=None):
     try:
-        x_headers = 'x-ms-date:' + date
-        string_to_hash = method + '\n' + str(content_length) + '\n' + content_type + '\n' + x_headers + '\n' + resource
+        x_headers = 'x-ms-date:' + rfc1123date
+        string_to_hash = '\n'.join([method, str(content_length), content_type, x_headers, resource])
         bytes_to_hash = bytes(string_to_hash, encoding='utf-8')
         decoded_key = base64.b64decode(shared_key)
         encoded_hash = base64.b64encode(hmac.new(decoded_key, bytes_to_hash, digestmod=hashlib.sha256).digest()).decode()
-        authorization = 'SharedKey {}:{}'.format(customer_id, encoded_hash)
+        authorization = f'SharedKey {customer_id}:{encoded_hash}'
 
     except Exception as e:
         if logger:
@@ -239,9 +239,18 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
         content_type = 'application/json'
         resource = '/api/logs'
         rfc1123date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
-        content_length = len(body)
-        signature = build_log_signature(customer_id=log_customer_id, shared_key=log_shared_key, date=rfc1123date, content_length=content_length, method=method, content_type=content_type, resource=resource)
         uri = 'https://' + log_customer_id + '.ods.opinsights.azure.com' + resource + '?api-version=2016-04-01'
+
+        signature = build_log_signature(
+            customer_id = log_customer_id,
+            shared_key = log_shared_key,
+            rfc1123date = rfc1123date,
+            content_length = len(body),
+            method = method,
+            content_type = content_type,
+            resource = resource,
+            logger = logger,
+            )
 
         headers = {
             'content-type': content_type,
@@ -264,77 +273,6 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
             logger.error(str(e))
         else:
             pprint(e)
-
-
-
-# %% Obtain authentication token using a Service Principal
-
-@catch_error()
-def get_log_token(logger=None):
-    login_url = 'https://login.microsoftonline.com/' + azure_tenant_id + '/oauth2/token'
-    resource = 'https://api.loganalytics.io'
-
-    payload = {
-        'grant_type': 'client_credentials',
-        'client_id': log_customer_id,
-        'client_secret': log_shared_key,
-        'Content-Type': 'x-www-form-urlencoded',
-        'resource': resource
-    }
-
-    try:
-        response = requests.post(login_url, data=payload, verify=True)
-    except Exception as e:
-        if logger:
-            logger.error(str(e))
-        else:
-            pprint(e)
-
-    if (response.status_code >= 200 and response.status_code <= 299):
-        if logger: logger.info('Log Token obtained')
-        token = json.loads(response.content)['access_token']
-        return {'Authorization': str('Bearer '+ token), 'Content-Type': 'application/json'}
-    else:
-        error_log = 'Unable to get log token: ' + format(response.status_code)
-        if logger:
-            logger.error(error_log)
-        else:
-            pprint(error_log)
-
-
-
-
-# %% Execute Kusto Query on an Azure Log Analytics Workspace
-# https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/
-# https://dev.loganalytics.io/
-
-@catch_error()
-def get_log_data(kusto_query, logger=None):
-    log_token = get_log_token(logger=logger)
-    if not log_token:
-        return
-
-    az_url = 'https://api.loganalytics.io/v1/workspaces/'+ log_analytics_workspace_id + '/query'
-    query = {'query': kusto_query}
-
-    try:
-        response = requests.get(az_url, params=query, headers=log_token)
-    except Exception as e:
-        if logger:
-            logger.error(str(e))
-        else:
-            pprint(e)
-
-    if (response.status_code >= 200 and response.status_code <= 299):
-        if logger: logger.info('Kusto Query ran successfully')
-        return json.loads(response.content)
-    else:
-        error_log = 'Unable to run Kusto Query: ' + format(response.status_code)
-        if logger:
-            logger.error(error_log)
-        else:
-            pprint(error_log)
-
 
 
 
@@ -366,22 +304,30 @@ def write_file(file_path:str, contents, mode = 'w', logger=None):
 # %% Get System Info in String
 
 @catch_error()
-def system_info():
-    uname = platform.uname()
+def system_info(logger=None):
+    try:
+        uname = platform.uname()
 
-    sysinfo = {
-        'Python_Version': platform.python_version(),
-        'Operating_System': uname.system,
-        'Network_Name': uname.node,
-        'OS_Release': uname.release,
-        'OS_Version': uname.version,
-        'Machine_Type': uname.machine,
-        'Processor': uname.processor,
-        'RAM': str(round(psutil.virtual_memory().total / (1024.0 **3))) + ' GB',
-        'Drivers_Path': drivers_path,
-        'Config_Path': config_path,
-        'Data_Path': data_settings.data_path,
-    }
+        sysinfo = {
+            'Python_Version': platform.python_version(),
+            'Operating_System': uname.system,
+            'Network_Name': uname.node,
+            'OS_Release': uname.release,
+            'OS_Version': uname.version,
+            'Machine_Type': uname.machine,
+            'Processor': uname.processor,
+            'RAM': str(round(psutil.virtual_memory().total / (1024.0 **3))) + ' GB',
+            'Drivers_Path': drivers_path,
+            'Config_Path': config_path,
+            'Data_Path': data_settings.data_path,
+        }
+
+    except Exception as e:
+        if logger:
+            logger.error(str(e))
+        else:
+            pprint(e)
+        #raise e
 
     return sysinfo
 
@@ -438,12 +384,12 @@ class CreateLogger:
 
     @catch_error()
     def warning(self, msg):
-        self.log(msg=msg, msg_type='WARNING', extra_log=system_info(), backup_logger_func=self.logger.warning)
+        self.log(msg=msg, msg_type='WARNING', extra_log=system_info(logger=self.logger), backup_logger_func=self.logger.warning)
 
 
     @catch_error()
     def error(self, msg):
-        self.log(msg=msg, msg_type='ERROR', extra_log=system_info(), backup_logger_func=self.logger.error)
+        self.log(msg=msg, msg_type='ERROR', extra_log=system_info(logger=self.logger), backup_logger_func=self.logger.error)
 
 
 
@@ -452,7 +398,78 @@ logger = CreateLogger()
 
 
 logger.info({'execution_date': execution_date})
-logger.info(system_info())
+logger.info(system_info(logger=logger))
+
+
+
+
+# %% Obtain authentication token using a Service Principal
+
+@catch_error(logger, raise_error=False)
+def get_log_token():
+    login_url = 'https://login.microsoftonline.com/' + azure_tenant_id + '/oauth2/token'
+    resource = 'https://api.loganalytics.io'
+
+    payload = {
+        'grant_type': 'client_credentials',
+        'client_id': log_customer_id,
+        'client_secret': log_shared_key,
+        'Content-Type': 'x-www-form-urlencoded',
+        'resource': resource
+    }
+
+    try:
+        response = requests.post(login_url, data=payload, verify=True)
+    except Exception as e:
+        if logger:
+            logger.error(str(e))
+        else:
+            pprint(e)
+
+    if (response.status_code >= 200 and response.status_code <= 299):
+        if logger: logger.info('Log Token obtained')
+        token = json.loads(response.content)['access_token']
+        return {'Authorization': str('Bearer '+ token), 'Content-Type': 'application/json'}
+    else:
+        error_log = 'Unable to get log token: ' + format(response.status_code)
+        if logger:
+            logger.error(error_log)
+        else:
+            pprint(error_log)
+
+
+
+
+# %% Execute Kusto Query on an Azure Log Analytics Workspace
+# https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/
+# https://dev.loganalytics.io/
+
+@catch_error(logger, raise_error=False)
+def get_log_data(kusto_query):
+    log_token = get_log_token()
+    if not log_token:
+        return
+
+    az_url = 'https://api.loganalytics.io/v1/workspaces/'+ log_analytics_workspace_id + '/query'
+    query = {'query': kusto_query}
+
+    try:
+        response = requests.get(az_url, params=query, headers=log_token)
+    except Exception as e:
+        if logger:
+            logger.error(str(e))
+        else:
+            pprint(e)
+
+    if (response.status_code >= 200 and response.status_code <= 299):
+        if logger: logger.info('Kusto Query ran successfully')
+        return json.loads(response.content)
+    else:
+        error_log = 'Unable to run Kusto Query: ' + format(response.status_code)
+        if logger:
+            logger.error(error_log)
+        else:
+            pprint(error_log)
 
 
 
@@ -477,6 +494,7 @@ extraClassPath = get_extraClassPath(drivers_path=drivers_path, join_drivers_by=j
 
 # %% Mark Execution End
 
+@catch_error(logger)
 def mark_execution_end():
     execution_date_end = datetime.now()
     timedelta1 = execution_date_end - execution_date_start

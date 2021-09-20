@@ -1,0 +1,47 @@
+record_name,position,picture,type,description,field_name
+HEADER,001-018,X(18),AN,Literally “BOF PERSHING ” (beginning of Pershing file),
+HEADER,019-036,X(18),AN,Literally “CUSTOMER ACCT INFO”,
+HEADER,037-046,X(10),AN,Literally “DATA OF”,
+HEADER,047-056,X(10),AN,DATE OF DATA = “MM/DD/CCYY”,
+HEADER,057-067,X(11),AN,Literally “TO REMOTE”,
+HEADER,068-071,X(04),AN,REMOTE ID = “XXXX”,
+HEADER,072-085,X(14),AN,Literally “BEGINS HERE”,
+HEADER,086-095,X(10),AN,RUN DATE = “MM/DD/CCYY”,
+HEADER,096-096,X(01),AN,Not Used,
+HEADER,097-104,X(08),AN,RUN TIME = “HH:MM:SS”,
+HEADER,105-118,X(14),AN,Not Used,
+HEADER,119-127,X(09),AN,Indicates if the file is REFRESHED or UPDATED; literally “REFRESHED” or “UPDATED”,
+HEADER,128-749,X(622),AN,Not Used,
+HEADER,750-750,X(01),AN,Literally “A”; indicates the end of the header record,
+A,001-002,X(02),AN,TRANSACTION CODE = “CI”,
+A,003-003,X(01),AN,RECORD INDICATOR VALUE = “A”,
+A,004-011,9(08),N,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+A,012-020,X(09),AN,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+A,021-023,X(03),AN,INTRODUCING BROKER DEALER (IBD) NUMBER,
+A,024-024,X(01),AN,Not Used,
+A,025-027,X(03),AN,INVESTMENT PROFESSIONAL (IP) NUMBER,
+A,028-028,X(01),AN,Not Used,
+A,029-038,X(10),AN,ACCOUNT SHORT NAME,
+A,039-040,X(02),AN,Not Used,
+A,041-041,X(01),AN,"TRANSACTION TYPE; values include:
+“X” or “ ”= Unchanged account
+“A” = Add new account
+“C” = Change to existing record",
+A,042-042,X(01),AN,"AUTO-TITLED or USER-TITLED ACCOUNT; values include:
+“F” = Auto-Titled
+“S” = User-Titled (opened in PONA or through conversion)",
+A,043-043,X(01),AN,"ACCOUNT TYPE CODE; values include:
+“C” = DVP/RVP
+“R” = Retail
+“T” = Retirement
+“3” = Retail Third Party as Custodian
+“4” = 401(k) Self-Directed",
+A,044-047,X(04),AN,"REGISTRATION TYPE; for Account Services only; see Appendix Q, “ACCT Codes and Values”",
+A,048-048,X(01),AN,Reserved,
+A,049-049,X(01),AN,"NUMBER OF ACCOUNT TITLE LINES IN REGISTRATION LINES (values 1, 2, 3, 4)",
+A,050-081,X(32),AN,ACCOUNT REGISTRATION LINE 1,
+A,082-113,X(32),AN,ACCOUNT REGISTRATION LINE 2,
+A,114-145,X(32),AN,ACCOUNT REGISTRATION LINE 3,
+A,146-177,X(32),AN,ACCOUNT REGISTRATION LINE 4,
+A,178-209,X(32),AN,ACCOUNT REGISTRATION LINE 5,
+A,210-241,X(32),AN,ACCOUNT REGISTRATION LINE 6,

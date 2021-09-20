@@ -1,5 +1,8 @@
 """
-Migrate all tables to the ADLS Gen 2
+Read Pershing "CUSTOMER ACCOUNT INFORMATION" - ACCT (Update File) / ACCF (Refresh File)
+
+https://standardfiles.pershing.com/
+
 
 Spark Web UI:
 http://10.128.25.82:8181/
@@ -24,7 +27,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end
-from modules.spark_functions import create_spark
+from modules.spark_functions import create_spark, read_csv
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name
 
 
