@@ -15,6 +15,9 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
+__file__ = r'C:\Users\smammadov\packages\EDIP-Code\src\pershing_accf.py'
+
+
 import os, sys
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'client_and_account'
@@ -30,6 +33,8 @@ from modules.common_functions import data_settings, get_secrets, logger, mark_ex
 from modules.spark_functions import create_spark, read_csv, read_text
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name
 
+
+from pyspark.sql.functions import col, lit
 
 
 
@@ -63,13 +68,24 @@ file_name = '4CCF.4CCF'
 
 text_file = read_text(spark=spark, file_path=os.path.join(data_path_folder, file_name))
 
-
-# %%
-
+cv = col('value')
 
 
 
+bof_pershing = 'BOF      PERSHING '
+eof_pershing = 'EOF      PERSHING '
 
+header = text_file.where(cv.substr(1, len(bof_pershing))==lit(bof_pershing))
+trailer = text_file.where(cv.substr(1, len(eof_pershing))==lit(eof_pershing))
+
+text_file = text_file.where(
+    (cv.substr(1, len(bof_pershing))!=lit(bof_pershing)) &
+    (cv.substr(1, len(eof_pershing))!=lit(eof_pershing))
+    )
+
+header.show()
+trailer.show()
+text_file.show()
 
 
 

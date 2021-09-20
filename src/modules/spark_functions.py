@@ -304,6 +304,7 @@ def read_text(spark, file_path:str):
     Read Text File using Spark
     """
     logger.info(f'Reading text file: {file_path}')
+
     text_file = (spark.read
         .format('text')
         .load(file_path)
