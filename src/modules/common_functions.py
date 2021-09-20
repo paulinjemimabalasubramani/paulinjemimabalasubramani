@@ -179,11 +179,12 @@ def get_azure_key_vault(logger=None):
 @catch_error()
 def get_secrets(account_name:str, logger=None):
     try:
+        environment = data_settings.environment.lower()
         account_name = account_name.lower()
         azure_tenant_id, client = get_azure_key_vault()
 
-        sp_id = client.get_secret(f'qa-{account_name}-id').value
-        sp_pass = client.get_secret(f'qa-{account_name}-pass').value
+        sp_id = client.get_secret(f'{environment}-{account_name}-id').value
+        sp_pass = client.get_secret(f'{environment}-{account_name}-pass').value
 
     except Exception as e:
         if logger:

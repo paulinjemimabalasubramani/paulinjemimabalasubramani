@@ -296,6 +296,24 @@ def read_csv(spark, file_path:str):
 
 
 
+# %% Read Text File
+
+@catch_error(logger)
+def read_text(spark, file_path:str):
+    """
+    Read Text File using Spark
+    """
+    logger.info(f'Reading text file: {file_path}')
+    text_file = (spark.read
+        .format('text')
+        .load(file_path)
+    )
+
+    logger.info('Finished reading text file')
+    return text_file
+
+
+
 # %% Add ID Key
 
 @catch_error(logger)

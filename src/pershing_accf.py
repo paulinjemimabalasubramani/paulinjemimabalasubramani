@@ -27,7 +27,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end
-from modules.spark_functions import create_spark, read_csv
+from modules.spark_functions import create_spark, read_csv, read_text
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name
 
 
@@ -57,7 +57,16 @@ data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_sour
 spark = create_spark()
 
 
+# %% Read Text File
+
+file_name = '4CCF.4CCF'
+
+text_file = read_text(spark=spark, file_path=os.path.join(data_path_folder, file_name))
+
+
 # %%
+
+
 
 
 
