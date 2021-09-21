@@ -97,6 +97,8 @@ class Config:
 
 # %% Parameters
 
+write_logs_to_file_flag = True # Default False
+
 execution_date_start = datetime.now()
 strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
 execution_date = execution_date_start.strftime(strftime)
@@ -261,7 +263,7 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
         }
 
         response = requests.post(uri, data=body, headers=headers)
-        if (response.status_code >= 200 and response.status_code <= 299):
+        if response.status_code >= 200 and response.status_code <= 299 and not write_logs_to_file_flag:
             #pprint('Log Accepted')
             pass
         else:

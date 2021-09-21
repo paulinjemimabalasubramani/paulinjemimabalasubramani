@@ -29,7 +29,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end
+from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end, config_path
 from modules.spark_functions import create_spark, read_csv, read_text
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name
 
@@ -54,12 +54,32 @@ data_type_translation_id = 'sqlserver_snowflake'
 
 data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
 
+logger.info({
+    'tableinfo_source': tableinfo_source,
+    'data_path_folder': data_path_folder,
+})
+
+
 # https://stackoverflow.com/questions/41944689/pyspark-parse-fixed-width-text-file
 
 
 # %% Create Session
 
 spark = create_spark()
+
+
+# %% Read Schema
+schema_folder_path = os.path.join(config_path, 'pershing_schema')
+schema_file_path_accf = os.path.join(schema_folder_path, 'customer_account_information_acct_accf.csv')
+
+schema_accf = read_csv(spark=spark, file_path=schema_file_path_accf)
+
+
+# %%
+
+schema_accf.show(20, False)
+
+
 
 
 # %% Read Text File

@@ -1,58 +1,58 @@
-﻿record_name,position,picture,type,description,conditional_changes,field_name
-HEADER,001-018,X(18),AN,Literally “BOF PERSHING ” (beginning of Pershing file),,beginning
-HEADER,019-036,X(18),AN,Literally “CUSTOMER ACCT INFO”,,account_info
-HEADER,037-046,X(10),AN,Literally “DATA OF”,,data_of
-HEADER,047-056,X(10),AN,DATE OF DATA = “MM/DD/CCYY”,,date_of_data
-HEADER,057-067,X(11),AN,Literally “TO REMOTE”,,to_remote
-HEADER,068-071,X(04),AN,REMOTE ID = “XXXX”,,remote_id
-HEADER,072-085,X(14),AN,Literally “BEGINS HERE”,,begins_here
-HEADER,086-095,X(10),AN,RUN DATE = “MM/DD/CCYY”,,run_date
-HEADER,096-096,X(01),AN,Not Used,,not_used
-HEADER,097-104,X(08),AN,RUN TIME = “HH:MM:SS”,,run_time
-HEADER,105-118,X(14),AN,Not Used,,not_used
-HEADER,119-127,X(09),AN,Indicates if the file is REFRESHED or UPDATED; literally “REFRESHED” or “UPDATED”,,refreshed_updated
-HEADER,128-749,X(622),AN,Not Used,,not_used
-HEADER,750-750,X(01),AN,Literally “A”; indicates the end of the header record,,ending
-A,001-002,X(02),AN,TRANSACTION CODE = “CI”,,transaction_code
-A,003-003,X(01),AN,RECORD INDICATOR VALUE = “A”,,record_name
-A,004-011,9(08),N,RECORD ID SEQUENCE NUMBER; begins with “00000001”,,sequence_no
-A,012-020,X(09),AN,"ACCOUNT NUMBER, including Office (3) and Base (6)",,account_no
-A,021-023,X(03),AN,INTRODUCING BROKER DEALER (IBD) NUMBER,,ibd_no
-A,024-024,X(01),AN,Not Used,,not_used
-A,025-027,X(03),AN,INVESTMENT PROFESSIONAL (IP) NUMBER,,ip_no
-A,028-028,X(01),AN,Not Used,,not_used
-A,029-038,X(10),AN,ACCOUNT SHORT NAME,,account_short_name
-A,039-040,X(02),AN,Not Used,,not_used
+﻿record_name,position,picture,type,description,conditional_changes,field_name,constant,record_id
+HEADER,001-018,X(18),AN,Literally “BOF PERSHING ” (beginning of Pershing file),,beginning,BOF PERSHING ,
+HEADER,019-036,X(18),AN,Literally “CUSTOMER ACCT INFO”,,account_info,CUSTOMER ACCT INFO,
+HEADER,037-046,X(10),AN,Literally “DATA OF”,,data_of,DATA OF,
+HEADER,047-056,X(10),AN,DATE OF DATA = “MM/DD/CCYY”,,date_of_data,,
+HEADER,057-067,X(11),AN,Literally “TO REMOTE”,,to_remote,TO REMOTE,
+HEADER,068-071,X(04),AN,REMOTE ID = “XXXX”,,remote_id,,
+HEADER,072-085,X(14),AN,Literally “BEGINS HERE”,,begins_here,BEGINS HERE,
+HEADER,086-095,X(10),AN,RUN DATE = “MM/DD/CCYY”,,run_date,,
+HEADER,096-096,X(01),AN,Not Used,,not_used,,
+HEADER,097-104,X(08),AN,RUN TIME = “HH:MM:SS”,,run_time,,
+HEADER,105-118,X(14),AN,Not Used,,not_used,,
+HEADER,119-127,X(09),AN,Indicates if the file is REFRESHED or UPDATED; literally “REFRESHED” or “UPDATED”,,refreshed_updated,,
+HEADER,128-749,X(622),AN,Not Used,,not_used,,
+HEADER,750-750,X(01),AN,Literally “A”; indicates the end of the header record,,ending,,
+A,001-002,X(02),AN,TRANSACTION CODE = “CI”,,transaction_code,CI,
+A,003-003,X(01),AN,RECORD INDICATOR VALUE = “A”,,record_name,A,
+A,004-011,9(08),N,RECORD ID SEQUENCE NUMBER; begins with “00000001”,,record_sequence_no,,1
+A,012-020,X(09),AN,"ACCOUNT NUMBER, including Office (3) and Base (6)",,account_no,,1
+A,021-023,X(03),AN,INTRODUCING BROKER DEALER (IBD) NUMBER,,ibd_no,,1
+A,024-024,X(01),AN,Not Used,,not_used,,
+A,025-027,X(03),AN,INVESTMENT PROFESSIONAL (IP) NUMBER,,ip_no,,1
+A,028-028,X(01),AN,Not Used,,not_used,,
+A,029-038,X(10),AN,ACCOUNT SHORT NAME,,account_short_name,,1
+A,039-040,X(02),AN,Not Used,,not_used,,
 A,041-041,X(01),AN,"TRANSACTION TYPE; values include:
 “X” or “ ”= Unchanged account
 “A” = Add new account
-“C” = Change to existing record",,transaction_type
+“C” = Change to existing record",,transaction_type,,
 A,042-042,X(01),AN,"AUTO-TITLED or USER-TITLED ACCOUNT; values include:
 “F” = Auto-Titled
-“S” = User-Titled (opened in PONA or through conversion)",,
+“S” = User-Titled (opened in PONA or through conversion)",,,,
 A,043-043,X(01),AN,"ACCOUNT TYPE CODE; values include:
 “C” = DVP/RVP
 “R” = Retail
 “T” = Retirement
 “3” = Retail Third Party as Custodian
-“4” = 401(k) Self-Directed",,
-A,044-047,X(04),AN,"REGISTRATION TYPE; for Account Services only; see Appendix Q, “ACCT Codes and Values”",,
-A,048-048,X(01),AN,Reserved,,
-A,049-049,X(01),AN,"NUMBER OF ACCOUNT TITLE LINES IN REGISTRATION LINES (values 1, 2, 3, 4)",,
-A,050-081,X(32),AN,ACCOUNT REGISTRATION LINE 1,,
-A,082-113,X(32),AN,ACCOUNT REGISTRATION LINE 2,,
-A,114-145,X(32),AN,ACCOUNT REGISTRATION LINE 3,,
-A,146-177,X(32),AN,ACCOUNT REGISTRATION LINE 4,,
-A,178-209,X(32),AN,ACCOUNT REGISTRATION LINE 5,,
-A,210-241,X(32),AN,ACCOUNT REGISTRATION LINE 6,,
+“4” = 401(k) Self-Directed",,,,
+A,044-047,X(04),AN,"REGISTRATION TYPE; for Account Services only; see Appendix Q, “ACCT Codes and Values”",,,,
+A,048-048,X(01),AN,Reserved,,,,
+A,049-049,X(01),AN,"NUMBER OF ACCOUNT TITLE LINES IN REGISTRATION LINES (values 1, 2, 3, 4)",,,,
+A,050-081,X(32),AN,ACCOUNT REGISTRATION LINE 1,,,,
+A,082-113,X(32),AN,ACCOUNT REGISTRATION LINE 2,,,,
+A,114-145,X(32),AN,ACCOUNT REGISTRATION LINE 3,,,,
+A,146-177,X(32),AN,ACCOUNT REGISTRATION LINE 4,,,,
+A,178-209,X(32),AN,ACCOUNT REGISTRATION LINE 5,,,,
+A,210-241,X(32),AN,ACCOUNT REGISTRATION LINE 6,,,,
 A,242-242,X(01),AN,"US TENANCY INDICATOR; values include:
 “N” = No (not a US Tenant)
-“Y” = Yes (is a US Tenant)","JNTN, TODJ",
+“Y” = Yes (is a US Tenant)","JNTN, TODJ",,,
 A,243-243,X(01),AN,"MARRIED INDICATOR; values include:
 “N” = No (is not married)
 “Y” = Yes (is married)
-“ ” = Not applicable","JNTN, TODJ",
-A,244-245,X(02),AN,"TENANCY STATE; see Appendix Q, “ACCT Codes & Values”","JNTN, TODJ",
+“ ” = Not applicable","JNTN, TODJ",,,
+A,244-245,X(02),AN,"TENANCY STATE; see Appendix Q, “ACCT Codes & Values”","JNTN, TODJ",,,
 A,246-249,X(04),AN,"JOINT TENANCY CLAUSE; values include:
 “CMPP” = Community Property
 “CMRS” = Community Property with Right of Survivorship
@@ -60,14 +60,14 @@ A,246-249,X(04),AN,"JOINT TENANCY CLAUSE; values include:
 “TNCM” = Tenants in Common
 “TNET” = Tenants by Entirety
 “USFT” = USUFRUCT
-“ ” = Not applicable","JNTN, TODJ",
-A,250-257,9(08),N,"AGREEMENT EXECUTION DATE, in CCYYMMDD format","JNTN, TODJ",
-A,258-259,X(02),AN,NUMBER OF TENANTS,"JNTN, TODJ",
-A,260-262,X(03),AN,Not Used,"JNTN, TODJ",
-A,242-243,X(02),AN,"STATE GIFT GIVEN; see Appendix Q, “ACCT Codes and Values”","CUST, 529C",
-A,244-251,9(08),N,"DATE GIFT GIVEN, in CCYYMMDD format","CUST, 529C",
-A,252-253,9(02),N,AGE TO TERMINATE,"CUST, 529C",
-A,254-261,9(08),N,"MINOR’S BIRTHDATE, in CCYYMMDD format","CUST, 529C",
+“ ” = Not applicable","JNTN, TODJ",,,
+A,250-257,9(08),N,"AGREEMENT EXECUTION DATE, in CCYYMMDD format","JNTN, TODJ",,,
+A,258-259,X(02),AN,NUMBER OF TENANTS,"JNTN, TODJ",,,
+A,260-262,X(03),AN,Not Used,"JNTN, TODJ",,,
+A,242-243,X(02),AN,"STATE GIFT GIVEN; see Appendix Q, “ACCT Codes and Values”","CUST, 529C",,,
+A,244-251,9(08),N,"DATE GIFT GIVEN, in CCYYMMDD format","CUST, 529C",,,
+A,252-253,9(02),N,AGE TO TERMINATE,"CUST, 529C",,,
+A,254-261,9(08),N,"MINOR’S BIRTHDATE, in CCYYMMDD format","CUST, 529C",,,
 A,262-262,X(01),AN,"MANNER OF GIFT; values include:
 “C” = Created by Gift
 “E” = Exercise by Appointment
@@ -75,7 +75,7 @@ A,262-262,X(01),AN,"MANNER OF GIFT; values include:
 “R” = Trust
 “T” = Transfer by Fiduciary
 “W” = Will
-“ ” = Not applicable","CUST, 529C",
+“ ” = Not applicable","CUST, 529C",,,
 A,242-242,X(01),AN,"TYPE OF TRUST; values include:
 “A” = Qualified Domestic Trust
 “C” = Charitable Trust
@@ -92,64 +92,64 @@ A,242-242,X(01),AN,"TYPE OF TRUST; values include:
 “S” = Statutory Trust
 “T” = Testamentary Trust
 “V” = Irrevocable Living Trust
-“ ” = Not applicable","TRST, 529T, NPLT",
-A,243-250,9(08),N,"DATE TRUST ESTABLISHED, in CCYYMMDD format","TRST, 529T, NPLT",
-A,251-258,9(08),N,"AMENDED DATE, in CCYYMMDD format","TRST, 529T, NPLT",
+“ ” = Not applicable","TRST, 529T, NPLT",,,
+A,243-250,9(08),N,"DATE TRUST ESTABLISHED, in CCYYMMDD format","TRST, 529T, NPLT",,,
+A,251-258,9(08),N,"AMENDED DATE, in CCYYMMDD format","TRST, 529T, NPLT",,,
 A,259-259,X(01),AN,"TRUSTEE INDEPENDENT ACTION; values include:
 “N” = Cannot act independently
-“Y” = Can act independently","TRST, 529T, NPLT",
-A,260-262,X(03),AN,Not Used,"TRST, 529T, NPLT",
-A,242-249,9(08),N,"PLAN ESTABLISHED DATE, in CCYYMMDD format",CPPS,
-A,250-257,9(08),N,"PLAN AMENDMENT DATE, in CCYYMMDD format",CPPS,
-A,258-262,X(05),AN,Not Used,CPPS,
-A,263-270,9(08),N,"DATE ACCOUNT OPENED, in CCYYMMDD format",ACCOUNT DATES,
-A,271-278,9(08),N,"DATE ACCOUNT INFORMATION UPDATED, in CCYYMMDD format",ACCOUNT DATES,
+“Y” = Can act independently","TRST, 529T, NPLT",,,
+A,260-262,X(03),AN,Not Used,"TRST, 529T, NPLT",,,
+A,242-249,9(08),N,"PLAN ESTABLISHED DATE, in CCYYMMDD format",CPPS,,,
+A,250-257,9(08),N,"PLAN AMENDMENT DATE, in CCYYMMDD format",CPPS,,,
+A,258-262,X(05),AN,Not Used,CPPS,,,
+A,263-270,9(08),N,"DATE ACCOUNT OPENED, in CCYYMMDD format",ACCOUNT DATES,,,
+A,271-278,9(08),N,"DATE ACCOUNT INFORMATION UPDATED, in CCYYMMDD format",ACCOUNT DATES,,,
 A,279-279,X(01),AN,"ACCOUNT STATUS INDICATOR; values include:
 “O” = Open
 “P” = Pending Close
-“C” = Closed",ACCOUNT DATES,
-A,280-287,9(08),N,"PENDING CLOSED DATE, in CCYYMMDD format",ACCOUNT DATES,
-A,288-295,9(08),N,"DATE ACCOUNT CLOSED, in CCYYMMDD format",ACCOUNT DATES,
-A,296-303,9(08),N,Not Used,ACCOUNT DATES,
-A,304-311,9(08),N,"ACCOUNT RE-ACTIVATED DATE, in CCYYMMDD format",ACCOUNT DATES,
-A,312-319,9(08),N,"DATE ACCOUNT RE-OPENED, in CCYYMMDD format",ACCOUNT DATES,
+“C” = Closed",ACCOUNT DATES,,,
+A,280-287,9(08),N,"PENDING CLOSED DATE, in CCYYMMDD format",ACCOUNT DATES,,,
+A,288-295,9(08),N,"DATE ACCOUNT CLOSED, in CCYYMMDD format",ACCOUNT DATES,,,
+A,296-303,9(08),N,Not Used,ACCOUNT DATES,,,
+A,304-311,9(08),N,"ACCOUNT RE-ACTIVATED DATE, in CCYYMMDD format",ACCOUNT DATES,,,
+A,312-319,9(08),N,"DATE ACCOUNT RE-OPENED, in CCYYMMDD format",ACCOUNT DATES,,,
 A,320-320,X(01),AN,"PROCEEDS; values include:
 “1” = Remit (send)
 “2” = Hold
-“3” = COD (hold)",INSTRUCTIONS,
+“3” = COD (hold)",INSTRUCTIONS,,,
 A,321-321,X(01),AN,"TRANSFER INSTRUCTIONS; values include:
 “1” = Register with Issuer
 “2” = Transfer to customer and hold in safekeeping
 “3” = COD Street Name
-“4” = Hold in Street Name",INSTRUCTIONS,
+“4” = Hold in Street Name",INSTRUCTIONS,,,
 A,322-322,X(01),AN,"INCOME INSTRUCTIONS; values include:
 “2” = Pay Monthly (send)
 “3” = Credit Account (hold)
-“4” = COD",INSTRUCTIONS,
-A,323-324,X(02),AN,NUMBER OF CONFIRMS FOR THIS ACCOUNT,INSTRUCTIONS,
-A,325-326,X(02),AN,NUMBER OF STATEMENTS FOR THIS ACCOUNT,INSTRUCTIONS,
+“4” = COD",INSTRUCTIONS,,,
+A,323-324,X(02),AN,NUMBER OF CONFIRMS FOR THIS ACCOUNT,INSTRUCTIONS,,,
+A,325-326,X(02),AN,NUMBER OF STATEMENTS FOR THIS ACCOUNT,INSTRUCTIONS,,,
 A,327-327,X(01),AN,"INVESTMENT OBJECTIVE TRANS. CODE, values include:
 “X” or “
 ” = Unchanged record
 “A” = Added record
-“C” = Changed record",INVESTMENT OBJECTIVE,
-A,328-353,X(26),AN,COMMENTS; (free-form text),INVESTMENT OBJECTIVE,
-A,354-368,X(15),AN,EMPLOYER SHORTNAME (previously “EMPLOYER”),INVESTMENT OBJECTIVE,
-A,369-377,X(09),AN,EMPLOYER’S CUSIP®,INVESTMENT OBJECTIVE,
-A,378-386,X(09),AN,EMPLOYER’S SYMBOL,INVESTMENT OBJECTIVE,
+“C” = Changed record",INVESTMENT OBJECTIVE,,,
+A,328-353,X(26),AN,COMMENTS; (free-form text),INVESTMENT OBJECTIVE,,,
+A,354-368,X(15),AN,EMPLOYER SHORTNAME (previously “EMPLOYER”),INVESTMENT OBJECTIVE,,,
+A,369-377,X(09),AN,EMPLOYER’S CUSIP®,INVESTMENT OBJECTIVE,,,
+A,378-386,X(09),AN,EMPLOYER’S SYMBOL,INVESTMENT OBJECTIVE,,,
 A,387-387,X(01),AN,"MARGIN PRIVILEGES REVOKED; values include:
 “N” = No
 “Y” = Yes
-“ ” = Not applicable",INVESTMENT OBJECTIVE,
-A,388-395,9(08),N,"STATEMENT REVIEW DATE, in CCYYMMDD format",INVESTMENT OBJECTIVE,
+“ ” = Not applicable",INVESTMENT OBJECTIVE,,,
+A,388-395,9(08),N,"STATEMENT REVIEW DATE, in CCYYMMDD format",INVESTMENT OBJECTIVE,,,
 A,396-396,X(01),AN,"MARGIN PAPERS ON FILE (applies to brokerage accounts only); values include:
 “Y” = Margin Papers on File
-“N” = No Margin Papers on File",INVESTMENT OBJECTIVE,
+“N” = No Margin Papers on File",INVESTMENT OBJECTIVE,,,
 A,397-397,X(01),AN,"OPTION PAPERS ON FILE; values include:
 “Y” = Option Papers on File
-“N” = No Option Papers on File",INVESTMENT OBJECTIVE,
-A,398-398,X(01),AN,For Pershing Internal Use Only,INVESTMENT OBJECTIVE,
-A,399-399,X(01),AN,GOOD FAITH MARGIN; values include: “Y” = Account is good faith margin account “N” = Account is not good faith margin account “ ” = Not applicable,INVESTMENT OBJECTIVE,
+“N” = No Option Papers on File",INVESTMENT OBJECTIVE,,,
+A,398-398,X(01),AN,For Pershing Internal Use Only,INVESTMENT OBJECTIVE,,,
+A,399-399,X(01),AN,GOOD FAITH MARGIN; values include: “Y” = Account is good faith margin account “N” = Account is not good faith margin account “ ” = Not applicable,INVESTMENT OBJECTIVE,,,
 A,400-400,X(01),AN,"INVESTMENT PROFESSIONAL DISCRETION GRANTED; values include:
 “N” = No
-“Y” = Yes",DISCRETION,
+“Y” = Yes",DISCRETION,,,

@@ -20,6 +20,7 @@ from .common_functions import logger, catch_error, is_pc, extraClassPath, execut
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim
 from pyspark.sql.types import IntegerType
+from pyspark import StorageLevel
 
 
 
@@ -166,7 +167,9 @@ def read_sql(spark, schema:str, table_name:str, database:str, server:str, user:s
             .option("hostNameInCertificate", "*.database.windows.net")
             .load()
         )
-    
+
+    sql_table.persist(StorageLevel.MEMORY_AND_DISK)
+
     return sql_table
 
 
@@ -223,6 +226,7 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
         .options(**sf_options) \
         .option(dbtable, table_name) \
         .load()
+    table.persist(StorageLevel.MEMORY_AND_DISK)
 
     logger.info('Finished Reading from Snowflake')
     return table
@@ -250,6 +254,8 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
         xml_table = xml_table.schema(schema=schema)
 
     xml_table_load = xml_table.load(file_path)
+    xml_table_load.persist(StorageLevel.MEMORY_AND_DISK)
+
     logger.info('Finished reading XML file')
     return xml_table_load
 
@@ -290,6 +296,7 @@ def read_csv(spark, file_path:str):
 
     csv_table = remove_column_spaces(table_to_remove=csv_table)
     csv_table = trim_string_columns(table=csv_table)
+    csv_table.persist(StorageLevel.MEMORY_AND_DISK)
 
     logger.info('Finished reading CSV file')
     return csv_table
@@ -309,6 +316,8 @@ def read_text(spark, file_path:str):
         .format('text')
         .load(file_path)
     )
+
+    text_file.persist(StorageLevel.MEMORY_AND_DISK)
 
     logger.info('Finished reading text file')
     return text_file
