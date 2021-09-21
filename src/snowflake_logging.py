@@ -98,7 +98,8 @@ def get_sf_schema_list(sf_database:str):
         (col('IS_TRANSIENT')==lit('NO'))
     )
 
-    sf_schemas = tables.select('TABLE_SCHEMA').distinct().rdd.flatMap(lambda x: x).collect()
+    sf_schemas = tables.select('TABLE_SCHEMA').distinct().collect()
+    sf_schemas = [x['TABLE_SCHEMA'] for x in sf_schemas]
 
     logger.info({
         'database': f'{sf_database}',
@@ -154,7 +155,8 @@ def post_all_snowflake_copy_history_log():
         for sf_schema in sf_schemas:
             if (sf_schema.upper() in ['INFORMATION_SCHEMA']) or (sf_schema.upper() not in ['LR_RAW']):
                 continue
-            tables_per_schema = tables.where(col('TABLE_SCHEMA')==lit(sf_schema)).select('TABLE_NAME').distinct().rdd.flatMap(lambda x: x).collect()
+            tables_per_schema = tables.where(col('TABLE_SCHEMA')==lit(sf_schema)).select('TABLE_NAME').distinct().collect()
+            tables_per_schema = [x['TABLE_NAME'] for x in tables_per_schema]
 
             for table_name in tables_per_schema:
                 if table_name.upper() in ['CICD_CHANGE_HISTORY']:

@@ -29,12 +29,14 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end, config_path
-from modules.spark_functions import create_spark, read_csv, read_text
+from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc
+from modules.spark_functions import create_spark, read_csv, read_text, column_regex
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name
 
 
+from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
+from pyspark.sql.types import IntegerType
 
 
 
@@ -75,11 +77,24 @@ schema_file_path_accf = os.path.join(schema_folder_path, 'customer_account_infor
 schema_accf = read_csv(spark=spark, file_path=schema_file_path_accf)
 
 
+# %% Preprocess Schema
+
+schema_accf = schema_accf.withColumn('field_name', F.lower(F.regexp_replace(F.trim(col('field_name')), column_regex, '_')))
+schema_accf = schema_accf.withColumn('record_name', F.upper(col('record_name')))
+schema_accf = schema_accf.withColumn('conditional_changes', F.upper(col('conditional_changes')))
+schema_accf = schema_accf.withColumn('position_start', F.split(col('position'), pattern='-').getItem(0).cast(IntegerType()))
+schema_accf = schema_accf.withColumn('position_end', F.split(col('position'), pattern='-').getItem(1).cast(IntegerType()))
+schema_accf = schema_accf.where(col('field_name')!='not_used')
+
+
+if is_pc: schema_accf.show(20, True)
+
+
+
 # %%
 
-schema_accf.show(20, False)
-
-
+record_names = schema_accf.select('record_name').distinct().collect()
+record_names = [x['record_name'] for x in record_names]
 
 
 # %% Read Text File

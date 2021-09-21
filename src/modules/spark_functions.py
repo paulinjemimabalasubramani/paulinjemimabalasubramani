@@ -362,7 +362,8 @@ def get_sql_table_names(spark, schema:str, database:str, server:str, user:str, p
 
     sql_tables = sql_tables.filter((col('TABLE_SCHEMA') == lit(schema)) & (col('TABLE_TYPE')==lit('BASE TABLE')))
 
-    table_names = sql_tables.select('TABLE_NAME').distinct().rdd.flatMap(lambda x: x).collect()
+    table_names = sql_tables.select('TABLE_NAME').distinct().collect()
+    table_names = [x['TABLE_NAME'] for x in table_names]
 
     return table_names, sql_tables
 
