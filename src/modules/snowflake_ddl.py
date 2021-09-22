@@ -35,8 +35,8 @@ class module_params_class:
     domain_abbr = sys.domain_abbr
     environment = data_settings.environment
     snowflake_raw_warehouse = f'{environment}_RAW_WH'.upper()
-    snowflake_raw_database = f'{environment}_RAW_{domain_abbr}'.upper()
-    snowflake_curated_database = f'{environment}_CURATED_{domain_abbr}'.upper()
+    snowflake_raw_database = f'{environment}_{domain_abbr}'.upper()
+    snowflake_curated_database = f'{environment}_{domain_abbr}'.upper()
 
     common_elt_stage_name = default_storage_account_abbr
     common_storage_account = default_storage_account_name

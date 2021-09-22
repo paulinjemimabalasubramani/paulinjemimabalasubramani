@@ -97,8 +97,6 @@ class Config:
 
 # %% Parameters
 
-write_logs_to_file_flag = True # Default False
-
 execution_date_start = datetime.now()
 strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
 execution_date = execution_date_start.strftime(strftime)
@@ -262,14 +260,19 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
             'x-ms-date': rfc1123date,
         }
 
-        response = requests.post(uri, data=body, headers=headers)
-        if response.status_code >= 200 and response.status_code <= 299 and not write_logs_to_file_flag:
-            #pprint('Log Accepted')
-            pass
-        else:
-            pprint(f'Log Response code: {response.status_code}')
+        if True:
             if backup_logger_func:
                 backup_logger_func(body, exc_info=False)
+
+        else: # TODO: Temporarily stop sending print logs to Azure
+            response = requests.post(uri, data=body, headers=headers)
+            if response.status_code >= 200 and response.status_code <= 299 and not is_pc:
+                #pprint('Log Accepted')
+                pass
+            else:
+                pprint(f'Log Response code: {response.status_code}')
+                if backup_logger_func:
+                    backup_logger_func(body, exc_info=False)
 
     except Exception as e:
         if logger:
