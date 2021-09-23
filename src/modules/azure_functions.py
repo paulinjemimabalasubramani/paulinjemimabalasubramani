@@ -14,6 +14,7 @@ from .spark_functions import IDKeyIndicator, MD5KeyIndicator, partitionBy, metad
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
+from pyspark import StorageLevel
 
 
 
@@ -198,6 +199,7 @@ def get_partition(spark, domain_name:str, source_system:str, schema_name:str, ta
             logger.warning(f'{data_path} is EMPTY -> SKIPPING')
         return PARTITION
 
+    logger.warning('No Partition List, taking partition info from Azure...')
     setup_spark_adls_gen2_connection(spark, storage_account_name)
     hist = spark.sql(f"DESCRIBE HISTORY delta.`{data_path}`")
     maxversion = hist.select(F.max(col('version'))).collect()[0][0]
@@ -239,10 +241,11 @@ def read_adls_gen2(spark,
         .format(file_format)
         .load(data_path)
         )
-    
+
     if is_pc: table_read.printSchema()
     if is_pc: table_read.show(5)
 
+    table_read.persist(StorageLevel.MEMORY_AND_DISK)
     return table_read
 
 
@@ -256,7 +259,7 @@ def read_tableinfo_rows(tableinfo_name:str, tableinfo_source:str, tableinfo):
         return
 
     tableinfo = tableinfo.filter(col('IsActive')==lit(1)).distinct()
-    tableinfo.persist()
+    tableinfo.persist(StorageLevel.MEMORY_AND_DISK)
 
     # Create unique list of tables
     table_list = tableinfo.select(

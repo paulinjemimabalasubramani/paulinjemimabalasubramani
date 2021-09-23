@@ -546,13 +546,16 @@ def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, t
         (col('SourceDatabase')==lit(database)) &
         (col('SourceSchema')==lit(schema)) &
         (col('TableName')==lit(table_name))
-        ).distinct().select('SourceColumnName').rdd.flatMap(lambda x: x).collect()
+        ).select('SourceColumnName').distinct().collect()
+
+    tableinfo_SourceColumnName = [x['SourceColumnName'] for x in tableinfo_SourceColumnName]
+
     sql_table_columns_lower = {c.lower():c for c in sql_table.columns}
     column_map = {tc:sql_table_columns_lower[tc.lower()] for tc in tableinfo_SourceColumnName}
     
     for new_name, existing_name in column_map.items():
         sql_table = sql_table.withColumnRenamed(existing_name, new_name)
-    
+
     return sql_table
 
 

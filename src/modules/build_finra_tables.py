@@ -72,7 +72,7 @@ def flatten_df(xml_table):
 
 @catch_error(logger)
 def flatten_n_divide_df(xml_table, table_name:str):
-    if not xml_table.rdd.flatMap(lambda x: x).collect(): # check if xml_table is empty
+    if xml_table.count() == 0: # check if xml_table is empty
         return dict()
 
     xml_table = flatten_df(xml_table=xml_table)

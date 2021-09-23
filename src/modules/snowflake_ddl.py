@@ -35,8 +35,8 @@ class module_params_class:
     domain_abbr = sys.domain_abbr
     environment = data_settings.environment
     snowflake_raw_warehouse = f'{environment}_RAW_WH'.upper()
-    snowflake_raw_database = f'{environment}_RAW_{domain_abbr}'.upper()
-    snowflake_curated_database = f'{environment}_CURATED_{domain_abbr}'.upper()
+    snowflake_raw_database = f'{environment}_{domain_abbr}'.upper()
+    snowflake_curated_database = f'{environment}_{domain_abbr}'.upper()
 
     common_elt_stage_name = default_storage_account_abbr
     common_storage_account = default_storage_account_name
@@ -123,19 +123,17 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
         (col('SourceDatabase') == source_system)
         )
 
-    column_names = sorted(filtered_tableinfo.select('TargetColumnName').rdd.flatMap(lambda x: x).collect())
+    filtered_column_names = filtered_tableinfo.select('TargetColumnName', 'SourceColumnName', 'TargetDataType', 'KeyIndicator').collect()
 
-    pk_column_names = sorted(filtered_tableinfo.filter(
-        (col('KeyIndicator') == lit(1))
-        ).select('TargetColumnName').rdd.flatMap(lambda x: x).collect())
+    column_names = sorted([c['TargetColumnName'] for c in filtered_column_names])
 
-    src_column_names = filtered_tableinfo.select('TargetColumnName', 'SourceColumnName').collect()
-    src_column_dict = {c['TargetColumnName']:c['SourceColumnName'] for c in src_column_names}
+    src_column_dict = {c['TargetColumnName']:c['SourceColumnName'] for c in filtered_column_names}
     src_column_dict = OrderedDict(sorted(src_column_dict.items(), key=lambda x:x[0], reverse=False))
 
-    data_types = filtered_tableinfo.select('TargetColumnName', 'TargetDataType').collect()
-    data_types_dict = {c['TargetColumnName']:c['TargetDataType'] for c in data_types}
+    data_types_dict = {c['TargetColumnName']:c['TargetDataType'] for c in filtered_column_names}
     data_types_dict = OrderedDict(sorted(data_types_dict.items(), key=lambda x:x[0], reverse=False))
+
+    pk_column_names = sorted([c['TargetColumnName'] for c in filtered_column_names if str(c['KeyIndicator'])=='1'])
 
     return column_names, pk_column_names, src_column_dict, data_types_dict
 

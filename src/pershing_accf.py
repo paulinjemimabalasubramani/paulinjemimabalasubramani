@@ -1,5 +1,8 @@
 """
-Migrate all tables to the ADLS Gen 2
+Read Pershing "CUSTOMER ACCOUNT INFORMATION" - ACCT (Update File) / ACCF (Refresh File)
+
+https://standardfiles.pershing.com/
+
 
 Spark Web UI:
 http://10.128.25.82:8181/
@@ -12,41 +15,50 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
+__file__ = r'C:\Users\smammadov\packages\EDIP-Code\src\pershing_accf.py'
+
+
 import os, sys
+from re import L
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'client_and_account'
 sys.domain_abbr = 'CA'
-
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
-
-from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end
-from modules.spark_functions import create_spark
+from modules.common_functions import catch_error, data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc
+from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name
 
+from pprint import pprint
+
+from pyspark.sql import functions as F
+from pyspark.sql.functions import col, lit
+from pyspark.sql.types import IntegerType
+from pyspark import StorageLevel
 
 
 
 # %% Parameters
 
-ingest_from_files_flag = True
-
-sql_server = ''
-sql_key_vault_account = sql_server
-
 storage_account_name = default_storage_account_name
-
 tableinfo_source = 'ACCF'
-sql_database = tableinfo_source # TABLE_CATALOG
-
-data_type_translation_id = 'sqlserver_snowflake'
 
 data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
+schema_folder_path = os.path.join(config_path, 'pershing_schema')
 
-# https://stackoverflow.com/questions/41944689/pyspark-parse-fixed-width-text-file
+logger.info({
+    'tableinfo_source': tableinfo_source,
+    'data_path_folder': data_path_folder,
+    'schema_folder_path': schema_folder_path,
+})
+
+header_str = 'BOF      PERSHING '
+trailer_str = 'EOF      PERSHING '
+transaction_code = 'CI'
+
 
 
 # %% Create Session
@@ -54,10 +66,149 @@ data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_sour
 spark = create_spark()
 
 
+
+# %% pre-process schema
+
+@catch_error(logger)
+def preprocess_schema(schema):
+    schema = remove_column_spaces(schema)
+    schema = schema.withColumn('field_name', F.lower(F.regexp_replace(F.trim(col('field_name')), column_regex, '_')))
+    schema = schema.withColumn('record_name', F.upper(F.trim(col('record_name'))))
+    schema = schema.withColumn('conditional_changes', F.upper(F.trim(col('conditional_changes'))))
+    schema = schema.withColumn('position', F.trim(col('position')))
+
+    schema = schema.where(
+        (col('field_name').isNotNull()) & (~col('field_name').isin(['', 'not_used', '_', '__', 'n_a', 'na', 'none', 'null', 'value'])) &
+        (col('position').contains('-')) &
+        (col('record_name').isNotNull())
+        )
+
+    schema = schema.withColumn('position_start', F.split(col('position'), pattern='-').getItem(0).cast(IntegerType()))
+    schema = schema.withColumn('position_end', F.split(col('position'), pattern='-').getItem(1).cast(IntegerType()))
+    schema = schema.withColumn('length', col('position_end') - col('position_start') + lit(1))
+
+    schema.persist(StorageLevel.MEMORY_AND_DISK)
+    return schema
+
+
+
+
+# %% get ACCF schema
+
+@catch_error(logger)
+def get_schema_accf():
+    schema_file_path = os.path.join(schema_folder_path, 'customer_account_information_acct_accf.csv')
+    schema = read_csv(spark=spark, file_path=schema_file_path)
+
+    schema = preprocess_schema(schema=schema)
+    return schema
+
+
+
+schema = get_schema_accf()
+
+if is_pc: schema.show(20)
+
+
+
+# %% Read Text File
+
+file_name = '4CCF.4CCF'
+
+text_file = read_text(spark=spark, file_path=os.path.join(data_path_folder, file_name))
+
+
+# %% Add Field to a fixed width table
+
+@catch_error(logger)
+def add_field_to_fwt(table, field_name:str, position_start:int, length:int):
+    cv = col('value').substr
+    return table.withColumn(field_name, F.regexp_replace(F.trim(cv(position_start, length)), ' +', ' '))
+
+
+
+# %% Add Schema fields to table
+
+@catch_error(logger)
+def add_schema_fields_to_table(tables, table, schema, record_name:str, conditional_changes:str):
+    if schema.count()==0: return
+
+    for schema_row in schema.rdd.toLocalIterator():
+        schema_dict = schema_row.asDict()
+        table = add_field_to_fwt(table=table, field_name=schema_dict['field_name'], position_start=schema_dict['position_start'], length=schema_dict['length'])
+
+    tables[(record_name, conditional_changes)] = table
+
+
+
+# %% Process Record A
+
+@catch_error(logger)
+def process_record_A_accf(tables, table, record_name):
+    if record_name != 'A': return
+
+    registration_type_field_name = 'registration_type'
+    table = add_field_to_fwt(table=table, field_name=registration_type_field_name, position_start=44, length=4)
+
+    registration_types = table.select(registration_type_field_name).distinct().collect()
+    registration_types = [x[registration_type_field_name] for x in registration_types]
+    if is_pc: pprint(registration_types)
+
+    for registration_type in registration_types:
+        sub_table = table.where(col(registration_type_field_name)==lit(registration_type))
+        print(f'\nSub-table "{record_name}" -> "{registration_type}"')
+        if is_pc: sub_table.show(5)
+
+        if sub_table.count()==0: continue
+
+        filter_schema = schema.where(
+            (col('record_name')==lit(record_name)) & (
+                (col('conditional_changes').contains(registration_type.upper())) |
+                (col('conditional_changes').isNull()) |
+                (col('conditional_changes')==lit(''))
+                )
+            )
+
+        add_schema_fields_to_table(tables=tables, table=sub_table, schem=filter_schema, record_name=record_name, conditional_changes=registration_type)
+
+
+
+
 # %%
 
+def generate_tables_from_accf():
+
+    tables = dict()
+
+    cv = col('value').substr
+
+    record_names = schema.select('record_name').distinct().collect()
+    record_names = [x['record_name'] for x in record_names]
+    if is_pc: pprint(record_names)
+
+    for record_name in record_names:
+        if is_pc: pprint(f'Record Name: {record_name}')
+
+        if record_name == 'HEADER':
+            table = text_file.where(cv(1, len(header_str))==lit(header_str))
+        elif record_name == 'TRAILER':
+            table = text_file.where(cv(1, len(trailer_str))==lit(trailer_str))
+        else:
+            table = text_file.where(
+                (cv(1, len(transaction_code))==lit(transaction_code)) &
+                (cv(3, 1)==lit(record_name))
+                )
+
+        if table.count()==0: continue
+
+        if record_name == 'A':
+            process_record_A_accf(tables=tables, table=table, record_name=record_name)
+
+    return tables
 
 
+
+tables = generate_tables_from_accf()
 
 
 

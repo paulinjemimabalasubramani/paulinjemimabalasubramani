@@ -20,6 +20,7 @@ from .common_functions import logger, catch_error, is_pc, extraClassPath, execut
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim
 from pyspark.sql.types import IntegerType
+from pyspark import StorageLevel
 
 
 
@@ -166,7 +167,9 @@ def read_sql(spark, schema:str, table_name:str, database:str, server:str, user:s
             .option("hostNameInCertificate", "*.database.windows.net")
             .load()
         )
-    
+
+    sql_table.persist(StorageLevel.MEMORY_AND_DISK)
+
     return sql_table
 
 
@@ -223,6 +226,7 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
         .options(**sf_options) \
         .option(dbtable, table_name) \
         .load()
+    table.persist(StorageLevel.MEMORY_AND_DISK)
 
     logger.info('Finished Reading from Snowflake')
     return table
@@ -250,6 +254,8 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
         xml_table = xml_table.schema(schema=schema)
 
     xml_table_load = xml_table.load(file_path)
+    xml_table_load.persist(StorageLevel.MEMORY_AND_DISK)
+
     logger.info('Finished reading XML file')
     return xml_table_load
 
@@ -290,9 +296,31 @@ def read_csv(spark, file_path:str):
 
     csv_table = remove_column_spaces(table_to_remove=csv_table)
     csv_table = trim_string_columns(table=csv_table)
+    csv_table.persist(StorageLevel.MEMORY_AND_DISK)
 
     logger.info('Finished reading CSV file')
     return csv_table
+
+
+
+# %% Read Text File
+
+@catch_error(logger)
+def read_text(spark, file_path:str):
+    """
+    Read Text File using Spark
+    """
+    logger.info(f'Reading text file: {file_path}')
+
+    text_file = (spark.read
+        .format('text')
+        .load(file_path)
+    )
+
+    text_file.persist(StorageLevel.MEMORY_AND_DISK)
+
+    logger.info('Finished reading text file')
+    return text_file
 
 
 
@@ -334,7 +362,8 @@ def get_sql_table_names(spark, schema:str, database:str, server:str, user:str, p
 
     sql_tables = sql_tables.filter((col('TABLE_SCHEMA') == lit(schema)) & (col('TABLE_TYPE')==lit('BASE TABLE')))
 
-    table_names = sql_tables.select('TABLE_NAME').distinct().rdd.flatMap(lambda x: x).collect()
+    table_names = sql_tables.select('TABLE_NAME').distinct().collect()
+    table_names = [x['TABLE_NAME'] for x in table_names]
 
     return table_names, sql_tables
 

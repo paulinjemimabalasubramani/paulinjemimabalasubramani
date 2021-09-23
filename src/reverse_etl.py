@@ -104,7 +104,8 @@ def get_sf_table_list(schema_name:str):
     columns = columns.where(col('TABLE_SCHEMA')==lit(schema_name))
     columns = columns.alias('c').join(tables.alias('t'), columns['TABLE_NAME']==tables['TABLE_NAME'], how='inner').select('c.*')
 
-    table_names = columns.select('TABLE_NAME').distinct().rdd.flatMap(lambda x: x).collect()
+    table_names = columns.select('TABLE_NAME').distinct().collect()
+    table_names = [x['TABLE_NAME'] for x in table_names]
 
     logger.info({
         'schema': f'{sf_database}.{schema_name}',
