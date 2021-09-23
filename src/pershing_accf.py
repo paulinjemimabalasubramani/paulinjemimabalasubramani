@@ -15,9 +15,6 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-__file__ = r'C:\Users\smammadov\packages\EDIP-Code\src\pershing_accf.py'
-
-
 import os, sys
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'client_and_account'
@@ -29,9 +26,11 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import catch_error, data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc
 from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces
-from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name
+from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
+    add_table_to_tableinfo, default_storage_account_abbr
 
 from pprint import pprint
+from collections import defaultdict
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
@@ -43,7 +42,9 @@ from pyspark import StorageLevel
 # %% Parameters
 
 storage_account_name = default_storage_account_name
+storage_account_abbr = default_storage_account_abbr
 tableinfo_source = 'ACCF'
+schema_name = 'pershing'
 
 data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
 schema_folder_path = os.path.join(config_path, 'pershing_schema')
@@ -164,7 +165,6 @@ def add_sub_tables_to_table(tables, schema, sub_tables, record_name:str):
             )
 
         add_schema_fields_to_table(tables=tables, table=sub_table, schema=filter_schema, record_name=record_name, conditional_changes=conditional_changes)
-
 
 
 
@@ -340,7 +340,26 @@ table = create_table_from_fwt_file(
 )
 
 
-table.show(5)
+if is_pc: table.show(5)
+
+
+
+# %%
+
+tableinfo = defaultdict(list)
+
+table_name = 'accf'
+
+add_table_to_tableinfo(
+    tableinfo = tableinfo, 
+    table = table, 
+    schema_name = schema_name, 
+    table_name = table_name, 
+    tableinfo_source = tableinfo_source, 
+    storage_account_name = storage_account_name,
+    storage_account_abbr = storage_account_abbr,
+    )
+
 
 
 
@@ -350,9 +369,5 @@ mark_execution_end()
 
 
 # %%
-
-
-
-
 
 

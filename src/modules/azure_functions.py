@@ -323,7 +323,7 @@ def get_firms_with_crd(spark, tableinfo_source):
 # %% Add Table to tableinfo
 
 @catch_error(logger)
-def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_name:str, tableinfo_source:str, storage_account_name:str, storage_account_abbr:str):
+def add_table_to_tableinfo(tableinfo:defaultdict, table, schema_name:str, table_name:str, tableinfo_source:str, storage_account_name:str, storage_account_abbr:str):
     for ix, (col_name, col_type) in enumerate(table.dtypes):
         if col_name in elt_audit_columns or col_name == partitionBy:
             continue
@@ -331,7 +331,7 @@ def add_table_to_tableinfo(tableinfo:defaultdict, table, firm_name:str, table_na
         var_col_type = 'variant' if ':' in col_type else col_type
 
         tableinfo['SourceDatabase'].append(tableinfo_source)
-        tableinfo['SourceSchema'].append(firm_name)
+        tableinfo['SourceSchema'].append(schema_name)
         tableinfo['TableName'].append(table_name)
         tableinfo['SourceColumnName'].append(col_name)
         tableinfo['SourceDataType'].append(var_col_type)

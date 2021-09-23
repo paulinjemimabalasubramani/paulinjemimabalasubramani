@@ -311,7 +311,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
         add_table_to_tableinfo(
             tableinfo = tableinfo, 
             table = xml_table, 
-            firm_name = firm_name, 
+            schema_name = firm_name, 
             table_name = table_name, 
             tableinfo_source = tableinfo_source, 
             storage_account_name = storage_account_name,
