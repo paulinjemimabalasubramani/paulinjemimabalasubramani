@@ -140,19 +140,52 @@ def add_schema_fields_to_table(tables, table, schema, record_name:str, condition
     tables[(record_name, conditional_changes)] = table
 
 
+# %% Find Field Position and Length
+
+@catch_error(logger)
+def find_field_position(schema, record_name:str, field_name:str):
+    field_schema = schema.where(
+        (col('record_name')==lit(record_name)) &
+        (col('field_name')==lit(field_name))
+        ).select(['position_start', 'length']).collect()
+
+    position_start = field_schema[0]['position_start']
+    length = field_schema[0]['length']
+
+    if is_pc: pprint({
+        'record_name': record_name,
+        'field_name': field_name,
+        'position_start': position_start,
+        'length': length,
+        })
+
+    return position_start, length
+
+
+
+# %% Get Distict Field values
+
+@catch_error(logger)
+def get_dictinct_field_values(table, schema, record_name:str, field_name:str):
+    position_start, length = find_field_position(schema=schema, record_name=record_name, field_name=field_name)
+    table = add_field_to_fwt(table=table, field_name=field_name, position_start=position_start, length=length)
+
+    field_values = table.select(field_name).distinct().collect()
+    field_values = [x[field_name] for x in field_values]
+    if is_pc: pprint(field_values)
+
+    return table, field_values
+
+
 
 # %% Process Record A
 
 @catch_error(logger)
-def process_record_A_accf(tables, table, record_name):
+def process_record_A_accf(tables, table, schema, record_name):
     if record_name != 'A': return
 
     registration_type_field_name = 'registration_type'
-    table = add_field_to_fwt(table=table, field_name=registration_type_field_name, position_start=44, length=4)
-
-    registration_types = table.select(registration_type_field_name).distinct().collect()
-    registration_types = [x[registration_type_field_name] for x in registration_types]
-    if is_pc: pprint(registration_types)
+    table, registration_types = get_dictinct_field_values(table=table, schema=schema, record_name=record_name, field_name=registration_type_field_name)
 
     for registration_type in registration_types:
         sub_table = table.where(col(registration_type_field_name)==lit(registration_type))
@@ -169,13 +202,45 @@ def process_record_A_accf(tables, table, record_name):
                 )
             )
 
-        add_schema_fields_to_table(tables=tables, table=sub_table, schem=filter_schema, record_name=record_name, conditional_changes=registration_type)
+        add_schema_fields_to_table(tables=tables, table=sub_table, schema=filter_schema, record_name=record_name, conditional_changes=registration_type)
+
+
+
+# %% Process Record A
+
+@catch_error(logger)
+def process_record_C_accf(tables, table, schema, record_name):
+    if record_name != 'C': return
+
+    country_field_name = 'country_code_1'
+    table, countries = get_dictinct_field_values(table=table, schema=schema, record_name=record_name, field_name=country_field_name)
+
+    USCA_codes = ['US','CA']
+
+    sub_tables = {
+        'US or Canada addresses only': table.where(col(country_field_name).isin(USCA_codes)),
+        'Non-US or Canada addresses only': table.where(~col(country_field_name).isin(USCA_codes)),
+    }
+
+    for conditional_changes, sub_table in sub_tables.items():
+        if sub_table.count()==0: continue
+
+        filter_schema = schema.where(
+            (col('record_name')==lit(record_name)) & (
+                (col('conditional_changes')==lit(conditional_changes.upper())) |
+                (col('conditional_changes').isNull()) |
+                (col('conditional_changes')==lit(''))
+                )
+            )
+
+        add_schema_fields_to_table(tables=tables, table=sub_table, schema=filter_schema, record_name=record_name, conditional_changes=conditional_changes)
 
 
 
 
 # %%
 
+@catch_error(logger)
 def generate_tables_from_accf():
 
     tables = dict()
@@ -201,8 +266,15 @@ def generate_tables_from_accf():
 
         if table.count()==0: continue
 
-        if record_name == 'A':
-            process_record_A_accf(tables=tables, table=table, record_name=record_name)
+        if record_name in ['HEADER', 'TRAILER']:
+            pass
+        elif record_name == 'A':
+            process_record_A_accf(tables=tables, table=table, schema=schema, record_name=record_name)
+        elif record_name == 'C':
+            process_record_C_accf(tables=tables, table=table, schema=schema, record_name=record_name)
+        else:
+            pass
+
 
     return tables
 
