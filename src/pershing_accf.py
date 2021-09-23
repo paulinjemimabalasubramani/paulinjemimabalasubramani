@@ -19,7 +19,6 @@ __file__ = r'C:\Users\smammadov\packages\EDIP-Code\src\pershing_accf.py'
 
 
 import os, sys
-from re import L
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'client_and_account'
 sys.domain_abbr = 'CA'
@@ -111,6 +110,7 @@ def add_schema_fields_to_table(tables, table, schema, record_name:str, condition
     tables[(record_name, conditional_changes)] = table
 
 
+
 # %% Find Field Position and Length
 
 @catch_error(logger)
@@ -147,6 +147,7 @@ def get_dictinct_field_values(table, schema, record_name:str, field_name:str):
     return table, field_values
 
 
+
 # %% Add Sub-tables to table
 
 @catch_error(logger)
@@ -167,7 +168,7 @@ def add_sub_tables_to_table(tables, schema, sub_tables, record_name:str):
 
 
 
-# %%
+# %% generate tables from fixed with table file
 
 @catch_error(logger)
 def generate_tables_from_fwt(
@@ -201,7 +202,8 @@ def generate_tables_from_fwt(
         if table.count()==0: continue
 
         if record_name in special_records:
-            special_records[record_name](tables=tables, table=table, schema=schema, record_name=record_name)
+            sub_tables = special_records[record_name](table=table, schema=schema, record_name=record_name)
+            add_sub_tables_to_table(tables=tables, schema=schema, sub_tables=sub_tables, record_name=record_name)
         else:
             add_schema_fields_to_table(tables=tables, table=table, schema=schema, record_name=record_name)
 
@@ -209,10 +211,64 @@ def generate_tables_from_fwt(
 
 
 
-# %% Generate Tables from Fixed-With Table File
+# %% Union Tables per Record
 
 @catch_error(logger)
-def generate_tables_from_fwt_file(file_name:str, schema_file_name:str, special_records):
+def union_tables_per_record(tables):
+    table_per_record = dict()
+    for key, table in tables.items():
+        record_name = key[0]
+        if record_name in table_per_record:
+            table_per_record[record_name] = table_per_record[record_name].unionByName(table, allowMissingColumns=True)
+        else:
+            table_per_record[record_name] = table
+
+    return table_per_record
+
+
+
+# %% Combine Rows into Array
+
+@catch_error(logger)
+def combine_rows_into_array(tables, groupBy):
+    for record_name in tables.keys():
+        if record_name not in ['HEADER', 'TRAILER']:
+            tables[record_name] = (tables[record_name]
+                .withColumn('all_columns', F.struct(tables[record_name].columns))
+                .groupBy(groupBy)
+                .agg(F.collect_list('all_columns').alias(f'record_{record_name}'))
+                )
+
+    return tables
+
+
+
+# %% Join All Tables
+
+@catch_error(logger)
+def join_all_tables(tables, groupBy):
+    joined_tables = None
+
+    for record_name, table in tables.items():
+        if record_name not in ['HEADER', 'TRAILER']:
+            if joined_tables:
+                joined_tables = joined_tables.join(table, on=groupBy, how='full')
+            else:
+                joined_tables = table
+
+    header = tables['HEADER'].collect()[0]
+    header_map = ['date_of_data', 'remote_id', 'run_date', 'run_time', 'refreshed_updated']
+    for column_name in header_map:
+        joined_tables = joined_tables.withColumn(column_name, lit(header[column_name]))
+
+    return joined_tables
+
+
+
+# %% Create Table from Fixed-With Table File
+
+@catch_error(logger)
+def create_table_from_fwt_file(file_name:str, schema_file_name:str, special_records, groupBy):
     schema_file_path = os.path.join(schema_folder_path, schema_file_name)
     data_file_path = os.path.join(data_path_folder, file_name)
 
@@ -228,29 +284,31 @@ def generate_tables_from_fwt_file(file_name:str, schema_file_name:str, special_r
     text_file = read_text(spark=spark, file_path=data_file_path)
 
     tables = generate_tables_from_fwt(text_file=text_file, schema=schema, special_records=special_records)
-    return tables
+    tables = union_tables_per_record(tables=tables)
+    tables = combine_rows_into_array(tables=tables, groupBy=groupBy)
+    table = join_all_tables(tables=tables, groupBy=groupBy)
+    return table
 
 
 
 # %% Process ACCF Record A
 
 @catch_error(logger)
-def process_record_A_accf(tables, table, schema, record_name):
+def process_record_A_accf(table, schema, record_name):
     if record_name != 'A': return
 
     registration_type_field_name = 'registration_type'
     table, registration_types = get_dictinct_field_values(table=table, schema=schema, record_name=record_name, field_name=registration_type_field_name)
 
     sub_tables = {registration_type:table.where(col(registration_type_field_name)==lit(registration_type)) for registration_type in registration_types}
-
-    add_sub_tables_to_table(tables=tables, schema=schema, sub_tables=sub_tables, record_name=record_name)
+    return sub_tables
 
 
 
 # %% Process ACCF Record C
 
 @catch_error(logger)
-def process_record_C_accf(tables, table, schema, record_name):
+def process_record_C_accf(table, schema, record_name):
     if record_name != 'C': return
 
     country_field_name = 'country_code_1'
@@ -262,8 +320,7 @@ def process_record_C_accf(tables, table, schema, record_name):
         'US or Canada addresses only': table.where(col(country_field_name).isin(USCA_codes)),
         'Non-US or Canada addresses only': table.where(~col(country_field_name).isin(USCA_codes)),
     }
-
-    add_sub_tables_to_table(tables=tables, schema=schema, sub_tables=sub_tables, record_name=record_name)
+    return sub_tables
 
 
 
@@ -275,16 +332,15 @@ special_records = {
     }
 
 
-tables = generate_tables_from_fwt_file(
+table = create_table_from_fwt_file(
     file_name = '4CCF.4CCF',
     schema_file_name = 'customer_account_information_acct_accf.csv',
     special_records = special_records,
+    groupBy = ['account_number'],
 )
 
 
-
-
-
+table.show(5)
 
 
 
