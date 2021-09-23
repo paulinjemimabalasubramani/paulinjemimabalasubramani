@@ -392,8 +392,9 @@ def trigger_snowpipe(source_system:str):
     sqlstr = f"""
 USE ROLE {wid.snowflake_role};
 USE WAREHOUSE {wid.snowflake_raw_warehouse};
+USE DATABASE {wid.snowflake_raw_database};
 
-ALTER PIPE {wid.snowflake_raw_database}.{wid.elt_stage_schema}.{wid.common_elt_stage_name}_{wid.domain_abbr}_{source_system}_INGEST_REQUEST_PIPE REFRESH;
+ALTER PIPE {wid.elt_stage_schema}.{wid.common_elt_stage_name}_{wid.domain_abbr}_{source_system}_INGEST_REQUEST_PIPE REFRESH;
 """
 
     logger.info(f'Triggering Snowpipe{sqlstr}')
