@@ -55,10 +55,6 @@ logger.info({
     'schema_folder_path': schema_folder_path,
 })
 
-header_str = 'BOF      PERSHING '
-trailer_str = 'EOF      PERSHING '
-transaction_code = 'CI'
-
 
 
 # %% Create Session
@@ -92,32 +88,6 @@ def preprocess_schema(schema):
 
 
 
-
-# %% get ACCF schema
-
-@catch_error(logger)
-def get_schema_accf():
-    schema_file_path = os.path.join(schema_folder_path, 'customer_account_information_acct_accf.csv')
-    schema = read_csv(spark=spark, file_path=schema_file_path)
-
-    schema = preprocess_schema(schema=schema)
-    return schema
-
-
-
-schema = get_schema_accf()
-
-if is_pc: schema.show(20)
-
-
-
-# %% Read Text File
-
-file_name = '4CCF.4CCF'
-
-text_file = read_text(spark=spark, file_path=os.path.join(data_path_folder, file_name))
-
-
 # %% Add Field to a fixed width table
 
 @catch_error(logger)
@@ -130,7 +100,8 @@ def add_field_to_fwt(table, field_name:str, position_start:int, length:int):
 # %% Add Schema fields to table
 
 @catch_error(logger)
-def add_schema_fields_to_table(tables, table, schema, record_name:str, conditional_changes:str):
+def add_schema_fields_to_table(tables, table, schema, record_name:str, conditional_changes:str=''):
+    schema = schema.where(col('record_name')==lit(record_name))
     if schema.count()==0: return
 
     for schema_row in schema.rdd.toLocalIterator():
@@ -177,57 +148,16 @@ def get_dictinct_field_values(table, schema, record_name:str, field_name:str):
     return table, field_values
 
 
-
-# %% Process Record A
-
-@catch_error(logger)
-def process_record_A_accf(tables, table, schema, record_name):
-    if record_name != 'A': return
-
-    registration_type_field_name = 'registration_type'
-    table, registration_types = get_dictinct_field_values(table=table, schema=schema, record_name=record_name, field_name=registration_type_field_name)
-
-    for registration_type in registration_types:
-        sub_table = table.where(col(registration_type_field_name)==lit(registration_type))
-        print(f'\nSub-table "{record_name}" -> "{registration_type}"')
-        if is_pc: sub_table.show(5)
-
-        if sub_table.count()==0: continue
-
-        filter_schema = schema.where(
-            (col('record_name')==lit(record_name)) & (
-                (col('conditional_changes').contains(registration_type.upper())) |
-                (col('conditional_changes').isNull()) |
-                (col('conditional_changes')==lit(''))
-                )
-            )
-
-        add_schema_fields_to_table(tables=tables, table=sub_table, schema=filter_schema, record_name=record_name, conditional_changes=registration_type)
-
-
-
-# %% Process Record A
+# %% Add Sub-tables to table
 
 @catch_error(logger)
-def process_record_C_accf(tables, table, schema, record_name):
-    if record_name != 'C': return
-
-    country_field_name = 'country_code_1'
-    table, countries = get_dictinct_field_values(table=table, schema=schema, record_name=record_name, field_name=country_field_name)
-
-    USCA_codes = ['US','CA']
-
-    sub_tables = {
-        'US or Canada addresses only': table.where(col(country_field_name).isin(USCA_codes)),
-        'Non-US or Canada addresses only': table.where(~col(country_field_name).isin(USCA_codes)),
-    }
-
+def add_sub_tables_to_table(tables, schema, sub_tables, record_name:str):
     for conditional_changes, sub_table in sub_tables.items():
         if sub_table.count()==0: continue
 
         filter_schema = schema.where(
             (col('record_name')==lit(record_name)) & (
-                (col('conditional_changes')==lit(conditional_changes.upper())) |
+                (col('conditional_changes').contains(conditional_changes.upper())) |
                 (col('conditional_changes').isNull()) |
                 (col('conditional_changes')==lit(''))
                 )
@@ -241,10 +171,16 @@ def process_record_C_accf(tables, table, schema, record_name):
 # %%
 
 @catch_error(logger)
-def generate_tables_from_accf():
+def generate_tables_from_fwt(
+        text_file,
+        schema,
+        special_records:dict,
+        header_str:str = 'BOF      PERSHING ',
+        trailer_str:str = 'EOF      PERSHING ',
+        transaction_code:str = 'CI',
+        ):
 
     tables = dict()
-
     cv = col('value').substr
 
     record_names = schema.select('record_name').distinct().collect()
@@ -266,22 +202,79 @@ def generate_tables_from_accf():
 
         if table.count()==0: continue
 
-        if record_name in ['HEADER', 'TRAILER']:
-            pass
-        elif record_name == 'A':
-            process_record_A_accf(tables=tables, table=table, schema=schema, record_name=record_name)
-        elif record_name == 'C':
-            process_record_C_accf(tables=tables, table=table, schema=schema, record_name=record_name)
+        if record_name in special_records:
+            special_records[record_name](tables=tables, table=table, schema=schema, record_name=record_name)
         else:
-            pass
-
+            add_schema_fields_to_table(tables=tables, table=table, schema=schema, record_name=record_name)
 
     return tables
 
 
 
-tables = generate_tables_from_accf()
+# %% Process ACCF Record A
 
+@catch_error(logger)
+def process_record_A_accf(tables, table, schema, record_name):
+    if record_name != 'A': return
+
+    registration_type_field_name = 'registration_type'
+    table, registration_types = get_dictinct_field_values(table=table, schema=schema, record_name=record_name, field_name=registration_type_field_name)
+
+    sub_tables = {registration_type:table.where(col(registration_type_field_name)==lit(registration_type)) for registration_type in registration_types}
+
+    add_sub_tables_to_table(tables=tables, schema=schema, sub_tables=sub_tables, record_name=record_name)
+
+
+
+# %% Process ACCF Record C
+
+@catch_error(logger)
+def process_record_C_accf(tables, table, schema, record_name):
+    if record_name != 'C': return
+
+    country_field_name = 'country_code_1'
+    table, countries = get_dictinct_field_values(table=table, schema=schema, record_name=record_name, field_name=country_field_name)
+
+    USCA_codes = ['US','CA']
+
+    sub_tables = {
+        'US or Canada addresses only': table.where(col(country_field_name).isin(USCA_codes)),
+        'Non-US or Canada addresses only': table.where(~col(country_field_name).isin(USCA_codes)),
+    }
+
+    add_sub_tables_to_table(tables=tables, schema=schema, sub_tables=sub_tables, record_name=record_name)
+
+
+
+
+# %% Process Fixed-With Table File
+
+@catch_error(logger)
+def process_fwt_file(file_name:str, schema_file_name:str, special_records):
+    schema_file_path = os.path.join(schema_folder_path, schema_file_name)
+    schema = read_csv(spark=spark, file_path=schema_file_path)
+    schema = preprocess_schema(schema=schema)
+
+    text_file = read_text(spark=spark, file_path=os.path.join(data_path_folder, file_name))
+
+    tables = generate_tables_from_fwt(text_file=text_file, schema=schema, special_records=special_records)
+    return tables
+
+
+
+# %% Process ACCF File
+
+special_records = {
+    'A': process_record_A_accf,
+    'C': process_record_C_accf,
+    }
+
+
+tables = process_fwt_file(
+    file_name = '4CCF.4CCF',
+    schema_file_name = 'customer_account_information_acct_accf.csv',
+    special_records = special_records,
+)
 
 
 
