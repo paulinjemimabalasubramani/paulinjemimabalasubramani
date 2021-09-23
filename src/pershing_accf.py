@@ -27,7 +27,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import catch_error, data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc
 from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
-    add_table_to_tableinfo, default_storage_account_abbr
+    add_table_to_tableinfo, default_storage_account_abbr, azure_container_folder_path, data_folder
 
 from pprint import pprint
 from collections import defaultdict
@@ -54,6 +54,8 @@ logger.info({
     'data_path_folder': data_path_folder,
     'schema_folder_path': schema_folder_path,
 })
+
+tableinfo = defaultdict(list)
 
 
 
@@ -326,6 +328,8 @@ def process_record_C_accf(table, schema, record_name):
 
 # %% Process ACCF File
 
+table_name = 'accf'
+
 special_records = {
     'A': process_record_A_accf,
     'C': process_record_C_accf,
@@ -346,10 +350,6 @@ if is_pc: table.show(5)
 
 # %%
 
-tableinfo = defaultdict(list)
-
-table_name = 'accf'
-
 add_table_to_tableinfo(
     tableinfo = tableinfo, 
     table = table, 
@@ -360,6 +360,11 @@ add_table_to_tableinfo(
     storage_account_abbr = storage_account_abbr,
     )
 
+
+container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source, firm_or_schema=schema_name)
+
+
+if is_pc: pprint(container_folder)
 
 
 
