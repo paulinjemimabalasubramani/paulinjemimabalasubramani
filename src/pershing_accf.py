@@ -143,7 +143,6 @@ def get_dictinct_field_values(table, schema, record_name:str, field_name:str):
 
     field_values = table.select(field_name).distinct().collect()
     field_values = [x[field_name] for x in field_values]
-    if is_pc: pprint(field_values)
 
     return table, field_values
 
@@ -185,7 +184,6 @@ def generate_tables_from_fwt(
 
     record_names = schema.select('record_name').distinct().collect()
     record_names = [x['record_name'] for x in record_names]
-    if is_pc: pprint(record_names)
 
     for record_name in record_names:
         if is_pc: pprint(f'Record Name: {record_name}')
@@ -207,6 +205,29 @@ def generate_tables_from_fwt(
         else:
             add_schema_fields_to_table(tables=tables, table=table, schema=schema, record_name=record_name)
 
+    return tables
+
+
+
+# %% Generate Tables from Fixed-With Table File
+
+@catch_error(logger)
+def generate_tables_from_fwt_file(file_name:str, schema_file_name:str, special_records):
+    schema_file_path = os.path.join(schema_folder_path, schema_file_name)
+    data_file_path = os.path.join(data_path_folder, file_name)
+
+    logger.info({
+        'action': 'generate_tables_from_fwt_file',
+        'data_file_path': data_file_path,
+        'schema_file_path': schema_file_path,
+    })
+
+    schema = read_csv(spark=spark, file_path=schema_file_path)
+    schema = preprocess_schema(schema=schema)
+
+    text_file = read_text(spark=spark, file_path=data_file_path)
+
+    tables = generate_tables_from_fwt(text_file=text_file, schema=schema, special_records=special_records)
     return tables
 
 
@@ -246,22 +267,6 @@ def process_record_C_accf(tables, table, schema, record_name):
 
 
 
-
-# %% Process Fixed-With Table File
-
-@catch_error(logger)
-def process_fwt_file(file_name:str, schema_file_name:str, special_records):
-    schema_file_path = os.path.join(schema_folder_path, schema_file_name)
-    schema = read_csv(spark=spark, file_path=schema_file_path)
-    schema = preprocess_schema(schema=schema)
-
-    text_file = read_text(spark=spark, file_path=os.path.join(data_path_folder, file_name))
-
-    tables = generate_tables_from_fwt(text_file=text_file, schema=schema, special_records=special_records)
-    return tables
-
-
-
 # %% Process ACCF File
 
 special_records = {
@@ -270,11 +275,16 @@ special_records = {
     }
 
 
-tables = process_fwt_file(
+tables = generate_tables_from_fwt_file(
     file_name = '4CCF.4CCF',
     schema_file_name = 'customer_account_information_acct_accf.csv',
     special_records = special_records,
 )
+
+
+
+
+
 
 
 
