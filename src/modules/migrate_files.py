@@ -589,7 +589,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
         sql_table = to_string(sql_table, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
         sql_table = keep_same_case_sensitive_column_names(tableinfo=tableinfo, database=database, schema=schema, table_name=table_name, sql_table=sql_table)
         sql_table = add_elt_columns(
-            table_to_add = sql_table,
+            table = sql_table,
             reception_date = execution_date,
             source = tableinfo_source,
             is_full_load = True,

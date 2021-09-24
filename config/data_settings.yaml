@@ -12,4 +12,5 @@ data_paths_per_source:
     SF: /usr/local/spark/resources/fileshare/Shared/SF
 
     # Client and Account:
-    
+    PERSHING: /usr/local/spark/resources/fileshare/Shared/PERSHING
+

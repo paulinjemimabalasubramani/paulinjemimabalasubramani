@@ -14,11 +14,13 @@ https://spark.apache.org/docs/latest/configuration
 
 # %% libraries
 import os, re
+from pprint import pprint
 
 from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim
+from pyspark.sql.types import StructType, StructField, StringType, ArrayType
+from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim, explode
 from pyspark.sql.types import IntegerType
 from pyspark import StorageLevel
 
@@ -44,15 +46,15 @@ partitionBy_value = re.sub(column_regex, '_', execution_date)
 # %% Add ELT Audit Columns
 
 @catch_error(logger)
-def add_elt_columns(table_to_add, reception_date:str, source:str, is_full_load:bool, dml_type:str=None):
+def add_elt_columns(table, reception_date:str, source:str, is_full_load:bool, dml_type:str=None):
     """
-    Add ELT Audit Columns
+    Add ELT Audit Columns to the table
     """
-    table_to_add = table_to_add.withColumn('RECEPTION_DATE', lit(str(reception_date)))
-    table_to_add = table_to_add.withColumn('EXECUTION_DATE', lit(str(execution_date)))
-    table_to_add = table_to_add.withColumn('ELT_SOURCE', lit(str(source)))
-    table_to_add = table_to_add.withColumn('ELT_LOAD_TYPE', lit(str("FULL" if is_full_load else "INCREMENTAL")))
-    table_to_add = table_to_add.withColumn('ELT_DELETE_IND', lit(0).cast(IntegerType()))
+    table = table.withColumn('RECEPTION_DATE', lit(str(reception_date)))
+    table = table.withColumn('EXECUTION_DATE', lit(str(execution_date)))
+    table = table.withColumn('ELT_SOURCE', lit(str(source)))
+    table = table.withColumn('ELT_LOAD_TYPE', lit(str("FULL" if is_full_load else "INCREMENTAL")))
+    table = table.withColumn('ELT_DELETE_IND', lit(0).cast(IntegerType()))
 
     if is_full_load:
         DML_TYPE = 'I'
@@ -62,9 +64,9 @@ def add_elt_columns(table_to_add, reception_date:str, source:str, is_full_load:b
     if DML_TYPE not in ['U', 'I', 'D']:
         raise ValueError(f'DML_TYPE = {DML_TYPE}')
 
-    table_to_add = table_to_add.withColumn('DML_TYPE', lit(str(DML_TYPE)))
-    table_to_add = table_to_add.withColumn(partitionBy, lit(str(partitionBy_value)))
-    return table_to_add
+    table = table.withColumn('DML_TYPE', lit(str(DML_TYPE)))
+    table = table.withColumn(partitionBy, lit(str(partitionBy_value)))
+    return table
 
 
 
@@ -366,6 +368,95 @@ def get_sql_table_names(spark, schema:str, database:str, server:str, user:str, p
     table_names = [x['TABLE_NAME'] for x in table_names]
 
     return table_names, sql_tables
+
+
+
+# %% Convert Base json metadata to Spark Schema type
+
+@catch_error(logger)
+def base_to_schema(base:dict):
+    """
+    Convert Base json metadata to Spark Schema type
+    """
+    st = []
+    for key, val in base.items():
+        if val is None:
+            v = StringType()
+        elif isinstance(val, dict):
+            v = base_to_schema(val)
+        elif isinstance(val, list):
+            v = ArrayType(base_to_schema(val[0]), True)
+        else:
+            v = val
+
+        st.append(StructField(key, v, True))
+    return StructType(st)
+
+
+
+# %% Flatten table
+
+@catch_error(logger)
+def flatten_table(table):
+    """
+    Flatten nested PySpark table down to the level where there can be multiple arrays.
+    This function does not divide table into sub-tables.
+    """
+    cols = []
+    nested = False
+
+    # to ensure not to have more than 1 explosion in a table
+    expolode_flag = len([c[0] for c in table.dtypes if c[1].startswith('array')]) <= 1
+
+    for c in table.dtypes:
+        if c[1].startswith('struct'):
+            nested = True
+            if len(table.columns)>1:
+                struct_cols = table.select(c[0]+'.*').columns
+                cols.extend([col(c[0]+'.'+cc).alias(c[0]+('' if cc[0]=='_' else '_')+cc) for cc in struct_cols])
+            else:
+                cols.append(c[0]+'.*')
+        elif c[1].startswith('array') and expolode_flag:
+            nested = True
+            cols.append(explode(c[0]).alias(c[0]))
+        else:
+            cols.append(c[0])
+
+    table_select = table.select(cols)
+    if nested:
+        if is_pc: pprint(f'\n{table_select.columns}')
+        table_select = flatten_table(table_select)
+
+    return table_select
+
+
+
+# %% flatten and divide
+
+@catch_error(logger)
+def flatten_n_divide_table(table, table_name:str):
+    """
+    Flatten the table first, then divide it one array per table if the flat table has arrays. 
+    Then repeat the flattening process in the sub-tables until all the tables are fully flat.
+    """
+    if table.count() == 0: # check if table is empty
+        return dict()
+
+    table = flatten_table(table=table)
+
+    string_cols = [c[0] for c in table.dtypes if c[1]=='string']
+    array_cols = [c[0] for c in table.dtypes if c[1].startswith('array')]
+
+    if len(array_cols)==0:
+        return {table_name:table}
+
+    table_list = dict()
+    for array_col in array_cols:
+        colx = string_cols + [array_col]
+        table_select = table.select(*colx)
+        table_list={**table_list, **flatten_n_divide_table(table=table_select, table_name=table_name+'_'+array_col)}
+
+    return table_list
 
 
 

@@ -43,8 +43,8 @@ from pyspark import StorageLevel
 
 storage_account_name = default_storage_account_name
 storage_account_abbr = default_storage_account_abbr
-tableinfo_source = 'ACCF'
-schema_name = 'pershing'
+tableinfo_source = 'PERSHING'
+schema_name = tableinfo_source.lower()
 
 data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
 schema_folder_path = os.path.join(config_path, 'pershing_schema')

@@ -6,91 +6,10 @@ Library for Building Custom FINRA Tables
 
 # %% Import Libraries
 
-from pprint import pprint
-
-from .common_functions import logger, catch_error, is_pc
+from .common_functions import logger, catch_error
 
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import col, lit, explode, concat_ws, arrays_zip, filter, struct
-
-
-
-# %% Load Schema
-
-@catch_error(logger)
-def base_to_schema(base:dict):
-    st = []
-    for key, val in base.items():
-        if val is None:
-            v = StringType()
-        elif isinstance(val, dict):
-            v = base_to_schema(val)
-        elif isinstance(val, list):
-            v = ArrayType(base_to_schema(val[0]), True)
-        else:
-            v = val
-
-        st.append(StructField(key, v, True))
-    return StructType(st)
-
-
-
-# %% Flatten XML
-
-@catch_error(logger)
-def flatten_df(xml_table):
-    cols = []
-    nested = False
-
-    # to ensure not to have more than 1 explosion in a table
-    expolode_flag = len([c[0] for c in xml_table.dtypes if c[1].startswith('array')]) <= 1
-
-    for c in xml_table.dtypes:
-        if c[1].startswith('struct'):
-            nested = True
-            if len(xml_table.columns)>1:
-                struct_cols = xml_table.select(c[0]+'.*').columns
-                cols.extend([col(c[0]+'.'+cc).alias(c[0]+('' if cc[0]=='_' else '_')+cc) for cc in struct_cols])
-            else:
-                cols.append(c[0]+'.*')
-        elif c[1].startswith('array') and expolode_flag:
-            nested = True
-            cols.append(explode(c[0]).alias(c[0]))
-        else:
-            cols.append(c[0])
-
-    xml_table_select = xml_table.select(cols)
-    if nested:
-        if is_pc: pprint(f'\n{xml_table_select.columns}')
-        xml_table_select = flatten_df(xml_table_select)
-
-    return xml_table_select
-
-
-
-# %% flatten and divide
-
-@catch_error(logger)
-def flatten_n_divide_df(xml_table, table_name:str):
-    if xml_table.count() == 0: # check if xml_table is empty
-        return dict()
-
-    xml_table = flatten_df(xml_table=xml_table)
-
-    string_cols = [c[0] for c in xml_table.dtypes if c[1]=='string']
-    array_cols = [c[0] for c in xml_table.dtypes if c[1].startswith('array')]
-
-    if len(array_cols)==0:
-        return {table_name:xml_table}
-
-    xml_table_list = dict()
-    for array_col in array_cols:
-        colx = string_cols + [array_col]
-        xml_table_select = xml_table.select(*colx)
-        xml_table_list={**xml_table_list, **flatten_n_divide_df(xml_table=xml_table_select, table_name=table_name+'_'+array_col)}
-
-    return xml_table_list
-
+from pyspark.sql.functions import col, lit, concat_ws, arrays_zip, filter, struct
 
 
 
@@ -99,7 +18,9 @@ def flatten_n_divide_df(xml_table, table_name:str):
 
 @catch_error(logger)
 def build_branch_table(semi_flat_table):
-    # Create Schemas
+    """
+    Build Custom Finra Branch Table from given semi-flattened raw branch table.
+    """
 
     Associated_Individuals_Schema = ArrayType(StructType([
         StructField('First_Name', StringType(), True),
@@ -190,8 +111,6 @@ def build_branch_table(semi_flat_table):
         StructField('Phone', StringType(), True),
         ]), True)
 
-
-    # Create Branch Table
 
     branch = semi_flat_table.select(
         #col('_orgPK').alias('Firm_CRD_Number'),
@@ -317,8 +236,6 @@ def build_branch_table(semi_flat_table):
             ).alias('Arrangements_Records_Entities'),
     )
 
-    #pprint(branch.limit(10).toJSON().map(lambda j: json.loads(j)).collect())
-    #pprint(branch.where('Branch_CRD_Number = 701667').toJSON().map(lambda j: json.loads(j)).collect())
     return branch
 
 
@@ -329,7 +246,9 @@ def build_branch_table(semi_flat_table):
 
 @catch_error(logger)
 def build_individual_table(semi_flat_table, crd_number:str):
-    # Create Schemas and Filters
+    """
+    Build Custom Finra Individual Table from given semi-flattened raw Individual table.
+    """
 
     def filter_Current_Date(x):
         return (x.getField('DtRng').getField('_toDt').isNull()) | (x.getField('DtRng').getField('_toDt') == lit(''))
@@ -591,8 +510,6 @@ def build_individual_table(semi_flat_table, crd_number:str):
         StructField('Disclosure_Questions', StringType(), True),
         ]), True)
 
-
-    # Create Individual Table
 
     individual = semi_flat_table.select(
         col('Comp_indvlSSN').alias('SSN'),
@@ -880,14 +797,12 @@ def build_individual_table(semi_flat_table, crd_number:str):
             ).alias('DRP'),
     )
 
-
-    #individual = individual.persist()
-    #semi_flat_table.printSchema()
-    #print('\n')
-    #individual.printSchema()
-    #pprint(individual.limit(10).toJSON().map(lambda j: json.loads(j)).collect())
-    #pprint(individual.where('CRD_Number = 429109').toJSON().map(lambda j: json.loads(j)).collect())
-
     return individual
+
+
+
+
+# %%
+
 
 
