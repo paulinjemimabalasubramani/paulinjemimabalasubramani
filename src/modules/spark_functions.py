@@ -13,7 +13,7 @@ https://spark.apache.org/docs/latest/configuration
 """
 
 # %% libraries
-import os, re
+import os, re, json
 from pprint import pprint
 
 from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date
@@ -113,6 +113,33 @@ def create_spark():
         'Hadoop_Version': spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion(),
     })
     return spark
+
+
+
+# %% Utility function to collect data from specific PySpark Table column
+
+@catch_error(logger)
+def collect_column(table, column_name:str, distinct:bool=True):
+    """
+    Utility function to collect data from specific PySpark Table column
+    """
+    table = table.select(column_name)
+    if distinct:
+        table = table.distinct()
+    values = table.collect()
+    values = [x[column_name] for x in values]
+    return values
+
+
+
+# %% Utility function to convert PySpark table to list of dictionaries
+
+@catch_error(logger)
+def table_to_list_dict(table):
+    """
+    Utility function to convert PySpark table to list of dictionaries
+    """
+    return table.toJSON().map(lambda j: json.loads(j)).collect()
 
 
 
@@ -363,10 +390,7 @@ def get_sql_table_names(spark, schema:str, database:str, server:str, user:str, p
         )
 
     sql_tables = sql_tables.filter((col('TABLE_SCHEMA') == lit(schema)) & (col('TABLE_TYPE')==lit('BASE TABLE')))
-
-    table_names = sql_tables.select('TABLE_NAME').distinct().collect()
-    table_names = [x['TABLE_NAME'] for x in table_names]
-
+    table_names = collect_column(table=sql_tables, column_name='TABLE_NAME', distinct=True)
     return table_names, sql_tables
 
 

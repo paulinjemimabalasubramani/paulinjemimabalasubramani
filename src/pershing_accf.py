@@ -25,7 +25,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import catch_error, data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc
-from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces
+from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
     add_table_to_tableinfo, default_storage_account_abbr, azure_container_folder_path, data_folder
 
@@ -121,10 +121,10 @@ def find_field_position(schema, record_name:str, field_name:str):
     field_schema = schema.where(
         (col('record_name')==lit(record_name)) &
         (col('field_name')==lit(field_name))
-        ).select(['position_start', 'length']).collect()
+        ).select(['position_start', 'length']).collect()[0]
 
-    position_start = field_schema[0]['position_start']
-    length = field_schema[0]['length']
+    position_start = field_schema['position_start']
+    length = field_schema['length']
 
     if is_pc: pprint({
         'record_name': record_name,
@@ -144,9 +144,7 @@ def get_dictinct_field_values(table, schema, record_name:str, field_name:str):
     position_start, length = find_field_position(schema=schema, record_name=record_name, field_name=field_name)
     table = add_field_to_fwt(table=table, field_name=field_name, position_start=position_start, length=length)
 
-    field_values = table.select(field_name).distinct().collect()
-    field_values = [x[field_name] for x in field_values]
-
+    field_values = collect_column(table=table, column_name=field_name, distinct=True)
     return table, field_values
 
 
@@ -185,8 +183,7 @@ def generate_tables_from_fwt(
     tables = dict()
     cv = col('value').substr
 
-    record_names = schema.select('record_name').distinct().collect()
-    record_names = [x['record_name'] for x in record_names]
+    record_names = collect_column(table=schema, column_name='record_name', distinct=True)
 
     for record_name in record_names:
         if is_pc: pprint(f'Record Name: {record_name}')

@@ -9,14 +9,14 @@ from functools import wraps
 from collections import defaultdict, OrderedDict
 from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, data_settings, execution_date, get_secrets
+from .common_functions import logger, catch_error, is_pc, data_settings, execution_date, get_secrets, to_OrderedDict
 from .spark_functions import elt_audit_columns
 from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
     to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder
 
 from snowflake.connector import connect as snowflake_connect
 from pyspark.sql.types import StringType
-from pyspark.sql.functions import col, lit
+from pyspark.sql.functions import col
 
 
 
@@ -127,11 +127,9 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
 
     column_names = sorted([c['TargetColumnName'] for c in filtered_column_names])
 
-    src_column_dict = {c['TargetColumnName']:c['SourceColumnName'] for c in filtered_column_names}
-    src_column_dict = OrderedDict(sorted(src_column_dict.items(), key=lambda x:x[0], reverse=False))
+    src_column_dict = to_OrderedDict({c['TargetColumnName']:c['SourceColumnName'] for c in filtered_column_names})
 
-    data_types_dict = {c['TargetColumnName']:c['TargetDataType'] for c in filtered_column_names}
-    data_types_dict = OrderedDict(sorted(data_types_dict.items(), key=lambda x:x[0], reverse=False))
+    data_types_dict = to_OrderedDict({c['TargetColumnName']:c['TargetDataType'] for c in filtered_column_names})
 
     pk_column_names = sorted([c['TargetColumnName'] for c in filtered_column_names if str(c['KeyIndicator'])=='1'])
 
@@ -173,7 +171,7 @@ def action_step(step:int):
                 setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
 
                 save_adls_gen2(
-                    table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
+                    table = wid.spark.createDataFrame([sqlstr], StringType()),
                     storage_account_name = storage_account_name,
                     container_name = container_name,
                     container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=wid.domain_name, source_or_database=f"{wid.ddl_folder}/{kwargs['source_system']}", firm_or_schema=f"step_{step}/{kwargs['schema_name']}"),
@@ -201,7 +199,7 @@ def action_source_level_tables(table_name:str):
             sqlstr = fn(*args, **kwargs)
             if wid.save_to_adls:
                 save_adls_gen2(
-                    table_to_save = wid.spark.createDataFrame([sqlstr], StringType()),
+                    table = wid.spark.createDataFrame([sqlstr], StringType()),
                     storage_account_name = kwargs['storage_account_name'],
                     container_name = container_name,
                     container_folder = kwargs['container_folder'],
@@ -319,7 +317,7 @@ def create_ingest_data_table(ingest_data_per_source_system, container_folder:str
     json_string = json.dumps(ingest_data_per_source_system)
 
     save_adls_gen2(
-        table_to_save = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
+        table = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
         storage_account_name = storage_account_name,
         container_name = container_name,
         container_folder = container_folder,

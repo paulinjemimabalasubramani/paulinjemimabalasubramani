@@ -100,7 +100,7 @@ def get_master_ingest_list_csv(master_ingest_list_path:str, domain_name:str, tab
         master_ingest_list = master_ingest_list.withColumnRenamed(key, val)
 
     save_adls_gen2(
-            table_to_save = master_ingest_list,
+            table = master_ingest_list,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=domain_name, source_or_database=tableinfo_source),
@@ -136,7 +136,7 @@ def get_translation(data_type_translation_path:str):
     translation = add_config_elt_columns(config_table=translation)
 
     save_adls_gen2(
-            table_to_save = translation,
+            table = translation,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = metadata_folder,
@@ -170,7 +170,7 @@ def get_firm_source_map(firm_source_map_path:str):
     firm_source_map = add_config_elt_columns(firm_source_map)
 
     save_adls_gen2(
-            table_to_save = firm_source_map,
+            table = firm_source_map,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = metadata_folder,

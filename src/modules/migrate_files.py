@@ -14,7 +14,7 @@ from .common_functions import logger, catch_error, is_pc, execution_date
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
     default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder
-from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
+from .spark_functions import collect_column, read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
     metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value
 
 from pyspark.sql import functions as F
@@ -525,7 +525,7 @@ def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, def
         )
 
     save_adls_gen2(
-            table_to_save = tableinfo,
+            table = tableinfo,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
@@ -542,17 +542,17 @@ def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, def
 
 @catch_error(logger)
 def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, table_name:str, sql_table):
-    tableinfo_SourceColumnName = tableinfo.where(
+    tableinfo_filtered = tableinfo.where(
         (col('SourceDatabase')==lit(database)) &
         (col('SourceSchema')==lit(schema)) &
         (col('TableName')==lit(table_name))
-        ).select('SourceColumnName').distinct().collect()
+        )
 
-    tableinfo_SourceColumnName = [x['SourceColumnName'] for x in tableinfo_SourceColumnName]
+    tableinfo_SourceColumnName = collect_column(table=tableinfo_filtered, column_name='SourceColumnName', distinct=True)
 
     sql_table_columns_lower = {c.lower():c for c in sql_table.columns}
     column_map = {tc:sql_table_columns_lower[tc.lower()] for tc in tableinfo_SourceColumnName}
-    
+
     for new_name, existing_name in column_map.items():
         sql_table = sql_table.withColumnRenamed(existing_name, new_name)
 
@@ -597,7 +597,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
             )
 
         userMetadata = save_adls_gen2(
-            table_to_save = sql_table,
+            table = sql_table,
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = container_folder,
