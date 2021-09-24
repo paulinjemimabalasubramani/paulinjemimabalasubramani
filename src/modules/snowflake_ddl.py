@@ -96,7 +96,9 @@ def connect_to_snowflake(
         snowflake_warehouse:str=None,
         snowflake_role:str=None,
         ):
-
+    """
+    Connect to SnowFlake
+    """
     _, snowflake_user, snowflake_pass = get_secrets(key_vault_account)
 
     snowflake_connection = snowflake_connect(
@@ -117,6 +119,9 @@ def connect_to_snowflake(
 
 @catch_error(logger)
 def get_column_names(tableinfo, source_system, schema_name, table_name):
+    """
+    Get column names, types and other metadata from tableinfo
+    """
     filtered_tableinfo = tableinfo.filter(
         (col('TableName') == table_name) &
         (col('SourceSchema') == schema_name) &
@@ -141,6 +146,9 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
 
 @catch_error(logger)
 def base_sqlstr(schema_name, table_name, source_system, layer:str):
+    """
+    Base SQL string to have at the beginning of all SQL Strings
+    """
     LAYER = f'_{layer}' if layer else ''
     SCHEMA_NAME = f'{source_system}{LAYER}'.upper()
     TABLE_NAME = f'{schema_name}_{table_name}'.upper()
@@ -157,6 +165,9 @@ USE SCHEMA {SCHEMA_NAME};
 # %% Action Step
 
 def action_step(step:int):
+    """
+    Wrapper function around Step functions -> to save and/or execute output SQL from each Step
+    """
     def outer(step_fn):
         @wraps(step_fn)
         def inner(*args, **kwargs):
@@ -188,10 +199,12 @@ def action_step(step:int):
 
 
 
-
 # %% Action Source Level Tables
 
 def action_source_level_tables(table_name:str):
+    """
+    Wrapper function for SQL strings from Source Level tables -> to save and/or execute output SQL from each function
+    """
     def outer(fn):
         @wraps(fn)
         def inner(*args, **kwargs):
@@ -220,7 +233,6 @@ def action_source_level_tables(table_name:str):
 
 
 
-
 # %% Write CICD File per Table to local file system
 
 @catch_error(logger)
@@ -241,7 +253,6 @@ def write_CICD_file_per_table(source_system:str, schema_name:str, table_name:str
     logger.info(f'Writing: {file_path}')
     with open(file_path, 'w') as f:
         f.write(wid.cicd_file)
-
 
 
 

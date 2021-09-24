@@ -234,6 +234,9 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
 
 @catch_error(logger)
 def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:str, role:str, account:str, user:str, password:str, is_query:bool=False):
+    """
+    Read from Snowflake Table or Query
+    """
     logger.info(f"Reading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
     sf_options = {
         'sfUrl': f'{account}.snowflakecomputing.com',
@@ -267,7 +270,7 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
 @catch_error(logger)
 def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     """
-    Read XML Files using Spark
+    Read XML Files using PySpark
     """
     logger.info(f'Reading XML file: {file_path}')
     xml_table = (spark.read
@@ -294,6 +297,9 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
 
 @catch_error(logger)
 def trim_string_columns(table):
+    """
+    Trim String Columns of PySpark table
+    """
     for colname, coltype in table.dtypes:
         if coltype.lower() == 'string':
             table = table.withColumn(colname, trim(col(colname)))
@@ -337,7 +343,7 @@ def read_csv(spark, file_path:str):
 @catch_error(logger)
 def read_text(spark, file_path:str):
     """
-    Read Text File using Spark
+    Read Text File using PySpark
     """
     logger.info(f'Reading text file: {file_path}')
 
@@ -357,6 +363,9 @@ def read_text(spark, file_path:str):
 
 @catch_error(logger)
 def add_id_key(table, key_column_names:list):
+    """
+    Add ID Key to the table
+    """
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
     table = table.withColumn(MD5KeyIndicator, concat_ws('_', *coalesce_list)) # TODO: Change this to IDKeyIndicator later when we can add schema change
     return table
@@ -367,6 +376,9 @@ def add_id_key(table, key_column_names:list):
 
 @catch_error(logger)
 def add_md5_key(table, key_column_names:list=[]):
+    """
+    Add MD5 Key to the table
+    """
     if not key_column_names:
         key_column_names = table.columns
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
@@ -379,6 +391,9 @@ def add_md5_key(table, key_column_names:list=[]):
 
 @catch_error(logger)
 def get_sql_table_names(spark, schema:str, database:str, server:str, user:str, password:str):
+    """
+    Get SQL Table Names
+    """
     sql_tables = read_sql(
         spark = spark, 
         user = user, 
