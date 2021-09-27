@@ -13,12 +13,14 @@ https://spark.apache.org/docs/latest/configuration
 """
 
 # %% libraries
-import os, re
+import os, re, json
+from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date
+from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim
+from pyspark.sql.types import StructType, StructField, StringType, ArrayType
+from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim, explode
 from pyspark.sql.types import IntegerType
 from pyspark import StorageLevel
 
@@ -35,24 +37,31 @@ metadata_FirmSourceMap = 'FirmSourceMap'
 MD5KeyIndicator = 'MD5_KEY'
 IDKeyIndicator = 'ID'
 
-elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'ELT_SOURCE', 'ELT_LOAD_TYPE', 'ELT_DELETE_IND', 'DML_TYPE']
+RECEPTION_DATE_str = 'RECEPTION_DATE'
+ELT_SOURCE_str = 'ELT_SOURCE'
+ELT_LOAD_TYPE_str = 'ELT_LOAD_TYPE'
+ELT_DELETE_IND_str = 'ELT_DELETE_IND'
+DML_TYPE_str = 'DML_TYPE'
+
 partitionBy = 'PARTITION_DATE'
 partitionBy_value = re.sub(column_regex, '_', execution_date)
+
+elt_audit_columns = [RECEPTION_DATE_str, EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str]
 
 
 
 # %% Add ELT Audit Columns
 
 @catch_error(logger)
-def add_elt_columns(table_to_add, reception_date:str, source:str, is_full_load:bool, dml_type:str=None):
+def add_elt_columns(table, reception_date:str, source:str, is_full_load:bool, dml_type:str=None):
     """
-    Add ELT Audit Columns
+    Add ELT Audit Columns to the table
     """
-    table_to_add = table_to_add.withColumn('RECEPTION_DATE', lit(str(reception_date)))
-    table_to_add = table_to_add.withColumn('EXECUTION_DATE', lit(str(execution_date)))
-    table_to_add = table_to_add.withColumn('ELT_SOURCE', lit(str(source)))
-    table_to_add = table_to_add.withColumn('ELT_LOAD_TYPE', lit(str("FULL" if is_full_load else "INCREMENTAL")))
-    table_to_add = table_to_add.withColumn('ELT_DELETE_IND', lit(0).cast(IntegerType()))
+    table = table.withColumn(RECEPTION_DATE_str, lit(str(reception_date)))
+    table = table.withColumn(EXECUTION_DATE_str, lit(str(execution_date)))
+    table = table.withColumn(ELT_SOURCE_str, lit(str(source)))
+    table = table.withColumn(ELT_LOAD_TYPE_str, lit(str("FULL" if is_full_load else "INCREMENTAL")))
+    table = table.withColumn(ELT_DELETE_IND_str, lit(0).cast(IntegerType()))
 
     if is_full_load:
         DML_TYPE = 'I'
@@ -60,11 +69,11 @@ def add_elt_columns(table_to_add, reception_date:str, source:str, is_full_load:b
         DML_TYPE = dml_type.upper()
 
     if DML_TYPE not in ['U', 'I', 'D']:
-        raise ValueError(f'DML_TYPE = {DML_TYPE}')
+        raise ValueError(f'{DML_TYPE_str} = {DML_TYPE}')
 
-    table_to_add = table_to_add.withColumn('DML_TYPE', lit(str(DML_TYPE)))
-    table_to_add = table_to_add.withColumn(partitionBy, lit(str(partitionBy_value)))
-    return table_to_add
+    table = table.withColumn(DML_TYPE_str, lit(str(DML_TYPE)))
+    table = table.withColumn(partitionBy, lit(str(partitionBy_value)))
+    return table
 
 
 
@@ -111,6 +120,33 @@ def create_spark():
         'Hadoop_Version': spark.sparkContext._jvm.org.apache.hadoop.util.VersionInfo.getVersion(),
     })
     return spark
+
+
+
+# %% Utility function to collect data from specific PySpark Table column
+
+@catch_error(logger)
+def collect_column(table, column_name:str, distinct:bool=True):
+    """
+    Utility function to collect data from specific PySpark Table column
+    """
+    table = table.select(column_name)
+    if distinct:
+        table = table.distinct()
+    values = table.collect()
+    values = [x[column_name] for x in values]
+    return values
+
+
+
+# %% Utility function to convert PySpark table to list of dictionaries
+
+@catch_error(logger)
+def table_to_list_dict(table):
+    """
+    Utility function to convert PySpark table to list of dictionaries
+    """
+    return table.toJSON().map(lambda j: json.loads(j)).collect()
 
 
 
@@ -205,6 +241,9 @@ def write_sql(table, table_name:str, schema:str, database:str, server:str, user:
 
 @catch_error(logger)
 def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:str, role:str, account:str, user:str, password:str, is_query:bool=False):
+    """
+    Read from Snowflake Table or Query
+    """
     logger.info(f"Reading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
     sf_options = {
         'sfUrl': f'{account}.snowflakecomputing.com',
@@ -238,7 +277,7 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
 @catch_error(logger)
 def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     """
-    Read XML Files using Spark
+    Read XML Files using PySpark
     """
     logger.info(f'Reading XML file: {file_path}')
     xml_table = (spark.read
@@ -265,6 +304,9 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
 
 @catch_error(logger)
 def trim_string_columns(table):
+    """
+    Trim String Columns of PySpark table
+    """
     for colname, coltype in table.dtypes:
         if coltype.lower() == 'string':
             table = table.withColumn(colname, trim(col(colname)))
@@ -308,7 +350,7 @@ def read_csv(spark, file_path:str):
 @catch_error(logger)
 def read_text(spark, file_path:str):
     """
-    Read Text File using Spark
+    Read Text File using PySpark
     """
     logger.info(f'Reading text file: {file_path}')
 
@@ -328,6 +370,9 @@ def read_text(spark, file_path:str):
 
 @catch_error(logger)
 def add_id_key(table, key_column_names:list):
+    """
+    Add ID Key to the table
+    """
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
     table = table.withColumn(MD5KeyIndicator, concat_ws('_', *coalesce_list)) # TODO: Change this to IDKeyIndicator later when we can add schema change
     return table
@@ -338,6 +383,9 @@ def add_id_key(table, key_column_names:list):
 
 @catch_error(logger)
 def add_md5_key(table, key_column_names:list=[]):
+    """
+    Add MD5 Key to the table
+    """
     if not key_column_names:
         key_column_names = table.columns
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
@@ -350,6 +398,9 @@ def add_md5_key(table, key_column_names:list=[]):
 
 @catch_error(logger)
 def get_sql_table_names(spark, schema:str, database:str, server:str, user:str, password:str):
+    """
+    Get SQL Table Names
+    """
     sql_tables = read_sql(
         spark = spark, 
         user = user, 
@@ -361,11 +412,97 @@ def get_sql_table_names(spark, schema:str, database:str, server:str, user:str, p
         )
 
     sql_tables = sql_tables.filter((col('TABLE_SCHEMA') == lit(schema)) & (col('TABLE_TYPE')==lit('BASE TABLE')))
-
-    table_names = sql_tables.select('TABLE_NAME').distinct().collect()
-    table_names = [x['TABLE_NAME'] for x in table_names]
-
+    table_names = collect_column(table=sql_tables, column_name='TABLE_NAME', distinct=True)
     return table_names, sql_tables
+
+
+
+# %% Convert Base json metadata to Spark Schema type
+
+@catch_error(logger)
+def base_to_schema(base:dict):
+    """
+    Convert Base json metadata to Spark Schema type
+    """
+    st = []
+    for key, val in base.items():
+        if val is None:
+            v = StringType()
+        elif isinstance(val, dict):
+            v = base_to_schema(val)
+        elif isinstance(val, list):
+            v = ArrayType(base_to_schema(val[0]), True)
+        else:
+            v = val
+
+        st.append(StructField(key, v, True))
+    return StructType(st)
+
+
+
+# %% Flatten table
+
+@catch_error(logger)
+def flatten_table(table):
+    """
+    Flatten nested PySpark table down to the level where there can be multiple arrays.
+    This function does not divide table into sub-tables.
+    """
+    cols = []
+    nested = False
+
+    # to ensure not to have more than 1 explosion in a table
+    expolode_flag = len([c[0] for c in table.dtypes if c[1].startswith('array')]) <= 1
+
+    for c in table.dtypes:
+        if c[1].startswith('struct'):
+            nested = True
+            if len(table.columns)>1:
+                struct_cols = table.select(c[0]+'.*').columns
+                cols.extend([col(c[0]+'.'+cc).alias(c[0]+('' if cc[0]=='_' else '_')+cc) for cc in struct_cols])
+            else:
+                cols.append(c[0]+'.*')
+        elif c[1].startswith('array') and expolode_flag:
+            nested = True
+            cols.append(explode(c[0]).alias(c[0]))
+        else:
+            cols.append(c[0])
+
+    table_select = table.select(cols)
+    if nested:
+        if is_pc: pprint(f'\n{table_select.columns}')
+        table_select = flatten_table(table_select)
+
+    return table_select
+
+
+
+# %% flatten and divide
+
+@catch_error(logger)
+def flatten_n_divide_table(table, table_name:str):
+    """
+    Flatten the table first, then divide it one array per table if the flat table has arrays. 
+    Then repeat the flattening process in the sub-tables until all the tables are fully flat.
+    """
+    if table.count() == 0: # check if table is empty
+        return dict()
+
+    table = flatten_table(table=table)
+
+    string_cols = [c[0] for c in table.dtypes if c[1]=='string']
+    array_cols = [c[0] for c in table.dtypes if c[1].startswith('array')]
+
+    if len(array_cols)==0:
+        return {table_name:table}
+
+    table_list = dict()
+    for array_col in array_cols:
+        colx = string_cols + [array_col]
+        table_select = table.select(*colx)
+        table_list={**table_list, **flatten_n_divide_table(table=table_select, table_name=table_name+'_'+array_col)}
+
+    return table_list
 
 
 

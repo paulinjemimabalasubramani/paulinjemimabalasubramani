@@ -9,6 +9,7 @@ import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, 
 from pprint import pprint
 from datetime import datetime
 from functools import wraps
+from collections import OrderedDict
 
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
@@ -18,6 +19,10 @@ from azure.keyvault.secrets import SecretClient
 # %% Wrapper/Decorator function for catching errors
 
 def catch_error(logger=None, raise_error:bool=True):
+    """
+    Wrapper/Decorator function for catching errors
+    The function catches errors, and then writes to logger
+    """
     def outer(fn):
         @wraps(fn)
         def inner(*args, **kwargs):
@@ -41,6 +46,9 @@ def catch_error(logger=None, raise_error:bool=True):
 
 @catch_error()
 def get_env(variable_name:str, logger=None):
+    """
+    Get Environment Variable
+    """
     try:
         value = os.environ.get(variable_name)
         if not value:
@@ -62,8 +70,14 @@ class Config:
     """
     Class for retrieving and storing configuration data
     """
+
     @catch_error()
     def __init__(self, file_path:str, defaults:dict={}, logger=None):
+        """
+        Initiate the class.
+        Read the configuration YAML file.
+        Assign defaults if any config data doesn't exist.
+        """
         try:
             for name, value in defaults.items():
                 setattr(self, name, value) # Write defaults
@@ -86,8 +100,12 @@ class Config:
                 pprint(e)
             raise e
 
+
     @catch_error()
     def get_value(self, attr_name:str, default_value, check_is_pc:bool=True):
+        """
+        Get Config value. If value doesn't exist then save default_value and retrieve it.
+        """
         if not hasattr(self, attr_name) or (check_is_pc and is_pc):
             setattr(self, attr_name, default_value) 
         return getattr(self, attr_name)
@@ -100,6 +118,7 @@ class Config:
 execution_date_start = datetime.now()
 strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
 execution_date = execution_date_start.strftime(strftime)
+EXECUTION_DATE_str = 'EXECUTION_DATE'
 
 is_pc = platform.system().lower() == 'windows'
 
@@ -150,10 +169,13 @@ for source, source_path in data_paths_per_source.items():
 
 
 
-# %% Get Azure Key Vault
+# %% Get Azure Key Vault Handler
 
 @catch_error()
 def get_azure_key_vault(logger=None):
+    """
+    Get Azure Key Vault Handler
+    """
     try:
         azure_tenant_id = get_env('AZURE_TENANT_ID', logger=logger)
         azure_client_id = get_env('AZURE_KV_ID', logger=logger)
@@ -178,6 +200,9 @@ def get_azure_key_vault(logger=None):
 
 @catch_error()
 def get_secrets(account_name:str, logger=None):
+    """
+    Read Secrets (-id and -pass) from Azure Key Vault
+    """
     try:
         environment = data_settings.environment.lower()
         account_name = account_name.lower()
@@ -205,6 +230,9 @@ azure_tenant_id, log_customer_id, log_shared_key = get_secrets('loganalytics')
 
 @catch_error()
 def build_log_signature(customer_id:str, shared_key:str, rfc1123date:str, content_length:int, method:str, content_type:str, resource:str, logger=None):
+    """
+    Build Azure Log API signature
+    """
     try:
         x_headers = 'x-ms-date:' + rfc1123date
         string_to_hash = '\n'.join([method, str(content_length), content_type, x_headers, resource])
@@ -224,11 +252,14 @@ def build_log_signature(customer_id:str, shared_key:str, rfc1123date:str, conten
 
 
 
-# %% Build and send a request to the POST API
-# https://docs.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api
+# %% Build and send log data to Azure Monitor
 
 @catch_error()
 def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=None):
+    """
+    Build and send log data to Azure Monitor
+    https://docs.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api
+    """
     try:
         log_data = {
             'TimeGenerated': datetime.now(),
@@ -260,11 +291,10 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
             'x-ms-date': rfc1123date,
         }
 
-        if True:
+        if True: # Temporarily stop sending print logs to Azure
             if backup_logger_func:
                 backup_logger_func(body, exc_info=False)
-
-        else: # TODO: Temporarily stop sending print logs to Azure
+        else: 
             response = requests.post(uri, data=body, headers=headers)
             if response.status_code >= 200 and response.status_code <= 299 and not is_pc:
                 #pprint('Log Accepted')
@@ -307,10 +337,13 @@ def write_file(file_path:str, contents, mode = 'w', logger=None):
 
 
 
-# %% Get System Info in String
+# %% Get System Info as JSON
 
 @catch_error()
 def system_info(logger=None):
+    """
+    Get System Info as JSON
+    """
     try:
         uname = platform.uname()
 
@@ -342,12 +375,18 @@ def system_info(logger=None):
 # %% Create Logger with custom configuration
 
 class CreateLogger:
+    """
+    Class for Logging Print Statements
+    """
 
     @catch_error()
-    def __init__(self):
+    def __init__(self, logging_level=logging.INFO):
+        """
+        Initiate the class. Set Logging Policy.
+        """
         self.log_type = 'AirflowPrintedLogs'
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging_level)
 
         log_path = data_settings.get_value(attr_name='output_log_path', default_value=os.path.join(data_settings.data_path, 'logs'))
         log_file_name_no_ext = sys.parent_name.split('.')[0] if hasattr(sys, 'parent_name') else 'logs'
@@ -360,20 +399,23 @@ class CreateLogger:
             filemode = 'a',
             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
             datefmt = '%d-%b-%y %H:%M:%S',
-            level = logging.INFO,
+            level = logging_level,
             )
 
-        other_loggers = [
+        warning_loggers = [
             'azure.core.pipeline.policies.http_logging_policy',
             'azure.identity._internal.get_token_mixin',
             ]
 
-        for other_logger in other_loggers:
-            logging.getLogger(other_logger).setLevel(logging.WARNING)
+        for warning_logger in warning_loggers:
+            logging.getLogger(warning_logger).setLevel(logging.WARNING)
 
 
     @catch_error()
     def log(self, msg, msg_type, extra_log:dict={}, backup_logger_func=None):
+        """
+        Log Print Message
+        """
         log_data = {
             'msg': msg,
             'msg_type': msg_type,
@@ -385,16 +427,25 @@ class CreateLogger:
 
     @catch_error()
     def info(self, msg):
+        """
+        Log info message
+        """
         self.log(msg=msg, msg_type='INFO', backup_logger_func=self.logger.info)
 
 
     @catch_error()
     def warning(self, msg):
+        """
+        Log warning message
+        """
         self.log(msg=msg, msg_type='WARNING', extra_log=system_info(logger=self.logger), backup_logger_func=self.logger.warning)
 
 
     @catch_error()
     def error(self, msg):
+        """
+        Log error message
+        """
         self.log(msg=msg, msg_type='ERROR', extra_log=system_info(logger=self.logger), backup_logger_func=self.logger.error)
 
 
@@ -403,7 +454,7 @@ class CreateLogger:
 logger = CreateLogger()
 
 
-logger.info({'execution_date': execution_date})
+logger.info({EXECUTION_DATE_str: execution_date})
 logger.info(system_info(logger=logger))
 
 
@@ -413,6 +464,9 @@ logger.info(system_info(logger=logger))
 
 @catch_error(logger, raise_error=False)
 def get_log_token():
+    """
+    Obtain authentication token for Azure Monotor using a Service Principal
+    """
     login_url = 'https://login.microsoftonline.com/' + azure_tenant_id + '/oauth2/token'
     resource = 'https://api.loganalytics.io'
 
@@ -445,13 +499,16 @@ def get_log_token():
 
 
 
-
-# %% Execute Kusto Query on an Azure Log Analytics Workspace
-# https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/
-# https://dev.loganalytics.io/
+# %% Execute Kusto Query on an Azure Log Analytics Workspace to retrieve log data
 
 @catch_error(logger, raise_error=False)
 def get_log_data(kusto_query):
+    """
+    Execute Kusto Query on an Azure Log Analytics Workspace
+    Retrieve log data from Azure Monitor
+    https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/
+    https://dev.loganalytics.io/
+    """
     log_token = get_log_token()
     if not log_token:
         return
@@ -483,6 +540,9 @@ def get_log_data(kusto_query):
 
 @catch_error(logger)
 def get_extraClassPath(drivers_path:str, join_drivers_by:str):
+    """
+    Get list of all the JAR files for PySpark
+    """
     drivers = []
 
     for file in os.listdir(drivers_path):
@@ -502,6 +562,9 @@ extraClassPath = get_extraClassPath(drivers_path=drivers_path, join_drivers_by=j
 
 @catch_error(logger)
 def mark_execution_end():
+    """
+    Log Execution End date and Execution duration of the entire code
+    """
     execution_date_end = datetime.now()
     timedelta1 = execution_date_end - execution_date_start
 
@@ -511,11 +574,22 @@ def mark_execution_end():
     total_time = f'{timedelta1.days} day(s), {h} hour(s), {m} minute(s), {s} second(s)'
 
     logger.info({
-        'execution_date_start': execution_date,
-        'execution_date_end': execution_date_end.strftime(strftime),
+        f'{EXECUTION_DATE_str}_start': execution_date,
+        f'{EXECUTION_DATE_str}_end': execution_date_end.strftime(strftime),
         'total_seconds': timedelta1.seconds,
         'total_time': total_time,
     })
+
+
+
+# %% Utility function to convert dict to OrderedDict
+
+@catch_error(logger)
+def to_OrderedDict(dict_:dict, reverse:bool=False):
+    """
+    Utility function to convert dict to OrderedDict
+    """
+    return OrderedDict(sorted(dict_.items(), key=lambda x:x[0], reverse=reverse))
 
 
 

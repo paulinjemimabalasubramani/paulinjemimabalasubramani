@@ -14,7 +14,7 @@ from .common_functions import logger, catch_error, is_pc, execution_date
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
     default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder
-from .spark_functions import read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
+from .spark_functions import collect_column, read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
     metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value
 
 from pyspark.sql import functions as F
@@ -37,6 +37,9 @@ schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINT
 
 @catch_error(logger)
 def get_DataTypeTranslation_table(spark, data_type_translation_id:str):
+    """
+    Get DataTypeTranslation table from Azure
+    """
     storage_account_name = default_storage_account_name
 
     translation = read_adls_gen2(
@@ -62,6 +65,9 @@ def get_DataTypeTranslation_table(spark, data_type_translation_id:str):
 
 @catch_error(logger)
 def get_master_ingest_list(spark, tableinfo_source:str):
+    """
+    Get Master Ingest List from Azure - this is the list of table names to be ingested.
+    """
     storage_account_name = default_storage_account_name
 
     master_ingest_list = read_adls_gen2(
@@ -87,6 +93,9 @@ def get_master_ingest_list(spark, tableinfo_source:str):
 
 @catch_error(logger)
 def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
+    """
+    Join master_ingest_list with sql tables
+    """
     sql_tables = sql_tables.where(col('TABLE_TYPE')==lit('BASE TABLE'))
 
     tables = master_ingest_list.alias('master_ingest_list').join(
@@ -119,6 +128,9 @@ def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
 
 @catch_error(logger)
 def add_columns_if_not_exists(table, table_name:str, columns:dict):
+    """
+    Add columns with default values to the table if column does not exit.
+    """
     COLUMNS = [c.upper() for c in table.columns]
     for column_name, column_value in columns.items():
         if column_name.upper() not in COLUMNS:
@@ -132,6 +144,9 @@ def add_columns_if_not_exists(table, table_name:str, columns:dict):
 
 @catch_error(logger)
 def filter_columns_by_tables(sql_columns, tables):
+    """
+    Filter COLUMNS table by selected tables in the TABLES table
+    """
     columns = tables.join(
         sql_columns.alias('sql_columns'),
         (F.upper(tables.TABLE_NAME) == F.upper(sql_columns.TABLE_NAME)) &
@@ -149,6 +164,9 @@ def filter_columns_by_tables(sql_columns, tables):
 
 @catch_error(logger)
 def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_usage):
+    """
+    Join COLUMNS table with table constraints and column usage
+    """
     if (sql_table_constraints and sql_key_column_usage and
         ('TABLE_NAME' in sql_table_constraints.columns) and
         ('TABLE_SCHEMA' in sql_table_constraints.columns) and
@@ -231,6 +249,9 @@ def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_
 
 @catch_error(logger)
 def rename_columns(columns, storage_account_name:str, created_datetime:str, modified_datetime:str, storage_account_abbr:str):
+    """
+    Rename / Add columns to COLUMNS table
+    """
     column_map = {
         'TABLE_CATALOG': 'SourceDatabase',
         'TABLE_SCHEMA' : 'SourceSchema',
@@ -268,6 +289,9 @@ def rename_columns(columns, storage_account_name:str, created_datetime:str, modi
 
 @catch_error(logger)
 def add_TargetDataType(columns, translation):
+    """
+    Add TargetDataType to COLUMNS table from TRANSLATION table
+    """
     columns = columns.alias('columns').join(
         translation,
         columns.CleanType == translation.DataTypeFrom,
@@ -286,6 +310,9 @@ def add_TargetDataType(columns, translation):
 
 @catch_error(logger)
 def add_precision(columns):
+    """
+    Add precition information to COLUMNS table
+    """
     columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['varchar'])) & (col('SourceDataLength')>0) & (col('SourceDataLength')<=255), F.concat(lit('varchar('), col('SourceDataLength'), lit(')'))).otherwise(col('TargetDataType')))
     columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['decimal'])) & (col('SourceDataPrecision')>0), F.concat(lit('decimal('), col('SourceDataPrecision'), lit(','), col('SourceDataScale'), lit(')'))).otherwise(col('TargetDataType')))
 
@@ -298,6 +325,9 @@ def add_precision(columns):
 
 @catch_error(logger)
 def get_files_meta(data_path_folder:str, default_schema:str='dbo'):
+    """
+    Get Files Metadata from given data path
+    """
     files_meta = []
     for root, dirs, files in os.walk(data_path_folder):
         for file in files:
@@ -338,6 +368,9 @@ def get_files_meta(data_path_folder:str, default_schema:str='dbo'):
 
 @catch_error(logger)
 def create_master_ingest_list(spark, files_meta):
+    """
+    Create Master Ingest List table for the files from their metadata
+    """
     files_meta_for_master_ingest_list =[{
         'TABLE_SCHEMA': file_meta['schema'],
         'TABLE_NAME': file_meta['table'],
@@ -354,12 +387,13 @@ def create_master_ingest_list(spark, files_meta):
 
 
 
-
 # %% create INFORMATION_SCHEMA.TABLES if not exists
 
 @catch_error(logger)
 def create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables, master_ingest_list, tableinfo_source:str):
-
+    """
+    Create INFORMATION_SCHEMA.TABLES if not exists
+    """
     if not (sql_tables and ('TABLE_NAME' in sql_tables.columns) and ('TABLE_SCHEMA' in sql_tables.columns)):
         logger.warning(f'{INFORMATION_SCHEMA}.TABLES is not found, ingesting all tables by default')
         sql_tables = master_ingest_list.select(['TABLE_NAME', 'TABLE_SCHEMA'])
@@ -379,6 +413,9 @@ def create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables, master_ingest_lis
 
 @catch_error(logger)
 def create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark, sql_columns, tableinfo_source:str, files_meta):
+    """
+    Create INFORMATION_SCHEMA.COLUMNS if not exists
+    """
     if not (sql_columns and 
         ('TABLE_NAME' in sql_columns.columns) and 
         ('TABLE_SCHEMA' in sql_columns.columns) and
@@ -417,6 +454,9 @@ def create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark, sql_columns, tableinf
 
 @catch_error(logger)
 def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, master_ingest_list):
+    """
+    Get Table and Column Metadata from information_schema table
+    """
     schemas_meta = [file_meta for file_meta in files_meta if file_meta['schema'].upper()==INFORMATION_SCHEMA]
     sql_meta = {schema_table_name: [schema_meta for schema_meta in schemas_meta if schema_meta['table'].upper()==schema_table_name.upper()] for schema_table_name in schema_table_names}
 
@@ -442,6 +482,9 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
 
 @catch_error(logger)
 def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str, storage_account_abbr:str):
+    """
+    Prepare TableInfo table from given master_ingest_list and schema tables
+    """
 
     logger.info('Join master_ingest_list with sql tables')
     tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
@@ -479,6 +522,9 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
 
 @catch_error(logger)
 def get_sql_schema_tables(spark, sql_id:str, sql_pass:str, sql_server:str, sql_database:str):
+    """
+    Get Table and Column Metadata from information_schema
+    """
     schema_tables = defaultdict()
     for schema_table_name in schema_table_names:
         schema_tables[schema_table_name] = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=INFORMATION_SCHEMA, table_name=schema_table_name, database=sql_database, server=sql_server)
@@ -495,7 +541,9 @@ def get_sql_schema_tables(spark, sql_id:str, sql_pass:str, sql_server:str, sql_d
 @catch_error(logger)
 def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, default_schema:str, tableinfo_source:str, \
     data_type_translation_id:str, sql_id:str, sql_pass:str, sql_server:str, sql_database:str):
-
+    """
+    Make TableInfo and save it to Azure
+    """
     storage_account_name = default_storage_account_name
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
@@ -525,7 +573,7 @@ def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, def
         )
 
     save_adls_gen2(
-            table_to_save = tableinfo,
+            table = tableinfo,
             storage_account_name = storage_account_name,
             container_name = tableinfo_container_name,
             container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
@@ -542,17 +590,20 @@ def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, def
 
 @catch_error(logger)
 def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, table_name:str, sql_table):
-    tableinfo_SourceColumnName = tableinfo.where(
+    """
+    Keep same column case sensitivity between tableinfo and actual table columns
+    """
+    tableinfo_filtered = tableinfo.where(
         (col('SourceDatabase')==lit(database)) &
         (col('SourceSchema')==lit(schema)) &
         (col('TableName')==lit(table_name))
-        ).select('SourceColumnName').distinct().collect()
+        )
 
-    tableinfo_SourceColumnName = [x['SourceColumnName'] for x in tableinfo_SourceColumnName]
+    tableinfo_SourceColumnName = collect_column(table=tableinfo_filtered, column_name='SourceColumnName', distinct=True)
 
     sql_table_columns_lower = {c.lower():c for c in sql_table.columns}
     column_map = {tc:sql_table_columns_lower[tc.lower()] for tc in tableinfo_SourceColumnName}
-    
+
     for new_name, existing_name in column_map.items():
         sql_table = sql_table.withColumnRenamed(existing_name, new_name)
 
@@ -566,7 +617,9 @@ def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, t
 @catch_error(logger)
 def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:list, ingest_from_files_flag:bool, sql_id:str,
                                     sql_pass:str, sql_server:str, storage_account_name:str, tableinfo_source:str):
-
+    """
+    Loop over all tables to migrate them to Azure
+    """
     PARTITION_list = defaultdict(str)
     table_count = len(table_rows)
 
@@ -589,7 +642,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
         sql_table = to_string(sql_table, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
         sql_table = keep_same_case_sensitive_column_names(tableinfo=tableinfo, database=database, schema=schema, table_name=table_name, sql_table=sql_table)
         sql_table = add_elt_columns(
-            table_to_add = sql_table,
+            table = sql_table,
             reception_date = execution_date,
             source = tableinfo_source,
             is_full_load = True,
@@ -597,7 +650,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
             )
 
         userMetadata = save_adls_gen2(
-            table_to_save = sql_table,
+            table = sql_table,
             storage_account_name = storage_account_name,
             container_name = container_name,
             container_folder = container_folder,

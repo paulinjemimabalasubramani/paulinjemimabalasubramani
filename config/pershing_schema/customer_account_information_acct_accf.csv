@@ -1,4 +1,4 @@
-﻿record_name,position,picture,type,conditional_changes,field_name,description,notes
+﻿record_name,POSITION,PICTURE,TYPE,conditional_changes,field_name,DESCRIPTION,NOTES
 HEADER,001-018,X(18),AN,,b_of_pershing,Literally “BOFPERSHING” (beginning of Pershing file),
 HEADER,019-036,X(18),AN,,customer_acct_info,Literally “CUSTOMERACCTINFO”,
 HEADER,037-046,X(10),AN,,data_of,Literally “DATAOF”,
@@ -12,7 +12,7 @@ HEADER,097-104,X(08),AN,,run_time,RUN TIME = “HH:MM:SS”,
 HEADER,105-118,X(14),AN,,not_used,Not Used,
 HEADER,119-127,X(09),AN,,refreshed_updated,Indicates if the file is REFRESHED or UPDATED; literally “REFRESHED” or  “UPDATED”,
 HEADER,128-749,X(622),AN,,not_used,Not Used,
-HEADER,750-750,X(01),AN,,,Literally “A”; indicates the end of the header record,
+HEADER,750-750,X(01),AN,,end_of_the_header_record,Literally “A”; indicates the end of the header record,
 A,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 A,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “A”,
 A,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -373,7 +373,7 @@ A,748-748,X(01),AN,,ama_indicator,"AMA INDICATOR; values include:
 “” = Not applicable
 * Values 1, 2, and 4 represent active Corestone or proprietary bank AMA products.",ACCOUNT LEVEL INFORMATION FOR USA PATRIOT ACT
 A,749-749,X(01),AN,,pershing_internal_use_only,For Pershing Internal Use Only,
-A,750-750,X(01),AN,,,Literally “X”; indicates the end of record A,
+A,750-750,X(01),AN,,end_of_record_a,Literally “X”; indicates the end of record A,
 B,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 B,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “B”,
 B,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -695,7 +695,7 @@ Effective 4th  Q 2018, values include:
 “Y” = NPL Collateral account (see position 317 for NPL account number)
 “N” = Not NPL Collateral account
 “” = Not populated",
-B,750-750,X(01),AN,,,Literally “X”; indicates the end of record B,
+B,750-750,X(01),AN,,end_of_record_b,Literally “X”; indicates the end of record B,
 C,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 C,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “C”,
 C,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -873,7 +873,7 @@ values include:
 C,700-705,X(06),AN,,reserved,Reserved,
 C,706-747,X(42),AN,,pershing_internal_use_only,For Pershing Internal Use Only,
 C,748-749,X(02),AN,,not_used,Not Used,
-C,750-750,X(01),AN,,,Literally “X”; indicates the end of record C,
+C,750-750,X(01),AN,,end_of_record_c,Literally “X”; indicates the end of record C,
 D,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 D,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “D”,
 D,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -946,7 +946,7 @@ D,501-532,X(32),AN,,non_us_canada_city_4,Non-US/Canada City; free-form (effectiv
 NOTE: The following field applies to non-US or Canada addresses only"
 D,533-534,X(02),AN,,country_code_4,"COUNTRY CODE (4); see Appendix Q, “ACCT Codes and Values”",ACCOUNT ADDRESS #4
 D,535-749,X(215),AN,,not_used,Not Used,
-D,750-750,X(01),AN,,,Literally “X”; indicates the end of record D,
+D,750-750,X(01),AN,,end_of_record_d,Literally “X”; indicates the end of record D,
 E,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 E,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “E”,
 E,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -1019,7 +1019,7 @@ Positions 501-532 are redefined to accommodate both US/Canada City, State and Zi
 NOTE: The following field applies to non-US or Canada addresses only"
 E,533-534,X(02),AN,,country_code_6,"COUNTRY CODE (6); see Appendix Q, “ACCT Codes and Values”",ACCOUNT ADDRESS #6
 E,535-749,X(215),AN,,not_used,Not Used,
-E,750-750,X(01),AN,,,Literally “X”; indicates the end of record E,
+E,750-750,X(01),AN,,end_of_record_e,Literally “X”; indicates the end of record E,
 F,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 F,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “F”,
 F,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -1061,7 +1061,7 @@ Positions 204-235 are redefined to accommodate both US/Canada City, State and Zi
 NOTE: The following field applies to non-US or Canada addresses only"
 F,236-237,X(02),AN,,country_code_7,COUNTRY CODE (7); see Appendix Q,ACCOUNT ADDRESS #7
 F,238-749,X(512),AN,,not_used,Not Used,ACCOUNT ADDRESS #7
-F,750-750,X(01),AN,,,Literally “X”; indicates the end of record F,ACCOUNT ADDRESS #7
+F,750-750,X(01),AN,,end_of_record_f,Literally “X”; indicates the end of record F,ACCOUNT ADDRESS #7
 W,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 W,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “W”,
 W,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -1338,7 +1338,7 @@ Appendix Q for country codes; additional values include:
 “FINT” = Foreign Intermediary
 “UNPF” = Undocumented; presumed foreign
 “UNPU” = Undocumented; presumed US",
-W,750-750,X(01),AN,,,Literally “X”; indicates the end of record W,
+W,750-750,X(01),AN,,end_of_record_w,Literally “X”; indicates the end of record W,
 4,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 4,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “4”,
 4,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -1411,12 +1411,14 @@ NOTE: When ASSET TYPE = “OTHER” (free-form)"
 4,491-520,X(30),AN,,other_not_listed_type_five,OTHER NOT LISTED TYPE FIVE (free-form),OTHER INVESTMENTS HELD OUTSIDE OF THIS ACCOUNT
 4,521-538,9(16)v9(02),N,,other_not_listed_type_five_investments_value,OTHER NOT LISTED TYPE FIVE INVESTMENTS VALUE,OTHER INVESTMENTS HELD OUTSIDE OF THIS ACCOUNT
 4,539-546,9(08),N,,investment_time_horizon,"INVESTMENT TIME HORIZON, in CCYYMMDD format",OTHER INVESTMENTS HELD OUTSIDE OF THIS ACCOUNT
-4,547-547,X(01),AN,,liquidity_needs,"LIQUIDITY NEEDS; values include:
+4,547-547,X(01),AN,,liquidity_needs,"LIQUIDITY NEEDS
+Values include:
 “H” = High
 “M” = Medium
 “L” = Low
 “” = Not answered",OTHER INVESTMENTS HELD OUTSIDE OF THIS ACCOUNT
-4,548-549,X(02),AN,,time_horizon_range,"TIME HORIZON RANGE; all values are IBD-driven; space is a valid value, effective TBA","OTHER INVESTMENTS HELD OUTSIDE OF THIS ACCOUNT
+4,548-549,X(02),AN,,time_horizon_range,"TIME HORIZON RANGE
+All values are IBD-driven; space is a valid value, effective TBA","OTHER INVESTMENTS HELD OUTSIDE OF THIS ACCOUNT
 NOTE: Effective TBA"
 4,550-555,X(06),AN,,not_used,Not Used,
 4,556-556,X(01),AN,,are_there_other_investments,"ARE THERE OTHER INVESTMENTS?; values include:
@@ -1494,14 +1496,17 @@ NOTE: The following fields (positions 614-651) apply only to Bank Custody Accoun
 4,665-668,X(04),AN,,booking_entity_business_code,"Reserved for BOOKING ENTITY BUSINESS CODE; identifies the type of business in which a Booking Entity operates; values include:
 “BKRG” = Brokerage
 “BNKC” = Bank Custody",Additional Identifiers (Reserved)
-4,669-669,X(01),AN,,high_number_of_anticipated_transactions,"HIGH NUMBER OF ANTICIPATED TRANSACTIONS; values
-include:
+4,669-669,X(01),AN,,high_number_of_anticipated_transactions,"HIGH NUMBER OF ANTICIPATED TRANSACTIONS
+Values include:
 “Y” = Yes
 “N” = No",AML Risk Ratings Information (effective 2nd  Q 2016)
-4,670-670,X(01),AN,,account_requires_special_services,"ACCOUNT REQUIRES SPECIAL SERVICES; values include:
+4,670-670,X(01),AN,,account_requires_special_services,"ACCOUNT REQUIRES SPECIAL SERVICES
+Values include:
 “Y” = Yes
 “N” = No",AML Risk Ratings Information (effective 2nd  Q 2016)
-4,671-674,X(04),AN,,special_service_required_1,"SPECIAL SERVICE REQUIRED (up to 7 iterations, if position 670 = “Y”); values include:
+4,671-674,X(04),AN,,special_service_required_1,"SPECIAL SERVICE REQUIRED
+(up to 7 iterations, if position 670 = “Y”);
+Values include:
 “BULK” = Bulk cash and checks
 “FNBK” = Foreign bank payable through accounts
 “HLDM” = Hold mail service
@@ -1509,7 +1514,8 @@ include:
 “PAYT” = Payable through accounts
 “RCDC” = Remote deposit capture
 “THRC” = Accepts third party checks",AML Risk Ratings Information (effective 2nd  Q 2016)
-4,675-678,X(04),AN,,special_service_required_2,"SPECIAL SERVICE REQUIRED; values include:
+4,675-678,X(04),AN,,special_service_required_2,"SPECIAL SERVICE REQUIRED
+Values include:
 “BULK” = Bulk cash and checks
 “FNBK” = Foreign bank payable through accounts
 “HLDM” = Hold mail service
@@ -1517,7 +1523,8 @@ include:
 “PAYT” = Payable through accounts
 “RCDC” = Remote deposit capture
 “THRC” = Accepts third party checks",AML Risk Ratings Information (effective 2nd  Q 2016)
-4,679-682,X(04),AN,,special_service_required_3,"SPECIAL SERVICE REQUIRED; values include:
+4,679-682,X(04),AN,,special_service_required_3,"SPECIAL SERVICE REQUIRED
+Values include:
 “BULK” = Bulk cash and checks
 “FNBK” = Foreign bank payable through accounts
 “HLDM” = Hold mail service
@@ -1525,7 +1532,8 @@ include:
 “PAYT” = Payable through accounts
 “RCDC” = Remote deposit capture
 “THRC” = Accepts third party checks",AML Risk Ratings Information (effective 2nd  Q 2016)
-4,683-686,X(04),AN,,special_service_required_4,"SPECIAL SERVICE REQUIRED; values include:
+4,683-686,X(04),AN,,special_service_required_4,"SPECIAL SERVICE REQUIRED
+Values include:
 “BULK” = Bulk cash and checks
 “FNBK” = Foreign bank payable through accounts
 “HLDM” = Hold mail service
@@ -1533,7 +1541,8 @@ include:
 “PAYT” = Payable through accounts
 “RCDC” = Remote deposit capture
 “THRC” = Accepts third party checks",AML Risk Ratings Information (effective 2nd  Q 2016)
-4,687-690,X(04),AN,,special_service_required_5,"SPECIAL SERVICE REQUIRED; values include:
+4,687-690,X(04),AN,,special_service_required_5,"SPECIAL SERVICE REQUIRED
+Values include:
 “BULK” = Bulk cash and checks
 “FNBK” = Foreign bank payable through accounts
 “HLDM” = Hold mail service
@@ -1541,7 +1550,8 @@ include:
 “PAYT” = Payable through accounts
 “RCDC” = Remote deposit capture
 “THRC” = Accepts third party checks",AML Risk Ratings Information (effective 2nd  Q 2016)
-4,691-694,X(04),AN,,special_service_required_6,"SPECIAL SERVICE REQUIRED; values include:
+4,691-694,X(04),AN,,special_service_required_6,"SPECIAL SERVICE REQUIRED
+Values include:
 “BULK” = Bulk cash and checks
 “FNBK” = Foreign bank payable through accounts
 “HLDM” = Hold mail service
@@ -1549,7 +1559,8 @@ include:
 “PAYT” = Payable through accounts
 “RCDC” = Remote deposit capture
 “THRC” = Accepts third party checks",AML Risk Ratings Information (effective 2nd  Q 2016)
-4,695-698,X(04),AN,,special_service_required_7,"SPECIAL SERVICE REQUIRED; values include:
+4,695-698,X(04),AN,,special_service_required_7,"SPECIAL SERVICE REQUIRED 
+Values include:
 “BULK” = Bulk cash and checks
 “FNBK” = Foreign bank payable through accounts
 “HLDM” = Hold mail service
@@ -1558,23 +1569,37 @@ include:
 “RCDC” = Remote deposit capture
 “THRC” = Accepts third party checks",AML Risk Ratings Information (effective 2nd  Q 2016)
 4,699-718,X(20),AN,,reserved,Reserved,AML Risk Ratings Information (effective 2nd  Q 2016)
-4,719-727,X(09),AN,,pershing_plan_number,"PERSHING PLAN NUMBER; a number assigned to a retirement account by the Pershing system when a user links an account to a retirement plan using Pershing’s Account Linking function through either Account Onboarding or Account Maintenance (effective late 3rd  Q, 2016)",
-4,728-728,X(01),AN,,4210_exempt_status,"4210 EXEMPT STATUS; provides exemptions from margin requirements related to covered securities transactions based on the exempt status of the account (effective 1st  Q, 2017); values include:
+4,719-727,X(09),AN,,pershing_plan_number,"PERSHING PLAN NUMBER
+A number assigned to a retirement account by the Pershing system when a user links an account to a retirement plan using Pershing’s Account Linking function through either Account Onboarding or Account Maintenance
+Effective late 3rd  Q, 2016",
+4,728-728,X(01),AN,,4210_exempt_status,"4210 EXEMPT STATUS
+Provides exemptions from margin requirements related to covered securities transactions based on the exempt status of the account 
+Effective 1st  Q, 2017
+Values include:
 “Y” = Yes
 “N” = No
 “” = Not applicable",
-4,729-729,X(01),AN,,msfta_received,"MSFTA RECEIVED (effective 1st  Q, 2017); values include:
+4,729-729,X(01),AN,,msfta_received,"MSFTA RECEIVED
+Effective 1st  Q, 2017;
+Values include:
 “Y” = Yes
 “N” = No
 “” = Not applicable",
-4,730-739,9(10),N,,covered_securities_limit,"COVERED SECURITIES LIMIT; risk limit determination with each counterparty based on creditworthiness (effective 1st  Q, 2017), between 0-9999999999",
-4,740-740,X(01),AN,,account_is_high_risk,"ACCOUNT IS HIGH RISK; values include:
+4,730-739,9(10),N,,covered_securities_limit,"COVERED SECURITIES LIMIT
+Risk limit determination with each counterparty based on creditworthiness
+Effective 1st  Q, 2017), 
+Between 0-9999999999",
+4,740-740,X(01),AN,,account_is_high_risk,"ACCOUNT IS HIGH RISK
+Values include:
 “Y” = Yes, account is high risk
 “N” = No, account is not high risk
 “” = Not applicable",
-4,741-746,9(06),N,,mtm_limit,"MTM LIMIT; the de minimis MTM transfer amount per the MSFTA (effective 1st  Q, 2017), between 0-250000",
+4,741-746,9(06),N,,mtm_limit,"MTM LIMIT
+The de minimis MTM transfer amount per the MSFTA
+Effective 1st  Q, 2017), 
+Between 0-250000",
 4,747-749,X(03),AN,,reserved_for_future_expansion,Reserved for future expansion,
-4,750-750,X(01),AN,,literally_x,Literally “X”; indicates the end of record 4,
+4,750-750,X(01),AN,,end_of_record_4,Literally “X”; indicates the end of record 4,
 5,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 5,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “5”,
 5,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -1638,7 +1663,7 @@ values include:
 5,350-477,X(128),AN,,nature_and_purpose_of_account,"NATURE AND PURPOSE OF ACCOUNT; free-form text; effective 3rd  Q, 2021","NOTE: Effective 3rd  Q, 2021"
 5,478-497,X(20),AN,,prior_firm_crd_number,"PRIOR FIRM CRD NUMBER; effective late 2nd   Q, 2022","NOTE: Effective 3rd  Q, 2021"
 5,498-749,X(252),AN,,not_used,Not Used,
-5,750-750,X(01),AN,,,Literally “X”; indicates the end of record 5,
+5,750-750,X(01),AN,,end_of_record_s,Literally “X”; indicates the end of record 5,
 G,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 G,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “G”,
 G,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -1878,7 +1903,7 @@ values include:
 “P” = Domestic Partner
 “N” = Not applicable (i.e., the Account Holder is a Corporate Entity) or Not Available (Marital Status is not Available on Interested Party) (Account Holder Type, Pos. 45 = “IPP” data)
 “U” = Unknown/Undetermined",
-G,750-750,X(01),AN,,,Literally “X”; indicates the end of record G,
+G,750-750,X(01),AN,,end_of_record_g,Literally “X”; indicates the end of record G,
 H,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 H,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “H”,
 H,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -2066,7 +2091,545 @@ Values include:
 “N” = Holder/participant is not a specified adult
 “” = Not applicable or known",ADDITIONAL PATRIOT ACT INFORMATION
 H,748-749,X(02),AN,,not_used,Not Used,
-H,750-750,X(01),AN,,,Literally “X”; indicates the end of record H,
+H,750-750,X(01),AN,,end_of_record_h,Literally “X”; indicates the end of record H,
+X,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+X,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “X”,
+X,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+X,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+X,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+X,024-024,X(01),AN,,not_used,Not Used,
+X,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+X,028-028,X(01),AN,,not_used,Not Used,
+X,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+X,039-040,X(02),AN,,not_used,Not Used,
+X,041-041,X(01),AN,,record_transaction_code,"RECORD TRANSACTION CODE; values include:
+“X” or “”= Unchanged record
+“A” = Add Account Holder/Participant
+“C” = Change existing Account Holder/Participant",NEW ACCOUNT HOLDER INFORMATION
+X,042-044,X(03),AN,,sequence_number,SEQUENCE NUMBER; values are 001 through 016,ACCOUNT HOLDER/PARTICIPANT SECONDARY IDENTIFIERS
+X,045-047,X(03),AN,,account_holder_type,"ACCOUNT HOLDER TYPE; values include:
+“AH” = Account Holder
+“B&R” = Books and Records participant
+“IPP” = Interested Party participant",ACCOUNT HOLDER/PARTICIPANT SECONDARY IDENTIFIERS
+X,048-049,X(02),AN,,not_used,Not Used,EMPLOYER ADDRESS AREA
+X,050-053,X(04),AN,,attention_line_prefix,"ATTENTION LINE PREFIX; values include:
+“ATTN” = Attention of
+“C/O” = Care of
+“” = May be blank in user-titled accounts",EMPLOYER ADDRESS AREA
+X,054-081,X(28),AN,,attention_line_detail,ATTENTION LINE DETAIL,EMPLOYER ADDRESS AREA
+X,082-113,X(32),AN,,address_line_1,ADDRESS LINE 1,EMPLOYER ADDRESS AREA
+X,114-145,X(32),AN,,address_line_2,ADDRESS LINE 2,EMPLOYER ADDRESS AREA
+X,146-177,X(32),AN,,address_line_3,ADDRESS LINE 3; only if ATTENTION LINE is spaces,EMPLOYER ADDRESS AREA
+X,178-209,X(32),AN,,address_line_4,ADDRESS LINE 4; only if country is not US or Canada,EMPLOYER ADDRESS AREA
+X,210-224,X(15),AN,,city,CITY; for US/Canada addresses only,EMPLOYER ADDRESS AREA
+X,225-226,X(02),AN,,state,"STATE; for US/Canada addresses only; see Appendix Q, “ACCT Codes and Values”",EMPLOYER ADDRESS AREA
+X,227-241,X(15),AN,,zip_postal_code,ZIP/POSTAL CODE; for US/Canada addresses only,EMPLOYER ADDRESS AREA
+X,242-243,X(02),AN,,country_code,"COUNTRY CODE; see Appendix Q, “ACCT Codes and Values”",EMPLOYER ADDRESS AREA
+X,244-245,X(02),AN,,not_used,Not Used,EMPLOYER ADDRESS AREA
+X,246-246,X(01),AN,,employee_of_this_ibd,"EMPLOYEE OF THIS IBD; values include:
+“Y” = the holder/participant is an employee of this IBD
+“N” = the holder/participant is not an employee of this IBD
+“U” = Unknown","EMPLOYMENT and AFFILIATION INFORMATION
+NOTE: COPIED FROM RECORD G, position 652-652 – EMPLOYEE/THIS IBD"
+X,247-247,X(01),AN,,related_to_employee_of_this_ibd,"RELATED TO EMPLOYEE OF THIS IBD; values include:
+“Y” = the holder/part. is related to an employee of this IBD
+“N” = the holder/part. is not related to an employee of this IBD
+“U” = Unknown","NOTE: COPIED FROM RECORD G, position 653-653 – RELATED TO EMPLOYEE/THIS IBD"
+X,248-272,X(25),AN,,employee_first_name_1,EMPLOYEE FIRST NAME,
+X,273-297,X(25),AN,,employee_last_name_1,EMPLOYEE LAST NAME,
+X,298-301,X(04),AN,,employee_suffix_1,EMPLOYEE SUFFIX,
+X,302-305,X(04),AN,,relationship_to_employee,"RELATIONSHIP TO EMPLOYEE; values include:
+“A” = Aunt
+“B” = Brother
+“D” = Daughter
+“DP” = Domestic partner
+“F” = Father
+“FL” = Father-in-law
+“FS” = Financial support provider
+“GF” = Grandfather
+“GM” = Grandmother
+“GD” = Granddaughter
+“GS” = Grandson
+“M” = Mother
+“ML” = Mother-in-law
+“NE” = Nephew
+“NI” = Niece
+“OI” = Other Individual
+“SI” = Sister
+“SO” = Son
+“SP” = Spouse
+“U” = Uncle",
+X,306-306,X(01),AN,,employee_of_another_ibd,"EMPLOYEE OF ANOTHER IBD; values include:
+“” = Not applicable
+“Y” = the holder/participant is employed by another IBD
+“N” = the holder/participant is not an employee of another IBD
+“U” = Unknown","NOTE: COPIED FROM RECORD G, position 654-654 – EMPLOYEE/ANOTHER IBD
+NOTE: See Record 7, position 203, for Employee ID of this individual"
+X,307-326,X(20),AN,,ibd_name_1,IBD NAME,
+X,327-327,X(01),AN,,related_to_employee_of_another_ibd,"RELATED TO EMPLOYEE OF ANOTHER IBD; values include:
+“” = Not applicable
+“Y” = the holder is related to an employee of another IBD
+“N” = the holder is not related to an employee of another IBD
+“U” = Unknown","NOTE: COPIED FROM RECORD G, position 655-655 – RELATED TO EMPLOYEE/ANOTHER IBD
+NOTE: See Record 7, position 223, for Employee ID of this individual"
+X,328-347,X(20),AN,,ibd_name_2,IBD NAME,
+X,348-372,X(25),AN,,employee_first_name_2,EMPLOYEE FIRST NAME,
+X,373-397,X(25),AN,,employee_last_name_2,EMPLOYEE LAST NAME,
+X,398-401,X(04),AN,,employee_suffix_2,EMPLOYEE SUFFIX,
+X,402-405,X(04),AN,,relationship_to_employee_of_another_ibd,"RELATIONSHIP TO EMPLOYEE OF ANOTHER IBD; see
+RELATIONSHIP TO EMPLOYEE, position 302-305, for values",
+X,406-406,X(01),AN,,other_brokerage_accounts,"OTHER BROKERAGE ACCOUNTS; values include:
+“” = Not applicable or available
+“Y” = the holder/participant maintains other brokerage accounts
+“N” = the holder/participant does not maintain other brokerage accounts",
+X,407-426,X(20),AN,,name_of_ibd_where_account_held,NAME OF IBD WHERE ACCOUNT HELD,
+X,427-427,X(01),AN,,holder_participant,"HOLDER/PARTICIPANT 
+or IMMEDIATE FAMILY MEMBER AFFILIATED WITH 
+or EMPLOYED BY MEMBER OF STOCK EXCHANGE 
+or NASD; 
+values include:
+“” = Not applicable or available
+“Y” = is affiliated or employed
+“N” = is not affiliated or employed",
+X,428-472,X(45),AN,,affiliation,AFFILIATION,
+X,473-473,X(01),AN,,holder_participant_a_senior_officer_director_or_10percent_shareholder_of_public_company,"HOLDER/PART. A SENIOR OFFICER, DIRECTOR, or 10%+ SHAREHOLDER OF A PUBLIC COMPANY; 
+values include:
+“” = Not applicable or available
+“Y” = the holder/participant is a senior officer, director, or 10%+ shareholder of a public company
+“N” = the holder/participant is not a senior officer, director, or 10%+ shareholder of a public company",
+X,474-518,X(45),AN,,name_of_public_company,NAME OF PUBLIC COMPANY,
+X,519-568,X(50),AN,,id_verification_comments,ID VERIFICATION COMMENTS (FREE-FORM),ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,569-572,X(04),AN,,account_holder_participant_role_code,"ACCOUNT HOLDER/PARTICIPANT ROLE CODE; for
+Account Holder Roles and Participant Roles, see Appendix Q:",ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,573-590,9(09)v9(09),N,,beneficiary_percent_allocation,BENEFICIARY PERCENT ALLOCATION (applicable only to beneficiaries on TODI and TODJ accounts),ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,591-592,X(02),AN,,relationship_to_primary_holder_code,"RELATIONSHIP TO PRIMARY HOLDER CODE; 
+values include (effective 06/2013):
+“CH” = Child
+“GC” = Grandchild
+“RL” = Relative
+“SF” = Self
+“SP” = Spouse
+“OT” = Other",ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,593-682,X(90),AN,,for_pershing_internal_use_only,For Pershing Internal Use Only,ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,683-684,X(02),AN,,primary_holders_relationship_to_decedent_beneficiary_type,"PRIMARY HOLDER’S RELATIONSHIP TO DECEDENT (BENEFICIARY TYPE); 
+values include (effective 06/16/2012):
+“SP” = Spouse
+“OT” = Non-spouse",ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,685-692,9(08),N,,date_of_death,"DATE OF DEATH, in CCYYMMDD format",ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,693-700,X(08),AN,,large_trader_id_prefix,LARGE TRADER ID PREFIX,ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,701-702,X(02),AN,,reserved,Reserved,ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,703-706,X(04),AN,,large_trader_id_suffix,LARGE TRADER ID SUFFIX,ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,707-716,X(10),AN,,reserved,Reserved,ACCOUNT HOLDER/PARTICIPANT - LEVEL PATRIOT ACT ID VERIFICATION COMMENTS
+X,717-718,X(02),AN,,additional_country_of_citizenship_1,"ADDITIONAL COUNTRY OF CITIZENSHIP #1; see
+Appendix Q, “ACCT Codes and Values”",FINANCIAL ACCOUNT TAX COMPLIANCE ACT (FATCA) INFORMATION (effective 12/10/2012)
+X,719-720,X(02),AN,,additional_country_of_citizenship_2,ADDITIONAL COUNTRY OF CITIZENSHIP #2; see above,FINANCIAL ACCOUNT TAX COMPLIANCE ACT (FATCA) INFORMATION (effective 12/10/2012)
+X,721-722,X(02),AN,,additional_country_of_citizenship_3,ADDITIONAL COUNTRY OF CITIZENSHIP #3; see above,FINANCIAL ACCOUNT TAX COMPLIANCE ACT (FATCA) INFORMATION (effective 12/10/2012)
+X,723-724,X(02),AN,,additional_country_of_citizenship_4,ADDITIONAL COUNTRY OF CITIZENSHIP #4; see above,FINANCIAL ACCOUNT TAX COMPLIANCE ACT (FATCA) INFORMATION (effective 12/10/2012)
+X,725-726,X(02),AN,,additional_country_of_citizenship_5,ADDITIONAL COUNTRY OF CITIZENSHIP #5; see above,FINANCIAL ACCOUNT TAX COMPLIANCE ACT (FATCA) INFORMATION (effective 12/10/2012)
+X,727-727,X(01),AN,,us_resident_alien,"U.S. RESIDENT ALIEN; values include:
+“Y” = Resident alien
+“N” = Not a resident alien
+“” = Not available",FINANCIAL ACCOUNT TAX COMPLIANCE ACT (FATCA) INFORMATION (effective 12/10/2012)
+X,728-729,X(02),AN,,country_of_birth,COUNTRY OF BIRTH; see Appendix Q,FINANCIAL ACCOUNT TAX COMPLIANCE ACT (FATCA) INFORMATION (effective 12/10/2012)
+X,730-730,X(01),AN,,per_stirpes_beneficiary_designation,"PER STIRPES BENEFICIARY DESIGNATION, 
+(applicable only to beneficiaries on TODI and TODJ accounts); 
+effective 1st Q 2019; 
+values include:
+“Y” = Yes
+“N” = No
+“” = Not applicable",FINANCIAL ACCOUNT TAX COMPLIANCE ACT (FATCA) INFORMATION (effective 12/10/2012)
+X,731-739,X(09),AN,,internal_pershing_assigned_client_id,"INTERNAL PERSHING ASSIGNED CLIENT ID, effective 3rd Q 2020",
+X,740-741,X(02),AN,,not_used,Not Used,
+X,742-749,9(08),N,,formed_on_date,"FORMED ON DATE; for applicable entities only, in CCYYMMDD format (effective late 2nd  Q 2016)",
+X,750-750,X(01),AN,,end_of_record_x,Literally “X”; indicates the end of record X,
+M,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+M,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “M”,
+M,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+M,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+M,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+M,024-024,X(01),AN,,not_used,Not Used,
+M,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+M,028-028,X(01),AN,,not_used,Not Used,
+M,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+M,039-040,X(02),AN,,not_used,Not Used,
+M,041-041,X(01),AN,,record_transaction_code,"RECORD TRANSACTION CODE; values include:
+“X” or “”= Unchanged record
+“A” = Add Account Holder/Participant
+“C” = Change existing Account Holder/Participant",NEW ACCOUNT HOLDER INFORMATION
+M,042-044,X(03),AN,,sequence_number,SEQUENCE NUMBER; values are 001 through 016,ACCOUNT HOLDER/PARTICIPANT SECONDARY IDENTIFIERS
+M,045-047,X(03),AN,,account_holder_type,"ACCOUNT HOLDER TYPE; values include:
+“AH” = Account Holder
+“B&R” = Books and Records participant
+“IPP” = Interested Party participant",ACCOUNT HOLDER/PARTICIPANT SECONDARY IDENTIFIERS
+M,048-051,X(04),AN,,account_holder_participant_1_role,"ACCOUNT HOLDER/PARTICIPANT (1) ROLE; for Account
+Holder Roles and Participant Roles, see Appendix Q",ACCOUNT HOLDER/PARTICIPANT SECONDARY IDENTIFIERS
+M,052-052,X(01),AN,,general_investment_knowledge,"GENERAL INVESTMENT KNOWLEDGE; values include:
+“L” = Limited
+“M” = Moderate
+“E” = Extensive
+“N” = None",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,053-056,9(04),N,,year_equity_investment_experience_began,"YEAR EQUITY INVESTMENT EXPERIENCE BEGAN, in
+CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,057-057,X(01),AN,,equity_investment_knowledge_code,EQUITY INVEST. KNOWLEDGE CODE; see 052 for values,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,058-061,9(04),N,,year_option_investment_experience_began,"YEAR OPTION INVESTMENT EXPERIENCE BEGAN, in
+CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,062-062,X(01),AN,,option_investment_knowledge_code,"OPTION INVESTMENT KNOWLEDGE CODE; see 052 for
+values",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,063-066,9(04),N,,year_fixed_income_investment_experience,"YEAR FIXED INCOME INVESTMENT EXPERIENCE
+BEGAN, in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,067-067,X(01),AN,,fixed_income_investment_knowledge_code,"FIXED INCOME INVESTMENT KNOWLEDGE CODE; see
+052 for values",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,068-071,9(04),N,,year_mutual_fund_investment_experience_began,"YEAR MUTUAL FUND INVESTMENT EXPERIENCE BEGAN, in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,072-072,X(01),AN,,mutual_fund_investment_knowledge_code,MUTUAL FUND INVEST. KNOW. CODE; see 052 for values,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,073-076,9(04),N,,year_unit_investment_trust_uit_investment_experiance_began,"YEAR UNIT INVESTMENT TRUST (UIT) INVESTMENT EXPERIENCE BEGAN, in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,077-077,X(01),AN,,uit_investment_knowledge_code,UIT INVESTMENT KNOWLEDGE CODE; see 052 for values,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,078-081,9(04),N,,year_exchange_traded_fund_investment_experience_began,"YEAR EXCHANGE TRADED FUND INVESTMENT EXPERIENCE BEGAN, in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,082-082,X(01),AN,,etf_investment_knowledge_code,ETF INVEST. KNOWLEDGE CODE; see 052 for values,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,083-086,9(04),N,,year_real_estate_investment_experience_began,"YEAR REAL ESTATE INVESTMENT EXPERIENCE BEGAN, in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,087-087,X(01),AN,,real_estate_investment_knowledge_code,REAL ESTATE INVEST. KNOW. CODE; see 052 for values,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,088-091,9(04),N,,year_insurance_investment_experience_began,"YEAR INSURANCE INVESTMENT EXPERIENCE BEGAN,
+in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,092-092,X(01),AN,,insurance_investment_knowledge_code,INS. INVEST. KNOWLEDGE CODE; see 052 for values,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,093-096,9(04),N,,year_variable_annuity_investment_experience_began,"YEAR VARIABLE ANNUITY INVESTMENT EXPERIENCE BEGAN, in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,097-097,X(01),AN,,variable_annuity_investment_knowledge_code,"VARIABLE ANNUITY INVEST. KNOWLEDGE CODE; 
+see 052 for values",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,098-101,9(04),N,,year_fixed_annuity_investment_experience_began,"YEAR FIXED ANNUITY INVESTMENT EXPERIENCE BEGAN, in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,102-102,X(01),AN,,fixed_annuity_investment_knowledge_code,FIXED ANNUITY INVEST. KNOWLEDGE CODE; see 052,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,103-106,9(04),N,,year_precious_metals_investment_experience_began,"YEAR PRECIOUS METALS INVESTMENT EXPERIENCE BEGAN, in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,107-107,X(01),AN,,precious_metals_investment_knowledge_code,PRECIOUS METALS INVEST. KNOWLEDGE CODE; see 052,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,108-111,9(04),N,,year_commodity_and_futures_investment_experience_began,"YEAR COMMODITY & FUTURES INVESTMENT EXPERIENCE BEGAN, in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,112-112,X(01),AN,,commodity_and_futures_investment_knowledge_code,"COMMODITY & FUTURES INVEST. KNOWLEDGE CODE;
+see 052 for values",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,113-142,X(30),AN,,other_investment_type,"OTHER INVESTMENT TYPE, free-form text",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,143-146,9(04),N,,year_other_type_investment_experience_began,"YEAR OTHER TYPE INVESTMENT EXPERIENCE BEGAN,
+in CCYY format",ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,147-147,X(01),AN,,other _investment_knowledge_code,OTHER INVEST. KNOWLEDGE CODE; see 052 for values,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,148-152,X(05),AN,,reserved_for_additional_experience,Reserved for Additional Investment Experience,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,153-294,X(142),AN,,not_used,Not Used,ACCOUNT HOLDER/PARTICIPANT INVESTMENT KNOWLEDGE
+M,295-298,X(04),AN,,document_code,"DOCUMENT CODE; value includes:
+“N301” = CRA document","Canadian Revenue Agency (CRA) Documentation, (effective 11/17/2012)"
+M,299-306,9(08),N,,document_received_date,"DOCUMENT RECEIVED DATE, in CCYYMMDD format","Canadian Revenue Agency (CRA) Documentation, (effective 11/17/2012)"
+M,307-314,9(08),N,,document_expiration_date,"DOCUMENT EXPIRATION DATE, in CCYYMMDD format","Canadian Revenue Agency (CRA) Documentation, (effective 11/17/2012)"
+M,315-334,X(20),AN,,related_to_employee_of_this_ibds_employee_id,"RELATED TO EMPLOYEE OF THIS IBD’s EMPLOYEE ID
+(renamed 10/01)","Canadian Revenue Agency (CRA) Documentation, (effective 11/17/2012)"
+M,335-336,9(02),N,,number_of_dependents,"NUMBER OF DEPENDENTS, from 00-99 (effective 06/2013)","Canadian Revenue Agency (CRA) Documentation, (effective 11/17/2012)"
+M,337-368,X(32),AN,,bank_name,BANK NAME,EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,369-372,X(04),AN,,attention_line_prefix,"ATTENTION LINE PREFIX; values include:
+“ATTN” = Attention of
+“C/O” = Care of",EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,373-400,X(28),AN,,attention_line_detail,ATTENTION LINE DETAIL,EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,401-432,X(32),AN,,bank_address_line_1,BANK ADDRESS LINE 1,EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,433-464,X(32),AN,,bank_address_line_2,BANK ADDRESS LINE 2,EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,465-496,X(32),AN,,bank_address_line_3,BANK ADDRESS LINE 3; only if ATTENTION LINE is spaces,EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,497-528,X(32),AN,,bank_address_line_4,BANK ADDRESS LINE 4; only if country is not US or Canada,EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,529-543,X(15),AN,,city,CITY; for US/Canada addresses only,EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,544-545,X(02),AN,,state,"STATE; for US/Canada addresses only; see Appendix Q, “ACCT Codes and Values”",EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,546-560,X(15),AN,,zip_postal_code,ZIP/POSTAL CODE; for US/Canada addresses only,EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,561-562,X(02),AN,,country_code,"COUNTRY CODE; see Appendix Q, “ACCT Codes and Values”",EXTERNAL BANK INFORMATION (effective late 2nd  Q 2016)
+M,563-709,X(147),AN,,not_used,Not Used,
+M,710-729,X(20),AN,,for_pershing_internal_use_only,For Pershing Internal Use Only,
+M,730-749,X(20),AN,,client_id,CLIENT ID,
+M,750-750,X(01),AN,,end_of_record_m,Literally “X”; indicates the end of record M,
+7,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+7,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “7”,
+7,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+7,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+7,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+7,024-024,X(01),AN,,not_used,Not Used,
+7,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+7,028-028,X(01),AN,,not_used,Not Used,
+7,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+7,039-040,X(02),AN,,not_used,Not Used,
+7,041-041,X(01),AN,,record_transaction_code,"RECORD TRANSACTION CODE; values include:
+“X” or “”= Unchanged record
+“A” = Add Account Holder/Participant
+“C” = Change existing Account Holder/Participant",NEW ACCOUNT HOLDER INFORMATION
+7,042-044,X(03),AN,,sequence_number,SEQUENCE NUMBER; values are 001 through 016,ACCOUNT HOLDER/PARTICIPANT SECONDARY IDENTIFIERS
+7,045-047,X(03),AN,,account_holder_type,"ACCOUNT HOLDER TYPE; values include:
+“AH” = Account Holder
+“B&R” = Books and Records participant
+“IPP” = Interested Party participant",ACCOUNT HOLDER/PARTICIPANT SECONDARY IDENTIFIERS
+7,048-051,X(04),AN,,account_holder_participant_1_role,"ACCOUNT HOLDER/PARTICIPANT (1) ROLE; for Account
+Holder Roles and Participant Roles, see Appendix Q",ACCOUNT HOLDER/PARTICIPANT SECONDARY IDENTIFIERS
+7,052-052,X(01),AN,,type_of_trust,"TYPE OF TRUST; values include:
+“A” = Qualified Domestic Trust
+“C” = Charitable Trust
+“D” = Defective Trust
+“E” = Estate Trust
+“F” = Family Trust
+“G” = Generation Skipping Trust
+“I” = Irrevocable Trust
+“L” = Living Trust
+“N” = Insurance Trust
+“P” = Special Needs Trust
+“Q” = QTIP or QDOT Trust
+“R” = Revocable Trust
+“S” = Statutory Trust
+“T” = Testamentary Trust
+“V” = Irrevocable Living Trust
+“” = Not applicable","The following fields (position 052-069) relate only to Trust Accounts (for the Primary Holder, this is the same as displayed in Record A, position 242-259)"
+7,053-060,9(08),N,,date_trust_established,"DATE TRUST ESTABLISHED (also referred to as Trust Agreement Date), in CCYYMMDD format","The following fields (position 052-069) relate only to Trust Accounts (for the Primary Holder, this is the same as displayed in Record A, position 242-259)"
+7,061-068,9(08),N,,trust_amendment_date,"TRUST AMENDMENT DATE, in CCYYMMDD format","The following fields (position 052-069) relate only to Trust Accounts (for the Primary Holder, this is the same as displayed in Record A, position 242-259)"
+7,069-069,X(01),AN,,trustee_independent_action,"TRUSTEE INDEPENDENT ACTION; values include:
+“N” = Cannot act independently
+“Y” = Can act independently","The following fields (position 052-069) relate only to Trust Accounts (for the Primary Holder, this is the same as displayed in Record A, position 242-259)"
+7,070-071,X(02),AN,,country_governing_trust_administration,"COUNTRY GOVERNING TRUST ADMINISTRATION; see
+Appendix Q for values; field will be spaces where not applicable",The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+7,072-073,X(02),AN,,state_governing_trust_administration,"STATE GOVERNING TRUST ADMINISTRATION; see
+Appendix Q for values; applies to US states and Canadian provinces; field will be spaces where not applicable",The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+7,074-074,X(01),AN,,crummey_power_provision_applied_to_this_trust,"CRUMMEY POWER PROVISION APPLIED TO THIS TRUST, values include:
+“Y” = Yes; Crummey Power applied to this Trust
+“N” = No; Crummey Power not applied to this Trust
+“” = Not applicable",The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+7,075-075,X(01),AN,,employee_benefit_account_flag,"EMPLOYEE BENEFIT ACCOUNT FLAG; values include:
+“Y” = Yes
+“N” = No
+“” = Not applicable",The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+7,076-079,X(04),AN,,creator_of_trust_a_resident_of_new_york_city_or_yonkers_at_the_time_trust_was_created,"CREATOR OF TRUST A RESIDENT OF NEW YORK CITY OR YONKERS AT THE TIME THE TRUST WAS CREATED;
+values include:
+“NYC” = Yes; creator of Trust a resident of NYC or Yonkers
+“” = No or Not applicable",The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+7,080-083,X(04),AN,,creator_of_trust_a_resident_of_new_york_city_or_yonkers_at_the_time_of_creators_death,"CREATOR OF TRUST A RESIDENT OF NEW YORK CITY OR YONKERS AT THE TIME OF CREATOR’S DEATH;
+values include:
+“NYC” = Yes; creator of Trust was resident of NYC or Yonkers
+“” = No or Not applicable",The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+7,084-084,X(01),AN,,blind_trust_indicator,"BLIND TRUST INDICATOR; values include:
+“Y” = Yes; Trust is a Blind Trust
+“N” = No; Trust is not a Blind Trust
+“” = Not applicable",The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+7,085-085,X(01),AN,,revocability_of_trust,"REVOCABILITY OF TRUST; values include:
+“R” = Trust is Revocable
+“I” = Trust is Irrevocable
+“” = Not applicable",The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+7,086-087,9(02),N,,minimum_number_of_trustees_required_for_consent,MINIMUM NUMBER OF TRUSTEES REQUIRED FOR CONSENT; values range from 00 to 99,The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+7,088-088,X(01),AN,,establish_and_maintain_asset_management_account_with_check_writing_privileges,"Establish and maintain an Asset Management account with check writing privileges, 
+the responsibility for which is entirely that of the Trustees; 
+values include:
+“Y” = Yes
+“” = Not applicable, not answered, or No","The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,089-089,X(01),AN,,power_of_attorney_document_and_affidavit_as_poa,"Trust allows use of attorney-in-fact and/or power of attorney… *If acted upon, power of attorney document and affidavit as to POA being in full force (92-0480) is required; see position 088 for values","The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,090-090,X(01),AN,,collateralization_of_trust_permitted,Collateralization of Trust permitted; see position 088 for values,"The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,091-091,X(01),AN,,margin_accounts,"Maintain margin accounts and through such accounts, borrow money to purchase securities on margin, and to pledge those securities and all others in the margin account as security to the loan; see position 088 for values","The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,092-092,X(01),AN,,short_sales_and_borrowing_securities,Sell securities that the Trust does not own (short sales) & borrow securities to facilitate this practice; see pos. 088 for values,"The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,093-093,X(01),AN,,engage_in_purchase_of_call_options,Engage in the purchase of call options; see pos. 088 for values,"The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,094-094,X(01),AN,,engage_in_covered_call_writing,Engage in covered call writing; see position 088 for values,"The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,095-095,X(01),AN,,engage_in_purchase_of_put_options,Engage in the purchase of put options; see position 088 for values,"The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,096-096,X(01),AN,,engage_in_option_spread_transactions,Engage in option spread transaction(s); see pos. 088 for values,"The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,097-097,X(01),AN,,purchase_securities_deemed_speculative_investments,Purchase securities which are deemed to be speculative investments; see position 088 for values,"The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,098-098,X(01),AN,,receive_on_behalf_of_trust_or_deliver_to_trust_or_third_parties_monies_stocks_bonds_other_securities,"Receive on behalf of the Trust or deliver to the Trust or third parties monies, stocks, bonds, and other securities; see position 088 for values","The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,099-099,X(01),AN,,sell_assign_and_endorse_for_transfer_certificates_representing_stocks_bonds_and_other_securities,"Sell, assign and endorse for transfer certificates representing stocks, bonds, and other securities now registered or hereafter registered in the name of the Trust; see position 088 for values","The following fields (positions 070-099) relate to both Bank Custody and Trust Accounts
+NOTE: The following fields reference characteristics associated with the Powers of the Trust"
+7,100-102,9(03),N,,beneficial_owners_beow_percentage_of_ownership,"BENEFICIAL OWNER’S (BEOW) PERCENTAGE OF OWNERSHIP, (between 000-100)","The following two fields apply only to Customer Due Diligence (CDD) Accounts, effective 2nd  Q, 2018"
+7,103-142,X(40),AN,,position_held_of_controlling_person_cper,POSITION HELD OF CONTROLLING PERSON (CPER),"The following two fields apply only to Customer Due Diligence (CDD) Accounts, effective 2nd  Q, 2018"
+7,143-162,X(20),AN,,legal_entity_identifier,LEGAL ENTITY IDENTIFIER,
+7,163-202,X(40),AN,,reserved,Reserved,
+7,203-222,X(20),AN,,employee_id_of_employees_of_another_ibd,"EMPLOYEE ID of employees of another IBD (See Record X, position 306, for context)","The following two fields are associated with Employees and those related to Employees of another IBD, in Record X.  These are the accompanying Employee IDs, effective 3rd  Q, 2020"
+7,223-242,X(20),AN,,employee_id_of_those_related_to_employees_of_another_ibd,"EMPLOYEE ID of those related to employees of another IBD (see Record X, position 327, for context)","The following two fields are associated with Employees and those related to Employees of another IBD, in Record X.  These are the accompanying Employee IDs, effective 3rd  Q, 2020"
+7,243-749,X(507),AN,,not_used,Not Used,
+7,750-750,X(01),AN,,end_of_record_7,Literally “X”; indicates the end of record 7,
+I,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+I,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “I”,
+I,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+I,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+I,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+I,024-024,X(01),AN,,not_used,Not Used,
+I,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+I,028-028,X(01),AN,,not_used,Not Used,
+I,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+I,039-040,X(02),AN,,not_used,Not Used,
+I,041-041,X(01),AN,,custom_field_1_transaction_code,"CUSTOM FIELD 1 TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add new Custom Field
+“C” = Change existing Custom Field",
+I,042-073,X(32),AN,,custom_field_1_label,CUSTOM FIELD (1) LABEL,CUSTOM FIELD 1 - Reserved for DDA Number
+I,074-105,X(32),AN,,custom_field_1_detail_text,CUSTOM FIELD (1) DETAIL TEXT,CUSTOM FIELD 1 - Reserved for DDA Number
+I,106-106,X(01),AN,,custom_field_1_status_indicator,"CUSTOM FIELD (1) STATUS INDICATOR; for fields 1-15;
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled",CUSTOM FIELD 1 - Reserved for DDA Number
+I,107-107,X(01),AN,,not_used,Not Used,CUSTOM FIELD 1 - Reserved for DDA Number
+I,108-139,X(32),AN,,custom_field_2_label,CUSTOM FIELD (2) LABEL,CUSTOM FIELD 2 - Reserved for Account Mnemonic
+I,140-171,X(32),AN,,custom_field_2_detail_text,CUSTOM FIELD (2) DETAIL TEXT,CUSTOM FIELD 2 - Reserved for Account Mnemonic
+I,172-172,X(01),AN,,custom_field_2_status_indicator,CUSTOM FIELD (2) STATUS INDICATOR,CUSTOM FIELD 2 - Reserved for Account Mnemonic
+I,173-173,X(01),AN,,not_used,Not Used,CUSTOM FIELD 2 - Reserved for Account Mnemonic
+I,174-205,X(32),AN,,custom_field_3_label,CUSTOM FIELD (3) LABEL,CUSTOM FIELD 3 - Reserved for Master Mnemonic
+I,206-237,X(32),AN,,custom_field_3_detail_text,CUSTOM FIELD (3) DETAIL TEXT,CUSTOM FIELD 3 - Reserved for Master Mnemonic
+I,238-238,X(01),AN,,custom_field_3_status_indicator,CUSTOM FIELD (3) STATUS INDICATOR,CUSTOM FIELD 3 - Reserved for Master Mnemonic
+I,239-239,X(01),AN,,not_used,Not Used,CUSTOM FIELD 3 - Reserved for Master Mnemonic
+I,240-271,X(32),AN,,custom_field_4_label,CUSTOM FIELD (4) LABEL,CUSTOM FIELD 4 - Reserved for Bank Account Number
+I,272-303,X(32),AN,,custom_field_4_detail_text,CUSTOM FIELD (4) DETAIL TEXT,CUSTOM FIELD 4 - Reserved for Bank Account Number
+I,304-304,X(01),AN,,custom_field_4_status_indicator,CUSTOM FIELD (4) STATUS INDICATOR,CUSTOM FIELD 4 - Reserved for Bank Account Number
+I,305-305,X(01),AN,,not_used,Not Used,CUSTOM FIELD 4 - Reserved for Bank Account Number
+I,306-337,X(32),AN,,custom_field_5_label,CUSTOM FIELD (5) LABEL,CUSTOM FIELD 5
+I,338-369,X(32),AN,,custom_field_5_detail_text,CUSTOM FIELD (5) DETAIL TEXT,CUSTOM FIELD 5
+I,370-370,X(01),AN,,custom_field_5_status_indicator,CUSTOM FIELD (5) STATUS INDICATOR,CUSTOM FIELD 5
+I,371-371,X(01),AN,,not_used,Not Used,CUSTOM FIELD 5
+I,372-403,X(32),AN,,custom_field_6_label,CUSTOM FIELD (6) LABEL,CUSTOM FIELD 6
+I,404-435,X(32),AN,,custom_field_6_detail_text,CUSTOM FIELD (6) DETAIL TEXT,CUSTOM FIELD 6
+I,436-436,X(01),AN,,custom_field_6_status_indicator,CUSTOM FIELD (6) STATUS INDICATOR,CUSTOM FIELD 6
+I,437-437,X(01),AN,,not_used,Not Used,CUSTOM FIELD 6
+I,438-469,X(32),AN,,custom_field_7_label,CUSTOM FIELD (7) LABEL,CUSTOM FIELD 7
+I,470-501,X(32),AN,,custom_field_7_detail_text,CUSTOM FIELD (7) DETAIL TEXT,CUSTOM FIELD 7
+I,502-502,X(01),AN,,custom_field_7_status_indicator,CUSTOM FIELD (7) STATUS INDICATOR,CUSTOM FIELD 7
+I,503-503,X(01),AN,,not_used,Not Used,CUSTOM FIELD 7
+I,504-535,X(32),AN,,custom_field_8_label,CUSTOM FIELD (8) LABEL,CUSTOM FIELD 8
+I,536-567,X(32),AN,,custom_field_8_detail_text,CUSTOM FIELD (8) DETAIL TEXT,CUSTOM FIELD 8
+I,568-568,X(01),AN,,custom_field_8_status_indicator,CUSTOM FIELD (8) STATUS INDICATOR,CUSTOM FIELD 8
+I,569-569,X(01),AN,,not_used,Not Used,CUSTOM FIELD 8
+I,570-601,X(32),AN,,custom_field_9_label,CUSTOM FIELD (9) LABEL,CUSTOM FIELD 9
+I,602-633,X(32),AN,,custom_field_9_detail_text,CUSTOM FIELD (9) DETAIL TEXT,CUSTOM FIELD 9
+I,634-634,X(01),AN,,custom_field_9_status_indicator,CUSTOM FIELD (9) STATUS INDICATOR,CUSTOM FIELD 9
+I,635-635,X(01),AN,,not_used,Not Used,CUSTOM FIELD 9
+I,636-667,X(32),AN,,custom_field_10_label,CUSTOM FIELD (10) LABEL,CUSTOM FIELD 10
+I,668-699,X(32),AN,,custom_field_10_detail_text,CUSTOM FIELD (10) DETAIL TEXT,CUSTOM FIELD 10
+I,700-700,X(01),AN,,custom_field_10_status_indicator,CUSTOM FIELD (10) STATUS INDICATOR,CUSTOM FIELD 10
+I,701-749,X(49),AN,,not_used,Not Used,CUSTOM FIELD 10
+I,750-750,X(01),AN,,end_of_record_I,Literally “X”; indicates the end of record I,
+J,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+J,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “J”,
+J,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+J,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+J,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+J,024-024,X(01),AN,,not_used,Not Used,
+J,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+J,028-028,X(01),AN,,not_used,Not Used,
+J,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+J,039-040,X(02),AN,,not_used,Not Used,
+J,041-041,X(01),AN,,custom_field_transaction_code,"CUSTOM FIELD TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add new Custom Field
+“C” = Change existing Custom Field",
+J,042-073,X(32),AN,,custom_field_11_label,CUSTOM FIELD (11) LABEL,CUSTOM FIELD 11
+J,074-105,X(32),AN,,custom_field_11_detail_text,CUSTOM FIELD (11) DETAIL TEXT,CUSTOM FIELD 11
+J,106-106,X(01),AN,,custom_field_11_status_indicator,CUSTOM FIELD (11) STATUS INDICATOR,CUSTOM FIELD 11
+J,107-107,X(01),AN,,not_used,Not Used,CUSTOM FIELD 11
+J,108-139,X(32),AN,,custom_field_12_label,CUSTOM FIELD (12) LABEL,CUSTOM FIELD 12
+J,140-171,X(32),AN,,custom_field_12_detail_text,CUSTOM FIELD (12) DETAIL TEXT,CUSTOM FIELD 12
+J,172-172,X(01),AN,,custom_field_12_status_indicator,CUSTOM FIELD (12) STATUS INDICATOR,CUSTOM FIELD 12
+J,173-173,X(01),AN,,not_used,Not Used,CUSTOM FIELD 12
+J,174-205,X(32),AN,,custom_field_13_label,CUSTOM FIELD (13) LABEL,CUSTOM FIELD 13
+J,206-237,X(32),AN,,custom_field_13_detail_text,CUSTOM FIELD (13) DETAIL TEXT,CUSTOM FIELD 13
+J,238-238,X(01),AN,,custom_field_13_status_indicator,CUSTOM FIELD (13) STATUS INDICATOR,CUSTOM FIELD 13
+J,239-239,X(01),AN,,not_used,Not Used,CUSTOM FIELD 13
+J,240-271,X(32),AN,,custom_field_14_label,CUSTOM FIELD (14) LABEL,CUSTOM FIELD 14
+J,272-303,X(32),AN,,custom_field_14_detail_text,CUSTOM FIELD (14) DETAIL TEXT,CUSTOM FIELD 14
+J,304-304,X(01),AN,,custom_field_14_status_indicator,CUSTOM FIELD (14) STATUS INDICATOR,CUSTOM FIELD 14
+J,305-305,X(01),AN,,not_used,Not Used,CUSTOM FIELD 14
+J,306-337,X(32),AN,,custom_field_15_label,CUSTOM FIELD (15) LABEL,CUSTOM FIELD 15
+J,338-369,X(32),AN,,custom_field_15_detail_text,CUSTOM FIELD (15) DETAIL TEXT,CUSTOM FIELD 15
+J,370-370,X(01),AN,,custom_field_15_status_indicator,CUSTOM FIELD (15) STATUS INDICATOR,CUSTOM FIELD 15
+J,371-371,X(01),AN,,not_used,Not Used,CUSTOM FIELD 15
+J,372-456,X(85),AN,,for_pershing_internal_use_only_psupp,For Pershing Internal Use Only (PSupp),
+J,457-749,X(293),AN,,not_used,Not Used,
+J,750-750,X(01),AN,,end_of_record_j,Literally “X”; indicates the end of record J,
+K,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+K,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “K”,
+K,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+K,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+K,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+K,024-024,X(01),AN,,not_used,Not Used,
+K,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+K,028-028,X(01),AN,,not_used,Not Used,
+K,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+K,039-040,X(02),AN,,secondary_sequence_number,SECONDARY SEQUENCE NUMBER; values from 01-09,
+K,041-041,X(01),AN,,custom_field_transaction_code,"CUSTOM FIELD TRANSACTION CODE; 
+values include:
+“X” or “” = Unchanged record
+“A” = Add new Custom Field
+“C” = Change existing Custom Field",
+K,042-073,X(32),AN,,custom_field_label_1,CUSTOM FIELD LABEL,"CUSTOM FIELDS 16, 26, 36, 46, 56, 66, 76, 86, 96"
+K,074-105,X(32),AN,,custom_field_detail_text_1,CUSTOM FIELD DETAIL TEXT,"CUSTOM FIELDS 16, 26, 36, 46, 56, 66, 76, 86, 96"
+K,106-106,X(01),AN,,custom_field_status_indicator_1,"CUSTOM FIELD STATUS INDICATOR; 
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled","CUSTOM FIELDS 16, 26, 36, 46, 56, 66, 76, 86, 96"
+K,107-107,X(01),AN,,not_used,Not Used,"CUSTOM FIELDS 16, 26, 36, 46, 56, 66, 76, 86, 96"
+K,108-139,X(32),AN,,custom_field_label_2,CUSTOM FIELD LABEL,"CUSTOM FIELDS 17, 27, 37, 47, 57, 67, 77, 87, 97"
+K,140-171,X(32),AN,,custom_field_detail_text_2,CUSTOM FIELD DETAIL TEXT,"CUSTOM FIELDS 17, 27, 37, 47, 57, 67, 77, 87, 97"
+K,172-172,X(01),AN,,custom_field_status_indicator_2,"CUSTOM FIELD STATUS INDICATOR; 
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled","CUSTOM FIELDS 17, 27, 37, 47, 57, 67, 77, 87, 97"
+K,173-173,X(01),AN,,not_used,Not Used,"CUSTOM FIELDS 17, 27, 37, 47, 57, 67, 77, 87, 97"
+K,174-205,X(32),AN,,custom_field_label_3,CUSTOM FIELD LABEL,"CUSTOM FIELDS 18, 28, 38, 48, 58, 68, 78, 88, 98"
+K,206-237,X(32),AN,,custom_field_detail_text_3,CUSTOM FIELD DETAIL TEXT,"CUSTOM FIELDS 18, 28, 38, 48, 58, 68, 78, 88, 98"
+K,238-238,X(01),AN,,custom_field_status_indicator_3,"CUSTOM FIELD STATUS INDICATOR; 
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled","CUSTOM FIELDS 18, 28, 38, 48, 58, 68, 78, 88, 98"
+K,239-239,X(01),AN,,not_used,Not Used,"CUSTOM FIELDS 18, 28, 38, 48, 58, 68, 78, 88, 98"
+K,240-271,X(32),AN,,custom_field_label_4,CUSTOM FIELD LABEL,"CUSTOM FIELDS 19, 29, 39, 49, 59, 69, 79, 89, 99"
+K,272-303,X(32),AN,,custom_field_detail_text_4,CUSTOM FIELD DETAIL TEXT,"CUSTOM FIELDS 19, 29, 39, 49, 59, 69, 79, 89, 99"
+K,304-304,X(01),AN,,custom_field_status_indicator_4,"CUSTOM FIELD STATUS INDICATOR; 
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled","CUSTOM FIELDS 19, 29, 39, 49, 59, 69, 79, 89, 99"
+K,305-305,X(01),AN,,not_used,Not Used,"CUSTOM FIELDS 19, 29, 39, 49, 59, 69, 79, 89, 99"
+K,306-337,X(32),AN,,custom_field_label_5,CUSTOM FIELD LABEL,"CUSTOM FIELDS 20, 30, 40, 50, 60, 70, 80, 90, 100"
+K,338-369,X(32),AN,,custom_field_detail_text_5,CUSTOM FIELD DETAIL TEXT,"CUSTOM FIELDS 20, 30, 40, 50, 60, 70, 80, 90, 100"
+K,370-370,X(01),AN,,custom_field_status_indicator_5,"CUSTOM FIELD STATUS INDICATOR; 
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled","CUSTOM FIELDS 20, 30, 40, 50, 60, 70, 80, 90, 100"
+K,371-371,X(01),AN,,not_used,Not Used,"CUSTOM FIELDS 20, 30, 40, 50, 60, 70, 80, 90, 100"
+K,372-403,X(32),AN,,custom_field_label_6,CUSTOM FIELD LABEL,"CUSTOM FIELDS 21, 31, 41, 51, 61, 71, 81, 91"
+K,404-435,X(32),AN,,custom_field_detail_text_6,CUSTOM FIELD DETAIL TEXT,"CUSTOM FIELDS 21, 31, 41, 51, 61, 71, 81, 91"
+K,436-436,X(01),AN,,custom_field_status_indicator_6,"CUSTOM FIELD STATUS INDICATOR; 
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled","CUSTOM FIELDS 21, 31, 41, 51, 61, 71, 81, 91"
+K,437-437,X(01),AN,,not_used,Not Used,"CUSTOM FIELDS 21, 31, 41, 51, 61, 71, 81, 91"
+K,438-469,X(32),AN,,custom_field_label_7,CUSTOM FIELD LABEL,"CUSTOM FIELDS 22, 32, 42, 52, 62, 72, 82, 92"
+K,470-501,X(32),AN,,custom_field_detail_text_7,CUSTOM FIELD DETAIL TEXT,"CUSTOM FIELDS 22, 32, 42, 52, 62, 72, 82, 92"
+K,502-502,X(01),AN,,custom_field_status_indicator_7,"CUSTOM FIELD STATUS INDICATOR; 
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled","CUSTOM FIELDS 22, 32, 42, 52, 62, 72, 82, 92"
+K,503-503,X(01),AN,,not_used,Not Used,"CUSTOM FIELDS 22, 32, 42, 52, 62, 72, 82, 92"
+K,504-535,X(32),AN,,custom_field_label_8,CUSTOM FIELD LABEL,"CUSTOM FIELDS 23, 33, 43, 53, 63, 73, 83, 93"
+K,536-567,X(32),AN,,custom_field_detail_text_8,CUSTOM FIELD DETAIL TEXT,"CUSTOM FIELDS 23, 33, 43, 53, 63, 73, 83, 93"
+K,568-568,X(01),AN,,custom_field_status_indicator_8,"CUSTOM FIELD STATUS INDICATOR; 
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled","CUSTOM FIELDS 23, 33, 43, 53, 63, 73, 83, 93"
+K,569-569,X(01),AN,,not_used,Not Used,"CUSTOM FIELDS 23, 33, 43, 53, 63, 73, 83, 93"
+K,570-601,X(32),AN,,custom_field_label_9,CUSTOM FIELD LABEL,"CUSTOM FIELDS 24, 34, 44, 54, 64, 74, 84, 94"
+K,602-633,X(32),AN,,custom_field_detail_text_9,CUSTOM FIELD DETAIL TEXT,"CUSTOM FIELDS 24, 34, 44, 54, 64, 74, 84, 94"
+K,634-634,X(01),AN,,custom_field_status_indicator_9,"CUSTOM FIELD STATUS INDICATOR; 
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled","CUSTOM FIELDS 24, 34, 44, 54, 64, 74, 84, 94"
+K,635-635,X(01),AN,,not_used,Not Used,"CUSTOM FIELDS 24, 34, 44, 54, 64, 74, 84, 94"
+K,636-667,X(32),AN,,custom_field_label_10,CUSTOM FIELD LABEL,"CUSTOM FIELDS 25, 35, 45, 55, 65, 75, 85, 95"
+K,668-699,X(32),AN,,custom_field_detail_text_10,CUSTOM FIELD DETAIL TEXT,"CUSTOM FIELDS 25, 35, 45, 55, 65, 75, 85, 95"
+K,700-700,X(01),AN,,custom_field_status_indicator_10,"CUSTOM FIELD STATUS INDICATOR; 
+values include:
+“A” = Active
+“D” = Deleted
+“L” = Disabled","CUSTOM FIELDS 25, 35, 45, 55, 65, 75, 85, 95"
+K,701-749,X(49),AN,,not_used,Not Used,"CUSTOM FIELDS 25, 35, 45, 55, 65, 75, 85, 95"
+K,750-750,X(01),AN,,end_of_record_k,Literally “X”; indicates the end of record K,
 L,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 L,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “L”,
 L,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -2091,7 +2654,1030 @@ L,200-319,X(120),AN,,advisory_money_manager_name,ADVISORY MONEY MANAGER NAME; if
 L,320-329,X(10),AN,,advisory_management_style_code,ADVISORY MANAGEMENT STYLE CODE,ADVISORY ACCOUNT INFORMATION
 L,330-449,X(120),AN,,advisory_management_style,ADVISORY MANAGEMENT STYLE; if applicable,ADVISORY ACCOUNT INFORMATION
 L,450-749,X(300),AN,,not_used,Not Used,
-L,750-750,X(01),AN,,,Literally “X”; indicates the end of record L,
+L,750-750,X(01),AN,,end_of_record_l,Literally “X”; indicates the end of record L,
+N,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+N,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “N”,
+N,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+N,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+N,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+N,024-024,X(01),AN,,not_used,Not Used,
+N,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+N,028-028,X(01),AN,,not_used,Not Used,
+N,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+N,039-040,X(02),AN,,not_used,Not Used,
+N,041-041,X(01),AN,,business_party_1_transaction_code,"BUSINESS PARTY (1) TRAN. CODE; values include:
+“X” or “” = Unchanged Business Party
+“A” = Add Business Party
+“C” = Change existing Business Party
+“D” = Delete Business Party","This record will be repeated as needed – the secondary sequence number has been added to position 745
+BUSINESS PARTY 1+ DETAILS"
+N,042-050,X(09),AN,,business_party_1_id,BUSINESS PARTY’S (1) ID,BUSINESS PARTY 1+ DETAILS
+N,051-054,X(04),AN,,business_party_1_role_code,BUSINESS PARTY’S (1) ROLE CODE; see Appendix 12 for values,BUSINESS PARTY 1+ DETAILS
+N,055-055,X(01),AN,,business_party_1_has_discretion,"BUSINESS PARTY (1) HAS DISCRETION; values include:
+“Y” = Business party has discretion
+“N” = Business party does not have discretion
+“” = Not applicable",BUSINESS PARTY 1+ DETAILS
+N,056-062,X(07),AN,,not_used,Not Used,BUSINESS PARTY 1+ DETAILS
+N,063-063,X(01),AN,,business_party_2_transaction_code,BUSINESS PARTY (2) TRANSACTION CODE; see pos. 041,BUSINESS PARTY 2+ DETAILS
+N,064-072,X(09),AN,,business_party_2_id,BUSINESS PARTY’S (2) ID,BUSINESS PARTY 2+ DETAILS
+N,073-076,X(04),AN,,business_party_2_role_code,BUSINESS PARTY’S (2) ROLE CODE; see position 051,BUSINESS PARTY 2+ DETAILS
+N,077-077,X(01),AN,,business_party_2_has_discretion,BUSINESS PARTY (2) HAS DISCRETION; see position 055,BUSINESS PARTY 2+ DETAILS
+N,078-084,X(07),AN,,not_used,Not Used,BUSINESS PARTY 2+ DETAILS
+N,085-085,X(01),AN,,business_party_3_transaction_code,"BUSINESS PARTY (3) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 3+ DETAILS
+N,086-094,X(09),AN,,business_party_3_id,BUSINESS PARTY’S (3) ID,BUSINESS PARTY 3+ DETAILS
+N,095-098,X(04),AN,,business_party_3_role_code,BUSINESS PARTY’S (3) ROLE CODE; see position 051,BUSINESS PARTY 3+ DETAILS
+N,099-099,X(01),AN,,business_party_3_has_discretion,BUSINESS PARTY (3) HAS DISCRETION; see position 055,BUSINESS PARTY 3+ DETAILS
+N,100-106,X(07),AN,,not_used,Not Used,BUSINESS PARTY 3+ DETAILS
+N,107-107,X(01),AN,,business_party_4_transaction_code,"BUSINESS PARTY (4) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 4+ DETAILS
+N,108-116,X(09),AN,,business_party_4_id,BUSINESS PARTY’S (4) ID,BUSINESS PARTY 4+ DETAILS
+N,117-120,X(04),AN,,business_party_4_role_code,BUSINESS PARTY’S (4) ROLE CODE; see position 051 for values,BUSINESS PARTY 4+ DETAILS
+N,121-121,X(01),AN,,business_party_4_has_discretion,"BUSINESS PARTY (4) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 4+ DETAILS
+N,122-128,X(07),AN,,not_used,Not Used,BUSINESS PARTY 4+ DETAILS
+N,129-129,X(01),AN,,business_party_5_transaction_code,"BUSINESS PARTY (5) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 5+ DETAILS
+N,130-138,X(09),AN,,business_party_5_id,BUSINESS PARTY’S (5) ID,BUSINESS PARTY 5+ DETAILS
+N,139-142,X(04),AN,,business_party_5_role_code,BUSINESS PARTY’S (5) ROLE CODE; see position 051 for values,BUSINESS PARTY 5+ DETAILS
+N,143-143,X(01),AN,,business_party_5_has_discretion,BUSINESS PARTY (5) HAS DISCRETION; see position 055,BUSINESS PARTY 5+ DETAILS
+N,144-150,X(07),AN,,not_used,Not Used,BUSINESS PARTY 5+ DETAILS
+N,151-151,X(01),AN,,business_party_6_transaction_code,"BUSINESS PARTY (6) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 6+ DETAILS
+N,152-160,X(09),AN,,business_party_6_id,BUSINESS PARTY’S (6) ID,BUSINESS PARTY 6+ DETAILS
+N,161-164,X(04),AN,,business_party_6_role_code,BUSINESS PARTY’S (6) ROLE CODE; see position 051 for values,BUSINESS PARTY 6+ DETAILS
+N,165-165,X(01),AN,,business_party_6_has_discretion,BUSINESS PARTY (6) HAS DISCRETION; see position 055,BUSINESS PARTY 6+ DETAILS
+N,166-172,X(07),AN,,not_used,Not Used,BUSINESS PARTY 6+ DETAILS
+N,173-173,X(01),AN,,business_party_7_transaction_code,"BUSINESS PARTY (7) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 7+ DETAILS
+N,174-182,X(09),AN,,business_party_7_id,BUSINESS PARTY’S (7) ID,BUSINESS PARTY 7+ DETAILS
+N,183-186,X(04),AN,,business_party_7_role_code,BUSINESS PARTY’S (7) ROLE CODE; see position 051 for values,BUSINESS PARTY 7+ DETAILS
+N,187-187,X(01),AN,,business_party_7_has_discretion,BUSINESS PARTY (7) HAS DISCRETION; see position 055,BUSINESS PARTY 7+ DETAILS
+N,188-194,X(07),AN,,not_used,Not Used,BUSINESS PARTY 7+ DETAILS
+N,195-195,X(01),AN,,business_party_8_transaction_code,"BUSINESS PARTY (8) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 8+ DETAILS
+N,196-204,X(09),AN,,business_party_8_id,BUSINESS PARTY’S (8) ID,BUSINESS PARTY 8+ DETAILS
+N,205-208,X(04),AN,,business_party_8_role_code,BUSINESS PARTY’S (8) ROLE CODE; see position 051 for values,BUSINESS PARTY 8+ DETAILS
+N,209-209,X(01),AN,,business_party_8_has_discretion,BUSINESS PARTY (8) HAS DISCRETION; see position 055,BUSINESS PARTY 8+ DETAILS
+N,210-216,X(07),AN,,not_used,Not Used,BUSINESS PARTY 8+ DETAILS
+N,217-217,X(01),AN,,business_party_9_transaction_code,"BUSINESS PARTY (9) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 9+ DETAILS
+N,218-226,X(09),AN,,business_party_9_id,BUSINESS PARTY’S (9) ID,BUSINESS PARTY 9+ DETAILS
+N,227-230,X(04),AN,,business_party_9_role_code,BUSINESS PARTY’S (9) ROLE CODE; see position 051 for values,BUSINESS PARTY 9+ DETAILS
+N,231-231,X(01),AN,,business_party_9_has_discretion,BUSINESS PARTY (9) HAS DISCRETION; see position 055,BUSINESS PARTY 9+ DETAILS
+N,232-238,X(07),AN,,not_used,Not Used,BUSINESS PARTY 9+ DETAILS
+N,239-239,X(01),AN,,business_party_10_transaction_code,"BUSINESS PARTY (10) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 10+ DETAILS
+N,240-248,X(09),AN,,business_party_10_id,BUSINESS PARTY’S (10) ID,BUSINESS PARTY 10+ DETAILS
+N,249-252,X(04),AN,,business_party_10_role_code,BUSINESS PARTY’S (10) ROLE CODE; see position 051 for values,BUSINESS PARTY 10+ DETAILS
+N,253-253,X(01),AN,,business_party_10_has_discretion,"BUSINESS PARTY (10) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 10+ DETAILS
+N,254-260,X(07),AN,,not_used,Not Used,BUSINESS PARTY 10+ DETAILS
+N,261-261,X(01),AN,,business_party_11_transaction_code,"BUSINESS PARTY (11) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 11+ DETAILS
+N,262-270,X(09),AN,,business_party_11_id,BUSINESS PARTY’S (11) ID,BUSINESS PARTY 11+ DETAILS
+N,271-274,X(04),AN,,business_party_11_role_code,BUSINESS PARTY’S (11) ROLE CODE; see position 051 for values,BUSINESS PARTY 11+ DETAILS
+N,275-275,X(01),AN,,business_party_11_has_discretion,"BUSINESS PARTY (11) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 11+ DETAILS
+N,276-282,X(07),AN,,not_used,Not Used,BUSINESS PARTY 11+ DETAILS
+N,283-283,X(01),AN,,business_party_12_transaction_code,"BUSINESS PARTY (12) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 12+ DETAILS
+N,284-292,X(09),AN,,business_party_12_id,BUSINESS PARTY’S (12) ID,BUSINESS PARTY 12+ DETAILS
+N,293-296,X(04),AN,,business_party_12_role_code,BUSINESS PARTY’S (12) ROLE CODE; see position 051 for values,BUSINESS PARTY 12+ DETAILS
+N,297-297,X(01),AN,,business_party_12_has_discretion,BUSINESS PARTY (12) HAS DISCRETION; see position 055,BUSINESS PARTY 12+ DETAILS
+N,298-304,X(07),AN,,not_used,Not Used,BUSINESS PARTY 12+ DETAILS
+N,305-305,X(01),AN,,business_party_13_transaction_code,"BUSINESS PARTY (13) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 13+ DETAILS
+N,306-314,X(09),AN,,business_party_13_id,BUSINESS PARTY’S (13) ID,BUSINESS PARTY 13+ DETAILS
+N,315-318,X(04),AN,,business_party_13_role_code,BUSINESS PARTY’S (13) ROLE CODE; see position 051 for values,BUSINESS PARTY 13+ DETAILS
+N,319-319,X(01),AN,,business_party_13_has_discretion,BUSINESS PARTY (13) HAS DISCRETION; see position 055,BUSINESS PARTY 13+ DETAILS
+N,320-326,X(07),AN,,not_used,Not Used,BUSINESS PARTY 13+ DETAILS
+N,327-327,X(01),AN,,business_party_14_transaction_code,"BUSINESS PARTY (14) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 14+ DETAILS
+N,328-336,X(09),AN,,business_party_14_id,BUSINESS PARTY’S (14) ID,BUSINESS PARTY 14+ DETAILS
+N,337-340,X(04),AN,,business_party_14_role_code,BUSINESS PARTY’S (14) ROLE CODE; see position 051 for values,BUSINESS PARTY 14+ DETAILS
+N,341-341,X(01),AN,,business_party_14_has_discretion,BUSINESS PARTY (14) HAS DISCRETION; see position 055,BUSINESS PARTY 14+ DETAILS
+N,342-348,X(07),AN,,not_used,Not Used,BUSINESS PARTY 14+ DETAILS
+N,349-349,X(01),AN,,business_party_15_transaction_code,"BUSINESS PARTY (15) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 15+ DETAILS
+N,350-358,X(09),AN,,business_party_15_id,BUSINESS PARTY’S (15) ID,BUSINESS PARTY 15+ DETAILS
+N,359-362,X(04),AN,,business_party_15_role_code,BUSINESS PARTY’S (15) ROLE CODE; see position 051 for values,BUSINESS PARTY 15+ DETAILS
+N,363-363,X(01),AN,,business_party_15_has_discretion,"BUSINESS PARTY (15) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 15+ DETAILS
+N,364-370,X(07),AN,,not_used,Not Used,BUSINESS PARTY 15+ DETAILS
+N,371-371,X(01),AN,,business_party_16_transaction_code,"BUSINESS PARTY (16) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 16+ DETAILS
+N,372-380,X(09),AN,,business_party_16_id,BUSINESS PARTY’S (16) ID,BUSINESS PARTY 16+ DETAILS
+N,381-384,X(04),AN,,business_party_16_role_code,BUSINESS PARTY’S (16) ROLE CODE; see position 051 for values,BUSINESS PARTY 16+ DETAILS
+N,385-385,X(01),AN,,business_party_16_has_discretion,"BUSINESS PARTY (16) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 16+ DETAILS
+N,386-392,X(07),AN,,not_used,Not Used,BUSINESS PARTY 16+ DETAILS
+N,393-393,X(01),AN,,business_party_17_transaction_code,"BUSINESS PARTY (17) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 17+ DETAILS
+N,394-402,X(09),AN,,business_party_17_id,BUSINESS PARTY’S (17) ID,BUSINESS PARTY 17+ DETAILS
+N,403-406,X(04),AN,,business_party_17_role_code,BUSINESS PARTY’S (17) ROLE CODE; see position 051 for values,BUSINESS PARTY 17+ DETAILS
+N,407-407,X(01),AN,,business_party_17_has_discretion,"BUSINESS PARTY (17) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 17+ DETAILS
+N,408-414,X(07),AN,,not_used,Not Used,BUSINESS PARTY 17+ DETAILS
+N,415-415,X(01),AN,,business_party_18_transaction_code,"BUSINESS PARTY (18) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 18+ DETAILS
+N,416-424,X(09),AN,,business_party_18_id,BUSINESS PARTY’S (18) ID,BUSINESS PARTY 18+ DETAILS
+N,425-428,X(04),AN,,business_party_18_role_code,BUSINESS PARTY’S (18) ROLE CODE; see position 051 for values,BUSINESS PARTY 18+ DETAILS
+N,429-429,X(01),AN,,business_party_18_has_discretion,BUSINESS PARTY (18) HAS DISCRETION; see position 055,BUSINESS PARTY 18+ DETAILS
+N,430-436,X(07),AN,,not_used,Not Used,BUSINESS PARTY 18+ DETAILS
+N,437-437,X(01),AN,,business_party_19_transaction_code,"BUSINESS PARTY (19) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 19+ DETAILS
+N,438-446,X(09),AN,,business_party_19_id,BUSINESS PARTY’S (19) ID,BUSINESS PARTY 19+ DETAILS
+N,447-450,X(04),AN,,business_party_19_role_code,BUSINESS PARTY’S (19) ROLE CODE; see position 051 for values,BUSINESS PARTY 19+ DETAILS
+N,451-451,X(01),AN,,business_party_19_has_discretion,BUSINESS PARTY (19) HAS DISCRETION; see position 055,BUSINESS PARTY 19+ DETAILS
+N,452-458,X(07),AN,,not_used,Not Used,BUSINESS PARTY 19+ DETAILS
+N,459-459,X(01),AN,,business_party_20_transaction_code,"BUSINESS PARTY (20) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 20+ DETAILS
+N,460-468,X(09),AN,,business_party_20_id,BUSINESS PARTY’S (20) ID,BUSINESS PARTY 20+ DETAILS
+N,469-472,X(04),AN,,business_party_20_role_code,BUSINESS PARTY’S (20) ROLE CODE; see position 051 for values,BUSINESS PARTY 20+ DETAILS
+N,473-473,X(01),AN,,business_party_20_has_discretion,BUSINESS PARTY (20) HAS DISCRETION; see position 055,BUSINESS PARTY 20+ DETAILS
+N,474-480,X(07),AN,,not_used,Not Used,BUSINESS PARTY 20+ DETAILS
+N,481-481,X(01),AN,,business_party_21_transaction_code,"BUSINESS PARTY (21) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 21+ DETAILS
+N,482-490,X(09),AN,,business_party_21_id,BUSINESS PARTY’S (21) ID,BUSINESS PARTY 21+ DETAILS
+N,491-494,X(04),AN,,business_party_21_role_code,BUSINESS PARTY’S (21) ROLE CODE; see position 051 for values,BUSINESS PARTY 21+ DETAILS
+N,495-495,X(01),AN,,business_party_21_has_discretion,"BUSINESS PARTY (21) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 21+ DETAILS
+N,496-502,X(07),AN,,not_used,Not Used,BUSINESS PARTY 21+ DETAILS
+N,503-503,X(01),AN,,business_party_22_transaction_code,"BUSINESS PARTY (22) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 22+ DETAILS
+N,504-512,X(09),AN,,business_party_22_id,BUSINESS PARTY’S (22) ID,BUSINESS PARTY 22+ DETAILS
+N,513-516,X(04),AN,,business_party_22_role_code,BUSINESS PARTY’S (22) ROLE CODE; see position 051 for values,BUSINESS PARTY 22+ DETAILS
+N,517-517,X(01),AN,,business_party_22_has_discretion,"BUSINESS PARTY (22) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 22+ DETAILS
+N,518-524,X(07),AN,,not_used,Not Used,BUSINESS PARTY 22+ DETAILS
+N,525-525,X(01),AN,,business_party_23_transaction_code,"BUSINESS PARTY (23) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 23+ DETAILS
+N,526-534,X(09),AN,,business_party_23_id,BUSINESS PARTY’S (23) ID,BUSINESS PARTY 23+ DETAILS
+N,535-538,X(04),AN,,business_party_23_role_code,BUSINESS PARTY’S (23) ROLE CODE; see position 051 for values,BUSINESS PARTY 23+ DETAILS
+N,539-539,X(01),AN,,business_party_23_has_discretion,"BUSINESS PARTY (23) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 23+ DETAILS
+N,540-546,X(07),AN,,not_used,Not Used,BUSINESS PARTY 23+ DETAILS
+N,547-547,X(01),AN,,business_party_24_transaction_code,"BUSINESS PARTY (24) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 24+ DETAILS
+N,548-556,X(09),AN,,business_party_24_id,BUSINESS PARTY’S (24) ID,BUSINESS PARTY 24+ DETAILS
+N,557-560,X(04),AN,,business_party_24_role_code,BUSINESS PARTY’S (24) ROLE CODE; see position 051 for values,BUSINESS PARTY 24+ DETAILS
+N,561-561,X(01),AN,,business_party_24_has_discretion,"BUSINESS PARTY (24) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 24+ DETAILS
+N,562-568,X(07),AN,,not_used,Not Used,BUSINESS PARTY 24+ DETAILS
+N,569-569,X(01),AN,,business_party_25_transaction_code,"BUSINESS PARTY (25) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 25+ DETAILS
+N,570-578,X(09),AN,,business_party_25_id,BUSINESS PARTY’S (25) ID,BUSINESS PARTY 25+ DETAILS
+N,579-582,X(04),AN,,business_party_25_role_code,BUSINESS PARTY’S (25) ROLE CODE; see position 051 for values,BUSINESS PARTY 25+ DETAILS
+N,583-583,X(01),AN,,business_party_25_has_discretion,BUSINESS PARTY (25) HAS DISCRETION; see position 055,BUSINESS PARTY 25+ DETAILS
+N,584-590,X(07),AN,,not_used,Not Used,BUSINESS PARTY 25+ DETAILS
+N,591-591,X(01),AN,,business_party_26_transaction_code,"BUSINESS PARTY (26) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 26+ DETAILS
+N,592-600,X(09),AN,,business_party_26_id,BUSINESS PARTY’S (26) ID,BUSINESS PARTY 26+ DETAILS
+N,601-604,X(04),AN,,business_party_26_role_code,BUSINESS PARTY’S (26) ROLE CODE; see position 051 for values,BUSINESS PARTY 26+ DETAILS
+N,605-605,X(01),AN,,business_party_26_has_discretion,BUSINESS PARTY (26) HAS DISCRETION; see position 055,BUSINESS PARTY 26+ DETAILS
+N,606-612,X(07),AN,,not_used,Not Used,BUSINESS PARTY 26+ DETAILS
+N,613-613,X(01),AN,,business_party_27_transaction_code,"BUSINESS PARTY (27) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 27+ DETAILS
+N,614-622,X(09),AN,,business_party_27_id,BUSINESS PARTY’S (27) ID,BUSINESS PARTY 27+ DETAILS
+N,623-626,X(04),AN,,business_party_27_role_code,BUSINESS PARTY’S (27) ROLE CODE; see position 051 for values,BUSINESS PARTY 27+ DETAILS
+N,627-627,X(01),AN,,business_party_27_has_discretion,BUSINESS PARTY (27) HAS DISCRETION; see position 055,BUSINESS PARTY 27+ DETAILS
+N,628-634,X(07),AN,,not_used,Not Used,BUSINESS PARTY 27+ DETAILS
+N,635-635,X(01),AN,,business_party_28_transaction_code,"BUSINESS PARTY (28) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 28+ DETAILS
+N,636-644,X(09),AN,,business_party_28_id,BUSINESS PARTY’S (28) ID,BUSINESS PARTY 28+ DETAILS
+N,645-648,X(04),AN,,business_party_28_role_code,BUSINESS PARTY’S (28) ROLE CODE; see position 051 for values,BUSINESS PARTY 28+ DETAILS
+N,649-649,X(01),AN,,business_party_28_has_discretion,BUSINESS PARTY (28) HAS DISCRETION; see position 055,BUSINESS PARTY 28+ DETAILS
+N,650-656,X(07),AN,,not_used,Not Used,BUSINESS PARTY 28+ DETAILS
+N,657-657,X(01),AN,,business_party_29_transaction_code,"BUSINESS PARTY (29) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 29+ DETAILS
+N,658-666,X(09),AN,,business_party_29_id,BUSINESS PARTY’S (29) ID,BUSINESS PARTY 29+ DETAILS
+N,667-670,X(04),AN,,business_party_29_role_code,BUSINESS PARTY’S (29) ROLE CODE; see position 051 for values,BUSINESS PARTY 29+ DETAILS
+N,671-671,X(01),AN,,business_party_29_has_discretion,"BUSINESS PARTY (29) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 29+ DETAILS
+N,672-678,X(07),AN,,not_used,Not Used,BUSINESS PARTY 29+ DETAILS
+N,679-679,X(01),AN,,business_party_30_transaction_code,"BUSINESS PARTY (30) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 30+ DETAILS
+N,680-688,X(09),AN,,business_party_30_id,BUSINESS PARTY’S (30) ID,BUSINESS PARTY 30+ DETAILS
+N,689-692,X(04),AN,,business_party_30_role_code,BUSINESS PARTY’S (30) ROLE CODE; see position 051 for values,BUSINESS PARTY 30+ DETAILS
+N,693-693,X(01),AN,,business_party_30_has_discretion,BUSINESS PARTY (30) HAS DISCRETION; see position 055,BUSINESS PARTY 30+ DETAILS
+N,694-700,X(07),AN,,not_used,Not Used,BUSINESS PARTY 30+ DETAILS
+N,701-701,X(01),AN,,business_party_31_transaction_code,"BUSINESS PARTY (31) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 31+ DETAILS
+N,702-710,X(09),AN,,business_party_31_id,BUSINESS PARTY’S (31) ID,BUSINESS PARTY 31+ DETAILS
+N,711-714,X(04),AN,,business_party_31_role_code,BUSINESS PARTY’S (31) ROLE CODE; see position 051 for values,BUSINESS PARTY 31+ DETAILS
+N,715-715,X(01),AN,,business_party_31_has_discretion,"BUSINESS PARTY (31) HAS DISCRETION; see position 055
+for values",BUSINESS PARTY 31+ DETAILS
+N,716-722,X(07),AN,,not_used,Not Used,BUSINESS PARTY 31+ DETAILS
+N,723-723,X(01),AN,,business_party_32_transaction_code,"BUSINESS PARTY (32) TRANSACTION CODE; see position
+041 for values",BUSINESS PARTY 32+ DETAILS
+N,724-732,X(09),AN,,business_party_32_id,BUSINESS PARTY’S (32) ID,BUSINESS PARTY 32+ DETAILS
+N,733-736,X(04),AN,,business_party_32_role_code,BUSINESS PARTY’S (32) ROLE CODE; see position 051 for values,BUSINESS PARTY 32+ DETAILS
+N,737-737,X(01),AN,,business_party_32_has_discretion,BUSINESS PARTY (32) HAS DISCRETION; see position 055,BUSINESS PARTY 32+ DETAILS
+N,738-744,X(07),AN,,not_used,Not Used,BUSINESS PARTY 32+ DETAILS
+N,745-749,9(05),N,,secondary_sequence_number,"SECONDARY SEQUENCE NUMBER, begins with 00001",
+N,750-750,X(01),AN,,end_of_record_n,Literally “X”; indicates the end of record N,
+P,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+P,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “P”,
+P,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+P,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+P,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+P,024-024,X(01),AN,,not_used,Not Used,
+P,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+P,028-028,X(01),AN,,not_used,Not Used,
+P,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+P,039-040,X(02),AN,,not_used,Not Used,
+P,041-046,X(06),AN,,parent_id,PARENT ID,GENERAL INFORMATION
+P,047-054,X(08),AN,,institution_id,INSTITUTION ID,GENERAL INFORMATION
+P,055-070,X(16),AN,,institution_ia_account_number,INSTITUTION (IA) ACCOUNT NUMBER,GENERAL INFORMATION
+P,071-078,X(08),AN,,alert_acronym,ALERT ACRONYM,GENERAL INFORMATION
+P,079-090,X(12),AN,,alert_access_code,ALERT ACCESS CODE,GENERAL INFORMATION
+P,091-091,X(01),AN,,confirmation_option,"CONFIRMATION OPTION; values include:
+“1” = Confirm Only (default for DTC)
+“7” = ID Confirm and Hard Copy; applicable to DTC only
+“3” = Hard Copy Confirm Only (default for non-DTC); applicable to non-DTC",GENERAL INFORMATION
+P,092-099,9(08),N,,birth_date,"BIRTH DATE, in CCYYMMDD format",GENERAL INFORMATION
+P,100-103,X(04),AN,,not_used,Not Used,GENERAL INFORMATION
+P,104-105,X(02),AN,,country_of_citizenship_code_cod,"COUNTRY OF CITIZENSHIP CODE (COD); see Appendix Q,
+“ACCT Codes and Values”",GENERAL INFORMATION
+P,106-106,X(01),AN,,dtc_transaction_code,"DTC TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add location
+“C” = Change existing location",DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,107-110,X(04),AN,,location_product_code,"LOCATION/PRODUCT CODE; values include:
+“DTC” = Depository Trust Company",DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,111-118,X(08),AN,,institution_number,INSTITUTION NUMBER,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,119-158,X(40),AN,,institution_name,INSTITUTION NAME,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,159-166,X(08),AN,,agent_number,AGENT NUMBER,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,167-206,X(40),AN,,agent_name,AGENT NAME,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,207-222,X(16),AN,,agent_internal_number,AGENT INTERNAL NUMBER,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,223-272,X(50),AN,,agent_internal_name,AGENT INTERNAL NAME; free-form text,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,273-280,X(08),AN,,clearing_agent_number,CLEARING AGENT NUMBER,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,281-315,X(35),AN,,clearing_agent_name,CLEARING AGENT NAME,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,316-323,X(08),AN,,first_dtc_ip_number,FIRST DTC IP NUMBER,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,324-346,X(23),AN,,first_ip_account_number,FIRST IP ACCOUNT NUMBER,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,347-354,X(08),AN,,second_dtc_ip_number,SECOND DTC IP NUMBER,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,355-377,X(23),AN,,second_ip_account_number,SECOND IP ACCOUNT NUMBER,DTC INSTRUCTIONS; LOCATION/PRODUCT CODE = DTC
+P,378-378,X(01),AN,,fed_transaction_code,"FED TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add location
+“C” = Change existing location",FED/UST/GNMA/ALL OTHER INSTRUCTIONS; LOCATION/PRODUCT CODE = FED
+P,379-382,X(04),AN,,location_product_code,"LOCATION/PRODUCT CODE; values include:
+“FED” = The Federal Reserve Bank of New York",FED/UST/GNMA/ALL OTHER INSTRUCTIONS; LOCATION/PRODUCT CODE = FED
+P,383-391,X(09),AN,,aba_number,ABA NUMBER,FED/UST/GNMA/ALL OTHER INSTRUCTIONS; LOCATION/PRODUCT CODE = FED
+P,392-431,X(40),AN,,internal_account_number,INTERNAL ACCOUNT NUMBER; free-form text,FED/UST/GNMA/ALL OTHER INSTRUCTIONS; LOCATION/PRODUCT CODE = FED
+P,432-481,X(50),AN,,federal_wire_bank_name,FEDERAL WIRE BANK NAME; free-form text,FED/UST/GNMA/ALL OTHER INSTRUCTIONS; LOCATION/PRODUCT CODE = FED
+P,482-482,X(01),AN,,eur_transaction_code,"EUR TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add location
+“C” = Change existing location",EUROCLEAR INSTRUCTIONS; LOCATION/PRODUCT CODE = EUR
+P,483-486,X(04),AN,,location_product_code,"LOCATION/PRODUCT CODE; values include:
+“EUR” = Euroclear",EUROCLEAR INSTRUCTIONS; LOCATION/PRODUCT CODE = EUR
+P,487-494,X(08),AN,,euroclear_number,EUROCLEAR NUMBER,EUROCLEAR INSTRUCTIONS; LOCATION/PRODUCT CODE = EUR
+P,495-509,X(15),AN,,euroclear_account_number,EUROCLEAR ACCOUNT NUMBER,EUROCLEAR INSTRUCTIONS; LOCATION/PRODUCT CODE = EUR
+P,510-510,X(01),AN,,ced_transaction_code,"CED TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add location
+“C” = Change existing location",CEDEL INSTRUCTIONS; LOCATION/PRODUCT CODE = CED
+P,511-514,X(04),AN,,location_product_code,"LOCATION/PRODUCT CODE; values include:
+“CED” = CEDEL",CEDEL INSTRUCTIONS; LOCATION/PRODUCT CODE = CED
+P,515-522,X(08),AN,,cedel_number,CEDEL NUMBER,CEDEL INSTRUCTIONS; LOCATION/PRODUCT CODE = CED
+P,523-537,X(15),AN,,cedel_account_number,CEDEL ACCOUNT NUMBER,CEDEL INSTRUCTIONS; LOCATION/PRODUCT CODE = CED
+P,538-538,X(01),AN,,phy_transaction_code,"PHY TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add location
+“C” = Change existing location",PHYSICAL INSTRUCTIONS; LOCATION/PRODUCT CODE = PHY
+P,539-542,X(04),AN,,location_product_code,"LOCATION/PRODUCT CODE; values include:
+“PHY” = Physical",PHYSICAL INSTRUCTIONS; LOCATION/PRODUCT CODE = PHY
+P,543-557,X(15),AN,,account_number_for_physical_delivery,ACCOUNT NUMBER FOR PHYSICAL DELIVERY,PHYSICAL INSTRUCTIONS; LOCATION/PRODUCT CODE = PHY
+P,558-589,X(32),AN,,other_instructions_1,OTHER INSTRUCTIONS 1,PHYSICAL INSTRUCTIONS; LOCATION/PRODUCT CODE = PHY
+P,590-621,X(32),AN,,other_instructions_2,OTHER INSTRUCTIONS 2,PHYSICAL INSTRUCTIONS; LOCATION/PRODUCT CODE = PHY
+P,622-653,X(32),AN,,other_instructions_3,OTHER INSTRUCTIONS 3,PHYSICAL INSTRUCTIONS; LOCATION/PRODUCT CODE = PHY
+P,654-685,X(32),AN,,other_instructions_4,OTHER INSTRUCTIONS 4,PHYSICAL INSTRUCTIONS; LOCATION/PRODUCT CODE = PHY
+P,686-717,X(32),AN,,other_instructions_5,OTHER INSTRUCTIONS 5,PHYSICAL INSTRUCTIONS; LOCATION/PRODUCT CODE = PHY
+P,718-749,X(32),AN,,other_instructions_6,OTHER INSTRUCTIONS 6,PHYSICAL INSTRUCTIONS; LOCATION/PRODUCT CODE = PHY
+P,750-750,X(01),AN,,end_of_record_p,Literally “X”; indicates the end of record P,
+R,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+R,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “R”,
+R,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+R,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+R,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+R,024-024,X(01),AN,,not_used,Not Used,
+R,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+R,028-028,X(01),AN,,not_used,Not Used,
+R,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+R,039-040,X(02),AN,,not_used,Not Used,
+R,041-041,X(01),AN,,retirement_account_tran_code,"RETIREMENT ACCOUNT TRAN CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add location
+“C” = Change existing location",
+R,042-042,X(01),AN,,participant_marital_status,"PARTICIPANT MARITAL STATUS; values include:
+“M” = Married
+“S” = Single
+“” = N/A to Trust, Omnibus, Estate or Other Entity",
+R,043-043,X(01),AN,,sex_of_participant,"SEX OF PARTICIPANT; values include:
+“F” = Female
+“M” = Male
+“U” = Unknown/undetermined",
+R,044-047,X(04),AN,,custodian_code,"CUSTODIAN CODE; values include:
+“A” = Pershing LLC B1 Account
+Other IBD-specific values assigned",
+R,048-051,X(04),AN,,type_of_retirement_plan,"TYPE OF RETIREMENT PLAN; values include:
+“1” = IRA
+“2” = SEP-IRA (IRS-5305)
+“4” = Flexible Profit Sharing
+“5” = Non-standardized Profit Sharing
+“6” = Flexible Target Benefit
+“7” = Non-standardized Target Benefit
+“8” = Flexible Money Purchase
+“9” = Non-standardized Money Purchase
+“A” = Salary Deferral SARSEP
+“B” = Flexible 401(k)
+“C” = Non-standardized 401(k)
+“D” = Age Weighted 401(k)
+“E” = Age Weighted Profit Sharing
+“F” = Super Simplified Profit Sharing
+“G” = Super Simplified Money Purchase
+“H” = 403(b)7 non ERISA
+“I” = 403(b)7 ERISA
+“J” = Prototype SEP
+“K” = Simple 401(k)
+“L” = Simple IRA
+“O” = Individual 401(k)
+“R” = Roth IRA
+“S” = Education Savings Account
+“T” = Roth Conversion","NOTE: For Assets associated with the Retirement Plan, see Record 4, position 575"
+R,052-052,X(01),AN,,type_of_retirement_account,"TYPE OF RETIREMENT ACCOUNT; values include:
+“1” = Participant
+“2” = Spousal
+“3” = Rollover
+“4” = Inherited
+“5” = Employer
+“6” = Guardian
+“7” = Omnibus
+“8” = Inherited Individual
+“9” = Inherited Estate
+“A” = Inherited Trust
+“B” = Inherited Charity
+“C” = Inherited Guardian
+“D” = Roth Participant
+“F” = Roth Guardian
+“G” = Roth Omnibus
+“H” = Roth Inherited Individual
+“I” = Roth Inherited Estate
+“J” = Roth Inherited Trust
+“K” = Roth Inherited Charity
+“L” = Roth Inherited Guardian",
+R,053-062,X(10),AN,,retirement_plan_number,RETIREMENT PLAN NUMBER,
+R,063-063,X(01),AN,,self_directed_indicator,"SELF-DIRECTED INDICATOR; values include:
+“Y” = Yes
+“N” = No",
+R,064-064,X(01),AN,,asset_will_indicator,"ASSET WILL INDICATOR; values include:
+“Y” = Yes
+“N” = No",
+R,065-072,9(08),N,,broker_dealer_conversion_date,"BROKER DEALER CONVERSION DATE, in CCYYMMDD",DATES
+R,073-080,9(08),N,,adoption_agreement_date,"ADOPTION AGREEMENT DATE, in CCYYMMDD format",DATES
+R,081-088,9(08),N,,date_plan_established,"DATE PLAN ESTABLISHED, in CCYYMMDD format",DATES
+R,089-096,9(08),N,,custodian_date,"CUSTODIAN DATE, in CCYYMMDD format",DATES
+R,097-104,9(08),N,,plan_amendment_date,"PLAN AMENDMENT DATE, in CCYYMMDD format",DATES
+R,105-112,9(08),N,,spousal_consent_date,"SPOUSAL CONSENT DATE, in CCYYMMDD format",DATES
+R,113-113,X(01),AN,,education_disability_indicator,"EDUCATION DISABILITY INDICATOR; values include:
+“Y” = Yes; Account Holder has special needs
+“N” = No; Does not apply",DATES
+R,114-121,9(08),N,,disability_start_date,"DISABILITY START DATE, in CCYYMMDD format",DATES
+R,122-129,9(08),N,,date_of_death,"DATE OF DEATH, in CCYYMMDD format",DATES
+R,130-138,X(09),AN,,related_brokerage_account_number_1,"RELATED BROKERAGE ACCOUNT NUMBER 1; represents
+a retail account number",DATES
+R,139-147,X(09),AN,,related_brokerage_account_number_2,"RELATED BROKERAGE ACCOUNT NUMBER 2; represents
+a related spousal account number",DATES
+R,148-156,X(09),AN,,related_brokerage_account_number_3,"RELATED BROKERAGE ACCOUNT NUMBER 3; represents
+a related account number other than retail or spousal",DATES
+R,157-188,X(32),AN,,employer_name,EMPLOYER NAME; free-form text,EMPLOYER INFORMATION AND ADDRESS
+R,189-197,9(09),N,,employer_tin,EMPLOYER TIN,EMPLOYER INFORMATION AND ADDRESS
+R,198-229,X(32),AN,,trust_administrator,TRUST ADMINISTRATOR; free-form text,EMPLOYER INFORMATION AND ADDRESS
+R,230-230,X(01),AN,,employer_address_tran_code,"EMPLOYER ADDRESS TRAN CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add new information
+“C” = Change existing information",EMPLOYER INFORMATION AND ADDRESS
+R,231-231,X(01),AN,,special_handling_indicator,"SPECIAL HANDLING INDICATOR; values include:
+“N” = No special handling required for this address
+“Y” = Special handling required for this address",EMPLOYER INFORMATION AND ADDRESS
+R,232-235,X(04),AN,,attention_line_prefix,"ATTENTION LINE PREFIX; values include:
+“ATTN” = Attention of
+“C/O” = Care of
+“” = May be blank in user-titled accounts",EMPLOYER INFORMATION AND ADDRESS
+R,236-263,X(28),AN,,employer_attention_line_detail,EMPLOYER ATTENTION LINE DETAIL,EMPLOYER INFORMATION AND ADDRESS
+R,264-295,X(32),AN,,employer_address_line_1,EMPLOYER ADDRESS LINE 1,EMPLOYER INFORMATION AND ADDRESS
+R,296-327,X(32),AN,,employer_address_line_2,EMPLOYER ADDRESS LINE 2,EMPLOYER INFORMATION AND ADDRESS
+R,328-359,X(32),AN,,employer_address_line_3,EMPLOYER ADDRESS LINE 3; only if ATTN LINE is spaces,EMPLOYER INFORMATION AND ADDRESS
+R,360-391,X(32),AN,,employer_address_line_4,EMPLOYER ADDRESS LINE 4; only if not US or Canada,EMPLOYER INFORMATION AND ADDRESS
+R,392-406,X(15),AN,,city,CITY; for US/Canada addresses only,"EMPLOYER INFORMATION AND ADDRESS
+NOTE:  For US/Canada addresses only"
+R,407-408,X(02),AN,,state,STATE; for US/Canada addresses only; see Appendix Q,"EMPLOYER INFORMATION AND ADDRESS
+NOTE:  For US/Canada addresses only"
+R,409-423,X(15),AN,,zip,ZIP; for US/Canada addresses only,"EMPLOYER INFORMATION AND ADDRESS
+NOTE:  For US/Canada addresses only"
+R,424-425,X(02),AN,,country_code,"COUNTRY CODE; see Appendix Q, “ACCT Codes & Values”",EMPLOYER INFORMATION AND ADDRESS
+R,426-525,X(100),AN,,not_used,Not Used,EMPLOYER INFORMATION AND ADDRESS
+R,526-575,X(50),AN,,email_address,E-MAIL ADDRESS,E-MAIL INFORMATION
+R,576-576,X(01),AN,,telephone_1_transaction_code,"TELEPHONE 1 TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information","EMPLOYER TELEPHONE NUMBERS (UP TO 7 TIMES)
+NOTE: Telephone numbers will appear in alphabetical order based on TELEPHONE TYPE ID
+TELEPHONE NUMBER 1"
+R,577-577,X(01),AN,,us_international_indicator_1,"US/INTERNATIONAL INDICATOR (1) 
+This field to be decommissioned and replaced with the associated country code in position 637, below; Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 1
+R,578-578,X(01),AN,,telephone_type_id_1,"TELEPHONE TYPE ID (1); values include:
+“B” = Business
+“C” = Cellular
+“E” = Beeper
+“F” = Fax
+“H” = Home
+“S” = Seasonal
+“T” = Telex
+“V” = Voice Mail",TELEPHONE NUMBER 1
+R,579-631,X(53),AN,,telephone_number_1,TELEPHONE NUMBER (1),TELEPHONE NUMBER 1
+R,632-636,X(05),AN,,country_calling_code,COUNTRY CALLING CODE; effective TBA,"TELEPHONE NUMBER 1
+NOTE: Effective TBA"
+R,637-638,X(02),AN,,associated_country_code,ASSOCIATED COUNTRY CODE; see Appendix Q for values; effective TBA,"TELEPHONE NUMBER 1
+NOTE: Effective TBA"
+R,639-645,X(07),AN,,telephone_extension_1,TELEPHONE EXTENSION (1),TELEPHONE NUMBER 1
+R,646-646,X(01),AN,,telephone_2_transaction_code,"TELEPHONE 2 TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 2
+R,647-647,X(01),AN,,us_international_indicator,"US/INTERNATIONAL INDICATOR 
+This field to be decommissioned and replaced with the associated country code in position 707, below; Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 2
+R,648-648,X(01),AN,,telephone_type_id_2,"TELEPHONE TYPE ID (2); see TELEPHONE TYPE ID (1),
+position 578, for values","TELEPHONE NUMBER 2
+NOTE: Position 578, for values"
+R,649-701,X(53),AN,,telephone_number_2,TELEPHONE NUMBER (2),TELEPHONE NUMBER 2
+R,702-706,X(05),AN,,country_calling_code,COUNTRY CALLING CODE; effective TBA,"TELEPHONE NUMBER 2
+NOTE: Effective TBA"
+R,707-708,X(02),AN,,associated_country_code,ASSOCIATED COUNTRY CODE; see Appendix Q for values; effective TBA,"TELEPHONE NUMBER 2
+NOTE: Effective TBA"
+R,709-715,X(07),AN,,telephone_extension_2,TELEPHONE EXTENSION (2),TELEPHONE NUMBER 2
+R,716-716,X(01),AN,,mutual_fund_indicator,"MUTUAL FUND INDICATOR;  values include:
+Y = Account is restricted to mutual fund transactions only
+N = Account is not restricted to mutual fund transactions",TELEPHONE NUMBER 2
+R,717-748,X(32),AN,,for_pershing_internal_use_only,For Pershing Internal Use Only,TELEPHONE NUMBER 2
+R,749-749,X(01),AN,,not_used,Not Used,TELEPHONE NUMBER 2
+R,750-750,X(01),AN,,end_of_record_r,Literally “X”; indicates the end of record R,
+S,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+S,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “S”,
+S,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+S,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER, including Office (3) and Base (6)",
+S,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+S,024-024,X(01),AN,,not_used,Not Used,
+S,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+S,028-028,X(01),AN,,not_used,Not Used,
+S,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+S,039-040,X(02),AN,,not_used,Not Used,
+S,041-041,X(01),AN,,telephone_3_transaction_code,"TELEPHONE 3 TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 3
+S,042-042,X(01),AN,,us_international_indicator_3,"US/INTERNATIONAL INDICATOR 
+This field to be decommissioned and replaced with the associated country code in position 102, below; Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 3
+S,043-043,X(01),AN,,telephone_type_id_3,"TELEPHONE TYPE ID (3); see TELEPHONE TYPE ID (1),
+Record R, position 578, for values",TELEPHONE NUMBER 3
+S,044-096,X(53),AN,,telephone_number_3,TELEPHONE NUMBER (3),TELEPHONE NUMBER 3
+S,097-101,X(05),AN,,country_calling_code_3,"COUNTRY CALLING CODE; 
+effective TBA","TELEPHONE NUMBER 3
+NOTE: Effective TBA"
+S,102-103,X(02),AN,,associated_country_code_3,"ASSOCIATED COUNTRY CODE; see Appendix Q for values; 
+effective TBA","TELEPHONE NUMBER 3
+NOTE: Effective TBA"
+S,104-110,X(07),AN,,telephone_extension_3,TELEPHONE EXTENSION (3),TELEPHONE NUMBER 3
+S,111-111,X(01),AN,,telephone_4_transaction_code,"TELEPHONE 4 TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 4
+S,112-112,X(01),AN,,us_international_indicator_4,"US/INTERNATIONAL INDICATOR (4) 
+This field to be decommissioned and replaced with the associated country code in position 172, below; Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 4
+S,113-113,X(01),AN,,telephone_type_id_4,"TELEPHONE TYPE ID (4); see TELEPHONE TYPE ID (1),
+Record R, position 578, for values",TELEPHONE NUMBER 4
+S,114-166,X(53),AN,,telephone_number_4,TELEPHONE NUMBER (4),TELEPHONE NUMBER 4
+S,167-171,X(05),AN,,country_calling_code_4,"COUNTRY CALLING CODE; 
+effective TBA","TELEPHONE NUMBER 4
+NOTE: Effective TBA"
+S,172-173,X(02),AN,,associated_country_code_4,"ASSOCIATED COUNTRY CODE; see Appendix Q for values; 
+effective TBA","TELEPHONE NUMBER 4
+NOTE: Effective TBA"
+S,174-180,X(07),AN,,telephone_extension_4,TELEPHONE EXTENSION (4),TELEPHONE NUMBER 4
+S,181-181,X(01),AN,,telephone_5_transaction_code,"TELEPHONE 5 TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 5
+S,182-182,X(01),AN,,us_international_indicator_5,"US/INTERNATIONAL INDICATOR (5) 
+This field to be decommissioned and replaced with the associated country code in position 242, below; Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 5
+S,183-183,X(01),AN,,telephone_type_id_5,"TELEPHONE TYPE ID (5); see TELEPHONE TYPE ID (1),
+Record R, position 578, for values",TELEPHONE NUMBER 5
+S,184-236,X(53),AN,,telephone_number_5,TELEPHONE NUMBER (5),TELEPHONE NUMBER 5
+S,237-241,X(05),AN,,country_calling_code_5,"COUNTRY CALLING CODE; 
+effective TBA","TELEPHONE NUMBER 5
+NOTE: Effective TBA"
+S,242-243,X(02),AN,,associated_country_code_5,"ASSOCIATED COUNTRY CODE; see Appendix Q for values; 
+effective TBA","TELEPHONE NUMBER 5
+NOTE: Effective TBA"
+S,244-250,X(07),AN,,telephone_extension_5,TELEPHONE EXTENSION (5),TELEPHONE NUMBER 5
+S,251-251,X(01),AN,,telephone_6_transaction_code,"TELEPHONE 6 TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 6
+S,252-252,X(01),AN,,us_international_indicator_6,"US/INTERNATIONAL INDICATOR (6) 
+This field to be decommissioned and replaced with the associated country code in position 312, below; Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 6
+S,253-253,X(01),AN,,telephone_type_id_6,"TELEPHONE TYPE ID (6); see TELEPHONE TYPE ID (1),
+Record R, position 578, for values",TELEPHONE NUMBER 6
+S,254-306,X(53),AN,,telephone_number_6,TELEPHONE NUMBER (6),TELEPHONE NUMBER 6
+S,307-311,X(05),AN,,country_calling_code_6,"COUNTRY CALLING CODE; 
+effective TBA","TELEPHONE NUMBER 6
+NOTE: Effective TBA"
+S,312-313,X(02),AN,,associated_country_code_6,"ASSOCIATED COUNTRY CODE; see Appendix Q for values; 
+effective TBA","TELEPHONE NUMBER 6
+NOTE: Effective TBA"
+S,314-320,X(07),AN,,telephone_extension_6,TELEPHONE EXTENSION (6),TELEPHONE NUMBER 6
+S,321-321,X(01),AN,,telephone_7_transaction_code,"TELEPHONE 7 TRANSACTION CODE; values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 7
+S,322-322,X(01),AN,,us_international_indicator_7,"US/INTERNATIONAL INDICATOR (7) 
+This field to be decommissioned and replaced with the associated country code in position 382, below; Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 7
+S,323-323,X(01),AN,,telephone_type_id_7,"TELEPHONE TYPE ID (7); see TELEPHONE TYPE ID (1),
+Record R, position 578, for values",TELEPHONE NUMBER 7
+S,324-376,X(53),AN,,telephone_number_7,TELEPHONE NUMBER (7),TELEPHONE NUMBER 7
+S,377-381,X(05),AN,,country_calling_code_7,"COUNTRY CALLING CODE; 
+effective TBA","TELEPHONE NUMBER 7
+NOTE: Effective TBA"
+S,382-383,X(02),AN,,associated_country_code_7,"ASSOCIATED COUNTRY CODE; see Appendix Q for values; 
+effective TBA","TELEPHONE NUMBER 7
+NOTE: Effective TBA"
+S,384-390,X(07),AN,,telephone_extension_7,TELEPHONE EXTENSION (7),TELEPHONE NUMBER 7
+S,391-412,X(22),AN,,not_used,Not Used,
+S,413-420,9(08),N,,original_beneficiarys_date_of_birth_for_rmd,"ORIGINAL BENEFICIARY’S DATE OF BIRTH FOR RMD
+CALCULATION, in CCYYMMDD format (effective 06/16/2012)",
+S,421-749,X(329),AN,,not_used,Not Used,
+S,750-750,X(01),AN,,end_of_record_s,Literally “X”; indicates the end of record S,
+T,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+T,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “T”,
+T,004-011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+Begins with “00000001”",
+T,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER
+including Office (3) and Base (6)",
+T,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+T,024-024,X(01),AN,,not_used,Not Used,
+T,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+T,028-028,X(01),AN,,not_used,Not Used,
+T,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+T,039-040,X(02),AN,,not_used,Not Used,
+T,041-041,X(01),AN,,beneficiary_transaction_code,"BENEFICIARY TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new beneficiary
+“C” = Change existing beneficiary","BENEFICIARY NAME AREA
+Each account can have up to 10 primary (“P”) and 10 Contingent (“C”) beneficiaries.
+Primary beneficiaries will be listed first, beginning with sequence number 001, and immediately following the final primary beneficiary, contingent beneficiaries, if any, will be listed, beginning with sequence number 001."
+T,042-042,X(01),AN,,beneficiary_type,"BENEFICIARY TYPE
+Values include:
+“P” = Primary Beneficiary
+“C” = Contingent Beneficiary",BENEFICIARY NAME AREA
+T,043-045,X(03),AN,,sequence_number,"SEQUENCE NUMBER
+Values are 001 to 010",BENEFICIARY NAME AREA
+T,046-048,X(03),AN,,not_used,Not Used,BENEFICIARY NAME AREA
+T,049-050,X(02),AN,,beneficiary_relationship_indicator,"BENEFICIARY RELATIONSHIP INDICATOR
+Values include:
+“B” = Brother
+“CC” = Children per Capita
+“CS” = Children per Stirpes
+“D” = Daughter
+“DP” = Domestic Partner
+“E” = Estate; Not applicable for Contingent Beneficiary
+“F” = Father
+“FL” = Father-in-law
+“GD” = Granddaughter
+“GF” = Grandfather
+“GM” = Grandmother
+“GS” = Grandson
+“M” = Mother
+“ML” = Mother-in-law
+“NE” = Nephew
+“NI” = Niece
+“O” = Omnibus
+“OE” = Other Entity; not applicable for contingent beneficiary
+“OI” = Other Individual
+“OT” = Other
+“SI” = Sister
+“SO” = Son
+“SP” = Spouse
+“T” = Trust Entity; not applicable for contingent beneficiary; if bene is a trust, see Record V",BENEFICIARY NAME AREA
+T,051-052,X(02),AN,,primary_country_of_citizenship,"PRIMARY COUNTRY OF CITIZENSHIP
+See Appendix Q",BENEFICIARY NAME AREA
+T,053-058,X(06),AN,,not_used,Not Used,BENEFICIARY NAME AREA
+T,059-059,X(01),AN,,sex_of_beneficiary,"SEX OF BENEFICIARY
+Values include:
+“F” = Female
+“M” = Male
+“U” = Unknown/undetermined",BENEFICIARY NAME AREA
+T,060-067,9(08),N,,beneficiary_birth_date,"BENEFICIARY BIRTH DATE
+In CCYYMMDD format",BENEFICIARY NAME AREA
+T,068-068,X(01),AN,,tax_id_type,"TAX ID TYPE
+Values include:
+“A” = Applied for
+“E” = Applied for expired
+“F” = WP-EIN
+“I” = ITIN
+“N” = Non-US
+“Q” = QI-EIN
+“S” = Social Security Number
+“T” = Tax ID Number (EIN)
+“W” = WT-EIN
+“” = Not populated or applicable",BENEFICIARY NAME AREA
+T,069-077,X(09),AN,,beneficiary_tax_id_number,BENEFICIARY TAX ID NUMBER,BENEFICIARY NAME AREA
+T,078-095,9(09)v(09),N,,percent_allocation,PERCENT ALLOCATION,BENEFICIARY NAME AREA
+T,096-096,X(01),AN,,beneficiary_name_type,"BENEFICIARY NAME TYPE
+Values include:
+“I” = Individual
+“E” = Entity",BENEFICIARY NAME INFORMATION
+T,097-128,X(32),AN,,beneficiary_prefix_entity_line_1,"BENEFICIARY PREFIX/ENTITY LINE 1
+if NAME TYPE = “I,” then one of the following values will be used in the first 4 characters; 
+The next 4 characters can be used for a suffix; The remaining 24 characters are blank; 
+Values include:
+“”
+“DR”
+“MDM” 
+“MR”
+“MS”
+“MRS”
+“SIR”",BENEFICIARY NAME INFORMATION
+T,129-160,X(32),AN,,beneficiary_first_name_entity_line_2,"BENEFICIARY FIRST NAME/ENTITY LINE 2
+if NAME TYPE = “I,” this field will contain the first name; 
+if NAME TYPE = “E,” it will be free-form text and can be blank",BENEFICIARY NAME INFORMATION
+T,161-192,X(32),AN,,beneficiary_middle_initial_name_entity_line_3,"BENEFICIARY MIDDLE INITIAL/NAME/ ENTITY LINE 3
+If NAME TYPE = “I,” this field will contain middle initial or name; 
+If NAME TYPE = “E,” it will be free-form & can be blank",BENEFICIARY NAME INFORMATION
+T,193-224,X(32),AN,,beneficiary_last_name_entity_line_4,"BENEFICIARY LAST NAME/ENTITY LINE 4
+if NAME TYPE = “I,” this field will contain the last name; 
+if NAME TYPE = “E,” it will be free-form text and can be blank",BENEFICIARY NAME INFORMATION
+T,225-227,X(03),AN,,not_used,Not Used,BENEFICIARY NAME INFORMATION
+T,228-228,X(01),AN,,beneficiary_address_transaction_code,"BENEFICIARY ADDRESS TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new information
+“C” = Change existing information","BENEFICIARY MAILING ADDRESS (see Record U, position 459, for Legal Address)"
+T,229-229,X(01),AN,,special_handling_indicator,"SPECIAL HANDLING INDICATOR
+Values include:
+“N” = No Special Handling Required for this Address
+“Y” = Special Handling Required for this Address","BENEFICIARY MAILING ADDRESS (see Record U, position 459, for Legal Address)"
+T,230-233,X(04),AN,,attention_line_prefix,"ATTENTION LINE PREFIX
+Values include:
+“ATTN” = Attention of
+“C/O” = Care of
+“” = May be blank in user-titled accounts","BENEFICIARY MAILING ADDRESS (see Record U, position 459, for Legal Address)"
+T,234-261,X(28),AN,,beneficiary_attention_line_detail,BENEFICIARY ATTENTION LINE DETAIL,"BENEFICIARY MAILING ADDRESS (see Record U, position 459, for Legal Address)"
+T,262-293,X(32),AN,,beneficiary_address_line_1,BENEFICIARY ADDRESS LINE 1,"BENEFICIARY MAILING ADDRESS (see Record U, position 459, for Legal Address)"
+T,294-325,X(32),AN,,beneficiary_address_line_2,BENEFICIARY ADDRESS LINE 2,"BENEFICIARY MAILING ADDRESS (see Record U, position 459, for Legal Address)"
+T,326-357,X(32),AN,,beneficiary_address_line_3,"BENEFICIARY ADDRESS LINE 3
+Only if attention line information is spaces","BENEFICIARY MAILING ADDRESS (see Record U, position 459, for Legal Address)"
+T,358-389,X(32),AN,,beneficiary_address_line_4,"BENEFICIARY ADDRESS LINE 4
+If not US or Canada","BENEFICIARY MAILING ADDRESS (see Record U, position 459, for Legal Address)"
+T,390-404,X(15),AN,,city,"CITY
+For US/Canada addresses only","Positions 390-423 are redefined to accommodate both US/Canada City, State and Zip and non-US/Canada City
+NOTE: The following three fields apply to US/Canada addresses only"
+T,405-406,X(02),AN,,state,"STATE
+For US/Canada addresses only; see Appendix Q","Positions 390-423 are redefined to accommodate both US/Canada City, State and Zip and non-US/Canada City
+NOTE: The following three fields apply to US/Canada addresses only"
+T,407-421,X(15),AN,,zip_postal_code,"ZIP/POSTAL CODE
+For US/Canada addresses only","Positions 390-423 are redefined to accommodate both US/Canada City, State and Zip and non-US/Canada City
+NOTE: The following three fields apply to US/Canada addresses only"
+T,390-421,X(32),AN,,non_us_canada_city,"Non-US/Canada City
+Free-form",NOTE: The following field applies to non-US or Canada addresses only
+T,422-423,X(02),AN,,country_code,"COUNTRY CODE
+See Appendix Q, “ACCT Codes / Values”",
+T,424-424,X(01),AN,,not_used,Not Used,
+T,425-425,X(01),AN,,beneficiary_1_telephone_transaction_code,"BENEFICIARY (1) PHONE TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information","BENEFICIARY TELEPHONE NUMBERS (UP TO 7 OCCURRENCES)
+NOTE: Telephone numbers will appear in alphabetical order based on TELEPHONE TYPE ID.
+TELEPHONE NUMBER 1"
+T,426-426,X(01),AN,,us_international_indicator_1,"US/INTERNATIONAL INDICATOR (1) 
+This field to be decommissioned and replaced with the associated country code in position 486, below; 
+Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 1
+T,427-427,X(01),AN,,telephone_type_id_1,"TELEPHONE TYPE ID (1)
+Values include:
+“B” = Business
+“C” = Cellular
+“E” = Beeper
+“F” = Fax
+“H” = Home
+“S” = Seasonal
+“T” = Telex
+“V” = Voice Mail",TELEPHONE NUMBER 1
+T,428-480,X(53),AN,,telephone_number_1,TELEPHONE NUMBER (1),TELEPHONE NUMBER 1
+T,481-485,X(05),AN,,country_calling_code_1,"COUNTRY CALLING CODE
+Effective TBA",TELEPHONE NUMBER 1
+T,486-487,X(02),AN,,associated_country_code_1,"ASSOCIATED COUNTRY CODE
+See Appendix Q for values; 
+Effective TBA",TELEPHONE NUMBER 1
+T,488-494,X(07),AN,,telephone_extension_1,TELEPHONE EXTENSION (1),TELEPHONE NUMBER 1
+T,495-495,X(01),AN,,beneficiary_2_telephone_transaction_code,"BENE. (2) TELEPHONE TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 2
+T,496-496,X(01),AN,,us_international_indicator_2,"US/INTERNATIONAL INDICATOR (2) 
+This field to be decommissioned and replaced with the associated country code in position 556, below; 
+Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 2
+T,497-497,X(01),AN,,telephone_type_id_2,"TELEPHONE TYPE ID (2)
+Values include:
+“B” = Business
+“C” = Cellular
+“E” = Beeper
+“F” = Fax
+“H” = Home
+“S” = Seasonal
+“T” = Telex
+“V” = Voice Mail",TELEPHONE NUMBER 2
+T,498-550,X(53),AN,,telephone_number_2,TELEPHONE NUMBER (2),TELEPHONE NUMBER 2
+T,551-555,X(05),AN,,country_calling_code_2,"COUNTRY CALLING CODE
+Effective TBA",TELEPHONE NUMBER 2
+T,556-557,X(02),AN,,associated_country_code_2,"ASSOCIATED COUNTRY CODE
+See Appendix Q for values; 
+Effective TBA",TELEPHONE NUMBER 2
+T,558-564,X(07),AN,,telephone_extension_2,TELEPHONE EXTENSION (2),TELEPHONE NUMBER 2
+T,565-565,X(01),AN,,beneficiary_3_telephone_transaction_code,"BENEFICIARY (3) TELEPHONE TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 3
+T,566-566,X(01),AN,,us_international_indicator_3,"US/INTERNATIONAL INDICATOR (3) 
+This field to be decommissioned and replaced with the associated country code in position 626, below; 
+Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 3
+T,567-567,X(01),AN,,telephone_type_id_3,"TELEPHONE TYPE ID (3)
+Values include:
+“B” = Business
+“C” = Cellular
+“E” = Beeper
+“F” = Fax
+“H” = Home
+“S” = Seasonal
+“T” = Telex
+“V” = Voice Mail",TELEPHONE NUMBER 3
+T,568-620,X(53),AN,,telephone_number_3,TELEPHONE NUMBER (3),TELEPHONE NUMBER 3
+T,621-625,X(05),AN,,country_calling_code_3,"COUNTRY CALLING CODE
+Effective TBA",TELEPHONE NUMBER 3
+T,626-627,X(02),AN,,associated_country_code_3,"ASSOCIATED COUNTRY CODE
+See Appendix Q for values; 
+Effective TBA",TELEPHONE NUMBER 3
+T,628-634,X(07),AN,,telephone_extension_3,TELEPHONE EXTENSION (3),TELEPHONE NUMBER 3
+T,635-652,9(16)v9(02),N,,beneficiary_payment_amount,"BENEFICIARY PAYMENT AMOUNT
+Effective 1st  Q 2019",TELEPHONE NUMBER 3
+T,653-653,X(01),AN,,per_stripes_beneficiary_designation,"PER STIRPES BENEFICIARY DESIGNATION
+Effective 1st  Q, 2019; 
+Values include:
+“Y” = Yes
+“N” = No
+“” = Not applicable",TELEPHONE NUMBER 3
+T,654-673,X(20),AN,,external_client_id_supplied_by_customer,"EXTERNAL CLIENT ID SUPPLIED BY CUSTOMER
+Effective 3rd  Q 2020",TELEPHONE NUMBER 3
+T,674-682,X(09),AN,,internal_pershing_assigned_client_id,"INTERNAL PERSHING ASSIGNED CLIENT ID
+Effective 3rD, Q 2020",TELEPHONE NUMBER 3
+T,683-749,X(67),AN,,not_used,Not Used,TELEPHONE NUMBER 3
+T,750-750,X(01),AN,,end_of_record_t,Literally “X”; indicates the end of record T,
+U,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
+U,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “U”,
+U,004-011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+Begins with “00000001”",
+U,012-020,X(09),AN,,account_number,"ACCOUNT NUMBER
+Including Office (3) and Base (6)",
+U,021-023,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
+U,024-024,X(01),AN,,not_used,Not Used,
+U,025-027,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
+U,028-028,X(01),AN,,not_used,Not Used,
+U,029-038,X(10),AN,,account_short_name,ACCOUNT SHORT NAME,
+U,039-040,X(02),AN,,not_used,Not Used,
+U,041-041,X(01),AN,,beneficiary_transaction_code,"BENEFICIARY TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new beneficiary
+“C” = Change existing beneficiary",
+U,042-042,X(01),AN,,beneficiary_type,"BENEFICIARY TYPE
+Values include:
+“P” = Primary Beneficiary
+“C” = Contingent Beneficiary",
+U,043-045,X(03),AN,,sequence_number,"SEQUENCE NUMBER
+Values are 001 to 010",
+U,046-048,X(03),AN,,not_used,Not Used,
+U,049-049,X(01),AN,,beneficiary_4_telephone_transaction_code,"BENEFICIARY (4) TELEPHONE TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 4
+U,050-050,X(01),AN,,us_international_indicator_4,"US/INTERNATIONAL INDICATOR (4) 
+This field to be decommissioned and replaced with the associated country code in position 110, below; 
+Effective TBA
+“U” = US/Canada
+“F” = International","TELEPHONE NUMBER 4
+NOTE: This field to be decommissioned and replaced with the associated country code in position 110, below
+NOTE: Effective TBD"
+U,051-051,X(01),AN,,telephone_type_id_4,"TELEPHONE TYPE ID (4)
+Values include:
+“B” = Business
+“C” = Cellular
+“E” = Beeper
+“F” = Fax
+“H” = Home
+“S” = Seasonal
+“T” = Telex
+“V” = Voice Mail",TELEPHONE NUMBER 4
+U,052-104,X(53),AN,,telephone_number_4,TELEPHONE NUMBER (4),TELEPHONE NUMBER 4
+U,105-109,X(05),AN,,country_calling_code_4,"COUNTRY CALLING CODE
+Effective TBA","TELEPHONE NUMBER 4
+NOTE: Effective TBD"
+U,110-111,X(02),AN,,associated_country_code_4,"ASSOCIATED COUNTRY CODE
+See Appendix Q for values; effective TBA","TELEPHONE NUMBER 4
+NOTE: Effective TBD"
+U,112-118,X(07),AN,,telephone_extension_4,TELEPHONE EXTENSION (4),TELEPHONE NUMBER 4
+U,119-119,X(01),AN,,beneficiary_5_telephone_transaction_code,"BENEFICIARY (5) TELEPHONE TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 5
+U,120-120,X(01),AN,,us_international_indicator_5,"US/INTERNATIONAL INDICATOR (5) 
+This field to be decommissioned and replaced with the associated country code in position 180, below
+Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 5
+U,121-121,X(01),AN,,telephone_type_id_5,"TELEPHONE TYPE ID (5)
+Values include:
+“B” = Business
+“C” = Cellular
+“E” = Beeper
+“F” = Fax
+“H” = Home
+“S” = Seasonal
+“T” = Telex
+“V” = Voice Mail",TELEPHONE NUMBER 5
+U,122-174,X(53),AN,,telephone_number_5,TELEPHONE NUMBER (5),TELEPHONE NUMBER 5
+U,175-179,X(05),AN,,country_calling_code_5,"COUNTRY CALLING CODE
+Effective TBA","TELEPHONE NUMBER 5
+NOTE: Effective TBD"
+U,180-181,X(02),AN,,associated_country_code_5,"ASSOCIATED COUNTRY CODE
+See Appendix Q for values; effective TBA","TELEPHONE NUMBER 5
+NOTE: Effective TBD"
+U,182-188,X(07),AN,,telephone_extension_5,TELEPHONE EXTENSION (5),TELEPHONE NUMBER 5
+U,189-189,X(01),AN,,beneficiary_6_telephone_transaction_code,"BENEFICIARY (6) TELEPHONE TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 6
+U,190-190,X(01),AN,,us_international_indicator_6,"US/INTERNATIONAL INDICATOR (6) 
+This field to be decommissioned and replaced with the associated country code in position 250, below; 
+Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 6
+U,191-191,X(01),AN,,telephone_type_id_6,"TELEPHONE TYPE ID (6)
+Values include:
+“B” = Business
+“C” = Cellular
+“E” = Beeper
+“F” = Fax
+“H” = Home
+“S” = Seasonal
+“T” = Telex
+“V” = Voice Mail",TELEPHONE NUMBER 6
+U,192-244,X(53),AN,,telephone_number_6,TELEPHONE NUMBER (6),TELEPHONE NUMBER 6
+U,245-249,X(05),AN,,country_calling_code_6,"COUNTRY CALLING CODE
+Effective TBA","TELEPHONE NUMBER 6
+NOTE: Effective TBD"
+U,250-251,X(02),AN,,associated_country_code_6,"ASSOCIATED COUNTRY CODE
+See Appendix Q for values; effective TBA","TELEPHONE NUMBER 6
+NOTE: Effective TBD"
+U,252-258,X(07),AN,,telephone_extension_6,TELEPHONE EXTENSION (6),TELEPHONE NUMBER 6
+U,259-259,X(01),AN,,beneficiary_7_telephone_transaction_code,"BENEFICIARY (7) TELEPHONE TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new phone number information
+“C” = Change existing phone number information",TELEPHONE NUMBER 7
+U,260-260,X(01),AN,,us_international_indicator_7,"US/INTERNATIONAL INDICATOR (7)
+This field to be decommissioned and replaced with the associated country code in position 320, below; 
+Effective TBA
+“U” = US/Canada
+“F” = International",TELEPHONE NUMBER 7
+U,261-261,X(01),AN,,telephone_type_id_7,"TELEPHONE TYPE ID (7)
+Values include:
+“B” = Business
+“C” = Cellular
+“E” = Beeper
+“F” = Fax
+“H” = Home
+“S” = Seasonal
+“T” = Telex
+“V” = Voice Mail",TELEPHONE NUMBER 7
+U,262-314,X(53),AN,,telephone_number_7,TELEPHONE NUMBER (7),TELEPHONE NUMBER 7
+U,315-319,X(05),AN,,country_calling_code_7,"COUNTRY CALLING CODE
+Effective TBA","TELEPHONE NUMBER 7
+NOTE: Effective TBD"
+U,320-321,X(02),AN,,associated_country_code_7,"ASSOCIATED COUNTRY CODE
+See Appendix Q for values; effective TBA","TELEPHONE NUMBER 7
+NOTE: Effective TBD"
+U,322-328,X(07),AN,,telephone_extension_7,TELEPHONE EXTENSION (7),TELEPHONE NUMBER 7
+U,329-329,X(01),AN,When Beneficiary Relationship = “T”,beneficiary_trust_transaction_code_for_record_u,"BENEFICIARY TRUST TRANSACTION CODE FOR RECORD U
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new trustee
+“C” = Change existing trustee","TRUSTEE INFORMATION
+NOTE: When Beneficiary Relationship = “T”, otherwise positions 329 through 458 will be populated with spaces"
+U,330-330,X(01),AN,,beneficiary_trustee_1_name_type_code,"BENEFICIARY TRUSTEE (1) NAME TYPE CODE
+values include:
+“I” = Individual
+“E” = Entity",BENEFICIARY TRUSTEE (1) NAME INFORMATION
+U,331-362,X(32),AN,,beneficiary_trustee_1_prefix_entity_line_1,"BENEFICIARY TRUSTEE (1) PREFIX/ENTITY LINE 1
+IF NAME TYPE = “I,” then one of the following values using the first four characters of the field will be used;
+  The second four characters can be used for a suffix, and the remaining 24 characters will be blank; 
+Values include:
+  “”
+  “DR”
+  “MDM”
+  “MR”
+  “MS”
+  “MRS”
+  “SIR”
+ELSE IF NAME TYPE = “E” or “M” then it will be free-form text and can be blank",BENEFICIARY TRUSTEE (1) NAME INFORMATION
+U,363-394,X(32),AN,,beneficiary_trustee_1_first_name_entity_line_2,"BENEFICIARY TRUSTEE (1) FIRST NAME/ENTITY LINE 2
+IF NAME TYPE = “I,” this field will contain the first name; 
+IF NAME TYPE = “E,” it will be free-form text and can be blank",BENEFICIARY TRUSTEE (1) NAME INFORMATION
+U,395-426,X(32),AN,,beneficiary_trustee_1_middle_initial_name_entity_line_3,"BENEFICIARY TRUSTEE (1) MIDDLE INITIAL/NAME/ENTITY LINE 3
+if NAME TYPE = “I,” only the first character of this field will be filled for the middle initial; 
+if NAME TYPE = “E,” it will be free-form text and can be blank",BENEFICIARY TRUSTEE (1) NAME INFORMATION
+U,427-458,X(32),AN,,beneficiary_trustee_1_last_name_entity_line_4,"BENEFICIARY TRUSTEE (1) LAST NAME/ ENTITY LINE 4
+if NAME TYPE = “I,” only up to the first 16 characters of this field will be filled for the last name; if NAME TYPE = “E,” it will be free-form text and can be blank",BENEFICIARY TRUSTEE (1) NAME INFORMATION
+U,459-459,X(01),AN,,beneficiary_address_transaction_code,"BENEFICIARY ADDRESS TRANSACTION CODE
+Values include:
+“X” or “” = Unchanged record
+“A” = Add new information
+“C” = Change existing information","BENEFICIARY LEGAL ADDRESS 
+See Record T, position 228, for Mailing Address
+NOTE: Effective 2nd  Q 2019, TBA"
+U,460-460,X(01),AN,,special_handling_indicator,"SPECIAL HANDLING INDICATOR
+Values include:
+“N” = No Special Handling Required for this Address
+“Y” = Special Handling Required for this Address",BENEFICIARY LEGAL ADDRESS
+U,461-464,X(04),AN,,attention_line_prefix,"ATTENTION LINE PREFIX
+Values include:
+“ATTN” = Attention of
+“C/O” = Care of
+“” = May be blank in user-titled accounts",BENEFICIARY LEGAL ADDRESS
+U,465-492,X(28),AN,,beneficiary_attention_line_detail,BENEFICIARY ATTENTION LINE DETAIL,BENEFICIARY LEGAL ADDRESS
+U,493-524,X(32),AN,,beneficiary_address_line_1,BENEFICIARY ADDRESS LINE 1,BENEFICIARY LEGAL ADDRESS
+U,525-556,X(32),AN,,beneficiary_address_line_2,BENEFICIARY ADDRESS LINE 2,BENEFICIARY LEGAL ADDRESS
+U,557-588,X(32),AN,,beneficiary_address_line_3,"BENEFICIARY ADDRESS LINE 3
+Only if attention line information is spaces",BENEFICIARY LEGAL ADDRESS
+U,589-620,X(32),AN,,beneficiary_address_line_4,"BENEFICIARY ADDRESS LINE 4
+If not US or Canada",BENEFICIARY LEGAL ADDRESS
+U,621-635,X(15),AN,,city,"CITY
+For US/Canada addresses only","BENEFICIARY LEGAL ADDRESS 
+Positions 621-652 are redefined to accommodate both US/Canada City, State and Zip and non-US/Canada City
+NOTE: This field applies to US/Canada addresses only"
+U,636-637,X(02),AN,,state,"STATE
+For US/Canada addresses only; see Appendix Q, “ACCT Codes and Values”","BENEFICIARY LEGAL ADDRESS 
+Positions 621-652 are redefined to accommodate both US/Canada City, State and Zip and non-US/Canada City
+NOTE: This field applies to US/Canada addresses only"
+U,638-652,X(15),AN,,zip_postal_code,"ZIP/POSTAL CODE
+For US/Canada addresses only","BENEFICIARY LEGAL ADDRESS 
+Positions 621-652 are redefined to accommodate both US/Canada City, State and Zip and non-US/Canada City
+NOTE: This field applies to US/Canada addresses only"
+U,621-652,X(32),AN,,non_us_canada_city,Non-US/Canada City; free-form,"BENEFICIARY LEGAL ADDRESS 
+NOTE: This field applies to non-US or Canada addresses only"
+U,653-654,X(02),AN,,country_code,"COUNTRY CODE
+See Appendix Q, “ACCT Codes / Values”",BENEFICIARY LEGAL ADDRESS
+U,655-704,X(50),AN,,beneficiary_email_address,"BENEFICIARY E-MAIL ADDRESS
+Effective early 2022, TBA","BENEFICIARY E-MAIL ADDRESS 
+NOTE: Effective early 2022, TBA"
+U,705-749,X(45),AN,,not_used,Not Used,
+U,750-750,X(01),AN,,end_of_record_u,Literally “X”; indicates the end of record U,
 V,001-002,X(02),AN,,transaction_code,TRANSACTION CODE = “CI”,
 V,003-003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “V”,
 V,004-011,9(08),N,,record_id_sequence_number,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
@@ -2268,7 +3854,7 @@ If NAME TYPE = “E,” it will be free-form text and can be blank","BENEFICIARY
 NOTE: If NAME TYPE = “I,” only up to the first 16 characters of this field will be filled for the last name; 
 NOTE: If NAME TYPE = “E,” it will be free-form text and can be blank"
 V,687-749,X(63),AN,,not_used,Not Used,
-V,750-750,X(01),AN,,,Literally “X”; indicates the end of record V,
+V,750-750,X(01),AN,,end_of_record_v,Literally “X”; indicates the end of record V,
 TRAILER,001-018,X(18),AN,,e_of_pershing,Literally “EOFPERSHING” (end of Pershing file),
 TRAILER,019-036,X(18),AN,,customer_acct_info,Literally “CUSTOMERACCTINFO”,
 TRAILER,037-046,X(10),AN,,data_of,Literally “DATAOF”,
@@ -2281,4 +3867,4 @@ TRAILER,106-115,9(10),N,,number_of_detail_records,NUMBER OF DETAIL RECORDS,
 TRAILER,116-118,X(03),AN,,not_used,Not Used,
 TRAILER,119-127,X(09),AN,,refreshed_updated,Indicates if the file is REFRESHED or UPDATED; literally “REFRESHED” or  “UPDATED”,
 TRAILER,128-749,X(622),AN,,not_used,Not Used,
-TRAILER,750-750,X(01),AN,,,Literally “Z”; indicates the end of the trailer record,
+TRAILER,750-750,X(01),AN,,end_of_the_trailer_record,Literally “Z”; indicates the end of the trailer record,

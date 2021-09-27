@@ -29,7 +29,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end
-from modules.spark_functions import create_spark, write_sql, read_snowflake
+from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake
 from modules.snowflake_ddl import snowflake_ddl_params
 
 
@@ -104,8 +104,7 @@ def get_sf_table_list(schema_name:str):
     columns = columns.where(col('TABLE_SCHEMA')==lit(schema_name))
     columns = columns.alias('c').join(tables.alias('t'), columns['TABLE_NAME']==tables['TABLE_NAME'], how='inner').select('c.*')
 
-    table_names = columns.select('TABLE_NAME').distinct().collect()
-    table_names = [x['TABLE_NAME'] for x in table_names]
+    table_names = collect_column(table=columns, column_name='TABLE_NAME', distinct=True)
 
     logger.info({
         'schema': f'{sf_database}.{schema_name}',

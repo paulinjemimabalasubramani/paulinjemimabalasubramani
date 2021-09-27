@@ -15,13 +15,10 @@ https://docs.databricks.com/_static/notebooks/snowflake-python.html
 
 # %% Import Libraries
 
-import logging
-import os, sys, json
+import os, sys
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'financial_professional'
 sys.domain_abbr = 'FP'
-
-from pprint import pprint
 
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
@@ -31,7 +28,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, post_log_data, \
     get_log_data
-from modules.spark_functions import create_spark, read_snowflake
+from modules.spark_functions import collect_column, create_spark, read_snowflake, table_to_list_dict
 from modules.snowflake_ddl import snowflake_ddl_params
 
 
@@ -98,8 +95,7 @@ def get_sf_schema_list(sf_database:str):
         (col('IS_TRANSIENT')==lit('NO'))
     )
 
-    sf_schemas = tables.select('TABLE_SCHEMA').distinct().collect()
-    sf_schemas = [x['TABLE_SCHEMA'] for x in sf_schemas]
+    sf_schemas = collect_column(table=tables, column_name='TABLE_SCHEMA', distinct=True)
 
     logger.info({
         'database': f'{sf_database}',
@@ -155,16 +151,16 @@ def post_all_snowflake_copy_history_log():
         for sf_schema in sf_schemas:
             if (sf_schema.upper() in ['INFORMATION_SCHEMA']) or (sf_schema.upper() not in ['LR_RAW']):
                 continue
-            tables_per_schema = tables.where(col('TABLE_SCHEMA')==lit(sf_schema)).select('TABLE_NAME').distinct().collect()
-            tables_per_schema = [x['TABLE_NAME'] for x in tables_per_schema]
+
+            tables_per_schema = collect_column(table=tables.where(col('TABLE_SCHEMA')==lit(sf_schema)), column_name='TABLE_NAME', distinct=True)
 
             for table_name in tables_per_schema:
                 if table_name.upper() in ['CICD_CHANGE_HISTORY']:
                     continue
-                logging.info(f'Getting Log Data from {sf_database}.{sf_schema}.{table_name}')
+                logger.info(f'Getting Log Data from {sf_database}.{sf_schema}.{table_name}')
 
                 table = get_snowflake_copy_history(spark=spark, sf_database=sf_database, sf_schema=sf_schema, table_name=table_name, start_time=None)
-                table_collect = table.toJSON().map(lambda j: json.loads(j)).collect()
+                table_collect = table_to_list_dict(table)
 
                 for log_data in table_collect:
                     post_log_data(log_data=log_data, log_type='SnowflakeCopyHistory', logger=logger)

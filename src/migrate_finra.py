@@ -37,11 +37,12 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import logger, catch_error, is_pc, data_settings, config_path, execution_date, strftime, get_secrets, \
     mark_execution_end
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
-    IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy
+    IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy, \
+    flatten_table, flatten_n_divide_table, table_to_list_dict
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
     to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, add_table_to_tableinfo, read_tableinfo_rows, \
     metadata_folder, azure_container_folder_path, data_folder
-from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table, flatten_df, flatten_n_divide_df
+from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 
 
@@ -240,13 +241,13 @@ def get_finra_file_xml_meta(file_path:str, crd_number:str):
                     for file1 in files1:
                         file_path1 = os.path.join(root1, file1)
                         xml_table = read_xml(spark=spark, file_path=file_path1, rowTag=rowTag)
-                        criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
+                        criteria = table_to_list_dict(xml_table.select('Criteria.*'))[0]
                         k += 1
                         break
                     if k>0: break
         else:
             xml_table = read_xml(spark=spark, file_path=file_path, rowTag=rowTag)
-            criteria = xml_table.select('Criteria.*').toJSON().map(lambda j: json.loads(j)).collect()[0]
+            criteria = table_to_list_dict(xml_table.select('Criteria.*'))[0]
 
         if not criteria.get(reportDate_name):
             criteria[reportDate_name] = criteria['_postingDate']
@@ -311,7 +312,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
         add_table_to_tableinfo(
             tableinfo = tableinfo, 
             table = xml_table, 
-            firm_name = firm_name, 
+            schema_name = firm_name, 
             table_name = table_name, 
             tableinfo_source = tableinfo_source, 
             storage_account_name = storage_account_name,
@@ -327,7 +328,7 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
 
         if save_xml_to_adls_flag:
             userMetadata = save_adls_gen2(
-                table_to_save = xml_table,
+                table = xml_table,
                 storage_account_name = storage_account_name,
                 container_name = container_name,
                 container_folder = container_folder,
@@ -374,9 +375,9 @@ def get_xml_table_list(xml_table, table_name:str, crd_number:str):
     xml_table_list = {}
 
     if flatten_n_divide_flag:
-        xml_table_list={**xml_table_list, **flatten_n_divide_df(xml_table=xml_table, table_name=table_name)}
+        xml_table_list={**xml_table_list, **flatten_n_divide_table(table=xml_table, table_name=table_name)}
 
-    semi_flat_table = flatten_df(xml_table=xml_table)
+    semi_flat_table = flatten_table(table=xml_table)
 
     if table_name.upper() == 'BranchInformationReport'.upper():
         xml_table_list={**xml_table_list, table_name: build_branch_table(semi_flat_table=semi_flat_table)}
@@ -409,7 +410,7 @@ def process_columns_for_elt(table_list, file_meta):
             table1 = add_md5_key(table1)
 
         table1 = add_elt_columns(
-            table_to_add = table1,
+            table = table1,
             reception_date = file_meta['date'],
             source = tableinfo_source,
             is_full_load = file_meta['is_full_load'],
@@ -672,7 +673,7 @@ def save_tableinfo(all_new_files):
 
     if save_tableinfo_adls_flag:
         save_adls_gen2(
-                table_to_save = meta_tableinfo,
+                table = meta_tableinfo,
                 storage_account_name = storage_account_name,
                 container_name = tableinfo_container_name,
                 container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
