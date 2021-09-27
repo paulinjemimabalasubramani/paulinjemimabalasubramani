@@ -9,7 +9,7 @@ from functools import wraps
 from collections import defaultdict, OrderedDict
 from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, data_settings, execution_date, get_secrets, to_OrderedDict
+from .common_functions import logger, catch_error, is_pc, data_settings, execution_date, get_secrets, to_OrderedDict, EXECUTION_DATE_str
 from .spark_functions import elt_audit_columns
 from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
     to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder
@@ -23,6 +23,9 @@ from pyspark.sql.functions import col
 # %% Parameters
 
 class module_params_class:
+    """
+    Data Class to pass parameters across modules and the main code
+    """
     save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
     create_or_replace = True # Default False - Use True for Schema Change Update
@@ -61,7 +64,6 @@ class module_params_class:
     integration_id = 'INTEGRATION_ID'
     stream_alias = 'src_strm'
     view_prefix = 'VW_'
-    execution_date_str = 'EXECUTION_DATE'
 
     spark = None
     snowflake_connection = None
@@ -97,7 +99,7 @@ def connect_to_snowflake(
         snowflake_role:str=None,
         ):
     """
-    Connect to SnowFlake
+    Connect to SnowFlake account
     """
     _, snowflake_user, snowflake_pass = get_secrets(key_vault_account)
 
@@ -237,6 +239,9 @@ def action_source_level_tables(table_name:str):
 
 @catch_error(logger)
 def write_CICD_file_per_table(source_system:str, schema_name:str, table_name:str):
+    """
+    Write CICD File per Table to local file system
+    """
     if not wid.create_cicd_file:
         return
 
@@ -260,6 +265,9 @@ def write_CICD_file_per_table(source_system:str, schema_name:str, table_name:str
 
 @catch_error(logger)
 def write_CICD_file_per_step():
+    """
+    Write CICD File per Step to local file system
+    """
     if not wid.create_cicd_file:
         return
 
@@ -281,6 +289,9 @@ def write_CICD_file_per_step():
 
 @catch_error(logger)
 def create_copy_into_sql(source_system:str, schema_name:str, table_name:str, PARTITION:str, storage_account_abbr:str):
+    """
+    Create COPY INTO statement for a given table
+    """
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
     
@@ -292,10 +303,13 @@ def create_copy_into_sql(source_system:str, schema_name:str, table_name:str, PAR
 
 
 
-# %% Create Ingest Files
+# %% Create Ingest Data
 
 @catch_error(logger)
-def create_ingest_adls(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_abbr:str):
+def create_ingest_data(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_abbr:str):
+    """
+    Create Ingest Data
+    """
     SCHEMA_NAME, TABLE_NAME, INGEST_STAGE_NAME, copy_into_sqlstr, sqlstr = create_copy_into_sql(source_system=source_system, schema_name=schema_name, table_name=table_name, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
 
     ingest_data = {
@@ -325,6 +339,9 @@ def create_ingest_adls(source_system:str, schema_name:str, table_name:str, colum
 
 @catch_error(logger)
 def create_ingest_data_table(ingest_data_per_source_system, container_folder:str, storage_account_name:str):
+    """
+    Create and Save ingest_data table
+    """
     json_string = json.dumps(ingest_data_per_source_system)
 
     save_adls_gen2(
@@ -343,6 +360,9 @@ def create_ingest_data_table(ingest_data_per_source_system, container_folder:str
 @catch_error(logger)
 @action_source_level_tables('grant_permissions')
 def create_grant_permissions_file(source_system:str, container_folder:str, storage_account_name:str):
+    """
+    Create grant_permissions file and save it as per @action_source_level_tables wrapper
+    """
     sqlstr = f"""USE ROLE {wid.snowflake_role};
 
 GRANT USAGE ON DATABASE {wid.snowflake_raw_database} TO ROLE {wid.engineer_role};
@@ -365,11 +385,14 @@ GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_
 
 
 
-# %% Create Trigger USP_INGEST() file
+# %% Create Task that Triggers USP_INGEST() file
 
 @catch_error(logger)
 @action_source_level_tables('usp_ingest')
 def create_trigger_usp_ingest_file(source_system:str, container_folder:str, storage_account_name:str):
+    """
+    Create Task that Triggers USP_INGEST() file and save it as per @action_source_level_tables wrapper
+    """
     stream_name = f'INGEST_REQUEST_VARIANT_STREAM'
     task_name = f'{source_system}_INGEST_REQUEST_TASK'
 
@@ -398,6 +421,9 @@ ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME;
 
 @catch_error(logger)
 def trigger_snowpipe(source_system:str):
+    """
+    Trigger snowpipe to read INGEST_REQUEST files
+    """
     sqlstr = f"""
 USE ROLE {wid.snowflake_role};
 USE WAREHOUSE {wid.snowflake_raw_warehouse};
@@ -423,6 +449,9 @@ ALTER PIPE {wid.elt_stage_schema}.{wid.common_elt_stage_name}_{wid.domain_abbr}_
 
 @catch_error(logger)
 def create_source_level_tables(ingest_data_list:defaultdict):
+    """
+    Create Source Level Tables
+    """
     if not ingest_data_list:
         logger.warning('No data in ingest_data_list -> skipping')
         return
@@ -460,7 +489,11 @@ def create_source_level_tables(ingest_data_list:defaultdict):
 
 # %% Create or Replace Utility Function
 
+@catch_error(logger)
 def create_or_replace_func(object_name:str):
+    """
+    Utility function to choose wheter to use "CREATE OR REPLACE" or "CREATE IF NOT EXISTS" in sql statements
+    """
     if wid.create_or_replace:
         sqlstr = f'CREATE OR REPLACE {object_name}'
     else:
@@ -474,6 +507,9 @@ def create_or_replace_func(object_name:str):
 @catch_error(logger)
 @action_step(1)
 def step1(source_system:str, schema_name:str, table_name:str, column_names:list):
+    """
+    Snowflake DDL: Create Variant Table - Raw data from External Stage table will be copied here.
+    """
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
     
@@ -502,6 +538,9 @@ def step1(source_system:str, schema_name:str, table_name:str, column_names:list)
 @catch_error(logger)
 @action_step(2)
 def step2(source_system:str, schema_name:str, table_name:str, column_names:list):
+    """
+    Snowflake DDL: Create Stream on the Variant Table
+    """
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
     
@@ -526,7 +565,10 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 @catch_error(logger)
 @action_step(3)
 def step3(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_abbr:str):
-    
+    """
+    Snowflake DDL: Add results of last job run on the Variant Table to the ELT_COPY_EXCEPTION table
+    Validates the files loaded in a past execution of the COPY INTO <table> command and returns all the errors encountered during the load
+    """
     SCHEMA_NAME, TABLE_NAME, INGEST_STAGE_NAME, copy_into_sqlstr, sqlstr = create_copy_into_sql(source_system=source_system, schema_name=schema_name, table_name=table_name, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
 
     step = f"""
@@ -601,6 +643,9 @@ FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}, job_id => '_l
 @catch_error(logger)
 @action_step(4)
 def step4(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:OrderedDict):
+    """
+    Snowflake DDL: Create View on the Variant Table
+    """
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -633,6 +678,9 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 @catch_error(logger)
 @action_step(5)
 def step5(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:OrderedDict):
+    """
+    Snowflake DDL: Create View on the Stream of the Variant Table
+    """
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -665,6 +713,9 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix};
 @catch_error(logger)
 @action_step(6)
 def step6(source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
+    """
+    Snowflake DDL: Create View with Integration ID and Hash Column on the Stream of the Variant Table
+    """
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -692,7 +743,7 @@ SELECT
    {INTEGRATION_ID} as {wid.integration_id}
   ,{column_list_with_alias}
   ,{hash_columns} AS {wid.hash_column_name}
-  ,ROW_NUMBER() OVER (PARTITION BY {pk_column_with_alias} ORDER BY {pk_column_with_alias}, {wid.src_alias}.{wid.execution_date_str} DESC) AS top_slice
+  ,ROW_NUMBER() OVER (PARTITION BY {pk_column_with_alias} ORDER BY {pk_column_with_alias}, {wid.src_alias}.{EXECUTION_DATE_str} DESC) AS top_slice
 FROM {wid.snowflake_raw_database}.{SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}{wid.variant_label}{wid.stream_suffix} {wid.src_alias}
 )
 WHERE top_slice = 1;
@@ -710,6 +761,9 @@ WHERE top_slice = 1;
 @catch_error(logger)
 @action_step(7)
 def step7(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:OrderedDict):
+    """
+    Snowflake DDL: Create final destination raw Table
+    """
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -745,6 +799,9 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
 @catch_error(logger)
 @action_step(8)
 def step8(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:OrderedDict):
+    """
+    Snowflake DDL: Create Procedure to UPSERT raw data from variant data stream/view to destination raw table
+    """
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -838,6 +895,9 @@ $$;
 @catch_error(logger)
 @action_step(9)
 def step9(source_system:str, schema_name:str, table_name:str, column_names:list):
+    """
+    Snowflake DDL: Create task to run the stored procedure for UPSERT every x minute
+    """
     layer = ''
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
@@ -874,6 +934,9 @@ ALTER TASK {task_name} RESUME;
 
 @catch_error(logger)
 def iterate_over_all_tables_snowflake(tableinfo, table_rows, PARTITION_list=None):
+    """
+    Iterate Over All DDL creation Steps for all tables
+    """
     if not tableinfo:
         logger.warning('No data in TableInfo -> Skipping Snowflake Steps')
         return
@@ -904,7 +967,7 @@ def iterate_over_all_tables_snowflake(tableinfo, table_rows, PARTITION_list=None
             step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
             step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
             write_CICD_file_per_table(source_system=source_system, schema_name=schema_name, table_name=table_name)
-            ingest_data = create_ingest_adls(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
+            ingest_data = create_ingest_data(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
             ingest_data_list[source_system].append(ingest_data)
 
     write_CICD_file_per_step()

@@ -118,6 +118,7 @@ class Config:
 execution_date_start = datetime.now()
 strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
 execution_date = execution_date_start.strftime(strftime)
+EXECUTION_DATE_str = 'EXECUTION_DATE'
 
 is_pc = platform.system().lower() == 'windows'
 
@@ -453,7 +454,7 @@ class CreateLogger:
 logger = CreateLogger()
 
 
-logger.info({'execution_date': execution_date})
+logger.info({EXECUTION_DATE_str: execution_date})
 logger.info(system_info(logger=logger))
 
 
@@ -573,8 +574,8 @@ def mark_execution_end():
     total_time = f'{timedelta1.days} day(s), {h} hour(s), {m} minute(s), {s} second(s)'
 
     logger.info({
-        'execution_date_start': execution_date,
-        'execution_date_end': execution_date_end.strftime(strftime),
+        f'{EXECUTION_DATE_str}_start': execution_date,
+        f'{EXECUTION_DATE_str}_end': execution_date_end.strftime(strftime),
         'total_seconds': timedelta1.seconds,
         'total_time': total_time,
     })

@@ -392,7 +392,7 @@ def create_master_ingest_list(spark, files_meta):
 @catch_error(logger)
 def create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables, master_ingest_list, tableinfo_source:str):
     """
-    create INFORMATION_SCHEMA.TABLES if not exists
+    Create INFORMATION_SCHEMA.TABLES if not exists
     """
     if not (sql_tables and ('TABLE_NAME' in sql_tables.columns) and ('TABLE_SCHEMA' in sql_tables.columns)):
         logger.warning(f'{INFORMATION_SCHEMA}.TABLES is not found, ingesting all tables by default')
@@ -414,7 +414,7 @@ def create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables, master_ingest_lis
 @catch_error(logger)
 def create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark, sql_columns, tableinfo_source:str, files_meta):
     """
-    create INFORMATION_SCHEMA.COLUMNS if not exists
+    Create INFORMATION_SCHEMA.COLUMNS if not exists
     """
     if not (sql_columns and 
         ('TABLE_NAME' in sql_columns.columns) and 

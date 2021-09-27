@@ -16,7 +16,7 @@ https://spark.apache.org/docs/latest/configuration
 import os, re, json
 from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date
+from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
@@ -37,9 +37,16 @@ metadata_FirmSourceMap = 'FirmSourceMap'
 MD5KeyIndicator = 'MD5_KEY'
 IDKeyIndicator = 'ID'
 
-elt_audit_columns = ['RECEPTION_DATE', 'EXECUTION_DATE', 'ELT_SOURCE', 'ELT_LOAD_TYPE', 'ELT_DELETE_IND', 'DML_TYPE']
+RECEPTION_DATE_str = 'RECEPTION_DATE'
+ELT_SOURCE_str = 'ELT_SOURCE'
+ELT_LOAD_TYPE_str = 'ELT_LOAD_TYPE'
+ELT_DELETE_IND_str = 'ELT_DELETE_IND'
+DML_TYPE_str = 'DML_TYPE'
+
 partitionBy = 'PARTITION_DATE'
 partitionBy_value = re.sub(column_regex, '_', execution_date)
+
+elt_audit_columns = [RECEPTION_DATE_str, EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str]
 
 
 
@@ -50,11 +57,11 @@ def add_elt_columns(table, reception_date:str, source:str, is_full_load:bool, dm
     """
     Add ELT Audit Columns to the table
     """
-    table = table.withColumn('RECEPTION_DATE', lit(str(reception_date)))
-    table = table.withColumn('EXECUTION_DATE', lit(str(execution_date)))
-    table = table.withColumn('ELT_SOURCE', lit(str(source)))
-    table = table.withColumn('ELT_LOAD_TYPE', lit(str("FULL" if is_full_load else "INCREMENTAL")))
-    table = table.withColumn('ELT_DELETE_IND', lit(0).cast(IntegerType()))
+    table = table.withColumn(RECEPTION_DATE_str, lit(str(reception_date)))
+    table = table.withColumn(EXECUTION_DATE_str, lit(str(execution_date)))
+    table = table.withColumn(ELT_SOURCE_str, lit(str(source)))
+    table = table.withColumn(ELT_LOAD_TYPE_str, lit(str("FULL" if is_full_load else "INCREMENTAL")))
+    table = table.withColumn(ELT_DELETE_IND_str, lit(0).cast(IntegerType()))
 
     if is_full_load:
         DML_TYPE = 'I'
@@ -62,9 +69,9 @@ def add_elt_columns(table, reception_date:str, source:str, is_full_load:bool, dm
         DML_TYPE = dml_type.upper()
 
     if DML_TYPE not in ['U', 'I', 'D']:
-        raise ValueError(f'DML_TYPE = {DML_TYPE}')
+        raise ValueError(f'{DML_TYPE_str} = {DML_TYPE}')
 
-    table = table.withColumn('DML_TYPE', lit(str(DML_TYPE)))
+    table = table.withColumn(DML_TYPE_str, lit(str(DML_TYPE)))
     table = table.withColumn(partitionBy, lit(str(partitionBy_value)))
     return table
 
