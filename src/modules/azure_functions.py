@@ -206,7 +206,7 @@ def get_partition(spark, domain_name:str, source_system:str, schema_name:str, ta
     """
     Get partition string for a Delta Table. The partition string should be same as partition by folder name for Delta Tables
     """
-    data_type = 'data'
+    data_type = data_folder
     container_folder = f"{data_type}/{domain_name}/{source_system}/{schema_name}"
     data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
     logger.info(f'Reading partition data for {data_path}')

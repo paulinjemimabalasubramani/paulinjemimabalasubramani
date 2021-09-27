@@ -24,7 +24,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import logger, mark_execution_end, get_secrets, catch_error
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, default_storage_account_abbr, get_firms_with_crd, \
-    to_storage_account_name, azure_data_path_create, azure_filesystem_uri
+    to_storage_account_name, azure_data_path_create, azure_filesystem_uri, data_folder
 
 
 from azure.identity import ClientSecretCredential
@@ -50,6 +50,9 @@ spark = create_spark()
 
 @catch_error(logger)
 def get_container_names(storage_account_name:str):
+    """
+    Get list of Container Names for a given storage_account_name
+    """
     azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
 
     credential = ClientSecretCredential(tenant_id = azure_tenant_id, client_id = sp_id, client_secret = sp_pass)
@@ -65,10 +68,13 @@ def get_container_names(storage_account_name:str):
 
 
 
-# %% Get ADLS Gen 2 paths
+# %% Get all folder and file paths inside a container
 
 @catch_error(logger)
-def get_adls_gen2_paths(storage_account_name:str, container_name:str):
+def get_all_paths_inside_container(storage_account_name:str, container_name:str):
+    """
+    Get all folder and file paths inside a container
+    """
     account_url = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder='', table_name='')
     logger.info(f'Getting paths from {account_url}')
 
@@ -87,10 +93,13 @@ def get_adls_gen2_paths(storage_account_name:str, container_name:str):
 
 @catch_error(logger)
 def get_delta_table_paths(storage_account_name:str, container_name:str):
+    """
+    Get paths to Delta tables inside a container
+    """
     delta_log_folder = '/_delta_log'
     rm_suffix = len(delta_log_folder)
 
-    paths = get_adls_gen2_paths(storage_account_name=storage_account_name, container_name=container_name)
+    paths = get_all_paths_inside_container(storage_account_name=storage_account_name, container_name=container_name)
     delta_paths = [path.name[:-rm_suffix] for path in paths if path.name.lower().endswith(delta_log_folder)]
     return delta_paths
 
@@ -101,13 +110,16 @@ def get_delta_table_paths(storage_account_name:str, container_name:str):
 
 @catch_error(logger)
 def vacuum_container(spark, storage_account_name:str, container_name:str, days_to_retain:int=7):
+    """
+    Vacuum All Delta Tables in a Container {data_folder}
+    """
     logger.info(f'Start Vacuuming {container_name}@{storage_account_name}')
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     delta_paths = get_delta_table_paths(storage_account_name=storage_account_name, container_name=container_name)
 
     for delta_path in delta_paths:
-        if not delta_path.lower().startswith('data/'):
+        if not delta_path.lower().startswith(f'{data_folder}/'):
             continue
         delta_path_full = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder='', table_name=delta_path)
         logger.info(f'Vacuuming {delta_path_full}')
@@ -126,6 +138,9 @@ def vacuum_container(spark, storage_account_name:str, container_name:str, days_t
 
 @catch_error(logger)
 def vacuum_storage_account(spark, storage_account_name:str, days_to_retain:int=7):
+    """
+    Vacuum All Delta Tables in a Storage Account
+    """
     logger.info(f'Vacuuming {storage_account_name}')
     container_names = get_container_names(storage_account_name=storage_account_name)
     for container_name in container_names:
@@ -137,6 +152,9 @@ def vacuum_storage_account(spark, storage_account_name:str, days_to_retain:int=7
 
 @catch_error(logger)
 def get_all_storage_accounts(spark, firms_source:str, include_default:bool=True):
+    """
+    Get names of all Storage Accounts
+    """
     firms = get_firms_with_crd(spark=spark, tableinfo_source=firms_source)
 
     storage_account_abbrs = {x['storage_account_abbr'] for x in firms}
@@ -149,10 +167,13 @@ def get_all_storage_accounts(spark, firms_source:str, include_default:bool=True)
 
 
 
-# %% Vacuum Delata Tables in All Storage Accounts
+# %% Vacuum Delta Tables in All Storage Accounts
 
 @catch_error(logger)
 def vacuum_all_storage_accounts(spark, firms_source:str, days_to_retain:int=7):
+    """
+    Vacuum Delta Tables in All Storage Accounts
+    """
     storage_account_names = get_all_storage_accounts(spark=spark, firms_source=firms_source, include_default=True)
 
     for storage_account_name in storage_account_names:

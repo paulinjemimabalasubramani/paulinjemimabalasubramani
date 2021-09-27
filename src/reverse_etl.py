@@ -70,6 +70,9 @@ _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(
 
 @catch_error(logger)
 def get_sf_table_list(schema_name:str):
+    """
+    Get List of Tables and Columns from Snowflake database Information Schema
+    """
     logger.info('Get List of Tables and Columns from Information Schema...')
     tables = read_snowflake(
         spark = spark,
@@ -123,6 +126,9 @@ table_names, columns = get_sf_table_list(schema_name=sf_schema)
 
 @catch_error(logger)
 def reverse_etl_all_tables():
+    """
+    Loop over all tables to read from Snowflake and write to SQL Server
+    """
     for table_name in table_names:
         table = read_snowflake(
             spark = spark,
