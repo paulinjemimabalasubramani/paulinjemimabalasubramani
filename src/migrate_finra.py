@@ -46,7 +46,6 @@ from modules.build_finra_tables import build_branch_table, build_individual_tabl
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 
 
-import pyspark.sql.functions as F
 from pyspark.sql.functions import col, lit, to_date, to_json, to_timestamp, when, row_number
 from pyspark.sql.window import Window
 from pyspark.sql.types import StringType, BooleanType
