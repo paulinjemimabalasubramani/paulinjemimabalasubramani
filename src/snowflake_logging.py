@@ -59,7 +59,7 @@ _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(
 
 
 
-# %% get log token
+# %% get previous log LAST_LOAD_TIME
 
 kusto_query ='SnowflakeCopyHistory_CL | summarize MAX_LOAD_TIME = max(LAST_LOAD_TIME_t) by TABLE_CATALOG_NAME_s, TABLE_SCHEMA_NAME_s, TABLE_NAME_s'
 
@@ -77,6 +77,9 @@ kusto_query ='SnowflakeCopyHistory_CL | summarize MAX_LOAD_TIME = max(LAST_LOAD_
 
 @catch_error(logger)
 def get_sf_schema_list(sf_database:str):
+    """
+    Get List of Schemas for a given database from Information Schema
+    """
     logger.info('Get List of Tables from Information Schema...')
     tables = read_snowflake(
         spark = spark,
@@ -106,10 +109,13 @@ def get_sf_schema_list(sf_database:str):
 
 
 
-# %% Get Copy History Logs from Snowflake
+# %% Get Logs of Copy History from Snowflake
 
 @catch_error(logger)
 def get_snowflake_copy_history(spark, sf_database:str, sf_schema:str, table_name:str, start_time:str=None):
+    """
+    Get Logs of Copy History from Snowflake
+    """
     if start_time:
         start_timex = f"DATEADD(SECONDS, 1, TO_TIMESTAMP_LTZ('{start_time}'))"
     else:
@@ -145,6 +151,9 @@ def get_snowflake_copy_history(spark, sf_database:str, sf_schema:str, table_name
 
 @catch_error(logger)
 def post_all_snowflake_copy_history_log():
+    """
+    Iterate over all Databases, Schemas and Tables to retrieve logs and send to Azure
+    """
     for sf_database in sf_databases:
         sf_schemas, tables = get_sf_schema_list(sf_database=sf_database)
 

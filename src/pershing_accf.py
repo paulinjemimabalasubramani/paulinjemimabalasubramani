@@ -69,6 +69,9 @@ spark = create_spark()
 
 @catch_error(logger)
 def preprocess_schema(schema):
+    """
+    Pre-process the schema table to make it code-friendly
+    """
     schema = remove_column_spaces(schema)
     schema = schema.withColumn('field_name', F.lower(F.regexp_replace(F.trim(col('field_name')), column_regex, '_')))
     schema = schema.withColumn('record_name', F.upper(F.trim(col('record_name'))))
@@ -90,10 +93,13 @@ def preprocess_schema(schema):
 
 
 
-# %% Add Field to a fixed width table
+# %% Extract field from a fixed width table
 
 @catch_error(logger)
-def add_field_to_fwt(table, field_name:str, position_start:int, length:int):
+def extract_field_from_fwt(table, field_name:str, position_start:int, length:int):
+    """
+    Extract a field from a fixed width table
+    """
     cv = col('value').substr
     return table.withColumn(field_name, F.regexp_replace(F.trim(cv(position_start, length)), ' +', ' '))
 
@@ -103,12 +109,15 @@ def add_field_to_fwt(table, field_name:str, position_start:int, length:int):
 
 @catch_error(logger)
 def add_schema_fields_to_table(tables, table, schema, record_name:str, conditional_changes:str=''):
+    """
+    Add fileds defined in Schema to the table and collect in "tables" list bases on record_name and conditional_changes
+    """
     schema = schema.where(col('record_name')==lit(record_name))
     if schema.count()==0: return
 
     for schema_row in schema.rdd.toLocalIterator():
         schema_dict = schema_row.asDict()
-        table = add_field_to_fwt(table=table, field_name=schema_dict['field_name'], position_start=schema_dict['position_start'], length=schema_dict['length'])
+        table = extract_field_from_fwt(table=table, field_name=schema_dict['field_name'], position_start=schema_dict['position_start'], length=schema_dict['length'])
 
     tables[(record_name, conditional_changes)] = table
 
@@ -118,6 +127,9 @@ def add_schema_fields_to_table(tables, table, schema, record_name:str, condition
 
 @catch_error(logger)
 def find_field_position(schema, record_name:str, field_name:str):
+    """
+    Find field Position and Length from schema for a given record_name and field_name
+    """
     field_schema = schema.where(
         (col('record_name')==lit(record_name)) &
         (col('field_name')==lit(field_name))
@@ -137,12 +149,15 @@ def find_field_position(schema, record_name:str, field_name:str):
 
 
 
-# %% Get Distict Field values
+# %% Get Distinct Field values
 
 @catch_error(logger)
 def get_dictinct_field_values(table, schema, record_name:str, field_name:str):
+    """
+    Get Distinct Field values from table for given record_name and field_name
+    """
     position_start, length = find_field_position(schema=schema, record_name=record_name, field_name=field_name)
-    table = add_field_to_fwt(table=table, field_name=field_name, position_start=position_start, length=length)
+    table = extract_field_from_fwt(table=table, field_name=field_name, position_start=position_start, length=length)
 
     field_values = collect_column(table=table, column_name=field_name, distinct=True)
     return table, field_values
@@ -153,6 +168,9 @@ def get_dictinct_field_values(table, schema, record_name:str, field_name:str):
 
 @catch_error(logger)
 def add_sub_tables_to_table(tables, schema, sub_tables, record_name:str):
+    """
+    Add sub-tables from special_records (with conditional_changes) to the tables list
+    """
     for conditional_changes, sub_table in sub_tables.items():
         if sub_table.count()==0: continue
 
@@ -179,6 +197,9 @@ def generate_tables_from_fwt(
         trailer_str:str = 'EOF      PERSHING ',
         transaction_code:str = 'CI',
         ):
+    """
+    Generate list of sub-tables from a fixed with table file based on record_name and conditional_changes
+    """
 
     tables = dict()
     cv = col('value').substr
@@ -214,6 +235,9 @@ def generate_tables_from_fwt(
 
 @catch_error(logger)
 def union_tables_per_record(tables):
+    """
+    Union Tables per Record (union conditional_changes)
+    """
     table_per_record = dict()
     for key, table in tables.items():
         record_name = key[0]
@@ -230,6 +254,9 @@ def union_tables_per_record(tables):
 
 @catch_error(logger)
 def combine_rows_into_array(tables, groupBy):
+    """
+    Utility function to combine rows into Array (so that to have one column of json data per record name in the final main table)
+    """
     for record_name in tables.keys():
         if record_name not in ['HEADER', 'TRAILER']:
             tables[record_name] = (tables[record_name]
@@ -246,6 +273,9 @@ def combine_rows_into_array(tables, groupBy):
 
 @catch_error(logger)
 def join_all_tables(tables, groupBy):
+    """
+    Join all sub-tables that were split by record_name and conditional_changes
+    """
     joined_tables = None
 
     for record_name, table in tables.items():
@@ -268,6 +298,9 @@ def join_all_tables(tables, groupBy):
 
 @catch_error(logger)
 def create_table_from_fwt_file(file_name:str, schema_file_name:str, special_records, groupBy):
+    """
+    Create Table from Fixed-With Table File. Convery FWT to nested Spark table.
+    """
     schema_file_path = os.path.join(schema_folder_path, schema_file_name)
     data_file_path = os.path.join(data_path_folder, file_name)
 
@@ -294,6 +327,9 @@ def create_table_from_fwt_file(file_name:str, schema_file_name:str, special_reco
 
 @catch_error(logger)
 def process_record_A_accf(table, schema, record_name):
+    """
+    Special Record processing for ACCF Record A - because of it has conditional_changes
+    """
     if record_name != 'A': return
 
     registration_type_field_name = 'registration_type'
@@ -308,6 +344,9 @@ def process_record_A_accf(table, schema, record_name):
 
 @catch_error(logger)
 def process_record_C_accf(table, schema, record_name):
+    """
+    Special Record processing for ACCF Record C - because of it has conditional_changes
+    """
     if record_name != 'C': return
 
     country_field_name = 'country_code_1'
@@ -345,7 +384,7 @@ if is_pc: table.show(5)
 
 
 
-# %%
+# %% Write Table to Azure
 
 add_table_to_tableinfo(
     tableinfo = tableinfo, 
@@ -362,6 +401,9 @@ container_folder = azure_container_folder_path(data_type=data_folder, domain_nam
 
 
 if is_pc: pprint(container_folder)
+
+
+# TODO: Write to Azure
 
 
 

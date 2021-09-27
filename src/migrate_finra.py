@@ -38,15 +38,14 @@ from modules.common_functions import logger, catch_error, is_pc, data_settings, 
     mark_execution_end
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy, \
-    flatten_table, flatten_n_divide_table, table_to_list_dict
+    flatten_table, flatten_n_divide_table, table_to_list_dict, base_to_schema
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
     to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, add_table_to_tableinfo, read_tableinfo_rows, \
-    metadata_folder, azure_container_folder_path, data_folder
-from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table
+    metadata_folder, azure_container_folder_path, data_folder, default_storage_account_name
+from modules.build_finra_tables import build_branch_table, build_individual_table
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 
 
-import pyspark.sql.functions as F
 from pyspark.sql.functions import col, lit, to_date, to_json, to_timestamp, when, row_number
 from pyspark.sql.window import Window
 from pyspark.sql.types import StringType, BooleanType
@@ -153,12 +152,13 @@ if sql_ingest_table_exists:
 
 
 
-
-
-# %% Name extract
+# %% Extract metadata from finra file name and path
 
 @catch_error(logger)
 def extract_data_from_finra_file_path(file_path:str, crd_number:str):
+    """"
+    Extract metadata from finra file name and path
+    """
     basename = os.path.basename(file_path)
     dirname = os.path.dirname(file_path)
     sp = basename.split("_")
@@ -203,6 +203,9 @@ def extract_data_from_finra_file_path(file_path:str, crd_number:str):
 
 @catch_error(logger)
 def get_finra_file_xml_meta(file_path:str, crd_number:str):
+    """
+    Get Meta Data from Finra XML File (reading metadata from inside the file and also use metadata from file name)
+    """
     global sql_ingest_table_exists, sql_ingest_table
     rowTag = '?xml'
     csv_flag = False
@@ -276,10 +279,14 @@ def get_finra_file_xml_meta(file_path:str, crd_number:str):
 
 
 
-# %% Get list of file names above certain date:
+# %% Get all files meta data for a given folder_path
 
 @catch_error(logger)
 def get_all_finra_file_xml_meta(folder_path, date_start:str, crd_number:str, inclusive:bool=True):
+    """
+    Get all files meta data for a given folder_path.
+    Filters files for dates after the given date_start
+    """
     logger.info(f'Getting list of candidate files from {folder_path}')
     files_meta = []
     for root, dirs, files in os.walk(folder_path):
@@ -300,6 +307,9 @@ def get_all_finra_file_xml_meta(folder_path, date_start:str, crd_number:str, inc
 
 @catch_error(logger)
 def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_account_name:str, storage_account_abbr:str):
+    """
+    Write all tables in xml_table_list to Azure
+    """
     global PARTITION_list
 
     if not xml_table_list:
@@ -347,6 +357,9 @@ def write_xml_table_list_to_azure(xml_table_list:dict, firm_name:str, storage_ac
 
 @catch_error(logger)
 def read_xml_file(table_name:str, file_path:str, rowTag:str):
+    """
+    Read Finra XML File
+    """
     schema_file = table_name+'.json'
     schema_path = os.path.join(schema_path_folder, schema_file)
 
@@ -372,19 +385,22 @@ def read_xml_file(table_name:str, file_path:str, rowTag:str):
 
 @catch_error(logger)
 def get_xml_table_list(xml_table, table_name:str, crd_number:str):
+    """
+    Get list of sub-tables for a given nested XML Table
+    """
     xml_table_list = {}
 
     if flatten_n_divide_flag:
         xml_table_list={**xml_table_list, **flatten_n_divide_table(table=xml_table, table_name=table_name)}
-
-    semi_flat_table = flatten_table(table=xml_table)
-
-    if table_name.upper() == 'BranchInformationReport'.upper():
-        xml_table_list={**xml_table_list, table_name: build_branch_table(semi_flat_table=semi_flat_table)}
-    elif table_name.upper() == 'IndividualInformationReport'.upper():
-        xml_table_list = {**xml_table_list, table_name: build_individual_table(semi_flat_table=semi_flat_table, crd_number=crd_number)}
     else:
-        xml_table_list = {**xml_table_list, table_name: semi_flat_table}
+        semi_flat_table = flatten_table(table=xml_table)
+
+        if table_name.upper() == 'BranchInformationReport'.upper():
+            xml_table_list={**xml_table_list, table_name: build_branch_table(semi_flat_table=semi_flat_table)}
+        elif table_name.upper() == 'IndividualInformationReport'.upper():
+            xml_table_list = {**xml_table_list, table_name: build_individual_table(semi_flat_table=semi_flat_table, crd_number=crd_number)}
+        else:
+            xml_table_list = {**xml_table_list, table_name: semi_flat_table}
     
     return xml_table_list
 
@@ -394,6 +410,9 @@ def get_xml_table_list(xml_table, table_name:str, crd_number:str):
 
 @catch_error(logger)
 def process_columns_for_elt(table_list, file_meta):
+    """
+    Process Columns for ELT (add ID key, ELT columns, etc.)
+    """
     new_table_list = {}
 
     for table_name, table in table_list.items():
@@ -428,6 +447,9 @@ def process_columns_for_elt(table_list, file_meta):
 
 @catch_error(logger)
 def process_finra_file(file_meta):
+    """
+    Main Processing of single Finra file
+    """
     file_path = os.path.join(file_meta['root'], file_meta['file'])
     rowTags = file_meta['rowTags']
 
@@ -451,6 +473,9 @@ def process_finra_file(file_meta):
 
 @catch_error(logger)
 def process_one_file(file_meta):
+    """
+    Process Single File - XML or ZIP file
+    """
     global tmpdirs
     file_path = os.path.join(file_meta['root'], file_meta['file'])
     logger.info(f'Processing {file_path}')
@@ -475,6 +500,9 @@ def process_one_file(file_meta):
 
 @catch_error(logger)
 def cleanup_tmpdirs():
+    """
+    Remove temporary folders created by unzip process
+    """
     global tmpdirs
     while len(tmpdirs)>0:
         tmpdirs.pop(0).cleanup()
@@ -486,6 +514,9 @@ def cleanup_tmpdirs():
 
 @catch_error(logger)
 def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str):
+    """
+    Create Ingest Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
+    """
     global sql_ingest_table_exists, sql_ingest_table
 
     ingest_table = spark.createDataFrame(files_meta)
@@ -532,6 +563,9 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
 
 @catch_error(logger)
 def get_selected_files(ingest_table):
+    """
+    Select only the files that need to be ingested this time.
+    """
     # Union all files
     new_files = ingest_table.alias('t'
         ).join(sql_ingest_table, ingest_table[MD5KeyIndicator]==sql_ingest_table[MD5KeyIndicator], how='left_anti'
@@ -560,19 +594,14 @@ def get_selected_files(ingest_table):
 
 
 
-# %% Testing
-
-if is_pc and False:
-    crd_number = '25803'
-    firm = [f for f in firms if f['crd_number']==crd_number][0]
-
-
-
 
 # %% Process all files
 
 @catch_error(logger)
 def process_all_files():
+    """
+    Iterate over all the files in all the firms and process them.
+    """
     all_new_files = None
 
     for firm in firms:
@@ -654,7 +683,10 @@ all_new_files = process_all_files()
 # %% Save Tableinfo
 
 @catch_error(logger)
-def save_tableinfo(all_new_files):
+def save_tableinfo_and_ingest_table(all_new_files):
+    """
+    Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
+    """
     if not tableinfo:
         logger.warning('No data in TableInfo --> Skipping write to Azure')
         return
@@ -668,7 +700,7 @@ def save_tableinfo(all_new_files):
     meta_tableinfo = spark.createDataFrame(list_of_dict)
     meta_tableinfo = select_tableinfo_columns(tableinfo=meta_tableinfo)
 
-    storage_account_name = to_storage_account_name() # keep default storage account name for tableinfo
+    storage_account_name = default_storage_account_name # keep default storage account name for tableinfo
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     if save_tableinfo_adls_flag:
@@ -682,7 +714,7 @@ def save_tableinfo(all_new_files):
                 file_format = file_format,
             )
 
-        if all_new_files:
+        if all_new_files: # Write ingest metadata to SQL so that the old files are not re-ingested next time.
             write_sql(
                 table = all_new_files,
                 table_name = sql_ingest_table_name,
@@ -698,7 +730,7 @@ def save_tableinfo(all_new_files):
 
 
 
-tableinfo = save_tableinfo(all_new_files)
+tableinfo = save_tableinfo_and_ingest_table(all_new_files)
 
 
 
