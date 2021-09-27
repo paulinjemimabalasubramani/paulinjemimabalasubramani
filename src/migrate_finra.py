@@ -38,11 +38,11 @@ from modules.common_functions import logger, catch_error, is_pc, data_settings, 
     mark_execution_end
 from modules.spark_functions import create_spark, read_sql, write_sql, read_csv, read_xml, add_id_key, add_md5_key, \
     IDKeyIndicator, MD5KeyIndicator, get_sql_table_names, remove_column_spaces, add_elt_columns, partitionBy, \
-    flatten_table, flatten_n_divide_table, table_to_list_dict
+    flatten_table, flatten_n_divide_table, table_to_list_dict, base_to_schema
 from modules.azure_functions import setup_spark_adls_gen2_connection, save_adls_gen2, tableinfo_name, file_format, container_name, \
     to_storage_account_name, select_tableinfo_columns, tableinfo_container_name, get_firms_with_crd, add_table_to_tableinfo, read_tableinfo_rows, \
     metadata_folder, azure_container_folder_path, data_folder, default_storage_account_name
-from modules.build_finra_tables import base_to_schema, build_branch_table, build_individual_table
+from modules.build_finra_tables import build_branch_table, build_individual_table
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 
 
@@ -150,8 +150,6 @@ if sql_ingest_table_exists:
         database = sql_database, 
         server = sql_server
         )
-
-
 
 
 
