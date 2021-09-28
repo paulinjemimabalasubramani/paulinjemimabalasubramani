@@ -44,7 +44,6 @@ from pyspark import StorageLevel
 storage_account_name = default_storage_account_name
 storage_account_abbr = default_storage_account_abbr
 tableinfo_source = 'PERSHING'
-schema_name = tableinfo_source.lower()
 
 data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
 schema_folder_path = os.path.join(config_path, 'pershing_schema')
@@ -172,7 +171,7 @@ def add_sub_tables_to_table(tables, schema, sub_tables, record_name:str):
     Add sub-tables from special_records (with conditional_changes) to the tables list
     """
     for conditional_changes, sub_table in sub_tables.items():
-        if sub_table.count()==0: continue
+        #if sub_table.count()==0: continue
 
         filter_schema = schema.where(
             (col('record_name')==lit(record_name)) & (
@@ -186,7 +185,7 @@ def add_sub_tables_to_table(tables, schema, sub_tables, record_name:str):
 
 
 
-# %% generate tables from fixed with table file
+# %% generate tables from fixed width table file
 
 @catch_error(logger)
 def generate_tables_from_fwt(
@@ -198,7 +197,7 @@ def generate_tables_from_fwt(
         transaction_code:str = 'CI',
         ):
     """
-    Generate list of sub-tables from a fixed with table file based on record_name and conditional_changes
+    Generate list of sub-tables from a fixed width table file based on record_name and conditional_changes
     """
 
     tables = dict()
@@ -219,7 +218,7 @@ def generate_tables_from_fwt(
                 (cv(3, 1)==lit(record_name))
                 )
 
-        if table.count()==0: continue
+        #if table.count()==0: continue
 
         if record_name in special_records:
             sub_tables = special_records[record_name](table=table, schema=schema, record_name=record_name)
@@ -290,6 +289,7 @@ def join_all_tables(tables, groupBy):
     for column_name in header_map:
         joined_tables = joined_tables.withColumn(column_name, lit(header[column_name]))
 
+    joined_tables.persist(StorageLevel.MEMORY_AND_DISK)
     return joined_tables
 
 
@@ -297,12 +297,12 @@ def join_all_tables(tables, groupBy):
 # %% Create Table from Fixed-With Table File
 
 @catch_error(logger)
-def create_table_from_fwt_file(file_name:str, schema_file_name:str, special_records, groupBy):
+def create_table_from_fwt_file(firm_path_folder:str, file_name:str, schema_file_name:str, special_records, groupBy):
     """
     Create Table from Fixed-With Table File. Convery FWT to nested Spark table.
     """
     schema_file_path = os.path.join(schema_folder_path, schema_file_name)
-    data_file_path = os.path.join(data_path_folder, file_name)
+    data_file_path = os.path.join(firm_path_folder, file_name)
 
     logger.info({
         'action': 'generate_tables_from_fwt_file',
@@ -364,7 +364,14 @@ def process_record_C_accf(table, schema, record_name):
 
 # %% Process ACCF File
 
+firm_name = 'RAA'
+firm_crd_number = '23131'
+
+file_name = '4CCF.4CCF'
+schema_file_name = 'customer_account_information_acct_accf.csv'
+
 table_name = 'accf'
+groupBy = ['account_number']
 
 special_records = {
     'A': process_record_A_accf,
@@ -373,15 +380,16 @@ special_records = {
 
 
 table = create_table_from_fwt_file(
-    file_name = '4CCF.4CCF',
-    schema_file_name = 'customer_account_information_acct_accf.csv',
+    firm_path_folder = os.path.join(data_path_folder, firm_crd_number),
+    file_name = file_name,
+    schema_file_name = schema_file_name,
     special_records = special_records,
-    groupBy = ['account_number'],
+    groupBy = groupBy,
 )
 
 
 if is_pc: table.show(5)
-
+if is_pc: print(f'Number of rows: {table.count()}')
 
 
 # %% Write Table to Azure
@@ -389,7 +397,7 @@ if is_pc: table.show(5)
 add_table_to_tableinfo(
     tableinfo = tableinfo, 
     table = table, 
-    schema_name = schema_name, 
+    schema_name = firm_name, 
     table_name = table_name, 
     tableinfo_source = tableinfo_source, 
     storage_account_name = storage_account_name,
@@ -397,7 +405,7 @@ add_table_to_tableinfo(
     )
 
 
-container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source, firm_or_schema=schema_name)
+container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source, firm_or_schema=firm_name)
 
 
 if is_pc: pprint(container_folder)

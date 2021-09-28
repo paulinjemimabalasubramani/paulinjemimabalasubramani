@@ -291,7 +291,7 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
             'x-ms-date': rfc1123date,
         }
 
-        if True: # Temporarily stop sending print logs to Azure
+        if True and logger and log_type==logger.log_type: # Temporarily stop sending print logs to Azure
             if backup_logger_func:
                 backup_logger_func(body, exc_info=False)
         else: 
