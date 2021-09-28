@@ -158,7 +158,7 @@ def post_all_snowflake_copy_history_log():
         sf_schemas, tables = get_sf_schema_list(sf_database=sf_database)
 
         for sf_schema in sf_schemas:
-            if (sf_schema.upper() in ['INFORMATION_SCHEMA']) or (sf_schema.upper() not in ['LR_RAW']):
+            if (sf_schema.upper() in ['INFORMATION_SCHEMA']):
                 continue
 
             tables_per_schema = collect_column(table=tables.where(col('TABLE_SCHEMA')==lit(sf_schema)), column_name='TABLE_NAME', distinct=True)
