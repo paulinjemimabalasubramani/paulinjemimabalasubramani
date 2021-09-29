@@ -112,7 +112,7 @@ def add_schema_fields_to_table(tables, table, schema, record_name:str, condition
     Add fileds defined in Schema to the table and collect in "tables" list bases on record_name and conditional_changes
     """
     schema = schema.where(col('record_name')==lit(record_name))
-    if schema.count()==0: return
+    if schema.rdd.isEmpty(): return
 
     for schema_row in schema.rdd.toLocalIterator():
         schema_dict = schema_row.asDict()
@@ -171,7 +171,7 @@ def add_sub_tables_to_table(tables, schema, sub_tables, record_name:str):
     Add sub-tables from special_records (with conditional_changes) to the tables list
     """
     for conditional_changes, sub_table in sub_tables.items():
-        #if sub_table.count()==0: continue
+        #if sub_table.rdd.isEmpty(): continue
 
         filter_schema = schema.where(
             (col('record_name')==lit(record_name)) & (
@@ -218,7 +218,7 @@ def generate_tables_from_fwt(
                 (cv(3, 1)==lit(record_name))
                 )
 
-        #if table.count()==0: continue
+        #if table.rdd.isEmpty(): continue
 
         if record_name in special_records:
             sub_tables = special_records[record_name](table=table, schema=schema, record_name=record_name)

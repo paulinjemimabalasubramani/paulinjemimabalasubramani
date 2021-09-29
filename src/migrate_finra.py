@@ -223,7 +223,7 @@ def get_finra_file_xml_meta(file_path:str, crd_number:str):
             (col('file_name')==lit(file_meta['file'])) &
             (col('root_folder')==lit(file_meta['root']))
             )
-        if filtersql.count()>0:
+        if not filtersql.rdd.isEmpty():
             fcol = filtersql.limit(1).collect()[0]
             criteria = json.loads(fcol['xml_criteria'])
             rowTags = json.loads(fcol['xml_rowtags'])
