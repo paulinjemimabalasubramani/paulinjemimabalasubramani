@@ -99,6 +99,9 @@ logger.info({
     'schema_path_folder': schema_path_folder,
 })
 
+tableinfo = defaultdict(list)
+
+
 
 # %% Initiate Spark
 spark = create_spark()
@@ -108,12 +111,6 @@ snowflake_ddl_params.spark = spark
 # %% Read Key Vault Data
 
 _, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower(), logger=logger)
-
-
-
-# %% Create tableinfo
-
-tableinfo = defaultdict(list)
 
 
 

@@ -25,9 +25,10 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import catch_error, data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc
-from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column
+from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column, \
+    get_sql_table_names, read_sql
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
-    add_table_to_tableinfo, default_storage_account_abbr, azure_container_folder_path, data_folder
+    add_table_to_tableinfo, default_storage_account_abbr, azure_container_folder_path, data_folder, get_firms_with_crd
 
 from pprint import pprint
 from collections import defaultdict
@@ -45,6 +46,12 @@ storage_account_name = default_storage_account_name
 storage_account_abbr = default_storage_account_abbr
 tableinfo_source = 'PERSHING'
 
+sql_server = 'DSQLOLTP02'
+sql_database = 'EDIPIngestion'
+sql_schema = 'edip'
+sql_ingest_table_name = f'{tableinfo_source.lower()}_ingest'
+sql_key_vault_account = 'sqledipingestion'
+
 data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
 schema_folder_path = os.path.join(config_path, 'pershing_schema')
 
@@ -56,11 +63,56 @@ logger.info({
 
 tableinfo = defaultdict(list)
 
+header_str = 'BOF      PERSHING '
+trailer_str = 'EOF      PERSHING '
+schema_header_str = 'HEADER'
+schema_trailer_str = 'TRAILER'
+
 
 
 # %% Create Session
 
 spark = create_spark()
+
+
+# %% Read Key Vault Data
+
+_, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower(), logger=logger)
+
+
+
+# %% Get Firms that have CRD Number
+
+firms = get_firms_with_crd(spark=spark, tableinfo_source='FINRA')
+
+if is_pc: pprint(firms)
+
+
+
+# %% Get SQL Ingest Table
+
+table_names, sql_tables = get_sql_table_names(
+    spark = spark, 
+    schema = sql_schema,
+    database = sql_database,
+    server = sql_server,
+    user = sql_id,
+    password = sql_pass,
+    )
+
+sql_ingest_table_exists = sql_ingest_table_name in table_names
+
+sql_ingest_table = None
+if sql_ingest_table_exists:
+    sql_ingest_table = read_sql(
+        spark = spark, 
+        user = sql_id, 
+        password = sql_pass, 
+        schema = sql_schema, 
+        table_name = sql_ingest_table_name, 
+        database = sql_database, 
+        server = sql_server
+        )
 
 
 
@@ -192,8 +244,8 @@ def generate_tables_from_fwt(
         text_file,
         schema,
         special_records:dict,
-        header_str:str = 'BOF      PERSHING ',
-        trailer_str:str = 'EOF      PERSHING ',
+        header_str:str = header_str,
+        trailer_str:str = trailer_str,
         transaction_code:str = 'CI',
         ):
     """
@@ -208,9 +260,9 @@ def generate_tables_from_fwt(
     for record_name in record_names:
         if is_pc: pprint(f'Record Name: {record_name}')
 
-        if record_name == 'HEADER':
+        if record_name == schema_header_str:
             table = text_file.where(cv(1, len(header_str))==lit(header_str))
-        elif record_name == 'TRAILER':
+        elif record_name == schema_trailer_str:
             table = text_file.where(cv(1, len(trailer_str))==lit(trailer_str))
         else:
             table = text_file.where(
@@ -257,7 +309,7 @@ def combine_rows_into_array(tables, groupBy):
     Utility function to combine rows into Array (so that to have one column of json data per record name in the final main table)
     """
     for record_name in tables.keys():
-        if record_name not in ['HEADER', 'TRAILER']:
+        if record_name not in [schema_header_str, schema_trailer_str]:
             tables[record_name] = (tables[record_name]
                 .withColumn('all_columns', F.struct(tables[record_name].columns))
                 .groupBy(groupBy)
@@ -278,13 +330,13 @@ def join_all_tables(tables, groupBy):
     joined_tables = None
 
     for record_name, table in tables.items():
-        if record_name not in ['HEADER', 'TRAILER']:
+        if record_name not in [schema_header_str, schema_trailer_str]:
             if joined_tables:
                 joined_tables = joined_tables.join(table, on=groupBy, how='full')
             else:
                 joined_tables = table
 
-    header = tables['HEADER'].collect()[0]
+    header = tables[schema_header_str].collect()[0]
     header_map = ['date_of_data', 'remote_id', 'run_date', 'run_time', 'refreshed_updated']
     for column_name in header_map:
         joined_tables = joined_tables.withColumn(column_name, lit(header[column_name]))
@@ -323,12 +375,12 @@ def create_table_from_fwt_file(firm_path_folder:str, file_name:str, schema_file_
 
 
 
-# %% Process ACCF Record A
+# %% Process customer_acct_info Record A
 
 @catch_error(logger)
-def process_record_A_accf(table, schema, record_name):
+def process_record_A_customer_acct_info(table, schema, record_name):
     """
-    Special Record processing for ACCF Record A - because of it has conditional_changes
+    Special Record processing for customer_acct_info Record A - because of it has conditional_changes
     """
     if record_name != 'A': return
 
@@ -340,12 +392,12 @@ def process_record_A_accf(table, schema, record_name):
 
 
 
-# %% Process ACCF Record C
+# %% Process customer_acct_info Record C
 
 @catch_error(logger)
-def process_record_C_accf(table, schema, record_name):
+def process_record_C_customer_acct_info(table, schema, record_name):
     """
-    Special Record processing for ACCF Record C - because of it has conditional_changes
+    Special Record processing for customer_acct_info Record C - because of it has conditional_changes
     """
     if record_name != 'C': return
 
@@ -362,20 +414,97 @@ def process_record_C_accf(table, schema, record_name):
 
 
 
-# %% Process "CUSTOMER ACCOUNT INFORMATION" - ACCT (Update File) / ACCF (Refresh File)
+# %% Get Header Schema
+
+@catch_error(logger)
+def get_header_schema():
+    """
+    Get Schema for Header section of Pershing files
+    """
+    schema_file_path = os.path.join(schema_folder_path, 'customer_acct_info.csv')
+    schema = read_csv(spark=spark, file_path=schema_file_path)
+    schema = preprocess_schema(schema=schema)
+    header_schema = schema.where(col('record_name')==lit(schema_header_str)).select(['field_name', 'position_start', 'position_end']).collect()
+
+    header_dict = dict()
+    for r in header_schema:
+        header_dict[r['field_name']] = {
+            'position_start': r['position_start'],
+            'position_start': r['position_end'],
+        }
+
+    header_dict['form_name'] = header_dict.pop('customer_acct_info')
+
+    return header_dict
+
+
+
+header_schema = get_header_schema()
+
+
+
+# %% Get Meta Data from Pershing FWT file
+
+@catch_error(logger)
+def get_pershing_file_meta(file_path:str, firm_crd_number:str):
+    """
+    Get Meta Data from Pershing FWT file (reading metadata from inside the file - 1st line Header)
+    """
+    global sql_ingest_table_exists, sql_ingest_table
+
+    with open(file=file_path, mode='rt') as f:
+        HEADER = f.readline()
+
+    if HEADER[:len(header_str)] != header_str: return
+
+    file_meta = dict()
+
+    for field_name, pos in header_schema.items():
+        file_meta[field_name] = HEADER[pos['position_start']-1: pos['position_end']]
+
+    file_meta['firm_crd_number'] = firm_crd_number
+    return file_meta
+
+
+
+firm_crd_number = '23131'
+file_name = '4CCF.4CCF'
+
+firm_path_folder = os.path.join(data_path_folder, firm_crd_number)
+file_path = os.path.join(firm_path_folder, file_name)
+
+
+file_meta = get_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
+
+pprint(file_meta)
+
+
+
+# %%
+
+
+
+
+
+
+
+
+
+
+# %% Process customer_acct_info
 
 firm_name = 'RAA'
 firm_crd_number = '23131'
 
 file_name = '4CCF.4CCF'
-schema_file_name = 'customer_account_information_acct_accf.csv'
+schema_file_name = 'customer_acct_info.csv'
 
 table_name = 'accf'
 groupBy = ['account_number']
 
 special_records = {
-    'A': process_record_A_accf,
-    'C': process_record_C_accf,
+    'A': process_record_A_customer_acct_info,
+    'C': process_record_C_customer_acct_info,
     }
 
 
