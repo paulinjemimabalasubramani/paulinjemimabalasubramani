@@ -1,5 +1,5 @@
 """
-Read Pershing "CUSTOMER ACCOUNT INFORMATION" - ACCT (Update File) / ACCF (Refresh File)
+Read all Pershing FWT files and migrate to the ADLS Gen 2
 
 https://standardfiles.pershing.com/
 
@@ -17,7 +17,7 @@ http://10.128.25.82:8282/
 
 import os, sys
 sys.parent_name = os.path.basename(__file__)
-sys.domain_name = 'client_and_account'
+sys.domain_name = 'client_account'
 sys.domain_abbr = 'CA'
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
@@ -362,7 +362,7 @@ def process_record_C_accf(table, schema, record_name):
 
 
 
-# %% Process ACCF File
+# %% Process "CUSTOMER ACCOUNT INFORMATION" - ACCT (Update File) / ACCF (Refresh File)
 
 firm_name = 'RAA'
 firm_crd_number = '23131'

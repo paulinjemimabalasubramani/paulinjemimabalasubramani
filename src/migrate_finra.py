@@ -1,5 +1,5 @@
 """
-Flatten all Finra XML files and migrate them to ADLS Gen 2 
+Flatten all Finra XML files and migrate them to ADLS Gen 2
 
 https://brokercheck.finra.org/individual/summary/3132991
 
