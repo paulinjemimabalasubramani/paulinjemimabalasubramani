@@ -15,7 +15,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys
+import os, sys, re
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'client_account'
 sys.domain_abbr = 'CA'
@@ -430,7 +430,7 @@ def get_header_schema():
     for r in header_schema:
         header_dict[r['field_name']] = {
             'position_start': r['position_start'],
-            'position_start': r['position_end'],
+            'position_end': r['position_end'],
         }
 
     header_dict['form_name'] = header_dict.pop('customer_acct_info')
@@ -460,9 +460,10 @@ def get_pershing_file_meta(file_path:str, firm_crd_number:str):
     file_meta = dict()
 
     for field_name, pos in header_schema.items():
-        file_meta[field_name] = HEADER[pos['position_start']-1: pos['position_end']]
+        file_meta[field_name] = re.sub(' +', ' ', HEADER[pos['position_start']-1: pos['position_end']].strip())
 
     file_meta['firm_crd_number'] = firm_crd_number
+    file_meta['schema_file_name'] = re.sub(' ', '_', file_meta['form_name'].lower()) + '.csv'
     return file_meta
 
 
