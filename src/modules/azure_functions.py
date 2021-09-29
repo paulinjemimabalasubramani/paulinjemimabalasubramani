@@ -172,7 +172,7 @@ def save_adls_gen2(
     elif file_format == 'csv':
         table.coalesce(1).write.csv(path=data_path, header='true', mode='overwrite')
     elif file_format == 'delta':
-        partitionBy_value = table.select(F.max(col(partitionBy))).collect()[0][0]
+        #partitionBy_value = table.select(F.max(col(partitionBy))).collect()[0][0]
         if partitionBy_value:
             userMetadata = f'{partitionBy}={partitionBy_value}'
         table.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
@@ -299,7 +299,7 @@ def read_tableinfo_rows(tableinfo_name:str, tableinfo_source:str, tableinfo):
     logger.info('Check if there is a table with no primary key')
     nopk = tableinfo.groupBy(['SourceDatabase', 'SourceSchema', 'TableName']).agg(F.sum('KeyIndicator').alias('key_count')).where(F.col('key_count')==F.lit(0))
     if is_pc: nopk.show()
-    assert nopk.count() == 0, f'Found tables with no primary keys: {nopk.collect()}'
+    assert nopk.rdd.isEmpty(), f'Found tables with no primary keys: {nopk.collect()}'
 
     return table_rows
 

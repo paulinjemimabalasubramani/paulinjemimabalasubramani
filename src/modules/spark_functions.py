@@ -485,7 +485,7 @@ def flatten_n_divide_table(table, table_name:str):
     Flatten the table first, then divide it one array per table if the flat table has arrays. 
     Then repeat the flattening process in the sub-tables until all the tables are fully flat.
     """
-    if table.count() == 0: # check if table is empty
+    if table.rdd.isEmpty(): # check if table is empty
         return dict()
 
     table = flatten_table(table=table)

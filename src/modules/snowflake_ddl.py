@@ -29,7 +29,7 @@ class module_params_class:
     save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
     create_or_replace = True # Default False - Use True for Schema Change Update
-    create_cicd_file = True # Default True
+    create_cicd_file = data_settings.get_value(attr_name='create_cicd_file', default_value=False) # Default False
 
     snowflake_account = 'advisorgroup-edip'
     sf_key_vault_account = 'snowflake'
@@ -81,7 +81,6 @@ if not is_pc:
     wid.save_to_adls = False # Default False
     wid.execute_at_snowflake = False # Default False
     wid.create_or_replace = True # Default False - Use True for Schema Change Update
-    wid.create_cicd_file = True # Default True
 
 if wid.create_cicd_file:
     os.makedirs(name=wid.cicd_folder_path, exist_ok=True)
@@ -306,7 +305,7 @@ def create_copy_into_sql(source_system:str, schema_name:str, table_name:str, PAR
 # %% Create Ingest Data
 
 @catch_error(logger)
-def create_ingest_data(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_abbr:str):
+def create_ingest_data(source_system:str, schema_name:str, table_name:str, PARTITION:str, storage_account_abbr:str):
     """
     Create Ingest Data
     """
@@ -506,7 +505,7 @@ def create_or_replace_func(object_name:str):
 
 @catch_error(logger)
 @action_step(1)
-def step1(source_system:str, schema_name:str, table_name:str, column_names:list):
+def step1(source_system:str, schema_name:str, table_name:str):
     """
     Snowflake DDL: Create Variant Table - Raw data from External Stage table will be copied here.
     """
@@ -537,7 +536,7 @@ def step1(source_system:str, schema_name:str, table_name:str, column_names:list)
 
 @catch_error(logger)
 @action_step(2)
-def step2(source_system:str, schema_name:str, table_name:str, column_names:list):
+def step2(source_system:str, schema_name:str, table_name:str):
     """
     Snowflake DDL: Create Stream on the Variant Table
     """
@@ -564,7 +563,7 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 
 @catch_error(logger)
 @action_step(3)
-def step3(source_system:str, schema_name:str, table_name:str, column_names:list, PARTITION:str, storage_account_abbr:str):
+def step3(source_system:str, schema_name:str, table_name:str, PARTITION:str, storage_account_abbr:str):
     """
     Snowflake DDL: Add results of last job run on the Variant Table to the ELT_COPY_EXCEPTION table
     Validates the files loaded in a past execution of the COPY INTO <table> command and returns all the errors encountered during the load
@@ -642,7 +641,7 @@ FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}, job_id => '_l
 
 @catch_error(logger)
 @action_step(4)
-def step4(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:OrderedDict):
+def step4(source_system:str, schema_name:str, table_name:str, src_column_dict:OrderedDict):
     """
     Snowflake DDL: Create View on the Variant Table
     """
@@ -677,7 +676,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 
 @catch_error(logger)
 @action_step(5)
-def step5(source_system:str, schema_name:str, table_name:str, column_names:list, src_column_dict:OrderedDict):
+def step5(source_system:str, schema_name:str, table_name:str, src_column_dict:OrderedDict):
     """
     Snowflake DDL: Create View on the Stream of the Variant Table
     """
@@ -760,7 +759,7 @@ WHERE top_slice = 1;
 
 @catch_error(logger)
 @action_step(7)
-def step7(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:OrderedDict):
+def step7(source_system:str, schema_name:str, table_name:str, data_types_dict:OrderedDict):
     """
     Snowflake DDL: Create final destination raw Table
     """
@@ -798,7 +797,7 @@ def step7(source_system:str, schema_name:str, table_name:str, column_names:list,
 
 @catch_error(logger)
 @action_step(8)
-def step8(source_system:str, schema_name:str, table_name:str, column_names:list, data_types_dict:OrderedDict):
+def step8(source_system:str, schema_name:str, table_name:str, data_types_dict:OrderedDict):
     """
     Snowflake DDL: Create Procedure to UPSERT raw data from variant data stream/view to destination raw table
     """
@@ -894,7 +893,7 @@ $$;
 
 @catch_error(logger)
 @action_step(9)
-def step9(source_system:str, schema_name:str, table_name:str, column_names:list):
+def step9(source_system:str, schema_name:str, table_name:str):
     """
     Snowflake DDL: Create task to run the stored procedure for UPSERT every x minute
     """
@@ -945,7 +944,6 @@ def iterate_over_all_tables_snowflake(tableinfo, table_rows, PARTITION_list=None
     ingest_data_list = defaultdict(list)
 
     for i, table in enumerate(table_rows):
-        #if i>3 and is_pc: break
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
@@ -953,22 +951,24 @@ def iterate_over_all_tables_snowflake(tableinfo, table_rows, PARTITION_list=None
         storage_account_abbr = table['StorageAccountAbbr']
         logger.info(f'Processing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
-        column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo=tableinfo, source_system=source_system, schema_name=schema_name, table_name=table_name)
-
         PARTITION = get_partition(spark=wid.spark, domain_name=wid.domain_name, source_system=source_system, schema_name=schema_name, table_name=table_name, storage_account_name=storage_account_name, PARTITION_list=PARTITION_list)
-        if PARTITION:
-            step1(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
-            step2(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
-            step3(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
-            step4(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
-            step5(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, src_column_dict=src_column_dict)
+        if not PARTITION: continue
+
+        if wid.create_cicd_file:
+            column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo=tableinfo, source_system=source_system, schema_name=schema_name, table_name=table_name)
+            step1(source_system=source_system, schema_name=schema_name, table_name=table_name)
+            step2(source_system=source_system, schema_name=schema_name, table_name=table_name)
+            step3(source_system=source_system, schema_name=schema_name, table_name=table_name, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
+            step4(source_system=source_system, schema_name=schema_name, table_name=table_name, src_column_dict=src_column_dict)
+            step5(source_system=source_system, schema_name=schema_name, table_name=table_name, src_column_dict=src_column_dict)
             step6(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, pk_column_names=pk_column_names)
-            step7(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
-            step8(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, data_types_dict=data_types_dict)
-            step9(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names)
+            step7(source_system=source_system, schema_name=schema_name, table_name=table_name, data_types_dict=data_types_dict)
+            step8(source_system=source_system, schema_name=schema_name, table_name=table_name, data_types_dict=data_types_dict)
+            step9(source_system=source_system, schema_name=schema_name, table_name=table_name)
             write_CICD_file_per_table(source_system=source_system, schema_name=schema_name, table_name=table_name)
-            ingest_data = create_ingest_data(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
-            ingest_data_list[source_system].append(ingest_data)
+
+        ingest_data = create_ingest_data(source_system=source_system, schema_name=schema_name, table_name=table_name, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
+        ingest_data_list[source_system].append(ingest_data)
 
     write_CICD_file_per_step()
     logger.info('Finished Iterating over all tables')
