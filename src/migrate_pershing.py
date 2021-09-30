@@ -15,7 +15,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys, re
+import os, sys, re, tempfile, shutil
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'client_account'
 sys.domain_abbr = 'CA'
@@ -24,19 +24,23 @@ sys.domain_abbr = 'CA'
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
-from modules.common_functions import catch_error, data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc
+from modules.common_functions import catch_error, data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc, \
+    execution_date
 from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column, \
-    get_sql_table_names, read_sql
+    get_sql_table_names, read_sql, add_md5_key, write_sql, MD5KeyIndicator
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
-    add_table_to_tableinfo, default_storage_account_abbr, azure_container_folder_path, data_folder, get_firms_with_crd
+    add_table_to_tableinfo, default_storage_account_abbr, azure_container_folder_path, data_folder, get_firms_with_crd, \
+    to_storage_account_name
 
 from pprint import pprint
 from collections import defaultdict
+from datetime import datetime
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit
-from pyspark.sql.types import IntegerType
+from pyspark.sql.types import IntegerType, StringType, BooleanType
 from pyspark import StorageLevel
+from pyspark.sql.functions import col, lit, to_date, to_timestamp, row_number, when
+from pyspark.sql.window import Window
 
 
 
@@ -63,12 +67,20 @@ logger.info({
 
 tableinfo = defaultdict(list)
 table_special_records = defaultdict(dict)
+tmpdirs = []
+
+pershing_strftime = r'%Y-%m-%d %H:%M:%S' # http://strftime.org/
+date_start = datetime.strptime('01/01/1990 00:00:00', format=pershing_strftime)
 
 header_str = 'BOF      PERSHING '
 trailer_str = 'EOF      PERSHING '
 schema_header_str = 'HEADER'
 schema_trailer_str = 'TRAILER'
 groupBy = ['account_number']
+
+key_column_names = ['firm_crd_number', 'table_name']
+key_column_names_with_load = key_column_names + ['is_full_load']
+key_column_names_with_load_n_date = key_column_names_with_load + ['run_datetime']
 
 
 
@@ -332,7 +344,7 @@ def union_tables_per_record(tables):
 # %% Combine Rows into Array
 
 @catch_error(logger)
-def combine_rows_into_array(tables, groupBy):
+def combine_rows_into_array(tables, groupBy:list):
     """
     Utility function to combine rows into Array (so that to have one column of json data per record name in the final main table)
     """
@@ -351,7 +363,7 @@ def combine_rows_into_array(tables, groupBy):
 # %% Join All Tables
 
 @catch_error(logger)
-def join_all_tables(tables, groupBy):
+def join_all_tables(tables, groupBy:list):
     """
     Join all sub-tables that were split by record_name and conditional_changes
     """
@@ -377,7 +389,7 @@ def join_all_tables(tables, groupBy):
 # %% Create Table from Fixed-With Table File
 
 @catch_error(logger)
-def create_table_from_fwt_file(firm_path_folder:str, file_name:str, schema_file_name:str, table_name:str, groupBy):
+def create_table_from_fwt_file(firm_path_folder:str, file_name:str, schema_file_name:str, table_name:str, groupBy:list):
     """
     Create Table from Fixed-With Table File. Convery FWT to nested Spark table.
     """
@@ -446,29 +458,264 @@ table_special_records['customer_acct_info']['C'] = process_record_C_customer_acc
 
 
 
-# %% Get Meta Data from Pershing FWT file
+# %% Extract Meta Data from Pershing FWT file
 
 @catch_error(logger)
-def get_pershing_file_meta(file_path:str, firm_crd_number:str):
+def extract_pershing_file_meta(file_path:str, firm_crd_number:str):
     """
-    Get Meta Data from Pershing FWT file (reading 1st line (header metadata) from inside the file)
+    Extract Meta Data from Pershing FWT file (reading 1st line (header metadata) from inside the file)
     """
     global sql_ingest_table_exists, sql_ingest_table
 
     with open(file=file_path, mode='rt') as f:
         HEADER = f.readline()
 
-    if HEADER[:len(header_str)] != header_str: return
+    if HEADER[:len(header_str)] != header_str: 
+        logger.warning(f'Not a Pershing file: {file_path}')
+        return
 
-    file_meta = dict()
+    file_meta = {
+        'file_name': os.path.basename(file_path),
+        'file_path': file_path,
+        'folder_path': os.path.dirname(file_path),
+        'firm_crd_number': firm_crd_number,
+    }
 
     for field_name, pos in header_schema.items():
         file_meta[field_name] = re.sub(' +', ' ', HEADER[pos['position_start']-1: pos['position_end']].strip())
 
-    file_meta['firm_crd_number'] = firm_crd_number
     file_meta['table_name'] = re.sub(' ', '_', file_meta['form_name'].lower())
     file_meta['schema_file_name'] = file_meta['table_name'] + '.csv'
+    file_meta['is_full_load'] = file_meta['refreshed_updated'].upper() == 'REFRESHED'
+    file_meta['run_datetime'] = datetime.strptime(' '.join([file_meta['run_date'], file_meta['run_time']]), format=pershing_strftime)
     return file_meta
+
+
+
+# %% Get Meta Data from Pershing FWT file
+
+@catch_error(logger)
+def get_pershing_file_meta(file_path:str, firm_crd_number:str):
+    """
+    Get Meta Data from Pershing FWT file (reading 1st line (header metadata) from inside the file)
+    Handles Zip files extraction as well
+    """
+    if file_path.lower().endswith('.zip'):
+        with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
+            shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
+            k = 0
+            for root1, dirs1, files1 in os.walk(tmpdir):
+                for file1 in files1:
+                    file_path1 = os.path.join(root1, file1)
+                    file_meta = extract_pershing_file_meta(file_path=file_path1, firm_crd_number=firm_crd_number)
+                    k += 1
+                    break
+                if k>0: break
+
+    else:
+        file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
+
+    return file_meta
+
+
+
+# %% Get all files meta data for a given folder_path
+
+@catch_error(logger)
+def get_all_pershing_file_meta(folder_path, date_start:datetime, firm_crd_number:str, inclusive:bool=True):
+    """
+    Get all files meta data for a given folder_path.
+    Filters files for dates after the given date_start
+    """
+    logger.info(f'Getting list of candidate files from {folder_path}')
+    files_meta = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            file_meta = get_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
+
+            if file_meta and (date_start<file_meta['run_datetime'] or (date_start==file_meta['run_datetime'] and inclusive)):
+                files_meta.append(file_meta)
+
+    logger.info(f'Finished getting list of files. Total Files = {len(files_meta)}')
+    return files_meta
+
+
+
+# %% Remove temporary folders
+
+@catch_error(logger)
+def cleanup_tmpdirs():
+    """
+    Remove temporary folders created by unzip process
+    """
+    global tmpdirs
+    while len(tmpdirs)>0:
+        tmpdirs.pop(0).cleanup()
+
+
+
+# %% Create Ingest Table from files_meta
+
+@catch_error(logger)
+def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str):
+    """
+    Create Ingest Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
+    """
+    global sql_ingest_table_exists, sql_ingest_table
+
+    ingest_table = spark.createDataFrame(files_meta)
+    ingest_table = ingest_table.select(
+        col('firm_crd_number').cast(StringType()),
+        col('table_name').cast(StringType()),
+        to_date(col('date_of_data'), format='MM/dd/yyyy').alias('date_of_data'),
+        to_timestamp(col('run_datetime')).alias('run_datetime'),
+        col('is_full_load').cast(BooleanType()),
+        lit(firm_name).cast(StringType()).alias('firm_name'),
+        lit(storage_account_name).cast(StringType()).alias('storage_account_name'),
+        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr'),
+        lit(None).cast(StringType()).alias('remote_source'),
+        col('folder_path').cast(StringType()).alias('folder_path'),
+        col('file_name').cast(StringType()).alias('file_name'),
+        to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
+        lit(True).cast(BooleanType()).alias('is_ingested'),
+        to_timestamp(lit(None)).alias('full_load_date'),
+        col('remote_id').cast(StringType()).alias('remote_id'),
+        col('form_name').cast(StringType()).alias('form_name'),
+    )
+
+    ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names_with_load_n_date)
+
+    if not sql_ingest_table_exists:
+        sql_ingest_table_exists = True
+        sql_ingest_table = spark.createDataFrame(spark.sparkContext.emptyRDD(), ingest_table.schema)
+        write_sql(
+            table = sql_ingest_table,
+            table_name = sql_ingest_table_name,
+            schema = sql_schema,
+            database = sql_database,
+            server = sql_server,
+            user = sql_id,
+            password = sql_pass,
+            mode = 'overwrite',
+        )
+
+    return ingest_table
+
+
+
+# %% Get Selected Files
+
+@catch_error(logger)
+def get_selected_files(ingest_table):
+    """
+    Select only the files that need to be ingested this time.
+    """
+    # Union all files
+    new_files = ingest_table.alias('t'
+        ).join(sql_ingest_table, ingest_table[MD5KeyIndicator]==sql_ingest_table[MD5KeyIndicator], how='left_anti'
+        ).select('t.*')
+
+    union_columns = new_files.columns
+    all_files = new_files.select(union_columns).union(sql_ingest_table.select(union_columns)).sort(key_column_names_with_load_n_date)
+
+    # Filter out old files
+    full_files = all_files.where('is_full_load').withColumn('row_number', 
+            row_number().over(Window.partitionBy(key_column_names_with_load).orderBy(col('file_date').desc(), col(MD5KeyIndicator).desc()))
+        ).where(col('row_number')==lit(1))
+
+    all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names, how='left').select('a.*', col('f.file_date').alias('max_date')) \
+        .withColumn('full_load_date', col('max_date')).drop('max_date')
+
+    all_files = all_files.withColumn('is_ingested', 
+            when(col('ingestion_date').isNull() & col('full_load_date').isNotNull() & (col('file_date')<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
+        )
+
+    # Select and Order Files for ingestion
+    new_files = all_files.where(col('ingestion_date').isNull()).withColumn('ingestion_date', to_timestamp(lit(execution_date)))
+    selected_files = new_files.where('is_ingested').orderBy(col('crd_number').desc(), col('table_name').desc(), col('is_full_load').desc(), col('file_date').asc())
+
+    return new_files, selected_files
+
+
+
+
+# %% Process all files
+
+@catch_error(logger)
+def process_all_files():
+    """
+    Iterate over all the files in all the firms and process them.
+    """
+    all_new_files = None
+
+    for firm in firms:
+        folder_path = os.path.join(data_path_folder, firm['crd_number'])
+        logger.info(f"Firm: {firm['firm_name']}, Firm CRD Number: {firm['crd_number']}")
+
+        if not os.path.isdir(folder_path):
+            logger.warning(f'Path does not exist: {folder_path}   -> SKIPPING')
+            continue
+
+        files_meta = get_all_pershing_file_meta(folder_path=folder_path, date_start=date_start, firm_crd_number=firm['crd_number'])
+        if not files_meta:
+            continue
+
+        storage_account_name = to_storage_account_name(firm_name=firm['storage_account_abbr'])
+        setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+        logger.info('Getting New Files')
+        ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name, storage_account_abbr=firm['storage_account_abbr'])
+        new_files, selected_files = get_selected_files(ingest_table)
+
+        logger.info(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
+
+        if all_new_files:
+            union_columns = new_files.columns
+            all_new_files = all_new_files.select(union_columns).union(new_files.select(union_columns))
+        else:
+            all_new_files = new_files
+
+        logger.info("Iterating over Selected Files")
+        table_list_union = {}
+        for ingest_row in selected_files.rdd.toLocalIterator():
+            file_meta = ingest_row.asDict()
+
+            table_list = process_one_file(file_meta=file_meta)
+
+            for table_name, table in table_list.items():
+                if table_name in table_list_union.keys():
+                    table_prev = table_list_union[table_name]
+                    primary_key_columns = [c for c in table_prev.columns if c.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
+                    if not primary_key_columns:
+                        raise ValueError(f'No Primary Key Found for {table_name}')
+                    table_prev = table_prev.alias('tp'
+                        ).join(table, primary_key_columns, how='left_anti'
+                        ).select('tp.*')
+                    union_columns = table_prev.columns
+                    table_prev = table_prev.select(union_columns).union(table.select(union_columns))
+                    table_list_union[table_name] = table_prev.distinct()
+                else:
+                    table_list_union[table_name] = table.distinct()
+
+        write_xml_table_list_to_azure(
+            table_list = table_list_union,
+            firm_name = firm['firm_name'],
+            storage_account_name = storage_account_name,
+            storage_account_abbr = firm['storage_account_abbr']
+        )
+
+        cleanup_tmpdirs()
+
+    logger.info('Finished processing all Files and Firms')
+    return all_new_files
+
+
+all_new_files = process_all_files()
+
+
+
+
 
 
 
@@ -481,7 +728,7 @@ file_name = '4CCF.4CCF'
 firm_path_folder = os.path.join(data_path_folder, firm_crd_number)
 file_path = os.path.join(firm_path_folder, file_name)
 
-file_meta = get_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
+file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
 table_name = file_meta['table_name']
 
 table = create_table_from_fwt_file(
@@ -489,7 +736,7 @@ table = create_table_from_fwt_file(
     file_name = file_name,
     schema_file_name = file_meta['schema_file_name'],
     table_name = table_name,
-    groupBy = groupBy,
+    groupBy=groupBy,
 )
 
 

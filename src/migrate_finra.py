@@ -556,7 +556,7 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
 
 
 
-# %% Get Seletec Files
+# %% Get Selected Files
 
 @catch_error(logger)
 def get_selected_files(ingest_table):
