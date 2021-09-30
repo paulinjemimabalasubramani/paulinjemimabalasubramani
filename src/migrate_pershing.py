@@ -62,11 +62,13 @@ logger.info({
 })
 
 tableinfo = defaultdict(list)
+table_special_records = defaultdict(dict)
 
 header_str = 'BOF      PERSHING '
 trailer_str = 'EOF      PERSHING '
 schema_header_str = 'HEADER'
 schema_trailer_str = 'TRAILER'
+groupBy = ['account_number']
 
 
 
@@ -116,13 +118,15 @@ if sql_ingest_table_exists:
 
 
 
-# %% pre-process schema
+# %% get and pre-process schema
 
 @catch_error(logger)
-def preprocess_schema(schema):
+def get_pershing_schema(spark, schema_file_name:str):
     """
-    Pre-process the schema table to make it code-friendly
+    Read and Pre-process the schema table to make it code-friendly
     """
+    schema_file_path = os.path.join(schema_folder_path, schema_file_name)
+    schema = read_csv(spark=spark, file_path=schema_file_path)
     schema = remove_column_spaces(schema)
     schema = schema.withColumn('field_name', F.lower(F.regexp_replace(F.trim(col('field_name')), column_regex, '_')))
     schema = schema.withColumn('record_name', F.upper(F.trim(col('record_name'))))
@@ -141,6 +145,26 @@ def preprocess_schema(schema):
 
     schema.persist(StorageLevel.MEMORY_AND_DISK)
     return schema
+
+
+
+# %% Get Header Schema
+
+@catch_error(logger)
+def get_header_schema():
+    """
+    Get Schema for Header section of Pershing files
+    """
+    selected_fields = ['position_start', 'position_end', 'length']
+    schema = get_pershing_schema(spark=spark, schema_file_name='customer_acct_info.csv')
+    header_schema = schema.where(col('record_name')==lit(schema_header_str)).select(['field_name', *selected_fields]).collect()
+    header_schema = {r['field_name']: {field_name: r[field_name] for field_name in selected_fields} for r in header_schema}
+    header_schema['form_name'] = header_schema.pop('customer_acct_info')
+    return header_schema
+
+
+
+header_schema = get_header_schema()
 
 
 
@@ -163,12 +187,16 @@ def add_schema_fields_to_table(tables, table, schema, record_name:str, condition
     """
     Add fileds defined in Schema to the table and collect in "tables" list bases on record_name and conditional_changes
     """
-    schema = schema.where(col('record_name')==lit(record_name))
-    if schema.rdd.isEmpty(): return
+    if record_name == schema_header_str:
+        for field_name, pos in header_schema.items():
+            table = extract_field_from_fwt(table=table, field_name=field_name, position_start=pos['position_start'], length=pos['length'])
+    else:
+        schema = schema.where(col('record_name')==lit(record_name))
+        if schema.rdd.isEmpty(): return
 
-    for schema_row in schema.rdd.toLocalIterator():
-        schema_dict = schema_row.asDict()
-        table = extract_field_from_fwt(table=table, field_name=schema_dict['field_name'], position_start=schema_dict['position_start'], length=schema_dict['length'])
+        for schema_row in schema.rdd.toLocalIterator():
+            schema_dict = schema_row.asDict()
+            table = extract_field_from_fwt(table=table, field_name=schema_dict['field_name'], position_start=schema_dict['position_start'], length=schema_dict['length'])
 
     tables[(record_name, conditional_changes)] = table
 
@@ -243,7 +271,7 @@ def add_sub_tables_to_table(tables, schema, sub_tables, record_name:str):
 def generate_tables_from_fwt(
         text_file,
         schema,
-        special_records:dict,
+        table_name:str,
         header_str:str = header_str,
         trailer_str:str = trailer_str,
         transaction_code:str = 'CI',
@@ -251,10 +279,10 @@ def generate_tables_from_fwt(
     """
     Generate list of sub-tables from a fixed width table file based on record_name and conditional_changes
     """
-
     tables = dict()
     cv = col('value').substr
 
+    special_records = table_special_records[table_name]
     record_names = collect_column(table=schema, column_name='record_name', distinct=True)
 
     for record_name in record_names:
@@ -349,27 +377,25 @@ def join_all_tables(tables, groupBy):
 # %% Create Table from Fixed-With Table File
 
 @catch_error(logger)
-def create_table_from_fwt_file(firm_path_folder:str, file_name:str, schema_file_name:str, special_records, groupBy):
+def create_table_from_fwt_file(firm_path_folder:str, file_name:str, schema_file_name:str, table_name:str, groupBy):
     """
     Create Table from Fixed-With Table File. Convery FWT to nested Spark table.
     """
-    schema_file_path = os.path.join(schema_folder_path, schema_file_name)
     data_file_path = os.path.join(firm_path_folder, file_name)
 
     logger.info({
         'action': 'generate_tables_from_fwt_file',
         'data_file_path': data_file_path,
-        'schema_file_path': schema_file_path,
+        'schema_file_name': schema_file_name,
     })
 
-    schema = read_csv(spark=spark, file_path=schema_file_path)
-    schema = preprocess_schema(schema=schema)
-
+    schema = get_pershing_schema(spark=spark, schema_file_name=schema_file_name)
     text_file = read_text(spark=spark, file_path=data_file_path)
 
-    tables = generate_tables_from_fwt(text_file=text_file, schema=schema, special_records=special_records)
+    tables = generate_tables_from_fwt(text_file=text_file, schema=schema, table_name=table_name)
     tables = union_tables_per_record(tables=tables)
     tables = combine_rows_into_array(tables=tables, groupBy=groupBy)
+
     table = join_all_tables(tables=tables, groupBy=groupBy)
     return table
 
@@ -389,6 +415,9 @@ def process_record_A_customer_acct_info(table, schema, record_name):
 
     sub_tables = {registration_type:table.where(col(registration_type_field_name)==lit(registration_type)) for registration_type in registration_types}
     return sub_tables
+
+
+table_special_records['customer_acct_info']['A'] = process_record_A_customer_acct_info
 
 
 
@@ -413,33 +442,7 @@ def process_record_C_customer_acct_info(table, schema, record_name):
     return sub_tables
 
 
-
-# %% Get Header Schema
-
-@catch_error(logger)
-def get_header_schema():
-    """
-    Get Schema for Header section of Pershing files
-    """
-    schema_file_path = os.path.join(schema_folder_path, 'customer_acct_info.csv')
-    schema = read_csv(spark=spark, file_path=schema_file_path)
-    schema = preprocess_schema(schema=schema)
-    header_schema = schema.where(col('record_name')==lit(schema_header_str)).select(['field_name', 'position_start', 'position_end']).collect()
-
-    header_dict = dict()
-    for r in header_schema:
-        header_dict[r['field_name']] = {
-            'position_start': r['position_start'],
-            'position_end': r['position_end'],
-        }
-
-    header_dict['form_name'] = header_dict.pop('customer_acct_info')
-
-    return header_dict
-
-
-
-header_schema = get_header_schema()
+table_special_records['customer_acct_info']['C'] = process_record_C_customer_acct_info
 
 
 
@@ -448,7 +451,7 @@ header_schema = get_header_schema()
 @catch_error(logger)
 def get_pershing_file_meta(file_path:str, firm_crd_number:str):
     """
-    Get Meta Data from Pershing FWT file (reading metadata from inside the file - 1st line Header)
+    Get Meta Data from Pershing FWT file (reading 1st line (header metadata) from inside the file)
     """
     global sql_ingest_table_exists, sql_ingest_table
 
@@ -463,61 +466,35 @@ def get_pershing_file_meta(file_path:str, firm_crd_number:str):
         file_meta[field_name] = re.sub(' +', ' ', HEADER[pos['position_start']-1: pos['position_end']].strip())
 
     file_meta['firm_crd_number'] = firm_crd_number
-    file_meta['schema_file_name'] = re.sub(' ', '_', file_meta['form_name'].lower()) + '.csv'
+    file_meta['table_name'] = re.sub(' ', '_', file_meta['form_name'].lower())
+    file_meta['schema_file_name'] = file_meta['table_name'] + '.csv'
     return file_meta
 
 
 
+# %%
+
+firm_name = 'RAA'
 firm_crd_number = '23131'
 file_name = '4CCF.4CCF'
 
 firm_path_folder = os.path.join(data_path_folder, firm_crd_number)
 file_path = os.path.join(firm_path_folder, file_name)
 
-
 file_meta = get_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
-
-pprint(file_meta)
-
-
-
-# %%
-
-
-
-
-
-
-
-
-
-
-# %% Process customer_acct_info
-
-firm_name = 'RAA'
-firm_crd_number = '23131'
-
-file_name = '4CCF.4CCF'
-schema_file_name = 'customer_acct_info.csv'
-
-table_name = 'accf'
-groupBy = ['account_number']
-
-special_records = {
-    'A': process_record_A_customer_acct_info,
-    'C': process_record_C_customer_acct_info,
-    }
-
+table_name = file_meta['table_name']
 
 table = create_table_from_fwt_file(
     firm_path_folder = os.path.join(data_path_folder, firm_crd_number),
     file_name = file_name,
-    schema_file_name = schema_file_name,
-    special_records = special_records,
+    schema_file_name = file_meta['schema_file_name'],
+    table_name = table_name,
     groupBy = groupBy,
 )
 
 
+
+if is_pc: pprint(file_meta)
 if is_pc: table.show(5)
 if is_pc: print(f'Number of rows: {table.count()}')
 
