@@ -15,7 +15,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys, re, tempfile, shutil
+import os, sys, re, tempfile, shutil, copy
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'client_account'
 sys.domain_abbr = 'CA'
@@ -27,10 +27,13 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import catch_error, data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc, \
     execution_date
 from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column, \
-    get_sql_table_names, read_sql, add_md5_key, write_sql, MD5KeyIndicator
+    get_sql_table_names, read_sql, add_md5_key, write_sql, MD5KeyIndicator, partitionBy, IDKeyIndicator
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
     add_table_to_tableinfo, default_storage_account_abbr, azure_container_folder_path, data_folder, get_firms_with_crd, \
-    to_storage_account_name
+    to_storage_account_name, save_adls_gen2, container_name, file_format, select_tableinfo_columns, tableinfo_container_name, \
+    metadata_folder
+from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
+
 
 from pprint import pprint
 from collections import defaultdict
@@ -46,9 +49,17 @@ from pyspark.sql.window import Window
 
 # %% Parameters
 
+save_pershing_to_adls_flag = True
+save_tableinfo_adls_flag = True
+
+if not is_pc:
+    save_pershing_to_adls_flag = True
+    save_tableinfo_adls_flag = True
+
 storage_account_name = default_storage_account_name
 storage_account_abbr = default_storage_account_abbr
 tableinfo_source = 'PERSHING'
+database = tableinfo_source
 
 sql_server = 'DSQLOLTP02'
 sql_database = 'EDIPIngestion'
@@ -67,6 +78,7 @@ logger.info({
 
 tableinfo = defaultdict(list)
 table_special_records = defaultdict(dict)
+PARTITION_list = defaultdict(str)
 tmpdirs = []
 
 pershing_strftime = r'%Y-%m-%d %H:%M:%S' # http://strftime.org/
@@ -87,6 +99,8 @@ key_column_names_with_load_n_date = key_column_names_with_load + ['run_datetime'
 # %% Create Session
 
 spark = create_spark()
+snowflake_ddl_params.spark = spark
+
 
 
 # %% Read Key Vault Data
@@ -621,21 +635,131 @@ def get_selected_files(ingest_table):
 
     # Filter out old files
     full_files = all_files.where('is_full_load').withColumn('row_number', 
-            row_number().over(Window.partitionBy(key_column_names_with_load).orderBy(col('file_date').desc(), col(MD5KeyIndicator).desc()))
+            row_number().over(Window.partitionBy(key_column_names_with_load).orderBy(col('run_datetime').desc(), col(MD5KeyIndicator).desc()))
         ).where(col('row_number')==lit(1))
 
-    all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names, how='left').select('a.*', col('f.file_date').alias('max_date')) \
-        .withColumn('full_load_date', col('max_date')).drop('max_date')
+    all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names, how='left').select('a.*', col('f.run_datetime').alias('max_date')) \
+        .withColumn('full_load_date', when(col('full_load_date').isNull(), col('max_date')).otherwise(col('full_load_date'))).drop('max_date')
 
     all_files = all_files.withColumn('is_ingested', 
-            when(col('ingestion_date').isNull() & col('full_load_date').isNotNull() & (col('file_date')<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
+            when(col('ingestion_date').isNull() & col('full_load_date').isNotNull() & (col('run_datetime')<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
         )
 
     # Select and Order Files for ingestion
     new_files = all_files.where(col('ingestion_date').isNull()).withColumn('ingestion_date', to_timestamp(lit(execution_date)))
-    selected_files = new_files.where('is_ingested').orderBy(col('crd_number').desc(), col('table_name').desc(), col('is_full_load').desc(), col('file_date').asc())
+    selected_files = new_files.where('is_ingested').orderBy(col('firm_crd_number').desc(), col('table_name').desc(), col('is_full_load').desc(), col('run_datetime').asc())
 
     return new_files, selected_files
+
+
+
+# %% Main Processing of Pershing File
+
+@catch_error(logger)
+def process_pershing_file(file_meta):
+    """
+    Main Processing of single Pershing file
+    """
+    file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
+
+    logger.info(file_meta)
+
+    firm_crd_number = file_meta['firm_crd_number']
+    file_name = file_meta['file_name']
+
+    firm_path_folder = os.path.join(data_path_folder, firm_crd_number)
+    file_path = os.path.join(firm_path_folder, file_name)
+
+    file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
+    table_name = file_meta['table_name']
+
+    table = create_table_from_fwt_file(
+        firm_path_folder = os.path.join(data_path_folder, firm_crd_number),
+        file_name = file_name,
+        schema_file_name = file_meta['schema_file_name'],
+        table_name = table_name,
+        groupBy=groupBy,
+    )
+
+    if is_pc: table.show(5)
+    if is_pc: print(f'Number of rows: {table.count()}')
+
+
+
+# %% Process Single File
+
+@catch_error(logger)
+def process_one_file(file_meta):
+    """
+    Process Single File - Unzipped or ZIP file
+    """
+    global tmpdirs
+    file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
+    logger.info(f'Processing {file_path}')
+
+    if file_path.lower().endswith('.zip'):
+        tmpdir = tempfile.TemporaryDirectory(dir=os.path.dirname(file_path))
+        tmpdirs.append(tmpdir)
+        logger.info(f'Extracting {file_path} to {tmpdir.name}')
+        shutil.unpack_archive(filename=file_path, extract_dir=tmpdir.name)
+        for root1, dirs1, files1 in os.walk(tmpdir.name):
+            for file1 in files1:
+                file_meta1 = copy.deepcopy(file_meta)
+                file_meta1['folder_path'] = root1
+                file_meta1['file_name'] = file1
+                return process_pershing_file(file_meta=file_meta1)
+    else:
+        return process_pershing_file(file_meta=file_meta)
+
+
+
+# %% Write list of tables to Azure
+
+@catch_error(logger)
+def write_table_list_to_azure(table_list:dict, firm_name:str, storage_account_name:str, storage_account_abbr:str):
+    """
+    Write all tables in table_list to Azure
+    """
+    global PARTITION_list
+
+    if not table_list:
+        logger.warning(f"No data to write")
+        return
+
+    for table_name, table in table_list.items():
+        logger.info(f'Writing {table_name} to Azure...')
+
+        add_table_to_tableinfo(
+            tableinfo = tableinfo, 
+            table = table, 
+            schema_name = firm_name, 
+            table_name = table_name, 
+            tableinfo_source = tableinfo_source, 
+            storage_account_name = storage_account_name,
+            storage_account_abbr = storage_account_abbr,
+            )
+
+        container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=database, firm_or_schema=firm_name)
+
+        if is_pc: # and manual_iteration:
+            local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
+            pprint(fr'Save to local {local_path}')
+            table.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
+
+        if save_pershing_to_adls_flag:
+            userMetadata = save_adls_gen2(
+                table = table,
+                storage_account_name = storage_account_name,
+                container_name = container_name,
+                container_folder = container_folder,
+                table_name = table_name,
+                partitionBy = partitionBy,
+                file_format = file_format
+            )
+
+            PARTITION_list[(sys.domain_name, database, firm_name, table_name, storage_account_name)] = userMetadata
+
+    logger.info('Done writing to Azure')
 
 
 
@@ -698,7 +822,7 @@ def process_all_files():
                 else:
                     table_list_union[table_name] = table.distinct()
 
-        write_xml_table_list_to_azure(
+        write_table_list_to_azure(
             table_list = table_list_union,
             firm_name = firm['firm_name'],
             storage_account_name = storage_account_name,
@@ -715,58 +839,84 @@ all_new_files = process_all_files()
 
 
 
+# %% Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
+
+@catch_error(logger)
+def save_tableinfo_dict_and_sql_ingest_table(tableinfo:dict, all_new_files):
+    """
+    Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
+    """
+    if not tableinfo:
+        logger.warning('No data in TableInfo --> Skipping write to Azure')
+        return
+
+    tableinfo_values = list(tableinfo.values())
+
+    list_of_dict = []
+    for vi in range(len(tableinfo_values[0])):
+        list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
+
+    meta_tableinfo = spark.createDataFrame(list_of_dict)
+    meta_tableinfo = select_tableinfo_columns(tableinfo=meta_tableinfo)
+
+    storage_account_name = default_storage_account_name # keep default storage account name for tableinfo
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    if save_tableinfo_adls_flag:
+        save_adls_gen2(
+                table = meta_tableinfo,
+                storage_account_name = storage_account_name,
+                container_name = tableinfo_container_name,
+                container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
+                table_name = tableinfo_name,
+                partitionBy = partitionBy,
+                file_format = file_format,
+            )
+
+        if all_new_files: # Write ingest metadata to SQL so that the old files are not re-ingested next time.
+            write_sql(
+                table = all_new_files,
+                table_name = sql_ingest_table_name,
+                schema = sql_schema,
+                database = sql_database,
+                server = sql_server,
+                user = sql_id,
+                password = sql_pass,
+                mode = 'append',
+            )
+
+    return meta_tableinfo
 
 
 
-
-# %%
-
-firm_name = 'RAA'
-firm_crd_number = '23131'
-file_name = '4CCF.4CCF'
-
-firm_path_folder = os.path.join(data_path_folder, firm_crd_number)
-file_path = os.path.join(firm_path_folder, file_name)
-
-file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
-table_name = file_meta['table_name']
-
-table = create_table_from_fwt_file(
-    firm_path_folder = os.path.join(data_path_folder, firm_crd_number),
-    file_name = file_name,
-    schema_file_name = file_meta['schema_file_name'],
-    table_name = table_name,
-    groupBy=groupBy,
-)
+tableinfo = save_tableinfo_dict_and_sql_ingest_table(tableinfo=tableinfo, all_new_files=all_new_files)
 
 
 
-if is_pc: pprint(file_meta)
-if is_pc: table.show(5)
-if is_pc: print(f'Number of rows: {table.count()}')
+# %% Read metadata.TableInfo
+
+table_rows = read_tableinfo_rows(tableinfo_name=tableinfo_name, tableinfo_source=tableinfo_source, tableinfo=tableinfo)
 
 
-# %% Write Table to Azure
+# %% Connect to SnowFlake
 
-add_table_to_tableinfo(
-    tableinfo = tableinfo, 
-    table = table, 
-    schema_name = firm_name, 
-    table_name = table_name, 
-    tableinfo_source = tableinfo_source, 
-    storage_account_name = storage_account_name,
-    storage_account_abbr = storage_account_abbr,
-    )
+snowflake_connection = connect_to_snowflake()
+snowflake_ddl_params.snowflake_connection = snowflake_connection
 
 
-container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source, firm_or_schema=firm_name)
+# %% Iterate Over Steps for all tables
+
+ingest_data_list = iterate_over_all_tables_snowflake(tableinfo=tableinfo, table_rows=table_rows, PARTITION_list=PARTITION_list)
 
 
-if is_pc: pprint(container_folder)
+# %% Create Source Level Tables
+
+create_source_level_tables(ingest_data_list=ingest_data_list)
 
 
-# TODO: Write to Azure
+# %% Close Showflake connection
 
+snowflake_connection.close()
 
 
 # %% Mark Execution End
@@ -775,5 +925,4 @@ mark_execution_end()
 
 
 # %%
-
 

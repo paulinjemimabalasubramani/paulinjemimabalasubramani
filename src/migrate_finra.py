@@ -577,7 +577,7 @@ def get_selected_files(ingest_table):
         ).where(col('row_number')==lit(1))
 
     all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names, how='left').select('a.*', col('f.file_date').alias('max_date')) \
-        .withColumn('full_load_date', col('max_date')).drop('max_date')
+        .withColumn('full_load_date', when(col('full_load_date').isNull(), col('max_date')).otherwise(col('full_load_date'))).drop('max_date')
 
     all_files = all_files.withColumn('is_ingested', 
             when(col('ingestion_date').isNull() & col('full_load_date').isNotNull() & (col('file_date')<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
