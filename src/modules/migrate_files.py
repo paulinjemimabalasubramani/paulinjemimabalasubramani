@@ -857,7 +857,7 @@ def write_table_list_to_azure(PARTITION_list:defaultdict, table_list:dict, table
     """
     if not table_list:
         logger.warning(f"No data to write")
-        return
+        return PARTITION_list, tableinfo
 
     for table_name, table in table_list.items():
         logger.info(f'Writing {table_name} to Azure...')
