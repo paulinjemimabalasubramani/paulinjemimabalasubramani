@@ -2,7 +2,7 @@ environment: QA
 
 output_log_path: /usr/local/spark/resources/fileshare/Shared/logs
 output_cicd_path: /usr/local/spark/resources/fileshare/Shared/CICD
-create_cicd_file: true
+create_cicd_file: false
 
 
 data_paths_per_source:

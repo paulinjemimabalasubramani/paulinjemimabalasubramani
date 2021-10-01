@@ -5,20 +5,23 @@ Common Library for translating data types from source database to target databas
 
 # %% Import Libraries
 
-import os, sys, re
+import os, sys, re, tempfile, shutil, copy
 from pprint import pprint
 from collections import defaultdict
 from typing import cast
+from datetime import datetime
 
-from .common_functions import logger, catch_error, is_pc, execution_date
+from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
-    default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder
+    default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder, to_storage_account_name, \
+    add_table_to_tableinfo
 from .spark_functions import collect_column, read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
-    metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value
+    metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value, \
+    get_sql_table_names, write_sql
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit, row_number
+from pyspark.sql.functions import col, lit, row_number, when, to_timestamp
 from pyspark.sql.types import IntegerType, StringType
 from pyspark.sql.window import Window
 
@@ -31,6 +34,19 @@ modified_datetime = execution_date
 
 INFORMATION_SCHEMA = 'INFORMATION_SCHEMA'.upper()
 schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINTS']
+
+sql_ingestion = {
+    'sql_server': 'DSQLOLTP02',
+    'sql_database': 'EDIPIngestion',
+    'sql_schema': 'edip',
+    'sql_ingest_table_name': lambda tableinfo_source: f'{tableinfo_source.lower()}_ingest',
+    'sql_key_vault_account': 'sqledipingestion',
+}
+
+_, sql_ingestion['sql_id'], sql_ingestion['sql_pass'] = get_secrets(sql_ingestion['sql_key_vault_account'].lower(), logger=logger)
+
+tmpdirs = []
+
 
 
 # %% Get DataTypeTranslation table
@@ -85,7 +101,6 @@ def get_master_ingest_list(spark, tableinfo_source:str):
 
     if is_pc: master_ingest_list.show(5)
     return master_ingest_list
-
 
 
 
@@ -240,8 +255,6 @@ def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_
 
     if is_pc: columns.printSchema()
     return columns
-
-
 
 
 
@@ -535,7 +548,6 @@ def get_sql_schema_tables(spark, sql_id:str, sql_pass:str, sql_server:str, sql_d
 
 
 
-
 # %% Make TableInfo
 
 @catch_error(logger)
@@ -611,7 +623,6 @@ def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, t
 
 
 
-
 # %% Loop over all tables
 
 @catch_error(logger)
@@ -663,6 +674,371 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
 
     logger.info('Finished Migrating All Tables')
     return PARTITION_list
+
+
+
+# %% Get SQL Ingest Table
+
+@catch_error(logger)
+def get_sql_ingest_table(spark, tableinfo_source):
+    """
+    Get SQL Ingest Table - the history of files ingested in SQL Server
+    """
+    table_names, sql_tables = get_sql_table_names(
+        spark = spark,
+        schema = sql_ingestion['sql_schema'],
+        database = sql_ingestion['sql_database'],
+        server = sql_ingestion['sql_server'],
+        user = sql_ingestion['sql_id'],
+        password = sql_ingestion['sql_pass'],
+        )
+
+    sql_ingest_table_name = sql_ingestion['sql_ingest_table_name'](tableinfo_source)
+    sql_ingest_table_exists = sql_ingest_table_name in table_names
+
+    sql_ingest_table = None
+    if sql_ingest_table_exists:
+        sql_ingest_table = read_sql(
+            spark = spark,
+            user = sql_ingestion['sql_id'],
+            password = sql_ingestion['sql_pass'],
+            schema = sql_ingestion['sql_schema'],
+            table_name = sql_ingest_table_name,
+            database = sql_ingestion['sql_database'],
+            server = sql_ingestion['sql_server'],
+            )
+
+    return sql_ingest_table
+
+
+
+# %% Write SQL Ingest Table
+
+@catch_error(logger)
+def write_sql_ingest_table(sql_ingest_table, tableinfo_source, mode:str='append'):
+    """
+    Write SQL Ingest Table - the history of files ingested
+    """
+    write_sql(
+        table = sql_ingest_table,
+        table_name = sql_ingestion['sql_ingest_table_name'](tableinfo_source),
+        schema = sql_ingestion['sql_schema'],
+        database = sql_ingestion['sql_database'],
+        server = sql_ingestion['sql_server'],
+        user = sql_ingestion['sql_id'],
+        password = sql_ingestion['sql_pass'],
+        mode = mode,
+    )
+
+
+
+# %% Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
+
+@catch_error(logger)
+def save_tableinfo_dict_and_sql_ingest_table(spark, tableinfo:defaultdict, tableinfo_source:str, all_new_files, save_tableinfo_adls_flag:bool=True):
+    """
+    Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
+    """
+    if not tableinfo:
+        logger.warning('No data in TableInfo --> Skipping write to Azure')
+        return
+
+    tableinfo_values = list(tableinfo.values())
+
+    list_of_dict = []
+    for vi in range(len(tableinfo_values[0])):
+        list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
+
+    meta_tableinfo = spark.createDataFrame(list_of_dict)
+    meta_tableinfo = select_tableinfo_columns(tableinfo=meta_tableinfo)
+
+    storage_account_name = default_storage_account_name # keep default storage account name for tableinfo
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    if save_tableinfo_adls_flag:
+        save_adls_gen2(
+                table = meta_tableinfo,
+                storage_account_name = storage_account_name,
+                container_name = tableinfo_container_name,
+                container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
+                table_name = tableinfo_name,
+                partitionBy = partitionBy,
+                file_format = file_format,
+            )
+
+        if all_new_files: # Write ingest metadata to SQL so that the old files are not re-ingested next time.
+            write_sql_ingest_table(sql_ingest_table=all_new_files, tableinfo_source=tableinfo_source, mode='append')
+
+    return meta_tableinfo
+
+
+
+# %% Remove temporary folders
+
+@catch_error(logger)
+def cleanup_tmpdirs():
+    """
+    Remove temporary folders created by unzip process
+    """
+    global tmpdirs
+    while len(tmpdirs)>0:
+        tmpdirs.pop(0).cleanup()
+
+
+
+# %% Process Single File
+
+@catch_error(logger)
+def process_one_file(file_meta, fn_process_file):
+    """
+    Process Single File - Unzipped or ZIP file
+    """
+    global tmpdirs
+    file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
+    logger.info(f'Processing {file_path}')
+
+    if file_path.lower().endswith('.zip'):
+        tmpdir = tempfile.TemporaryDirectory(dir=os.path.dirname(file_path))
+        tmpdirs.append(tmpdir)
+        logger.info(f'Extracting {file_path} to {tmpdir.name}')
+        shutil.unpack_archive(filename=file_path, extract_dir=tmpdir.name)
+        for root1, dirs1, files1 in os.walk(tmpdir.name):
+            for file1 in files1:
+                file_meta1 = copy.deepcopy(file_meta)
+                file_meta1['folder_path'] = root1
+                file_meta1['file_name'] = file1
+                return fn_process_file(file_meta=file_meta1)
+    else:
+        return fn_process_file(file_meta=file_meta)
+
+
+
+# %% Get Selected Files
+
+@catch_error(logger)
+def get_selected_files(ingest_table, sql_ingest_table, key_column_names, date_column_name:str):
+    """
+    Select only the files that need to be ingested this time.
+    """
+    # Union all files
+    new_files = ingest_table.alias('t'
+        ).join(sql_ingest_table, ingest_table[MD5KeyIndicator]==sql_ingest_table[MD5KeyIndicator], how='left_anti'
+        ).select('t.*')
+
+    union_columns = new_files.columns
+    all_files = new_files.select(union_columns).union(sql_ingest_table.select(union_columns)).sort(key_column_names['with_load_n_date'])
+
+    # Filter out old files
+    full_files = all_files.where('is_full_load').withColumn('row_number', 
+            row_number().over(Window.partitionBy(key_column_names['with_load']).orderBy(col(date_column_name).desc(), col(MD5KeyIndicator).desc()))
+        ).where(col('row_number')==lit(1))
+
+    all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names['base'], how='left').select('a.*', col(f'f.{date_column_name}').alias('max_date')) \
+        .withColumn('full_load_date', when(col('full_load_date').isNull(), col('max_date')).otherwise(col('full_load_date'))).drop('max_date')
+
+    all_files = all_files.withColumn('is_ingested', 
+            when(col('ingestion_date').isNull() & col('full_load_date').isNotNull() & (col(date_column_name)<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
+        )
+
+    # Select and Order Files for ingestion
+    new_files = all_files.where(col('ingestion_date').isNull()).withColumn('ingestion_date', to_timestamp(lit(execution_date)))
+    selected_files = new_files.where('is_ingested').orderBy(col('firm_crd_number').desc(), col('table_name').desc(), col('is_full_load').desc(), col(date_column_name).asc())
+
+    return new_files, selected_files
+
+
+
+# %% Write list of tables to Azure
+
+@catch_error(logger)
+def write_table_list_to_azure(PARTITION_list:defaultdict, table_list:dict, tableinfo, tableinfo_source, firm_name:str, storage_account_name:str, storage_account_abbr:str, data_path_folder:str, save_data_to_adls_flag:bool):
+    """
+    Write all tables in table_list to Azure
+    """
+    if not table_list:
+        logger.warning(f"No data to write")
+        return
+
+    for table_name, table in table_list.items():
+        logger.info(f'Writing {table_name} to Azure...')
+
+        add_table_to_tableinfo(
+            tableinfo = tableinfo, 
+            table = table, 
+            schema_name = firm_name, 
+            table_name = table_name, 
+            tableinfo_source = tableinfo_source, 
+            storage_account_name = storage_account_name,
+            storage_account_abbr = storage_account_abbr,
+            )
+
+        container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source, firm_or_schema=firm_name)
+
+        if is_pc: # and manual_iteration:
+            local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
+            pprint(fr'Save to local {local_path}')
+            table.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
+
+        if save_data_to_adls_flag:
+            userMetadata = save_adls_gen2(
+                table = table,
+                storage_account_name = storage_account_name,
+                container_name = container_name,
+                container_folder = container_folder,
+                table_name = table_name,
+                partitionBy = partitionBy,
+                file_format = file_format
+            )
+
+            PARTITION_list[(sys.domain_name, tableinfo_source, firm_name, table_name, storage_account_name)] = userMetadata
+
+    logger.info('Done writing to Azure')
+    return PARTITION_list, tableinfo
+
+
+
+# %% Get Meta Data from file
+
+@catch_error(logger)
+def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta):
+    """
+    Get Meta Data from file
+    Handles Zip files extraction as well
+    """
+    if file_path.lower().endswith('.zip'):
+        with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
+            shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
+            k = 0
+            for root1, dirs1, files1 in os.walk(tmpdir):
+                for file1 in files1:
+                    file_path1 = os.path.join(root1, file1)
+                    file_meta = fn_extract_file_meta(file_path=file_path1, firm_crd_number=firm_crd_number)
+                    k += 1
+                    break
+                if k>0: break
+
+    else:
+        file_meta = fn_extract_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
+
+    return file_meta
+
+
+
+# %% Get all files meta data for a given folder_path
+
+@catch_error(logger)
+def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_extract_file_meta, inclusive:bool=True):
+    """
+    Get all files meta data for a given folder_path.
+    Filters files for dates after the given date_start
+    """
+    logger.info(f'Getting list of candidate files from {folder_path}')
+    files_meta = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            file_meta = get_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, fn_extract_file_meta=fn_extract_file_meta)
+
+            if file_meta and (date_start<file_meta['run_datetime'] or (date_start==file_meta['run_datetime'] and inclusive)):
+                files_meta.append(file_meta)
+
+    logger.info(f'Finished getting list of files. Total Files = {len(files_meta)}')
+    return files_meta
+
+
+
+# %% Iterate over all the files in all the firms and process them.
+
+@catch_error(logger)
+def process_all_files_with_incrementals(
+    spark,
+    firms:list,
+    data_path_folder:str,
+    fn_extract_file_meta:object,
+    date_start,
+    fn_ingest_table_from_files_meta:object,
+    fn_process_file:object,
+    sql_ingest_table,
+    key_column_names:dict,
+    tableinfo_source:str,
+    save_data_to_adls_flag: bool,
+    date_column_name:str,
+    ):
+
+    """
+    Iterate over all the files in all the firms and process them.
+    """
+
+    PARTITION_list = defaultdict(str)
+    tableinfo = defaultdict(list)
+    all_new_files = None
+
+    for firm in firms:
+        folder_path = os.path.join(data_path_folder, firm['crd_number'])
+        logger.info(f"Firm: {firm['firm_name']}, Firm CRD Number: {firm['crd_number']}")
+
+        if not os.path.isdir(folder_path):
+            logger.warning(f'Path does not exist: {folder_path}   -> SKIPPING')
+            continue
+
+        files_meta = get_all_file_meta(folder_path=folder_path, date_start=date_start, firm_crd_number=firm['crd_number'], fn_extract_file_meta=fn_extract_file_meta)
+        if not files_meta:
+            continue
+
+        storage_account_name = to_storage_account_name(firm_name=firm['storage_account_abbr'])
+        setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+        logger.info('Getting New Files')
+        ingest_table = fn_ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name, storage_account_abbr=firm['storage_account_abbr'])
+        new_files, selected_files = get_selected_files(ingest_table=ingest_table, sql_ingest_table=sql_ingest_table, key_column_names=key_column_names, date_column_name=date_column_name)
+
+        logger.info(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
+
+        if all_new_files:
+            union_columns = new_files.columns
+            all_new_files = all_new_files.select(union_columns).union(new_files.select(union_columns))
+        else:
+            all_new_files = new_files
+
+        logger.info("Iterating over Selected Files")
+        table_list_union = {}
+        for ingest_row in selected_files.rdd.toLocalIterator():
+            file_meta = ingest_row.asDict()
+
+            table_list = process_one_file(file_meta=file_meta, fn_process_file=fn_process_file)
+
+            if table_list:
+                for table_name, table in table_list.items():
+                    if table_name in table_list_union.keys():
+                        table_prev = table_list_union[table_name]
+                        primary_key_columns = [c for c in table_prev.columns if c.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
+                        if not primary_key_columns:
+                            raise ValueError(f'No Primary Key Found for {table_name}')
+                        table_prev = table_prev.alias('tp'
+                            ).join(table, primary_key_columns, how='left_anti'
+                            ).select('tp.*')
+                        union_columns = table_prev.columns
+                        table_prev = table_prev.select(union_columns).union(table.select(union_columns))
+                        table_list_union[table_name] = table_prev.distinct()
+                    else:
+                        table_list_union[table_name] = table.distinct()
+
+        PARTITION_list, tableinfo = write_table_list_to_azure(
+            PARTITION_list = PARTITION_list,
+            table_list = table_list_union,
+            tableinfo = tableinfo,
+            tableinfo_source = tableinfo_source,
+            firm_name = firm['firm_name'],
+            storage_account_name = storage_account_name,
+            storage_account_abbr = firm['storage_account_abbr'],
+            data_path_folder = data_path_folder,
+            save_data_to_adls_flag = save_data_to_adls_flag,
+        )
+
+        cleanup_tmpdirs()
+
+    logger.info('Finished processing all Files and Firms')
+    return all_new_files, PARTITION_list, tableinfo
 
 
 

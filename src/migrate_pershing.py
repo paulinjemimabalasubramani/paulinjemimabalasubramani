@@ -15,7 +15,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys, re, tempfile, shutil, copy
+import os, sys, re
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'client_account'
 sys.domain_abbr = 'CA'
@@ -24,16 +24,14 @@ sys.domain_abbr = 'CA'
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
-from modules.common_functions import catch_error, data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc, \
-    execution_date
+from modules.common_functions import catch_error, data_settings, logger, mark_execution_end, config_path, is_pc
 from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column, \
-    get_sql_table_names, read_sql, add_md5_key, write_sql, MD5KeyIndicator, partitionBy, IDKeyIndicator, add_id_key, \
-    add_elt_columns
-from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
-    add_table_to_tableinfo, default_storage_account_abbr, azure_container_folder_path, data_folder, get_firms_with_crd, \
-    to_storage_account_name, save_adls_gen2, container_name, file_format, select_tableinfo_columns, tableinfo_container_name, \
-    metadata_folder
+    add_md5_key, add_id_key, add_elt_columns
+from modules.azure_functions import read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
+    default_storage_account_abbr, get_firms_with_crd
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
+from modules.migrate_files import save_tableinfo_dict_and_sql_ingest_table, get_sql_ingest_table, write_sql_ingest_table, \
+    process_all_files_with_incrementals
 
 
 from pprint import pprint
@@ -43,8 +41,7 @@ from datetime import datetime
 from pyspark.sql import functions as F
 from pyspark.sql.types import IntegerType, StringType, BooleanType
 from pyspark import StorageLevel
-from pyspark.sql.functions import col, lit, to_date, to_timestamp, row_number, when
-from pyspark.sql.window import Window
+from pyspark.sql.functions import col, lit, to_date, to_timestamp
 
 
 
@@ -60,13 +57,6 @@ if not is_pc:
 storage_account_name = default_storage_account_name
 storage_account_abbr = default_storage_account_abbr
 tableinfo_source = 'PERSHING'
-database = tableinfo_source
-
-sql_server = 'DSQLOLTP02'
-sql_database = 'EDIPIngestion'
-sql_schema = 'edip'
-sql_ingest_table_name = f'{tableinfo_source.lower()}_ingest'
-sql_key_vault_account = 'sqledipingestion'
 
 data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
 schema_folder_path = os.path.join(config_path, 'pershing_schema')
@@ -77,10 +67,8 @@ logger.info({
     'schema_folder_path': schema_folder_path,
 })
 
-tableinfo = defaultdict(list)
 table_special_records = defaultdict(dict)
-PARTITION_list = defaultdict(str)
-tmpdirs = []
+
 
 pershing_strftime = r'%m/%d/%Y %H:%M:%S' # http://strftime.org/
 date_start = datetime.strptime('01/01/1990 00:00:00', pershing_strftime)
@@ -91,9 +79,13 @@ schema_header_str = 'HEADER'
 schema_trailer_str = 'TRAILER'
 groupBy = ['account_number']
 
-key_column_names = ['firm_crd_number', 'table_name']
-key_column_names_with_load = key_column_names + ['is_full_load']
-key_column_names_with_load_n_date = key_column_names_with_load + ['run_datetime']
+date_column_name = 'run_datetime'
+key_column_names = dict() 
+key_column_names['base'] = ['firm_crd_number', 'table_name']
+key_column_names['with_load'] = key_column_names['base'] + ['is_full_load']
+key_column_names['with_load_n_date'] = key_column_names['with_load'] + [date_column_name]
+
+
 
 
 
@@ -101,13 +93,6 @@ key_column_names_with_load_n_date = key_column_names_with_load + ['run_datetime'
 
 spark = create_spark()
 snowflake_ddl_params.spark = spark
-
-
-
-# %% Read Key Vault Data
-
-_, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower(), logger=logger)
-
 
 
 # %% Get Firms that have CRD Number
@@ -120,28 +105,7 @@ if is_pc: pprint(firms)
 
 # %% Get SQL Ingest Table
 
-table_names, sql_tables = get_sql_table_names(
-    spark = spark, 
-    schema = sql_schema,
-    database = sql_database,
-    server = sql_server,
-    user = sql_id,
-    password = sql_pass,
-    )
-
-sql_ingest_table_exists = sql_ingest_table_name in table_names
-
-sql_ingest_table = None
-if sql_ingest_table_exists:
-    sql_ingest_table = read_sql(
-        spark = spark, 
-        user = sql_id, 
-        password = sql_pass, 
-        schema = sql_schema, 
-        table_name = sql_ingest_table_name, 
-        database = sql_database, 
-        server = sql_server
-        )
+sql_ingest_table = get_sql_ingest_table(spark=spark, tableinfo_source=tableinfo_source)
 
 
 
@@ -489,8 +453,6 @@ def extract_pershing_file_meta(file_path:str, firm_crd_number:str):
     """
     Extract Meta Data from Pershing FWT file (reading 1st line (header metadata) from inside the file)
     """
-    global sql_ingest_table_exists, sql_ingest_table
-
     with open(file=file_path, mode='rt') as f:
         HEADER = f.readline()
 
@@ -511,71 +473,8 @@ def extract_pershing_file_meta(file_path:str, firm_crd_number:str):
     file_meta['table_name'] = re.sub(' ', '_', file_meta['form_name'].lower())
     file_meta['schema_file_name'] = file_meta['table_name'] + '.csv'
     file_meta['is_full_load'] = file_meta['refreshed_updated'].upper() == 'REFRESHED'
-    file_meta['run_datetime'] = datetime.strptime(' '.join([file_meta['run_date'], file_meta['run_time']]), pershing_strftime)
+    file_meta[date_column_name] = datetime.strptime(' '.join([file_meta['run_date'], file_meta['run_time']]), pershing_strftime)
     return file_meta
-
-
-
-# %% Get Meta Data from Pershing FWT file
-
-@catch_error(logger)
-def get_pershing_file_meta(file_path:str, firm_crd_number:str):
-    """
-    Get Meta Data from Pershing FWT file (reading 1st line (header metadata) from inside the file)
-    Handles Zip files extraction as well
-    """
-    if file_path.lower().endswith('.zip'):
-        with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
-            shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
-            k = 0
-            for root1, dirs1, files1 in os.walk(tmpdir):
-                for file1 in files1:
-                    file_path1 = os.path.join(root1, file1)
-                    file_meta = extract_pershing_file_meta(file_path=file_path1, firm_crd_number=firm_crd_number)
-                    k += 1
-                    break
-                if k>0: break
-
-    else:
-        file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
-
-    return file_meta
-
-
-
-# %% Get all files meta data for a given folder_path
-
-@catch_error(logger)
-def get_all_pershing_file_meta(folder_path, date_start:datetime, firm_crd_number:str, inclusive:bool=True):
-    """
-    Get all files meta data for a given folder_path.
-    Filters files for dates after the given date_start
-    """
-    logger.info(f'Getting list of candidate files from {folder_path}')
-    files_meta = []
-    for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            file_meta = get_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
-
-            if file_meta and (date_start<file_meta['run_datetime'] or (date_start==file_meta['run_datetime'] and inclusive)):
-                files_meta.append(file_meta)
-
-    logger.info(f'Finished getting list of files. Total Files = {len(files_meta)}')
-    return files_meta
-
-
-
-# %% Remove temporary folders
-
-@catch_error(logger)
-def cleanup_tmpdirs():
-    """
-    Remove temporary folders created by unzip process
-    """
-    global tmpdirs
-    while len(tmpdirs)>0:
-        tmpdirs.pop(0).cleanup()
 
 
 
@@ -586,14 +485,14 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
     """
     Create Ingest Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
     """
-    global sql_ingest_table_exists, sql_ingest_table
+    global sql_ingest_table
 
     ingest_table = spark.createDataFrame(files_meta)
     ingest_table = ingest_table.select(
         col('firm_crd_number').cast(StringType()),
         col('table_name').cast(StringType()),
         to_date(col('date_of_data'), format='MM/dd/yyyy').alias('date_of_data'),
-        to_timestamp(col('run_datetime')).alias('run_datetime'),
+        to_timestamp(col(date_column_name)).alias(date_column_name),
         col('is_full_load').cast(BooleanType()),
         lit(firm_name).cast(StringType()).alias('firm_name'),
         lit(storage_account_name).cast(StringType()).alias('storage_account_name'),
@@ -608,58 +507,17 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
         col('form_name').cast(StringType()).alias('form_name'),
     )
 
-    ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names_with_load_n_date)
+    ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names['with_load_n_date'])
 
-    if not sql_ingest_table_exists:
-        sql_ingest_table_exists = True
+    if not sql_ingest_table:
         sql_ingest_table = spark.createDataFrame(spark.sparkContext.emptyRDD(), ingest_table.schema)
-        write_sql(
-            table = sql_ingest_table,
-            table_name = sql_ingest_table_name,
-            schema = sql_schema,
-            database = sql_database,
-            server = sql_server,
-            user = sql_id,
-            password = sql_pass,
+        write_sql_ingest_table(
+            sql_ingest_table = sql_ingest_table,
+            tableinfo_source = tableinfo_source,
             mode = 'overwrite',
         )
 
     return ingest_table
-
-
-
-# %% Get Selected Files
-
-@catch_error(logger)
-def get_selected_files(ingest_table):
-    """
-    Select only the files that need to be ingested this time.
-    """
-    # Union all files
-    new_files = ingest_table.alias('t'
-        ).join(sql_ingest_table, ingest_table[MD5KeyIndicator]==sql_ingest_table[MD5KeyIndicator], how='left_anti'
-        ).select('t.*')
-
-    union_columns = new_files.columns
-    all_files = new_files.select(union_columns).union(sql_ingest_table.select(union_columns)).sort(key_column_names_with_load_n_date)
-
-    # Filter out old files
-    full_files = all_files.where('is_full_load').withColumn('row_number', 
-            row_number().over(Window.partitionBy(key_column_names_with_load).orderBy(col('run_datetime').desc(), col(MD5KeyIndicator).desc()))
-        ).where(col('row_number')==lit(1))
-
-    all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names, how='left').select('a.*', col('f.run_datetime').alias('max_date')) \
-        .withColumn('full_load_date', when(col('full_load_date').isNull(), col('max_date')).otherwise(col('full_load_date'))).drop('max_date')
-
-    all_files = all_files.withColumn('is_ingested', 
-            when(col('ingestion_date').isNull() & col('full_load_date').isNotNull() & (col('run_datetime')<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
-        )
-
-    # Select and Order Files for ingestion
-    new_files = all_files.where(col('ingestion_date').isNull()).withColumn('ingestion_date', to_timestamp(lit(execution_date)))
-    selected_files = new_files.where('is_ingested').orderBy(col('firm_crd_number').desc(), col('table_name').desc(), col('is_full_load').desc(), col('run_datetime').asc())
-
-    return new_files, selected_files
 
 
 
@@ -696,7 +554,7 @@ def process_pershing_file(file_meta):
 
     table = add_elt_columns(
         table = table,
-        reception_date = file_meta['run_datetime'],
+        reception_date = file_meta[date_column_name],
         source = tableinfo_source,
         is_full_load = file_meta['is_full_load'],
         dml_type = 'I' if file_meta['is_full_load'] else 'U',
@@ -709,212 +567,34 @@ def process_pershing_file(file_meta):
 
 
 
-# %% Process Single File
+# %% Iterate over all the files in all the firms and process them.
 
-@catch_error(logger)
-def process_one_file(file_meta):
-    """
-    Process Single File - Unzipped or ZIP file
-    """
-    global tmpdirs
-    file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
-    logger.info(f'Processing {file_path}')
-
-    if file_path.lower().endswith('.zip'):
-        tmpdir = tempfile.TemporaryDirectory(dir=os.path.dirname(file_path))
-        tmpdirs.append(tmpdir)
-        logger.info(f'Extracting {file_path} to {tmpdir.name}')
-        shutil.unpack_archive(filename=file_path, extract_dir=tmpdir.name)
-        for root1, dirs1, files1 in os.walk(tmpdir.name):
-            for file1 in files1:
-                file_meta1 = copy.deepcopy(file_meta)
-                file_meta1['folder_path'] = root1
-                file_meta1['file_name'] = file1
-                return process_pershing_file(file_meta=file_meta1)
-    else:
-        return process_pershing_file(file_meta=file_meta)
-
-
-
-# %% Write list of tables to Azure
-
-@catch_error(logger)
-def write_table_list_to_azure(table_list:dict, firm_name:str, storage_account_name:str, storage_account_abbr:str):
-    """
-    Write all tables in table_list to Azure
-    """
-    global PARTITION_list
-
-    if not table_list:
-        logger.warning(f"No data to write")
-        return
-
-    for table_name, table in table_list.items():
-        logger.info(f'Writing {table_name} to Azure...')
-
-        add_table_to_tableinfo(
-            tableinfo = tableinfo, 
-            table = table, 
-            schema_name = firm_name, 
-            table_name = table_name, 
-            tableinfo_source = tableinfo_source, 
-            storage_account_name = storage_account_name,
-            storage_account_abbr = storage_account_abbr,
-            )
-
-        container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=database, firm_or_schema=firm_name)
-
-        if is_pc: # and manual_iteration:
-            local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
-            pprint(fr'Save to local {local_path}')
-            table.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
-
-        if save_pershing_to_adls_flag:
-            userMetadata = save_adls_gen2(
-                table = table,
-                storage_account_name = storage_account_name,
-                container_name = container_name,
-                container_folder = container_folder,
-                table_name = table_name,
-                partitionBy = partitionBy,
-                file_format = file_format
-            )
-
-            PARTITION_list[(sys.domain_name, database, firm_name, table_name, storage_account_name)] = userMetadata
-
-    logger.info('Done writing to Azure')
-
-
-
-
-# %% Process all files
-
-@catch_error(logger)
-def process_all_files():
-    """
-    Iterate over all the files in all the firms and process them.
-    """
-    all_new_files = None
-
-    for firm in firms:
-        folder_path = os.path.join(data_path_folder, firm['crd_number'])
-        logger.info(f"Firm: {firm['firm_name']}, Firm CRD Number: {firm['crd_number']}")
-
-        if not os.path.isdir(folder_path):
-            logger.warning(f'Path does not exist: {folder_path}   -> SKIPPING')
-            continue
-
-        files_meta = get_all_pershing_file_meta(folder_path=folder_path, date_start=date_start, firm_crd_number=firm['crd_number'])
-        if not files_meta:
-            continue
-
-        storage_account_name = to_storage_account_name(firm_name=firm['storage_account_abbr'])
-        setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-        logger.info('Getting New Files')
-        ingest_table = ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name, storage_account_abbr=firm['storage_account_abbr'])
-        new_files, selected_files = get_selected_files(ingest_table)
-
-        logger.info(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
-
-        if all_new_files:
-            union_columns = new_files.columns
-            all_new_files = all_new_files.select(union_columns).union(new_files.select(union_columns))
-        else:
-            all_new_files = new_files
-
-        logger.info("Iterating over Selected Files")
-        table_list_union = {}
-        for ingest_row in selected_files.rdd.toLocalIterator():
-            file_meta = ingest_row.asDict()
-
-            table_list = process_one_file(file_meta=file_meta)
-
-            if table_list:
-                for table_name, table in table_list.items():
-                    if table_name in table_list_union.keys():
-                        table_prev = table_list_union[table_name]
-                        primary_key_columns = [c for c in table_prev.columns if c.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
-                        if not primary_key_columns:
-                            raise ValueError(f'No Primary Key Found for {table_name}')
-                        table_prev = table_prev.alias('tp'
-                            ).join(table, primary_key_columns, how='left_anti'
-                            ).select('tp.*')
-                        union_columns = table_prev.columns
-                        table_prev = table_prev.select(union_columns).union(table.select(union_columns))
-                        table_list_union[table_name] = table_prev.distinct()
-                    else:
-                        table_list_union[table_name] = table.distinct()
-
-        write_table_list_to_azure(
-            table_list = table_list_union,
-            firm_name = firm['firm_name'],
-            storage_account_name = storage_account_name,
-            storage_account_abbr = firm['storage_account_abbr']
-        )
-
-        cleanup_tmpdirs()
-
-    logger.info('Finished processing all Files and Firms')
-    return all_new_files
-
-
-all_new_files = process_all_files()
+all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
+    spark = spark,
+    firms = firms,
+    data_path_folder = data_path_folder,
+    fn_extract_file_meta = extract_pershing_file_meta,
+    date_start = date_start,
+    fn_ingest_table_from_files_meta = ingest_table_from_files_meta,
+    fn_process_file = process_pershing_file,
+    sql_ingest_table = sql_ingest_table,
+    key_column_names = key_column_names,
+    tableinfo_source = tableinfo_source,
+    save_data_to_adls_flag = save_pershing_to_adls_flag,
+    date_column_name = date_column_name
+)
 
 
 
 # %% Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
 
-@catch_error(logger)
-def save_tableinfo_dict_and_sql_ingest_table(tableinfo:defaultdict, all_new_files):
-    """
-    Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
-    """
-    if not tableinfo:
-        logger.warning('No data in TableInfo --> Skipping write to Azure')
-        return
-
-    tableinfo_values = list(tableinfo.values())
-
-    list_of_dict = []
-    for vi in range(len(tableinfo_values[0])):
-        list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
-
-    meta_tableinfo = spark.createDataFrame(list_of_dict)
-    meta_tableinfo = select_tableinfo_columns(tableinfo=meta_tableinfo)
-
-    storage_account_name = default_storage_account_name # keep default storage account name for tableinfo
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-    if save_tableinfo_adls_flag:
-        save_adls_gen2(
-                table = meta_tableinfo,
-                storage_account_name = storage_account_name,
-                container_name = tableinfo_container_name,
-                container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
-                table_name = tableinfo_name,
-                partitionBy = partitionBy,
-                file_format = file_format,
-            )
-
-        if all_new_files: # Write ingest metadata to SQL so that the old files are not re-ingested next time.
-            write_sql(
-                table = all_new_files,
-                table_name = sql_ingest_table_name,
-                schema = sql_schema,
-                database = sql_database,
-                server = sql_server,
-                user = sql_id,
-                password = sql_pass,
-                mode = 'append',
-            )
-
-    return meta_tableinfo
-
-
-
-tableinfo = save_tableinfo_dict_and_sql_ingest_table(tableinfo=tableinfo, all_new_files=all_new_files)
-
+tableinfo = save_tableinfo_dict_and_sql_ingest_table(
+    spark = spark,
+    tableinfo = tableinfo,
+    tableinfo_source = tableinfo_source,
+    all_new_files = all_new_files,
+    save_tableinfo_adls_flag = save_tableinfo_adls_flag,
+    )
 
 
 # %% Read metadata.TableInfo
