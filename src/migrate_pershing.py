@@ -27,7 +27,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import catch_error, data_settings, get_secrets, logger, mark_execution_end, config_path, is_pc, \
     execution_date
 from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column, \
-    get_sql_table_names, read_sql, add_md5_key, write_sql, MD5KeyIndicator, partitionBy, IDKeyIndicator
+    get_sql_table_names, read_sql, add_md5_key, write_sql, MD5KeyIndicator, partitionBy, IDKeyIndicator, add_id_key, \
+    add_elt_columns
 from modules.azure_functions import setup_spark_adls_gen2_connection, read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
     add_table_to_tableinfo, default_storage_account_abbr, azure_container_folder_path, data_folder, get_firms_with_crd, \
     to_storage_account_name, save_adls_gen2, container_name, file_format, select_tableinfo_columns, tableinfo_container_name, \
@@ -81,8 +82,8 @@ table_special_records = defaultdict(dict)
 PARTITION_list = defaultdict(str)
 tmpdirs = []
 
-pershing_strftime = r'%Y-%m-%d %H:%M:%S' # http://strftime.org/
-date_start = datetime.strptime('01/01/1990 00:00:00', format=pershing_strftime)
+pershing_strftime = r'%m/%d/%Y %H:%M:%S' # http://strftime.org/
+date_start = datetime.strptime('01/01/1990 00:00:00', pershing_strftime)
 
 header_str = 'BOF      PERSHING '
 trailer_str = 'EOF      PERSHING '
@@ -152,6 +153,10 @@ def get_pershing_schema(spark, schema_file_name:str):
     Read and Pre-process the schema table to make it code-friendly
     """
     schema_file_path = os.path.join(schema_folder_path, schema_file_name)
+    if not os.path.isfile(schema_file_path):
+        logger.warning(f'Schema file is not found: {schema_file_path}')
+        return
+
     schema = read_csv(spark=spark, file_path=schema_file_path)
     schema = remove_column_spaces(schema)
     schema = schema.withColumn('field_name', F.lower(F.regexp_replace(F.trim(col('field_name')), column_regex, '_')))
@@ -182,7 +187,10 @@ def get_header_schema():
     Get Schema for Header section of Pershing files
     """
     selected_fields = ['position_start', 'position_end', 'length']
+
     schema = get_pershing_schema(spark=spark, schema_file_name='customer_acct_info.csv')
+    if not schema: raise Exception('Main Schema file is not found!')
+
     header_schema = schema.where(col('record_name')==lit(schema_header_str)).select(['field_name', *selected_fields]).collect()
     header_schema = {r['field_name']: {field_name: r[field_name] for field_name in selected_fields} for r in header_schema}
     header_schema['form_name'] = header_schema.pop('customer_acct_info')
@@ -416,6 +424,8 @@ def create_table_from_fwt_file(firm_path_folder:str, file_name:str, schema_file_
     })
 
     schema = get_pershing_schema(spark=spark, schema_file_name=schema_file_name)
+    if not schema: return
+
     text_file = read_text(spark=spark, file_path=data_file_path)
 
     tables = generate_tables_from_fwt(text_file=text_file, schema=schema, table_name=table_name)
@@ -501,7 +511,7 @@ def extract_pershing_file_meta(file_path:str, firm_crd_number:str):
     file_meta['table_name'] = re.sub(' ', '_', file_meta['form_name'].lower())
     file_meta['schema_file_name'] = file_meta['table_name'] + '.csv'
     file_meta['is_full_load'] = file_meta['refreshed_updated'].upper() == 'REFRESHED'
-    file_meta['run_datetime'] = datetime.strptime(' '.join([file_meta['run_date'], file_meta['run_time']]), format=pershing_strftime)
+    file_meta['run_datetime'] = datetime.strptime(' '.join([file_meta['run_date'], file_meta['run_time']]), pershing_strftime)
     return file_meta
 
 
@@ -680,9 +690,22 @@ def process_pershing_file(file_meta):
         table_name = table_name,
         groupBy=groupBy,
     )
+    if not table: return
+
+    table = add_id_key(table, key_column_names=groupBy)
+
+    table = add_elt_columns(
+        table = table,
+        reception_date = file_meta['run_datetime'],
+        source = tableinfo_source,
+        is_full_load = file_meta['is_full_load'],
+        dml_type = 'I' if file_meta['is_full_load'] else 'U',
+        )
 
     if is_pc: table.show(5)
     if is_pc: print(f'Number of rows: {table.count()}')
+
+    return {file_meta['table_name']: table}
 
 
 
@@ -807,20 +830,21 @@ def process_all_files():
 
             table_list = process_one_file(file_meta=file_meta)
 
-            for table_name, table in table_list.items():
-                if table_name in table_list_union.keys():
-                    table_prev = table_list_union[table_name]
-                    primary_key_columns = [c for c in table_prev.columns if c.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
-                    if not primary_key_columns:
-                        raise ValueError(f'No Primary Key Found for {table_name}')
-                    table_prev = table_prev.alias('tp'
-                        ).join(table, primary_key_columns, how='left_anti'
-                        ).select('tp.*')
-                    union_columns = table_prev.columns
-                    table_prev = table_prev.select(union_columns).union(table.select(union_columns))
-                    table_list_union[table_name] = table_prev.distinct()
-                else:
-                    table_list_union[table_name] = table.distinct()
+            if table_list:
+                for table_name, table in table_list.items():
+                    if table_name in table_list_union.keys():
+                        table_prev = table_list_union[table_name]
+                        primary_key_columns = [c for c in table_prev.columns if c.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
+                        if not primary_key_columns:
+                            raise ValueError(f'No Primary Key Found for {table_name}')
+                        table_prev = table_prev.alias('tp'
+                            ).join(table, primary_key_columns, how='left_anti'
+                            ).select('tp.*')
+                        union_columns = table_prev.columns
+                        table_prev = table_prev.select(union_columns).union(table.select(union_columns))
+                        table_list_union[table_name] = table_prev.distinct()
+                    else:
+                        table_list_union[table_name] = table.distinct()
 
         write_table_list_to_azure(
             table_list = table_list_union,
@@ -842,7 +866,7 @@ all_new_files = process_all_files()
 # %% Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
 
 @catch_error(logger)
-def save_tableinfo_dict_and_sql_ingest_table(tableinfo:dict, all_new_files):
+def save_tableinfo_dict_and_sql_ingest_table(tableinfo:defaultdict, all_new_files):
     """
     Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
     """

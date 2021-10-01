@@ -29,7 +29,7 @@ class module_params_class:
     save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
     create_or_replace = True # Default False - Use True for Schema Change Update
-    create_cicd_file = data_settings.get_value(attr_name='create_cicd_file', default_value=False) # Default False
+    create_cicd_file = data_settings.create_cicd_file
 
     snowflake_account = 'advisorgroup-edip'
     sf_key_vault_account = 'snowflake'
