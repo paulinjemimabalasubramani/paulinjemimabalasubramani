@@ -30,8 +30,7 @@ from modules.spark_functions import create_spark, read_csv, read_text, column_re
 from modules.azure_functions import read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
     default_storage_account_abbr, get_firms_with_crd
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
-from modules.migrate_files import save_tableinfo_dict_and_sql_ingest_table, get_sql_ingest_table, write_sql_ingest_table, \
-    process_all_files_with_incrementals
+from modules.migrate_files import save_tableinfo_dict_and_sql_ingest_table, write_sql_ingest_table, process_all_files_with_incrementals
 
 
 from pprint import pprint
@@ -100,12 +99,6 @@ snowflake_ddl_params.spark = spark
 firms = get_firms_with_crd(spark=spark, tableinfo_source='FINRA')
 
 if is_pc: pprint(firms)
-
-
-
-# %% Get SQL Ingest Table
-
-sql_ingest_table = get_sql_ingest_table(spark=spark, tableinfo_source=tableinfo_source)
 
 
 
@@ -481,12 +474,10 @@ def extract_pershing_file_meta(file_path:str, firm_crd_number:str):
 # %% Create Ingest Table from files_meta
 
 @catch_error(logger)
-def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str):
+def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str, sql_ingest_table):
     """
     Create Ingest Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
     """
-    global sql_ingest_table
-
     ingest_table = spark.createDataFrame(files_meta)
     ingest_table = ingest_table.select(
         col('firm_crd_number').cast(StringType()),
@@ -517,7 +508,7 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
             mode = 'overwrite',
         )
 
-    return ingest_table
+    return ingest_table, sql_ingest_table
 
 
 
@@ -577,7 +568,6 @@ all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
     date_start = date_start,
     fn_ingest_table_from_files_meta = ingest_table_from_files_meta,
     fn_process_file = process_pershing_file,
-    sql_ingest_table = sql_ingest_table,
     key_column_names = key_column_names,
     tableinfo_source = tableinfo_source,
     save_data_to_adls_flag = save_pershing_to_adls_flag,
@@ -595,6 +585,7 @@ tableinfo = save_tableinfo_dict_and_sql_ingest_table(
     all_new_files = all_new_files,
     save_tableinfo_adls_flag = save_tableinfo_adls_flag,
     )
+
 
 
 # %% Read metadata.TableInfo

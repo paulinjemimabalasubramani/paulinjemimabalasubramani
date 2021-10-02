@@ -947,6 +947,41 @@ def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_
 
 
 
+# %% Iterate over selected files for a given Firm and Union List of Tables by table name
+
+@catch_error(logger)
+def iterate_over_selected_files_per_firm(selected_files, fn_process_file):
+    """
+    Iterate over selected files for a given Firm and Union List of Tables by table name
+    """
+    logger.info("Iterating over Selected Files")
+    table_list_union = {}
+    for ingest_row in selected_files.rdd.toLocalIterator():
+        file_meta = ingest_row.asDict()
+
+        table_list = process_one_file(file_meta=file_meta, fn_process_file=fn_process_file)
+
+        if table_list:
+            for table_name, table in table_list.items():
+                if table_name in table_list_union.keys():
+                    table_prev = table_list_union[table_name]
+                    primary_key_columns = [c for c in table_prev.columns if c.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
+                    if not primary_key_columns:
+                        raise ValueError(f'No Primary Key Found for {table_name}')
+                    table_prev = table_prev.alias('tp'
+                        ).join(table, primary_key_columns, how='left_anti'
+                        ).select('tp.*')
+                    union_columns = table_prev.columns
+                    table_prev = table_prev.select(union_columns).union(table.select(union_columns))
+                    table_list_union[table_name] = table_prev.distinct()
+                else:
+                    table_list_union[table_name] = table.distinct()
+
+    return table_list_union
+
+
+
+
 # %% Iterate over all the files in all the firms and process them.
 
 @catch_error(logger)
@@ -958,7 +993,6 @@ def process_all_files_with_incrementals(
     date_start,
     fn_ingest_table_from_files_meta:object,
     fn_process_file:object,
-    sql_ingest_table,
     key_column_names:dict,
     tableinfo_source:str,
     save_data_to_adls_flag: bool,
@@ -972,6 +1006,8 @@ def process_all_files_with_incrementals(
     PARTITION_list = defaultdict(str)
     tableinfo = defaultdict(list)
     all_new_files = None
+
+    sql_ingest_table = get_sql_ingest_table(spark=spark, tableinfo_source=tableinfo_source)
 
     for firm in firms:
         folder_path = os.path.join(data_path_folder, firm['crd_number'])
@@ -989,7 +1025,7 @@ def process_all_files_with_incrementals(
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
         logger.info('Getting New Files')
-        ingest_table = fn_ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name, storage_account_abbr=firm['storage_account_abbr'])
+        ingest_table, sql_ingest_table = fn_ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name, storage_account_abbr=firm['storage_account_abbr'], sql_ingest_table=sql_ingest_table)
         new_files, selected_files = get_selected_files(ingest_table=ingest_table, sql_ingest_table=sql_ingest_table, key_column_names=key_column_names, date_column_name=date_column_name)
 
         logger.info(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
@@ -1000,28 +1036,7 @@ def process_all_files_with_incrementals(
         else:
             all_new_files = new_files
 
-        logger.info("Iterating over Selected Files")
-        table_list_union = {}
-        for ingest_row in selected_files.rdd.toLocalIterator():
-            file_meta = ingest_row.asDict()
-
-            table_list = process_one_file(file_meta=file_meta, fn_process_file=fn_process_file)
-
-            if table_list:
-                for table_name, table in table_list.items():
-                    if table_name in table_list_union.keys():
-                        table_prev = table_list_union[table_name]
-                        primary_key_columns = [c for c in table_prev.columns if c.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
-                        if not primary_key_columns:
-                            raise ValueError(f'No Primary Key Found for {table_name}')
-                        table_prev = table_prev.alias('tp'
-                            ).join(table, primary_key_columns, how='left_anti'
-                            ).select('tp.*')
-                        union_columns = table_prev.columns
-                        table_prev = table_prev.select(union_columns).union(table.select(union_columns))
-                        table_list_union[table_name] = table_prev.distinct()
-                    else:
-                        table_list_union[table_name] = table.distinct()
+        table_list_union = iterate_over_selected_files_per_firm(selected_files=selected_files, fn_process_file=fn_process_file)
 
         PARTITION_list, tableinfo = write_table_list_to_azure(
             PARTITION_list = PARTITION_list,
