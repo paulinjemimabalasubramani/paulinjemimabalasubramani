@@ -1,5 +1,5 @@
 """
-Flatten all Finra XML files and migrate them to ADLS Gen 2 
+Flatten all Finra XML files and migrate them to ADLS Gen 2
 
 https://brokercheck.finra.org/individual/summary/3132991
 
@@ -99,6 +99,9 @@ logger.info({
     'schema_path_folder': schema_path_folder,
 })
 
+tableinfo = defaultdict(list)
+
+
 
 # %% Initiate Spark
 spark = create_spark()
@@ -108,12 +111,6 @@ snowflake_ddl_params.spark = spark
 # %% Read Key Vault Data
 
 _, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower(), logger=logger)
-
-
-
-# %% Create tableinfo
-
-tableinfo = defaultdict(list)
 
 
 
@@ -559,7 +556,7 @@ def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name
 
 
 
-# %% Get Seletec Files
+# %% Get Selected Files
 
 @catch_error(logger)
 def get_selected_files(ingest_table):
@@ -580,7 +577,7 @@ def get_selected_files(ingest_table):
         ).where(col('row_number')==lit(1))
 
     all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names, how='left').select('a.*', col('f.file_date').alias('max_date')) \
-        .withColumn('full_load_date', col('max_date')).drop('max_date')
+        .withColumn('full_load_date', when(col('full_load_date').isNull(), col('max_date')).otherwise(col('full_load_date'))).drop('max_date')
 
     all_files = all_files.withColumn('is_ingested', 
             when(col('ingestion_date').isNull() & col('full_load_date').isNotNull() & (col('file_date')<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
