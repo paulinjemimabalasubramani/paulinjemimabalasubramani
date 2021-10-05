@@ -40,7 +40,7 @@ from datetime import datetime
 from pyspark.sql import functions as F
 from pyspark.sql.types import IntegerType, StringType
 from pyspark import StorageLevel
-from pyspark.sql.functions import col, lit, to_date
+from pyspark.sql.functions import col, lit, to_date, to_timestamp
 
 
 
@@ -512,6 +512,7 @@ def process_pershing_file(file_meta, sql_ingest_table):
 # %% Iterate over all the files in all the firms and process them.
 
 additional_ingest_columns = [
+    to_timestamp(col(date_column_name)).alias(date_column_name),
     to_date(col('date_of_data'), format='MM/dd/yyyy').alias('date_of_data'),
     col('remote_id').cast(StringType()).alias('remote_id'),
     col('form_name').cast(StringType()).alias('form_name'),

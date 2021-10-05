@@ -172,6 +172,7 @@ def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, sql_ingest_table
                 reportDate_name: file_meta[date_column_name],
                 firmCRDNumber_name: file_meta[FirmCRDNumber],
                 }
+            xml_table_columns = xml_table.columns
         elif file_path.lower().endswith('.zip'):
             with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
                 shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
@@ -328,6 +329,7 @@ def process_finra_file(file_meta, sql_ingest_table):
 # %% Iterate over all the files in all the firms and process them.
 
 additional_ingest_columns = [
+    to_date(col(date_column_name), format='yyyy-MM-dd').alias(date_column_name),
     to_json(col('xml_criteria')).alias('xml_criteria'),
     to_json(col('xml_rowtags')).alias('xml_rowtags'),
     ]
