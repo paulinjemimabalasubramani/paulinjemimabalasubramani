@@ -21,7 +21,7 @@ from .spark_functions import collect_column, read_csv, IDKeyIndicator, MD5KeyInd
     get_sql_table_names, write_sql
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit, row_number, when, to_timestamp, to_date
+from pyspark.sql.functions import col, lit, row_number, when, to_timestamp
 from pyspark.sql.types import IntegerType, StringType, BooleanType
 from pyspark.sql.window import Window
 
@@ -1008,7 +1008,7 @@ def iterate_over_selected_files_per_firm(selected_files, fn_process_file, sql_in
 # %% Create Common Ingest Table from files_meta
 
 @catch_error(logger)
-def ingest_table_from_files_meta(spark, files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str, tableinfo_source:str, date_column_name:str, sql_ingest_table, key_column_names:dict, additional_ingest_columns:list):
+def ingest_table_from_files_meta(spark, files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str, tableinfo_source:str, sql_ingest_table, key_column_names:dict, additional_ingest_columns:list):
     """
     Create Common Ingest Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
     """
@@ -1016,7 +1016,6 @@ def ingest_table_from_files_meta(spark, files_meta, firm_name:str, storage_accou
     ingest_table = ingest_table.select(
         col(FirmCRDNumber).cast(StringType()),
         col('table_name').cast(StringType()),
-        to_date(col(date_column_name), format='yyyy-MM-dd').alias(date_column_name),
         col('is_full_load').cast(BooleanType()),
         lit(firm_name).cast(StringType()).alias('firm_name'),
         lit(storage_account_name).cast(StringType()).alias('storage_account_name'),
@@ -1096,7 +1095,6 @@ def process_all_files_with_incrementals(
             storage_account_name = storage_account_name,
             storage_account_abbr = firm['storage_account_abbr'],
             tableinfo_source = tableinfo_source,
-            date_column_name = date_column_name,
             sql_ingest_table = sql_ingest_table,
             key_column_names = key_column_names,
             additional_ingest_columns = additional_ingest_columns,

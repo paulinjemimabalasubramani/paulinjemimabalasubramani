@@ -328,6 +328,7 @@ def process_finra_file(file_meta, sql_ingest_table):
 # %% Iterate over all the files in all the firms and process them.
 
 additional_ingest_columns = [
+    to_date(col(date_column_name), format='yyyy-MM-dd').alias(date_column_name),
     to_json(col('xml_criteria')).alias('xml_criteria'),
     to_json(col('xml_rowtags')).alias('xml_rowtags'),
     ]
