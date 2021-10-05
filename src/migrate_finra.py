@@ -172,6 +172,7 @@ def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, sql_ingest_table
                 reportDate_name: file_meta[date_column_name],
                 firmCRDNumber_name: file_meta[FirmCRDNumber],
                 }
+            xml_table_columns = xml_table.columns
         elif file_path.lower().endswith('.zip'):
             with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
                 shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
