@@ -21,8 +21,8 @@ from .spark_functions import collect_column, read_csv, IDKeyIndicator, MD5KeyInd
     get_sql_table_names, write_sql
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit, row_number, when, to_timestamp
-from pyspark.sql.types import IntegerType, StringType
+from pyspark.sql.functions import col, lit, row_number, when, to_timestamp, to_date
+from pyspark.sql.types import IntegerType, StringType, BooleanType
 from pyspark.sql.window import Window
 
 
@@ -46,6 +46,8 @@ sql_ingestion = {
 _, sql_ingestion['sql_id'], sql_ingestion['sql_pass'] = get_secrets(sql_ingestion['sql_key_vault_account'].lower(), logger=logger)
 
 tmpdirs = []
+
+FirmCRDNumber = 'firm_crd_number'
 
 
 
@@ -786,10 +788,25 @@ def cleanup_tmpdirs():
 
 
 
+# %% Get Key Column Names
+
+@catch_error(logger)
+def get_key_column_names(date_column_name:str):
+    """
+    Get Key Column Names for sorting the data files for uniqueness
+    """
+    key_column_names = dict() 
+    key_column_names['base'] = [FirmCRDNumber, 'table_name']
+    key_column_names['with_load'] = key_column_names['base'] + ['is_full_load']
+    key_column_names['with_load_n_date'] = key_column_names['with_load'] + [date_column_name]
+    return key_column_names
+
+
+
 # %% Process Single File
 
 @catch_error(logger)
-def process_one_file(file_meta, fn_process_file):
+def process_one_file(file_meta, fn_process_file, sql_ingest_table):
     """
     Process Single File - Unzipped or ZIP file
     """
@@ -807,9 +824,10 @@ def process_one_file(file_meta, fn_process_file):
                 file_meta1 = copy.deepcopy(file_meta)
                 file_meta1['folder_path'] = root1
                 file_meta1['file_name'] = file1
-                return fn_process_file(file_meta=file_meta1)
+                file_meta1['file_path'] = os.path.join(root1, file1)
+                return fn_process_file(file_meta=file_meta1, sql_ingest_table=sql_ingest_table)
     else:
-        return fn_process_file(file_meta=file_meta)
+        return fn_process_file(file_meta=file_meta, sql_ingest_table=sql_ingest_table)
 
 
 
@@ -842,7 +860,7 @@ def get_selected_files(ingest_table, sql_ingest_table, key_column_names, date_co
 
     # Select and Order Files for ingestion
     new_files = all_files.where(col('ingestion_date').isNull()).withColumn('ingestion_date', to_timestamp(lit(execution_date)))
-    selected_files = new_files.where('is_ingested').orderBy(col('firm_crd_number').desc(), col('table_name').desc(), col('is_full_load').desc(), col(date_column_name).asc())
+    selected_files = new_files.where('is_ingested').orderBy(col(FirmCRDNumber).desc(), col('table_name').desc(), col('is_full_load').desc(), col(date_column_name).asc())
 
     return new_files, selected_files
 
@@ -900,7 +918,7 @@ def write_table_list_to_azure(PARTITION_list:defaultdict, table_list:dict, table
 # %% Get Meta Data from file
 
 @catch_error(logger)
-def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta):
+def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta, sql_ingest_table):
     """
     Get Meta Data from file
     Handles Zip files extraction as well
@@ -912,13 +930,19 @@ def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta):
             for root1, dirs1, files1 in os.walk(tmpdir):
                 for file1 in files1:
                     file_path1 = os.path.join(root1, file1)
-                    file_meta = fn_extract_file_meta(file_path=file_path1, firm_crd_number=firm_crd_number)
+                    file_meta = fn_extract_file_meta(file_path=file_path1, firm_crd_number=firm_crd_number, sql_ingest_table=sql_ingest_table)
                     k += 1
                     break
                 if k>0: break
 
     else:
-        file_meta = fn_extract_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
+        file_meta = fn_extract_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, sql_ingest_table=sql_ingest_table)
+
+    if file_meta:
+        file_meta['file_name'] = os.path.basename(file_path)
+        file_meta['file_path'] = file_path
+        file_meta['folder_path'] = os.path.dirname(file_path)
+        file_meta['date_file_modified'] = datetime.fromtimestamp(os.path.getmtime(file_path))
 
     return file_meta
 
@@ -927,7 +951,7 @@ def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta):
 # %% Get all files meta data for a given folder_path
 
 @catch_error(logger)
-def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_extract_file_meta, inclusive:bool=True):
+def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_extract_file_meta, sql_ingest_table, date_column_name, inclusive:bool=True):
     """
     Get all files meta data for a given folder_path.
     Filters files for dates after the given date_start
@@ -937,9 +961,9 @@ def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_
     for root, dirs, files in os.walk(folder_path):
         for file in files:
             file_path = os.path.join(root, file)
-            file_meta = get_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, fn_extract_file_meta=fn_extract_file_meta)
+            file_meta = get_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, fn_extract_file_meta=fn_extract_file_meta, sql_ingest_table=sql_ingest_table)
 
-            if file_meta and (date_start<file_meta['run_datetime'] or (date_start==file_meta['run_datetime'] and inclusive)):
+            if file_meta and (date_start<file_meta[date_column_name] or (date_start==file_meta[date_column_name] and inclusive)):
                 files_meta.append(file_meta)
 
     logger.info(f'Finished getting list of files. Total Files = {len(files_meta)}')
@@ -950,7 +974,7 @@ def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_
 # %% Iterate over selected files for a given Firm and Union List of Tables by table name
 
 @catch_error(logger)
-def iterate_over_selected_files_per_firm(selected_files, fn_process_file):
+def iterate_over_selected_files_per_firm(selected_files, fn_process_file, sql_ingest_table):
     """
     Iterate over selected files for a given Firm and Union List of Tables by table name
     """
@@ -959,7 +983,7 @@ def iterate_over_selected_files_per_firm(selected_files, fn_process_file):
     for ingest_row in selected_files.rdd.toLocalIterator():
         file_meta = ingest_row.asDict()
 
-        table_list = process_one_file(file_meta=file_meta, fn_process_file=fn_process_file)
+        table_list = process_one_file(file_meta=file_meta, fn_process_file=fn_process_file, sql_ingest_table=sql_ingest_table)
 
         if table_list:
             for table_name, table in table_list.items():
@@ -981,6 +1005,46 @@ def iterate_over_selected_files_per_firm(selected_files, fn_process_file):
 
 
 
+# %% Create Common Ingest Table from files_meta
+
+@catch_error(logger)
+def ingest_table_from_files_meta(spark, files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str, tableinfo_source:str, date_column_name:str, sql_ingest_table, key_column_names:dict, additional_ingest_columns:list):
+    """
+    Create Common Ingest Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
+    """
+    ingest_table = spark.createDataFrame(files_meta)
+    ingest_table = ingest_table.select(
+        col(FirmCRDNumber).cast(StringType()),
+        col('table_name').cast(StringType()),
+        to_date(col(date_column_name), format='yyyy-MM-dd').alias(date_column_name),
+        col('is_full_load').cast(BooleanType()),
+        lit(firm_name).cast(StringType()).alias('firm_name'),
+        lit(storage_account_name).cast(StringType()).alias('storage_account_name'),
+        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr'),
+        lit(None).cast(StringType()).alias('remote_source'),
+        col('folder_path').cast(StringType()).alias('folder_path'),
+        col('file_name').cast(StringType()).alias('file_name'),
+        to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
+        lit(True).cast(BooleanType()).alias('is_ingested'),
+        to_timestamp(lit(None)).alias('full_load_date'),
+        to_timestamp(col('date_file_modified')).alias('date_file_modified'),
+        *additional_ingest_columns,
+    )
+
+    ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names['with_load_n_date'])
+
+    if not sql_ingest_table:
+        sql_ingest_table_exists = True
+        sql_ingest_table = spark.createDataFrame(spark.sparkContext.emptyRDD(), ingest_table.schema)
+        write_sql_ingest_table(
+            sql_ingest_table = sql_ingest_table,
+            tableinfo_source = tableinfo_source,
+            mode = 'overwrite',
+        )
+
+    return ingest_table, sql_ingest_table
+
+
 
 # %% Iterate over all the files in all the firms and process them.
 
@@ -991,7 +1055,7 @@ def process_all_files_with_incrementals(
     data_path_folder:str,
     fn_extract_file_meta:object,
     date_start,
-    fn_ingest_table_from_files_meta:object,
+    additional_ingest_columns:list,
     fn_process_file:object,
     key_column_names:dict,
     tableinfo_source:str,
@@ -1017,7 +1081,7 @@ def process_all_files_with_incrementals(
             logger.warning(f'Path does not exist: {folder_path}   -> SKIPPING')
             continue
 
-        files_meta = get_all_file_meta(folder_path=folder_path, date_start=date_start, firm_crd_number=firm['crd_number'], fn_extract_file_meta=fn_extract_file_meta)
+        files_meta = get_all_file_meta(folder_path=folder_path, date_start=date_start, firm_crd_number=firm['crd_number'], fn_extract_file_meta=fn_extract_file_meta, sql_ingest_table=sql_ingest_table, date_column_name=date_column_name)
         if not files_meta:
             continue
 
@@ -1025,7 +1089,18 @@ def process_all_files_with_incrementals(
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
         logger.info('Getting New Files')
-        ingest_table, sql_ingest_table = fn_ingest_table_from_files_meta(files_meta, firm_name=firm['firm_name'], storage_account_name=storage_account_name, storage_account_abbr=firm['storage_account_abbr'], sql_ingest_table=sql_ingest_table)
+        ingest_table, sql_ingest_table = ingest_table_from_files_meta(
+            spark = spark,
+            files_meta = files_meta,
+            firm_name = firm['firm_name'],
+            storage_account_name = storage_account_name,
+            storage_account_abbr = firm['storage_account_abbr'],
+            tableinfo_source = tableinfo_source,
+            date_column_name = date_column_name,
+            sql_ingest_table = sql_ingest_table,
+            key_column_names = key_column_names,
+            additional_ingest_columns = additional_ingest_columns,
+            )
         new_files, selected_files = get_selected_files(ingest_table=ingest_table, sql_ingest_table=sql_ingest_table, key_column_names=key_column_names, date_column_name=date_column_name)
 
         logger.info(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
@@ -1036,7 +1111,7 @@ def process_all_files_with_incrementals(
         else:
             all_new_files = new_files
 
-        table_list_union = iterate_over_selected_files_per_firm(selected_files=selected_files, fn_process_file=fn_process_file)
+        table_list_union = iterate_over_selected_files_per_firm(selected_files=selected_files, fn_process_file=fn_process_file, sql_ingest_table=sql_ingest_table)
 
         PARTITION_list, tableinfo = write_table_list_to_azure(
             PARTITION_list = PARTITION_list,
