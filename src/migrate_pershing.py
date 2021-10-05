@@ -26,11 +26,11 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import catch_error, data_settings, logger, mark_execution_end, config_path, is_pc
 from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column, \
-    add_md5_key, add_id_key, add_elt_columns
-from modules.azure_functions import read_tableinfo_rows, default_storage_account_name, tableinfo_name, \
-    default_storage_account_abbr, get_firms_with_crd
+    add_id_key, add_elt_columns
+from modules.azure_functions import read_tableinfo_rows, tableinfo_name, get_firms_with_crd
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
-from modules.migrate_files import save_tableinfo_dict_and_sql_ingest_table, write_sql_ingest_table, process_all_files_with_incrementals
+from modules.migrate_files import save_tableinfo_dict_and_sql_ingest_table, process_all_files_with_incrementals, FirmCRDNumber, \
+    get_key_column_names
 
 
 from pprint import pprint
@@ -38,9 +38,9 @@ from collections import defaultdict
 from datetime import datetime
 
 from pyspark.sql import functions as F
-from pyspark.sql.types import IntegerType, StringType, BooleanType
+from pyspark.sql.types import IntegerType, StringType
 from pyspark import StorageLevel
-from pyspark.sql.functions import col, lit, to_date, to_timestamp
+from pyspark.sql.functions import col, lit, to_date
 
 
 
@@ -49,25 +49,12 @@ from pyspark.sql.functions import col, lit, to_date, to_timestamp
 save_pershing_to_adls_flag = True
 save_tableinfo_adls_flag = True
 
-if not is_pc:
-    save_pershing_to_adls_flag = True
-    save_tableinfo_adls_flag = True
-
-storage_account_name = default_storage_account_name
-storage_account_abbr = default_storage_account_abbr
 tableinfo_source = 'PERSHING'
 
 data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
 schema_folder_path = os.path.join(config_path, 'pershing_schema')
 
-logger.info({
-    'tableinfo_source': tableinfo_source,
-    'data_path_folder': data_path_folder,
-    'schema_folder_path': schema_folder_path,
-})
-
 table_special_records = defaultdict(dict)
-
 
 pershing_strftime = r'%m/%d/%Y %H:%M:%S' # http://strftime.org/
 date_start = datetime.strptime('01/01/1990 00:00:00', pershing_strftime)
@@ -79,16 +66,17 @@ schema_trailer_str = 'TRAILER'
 groupBy = ['account_number']
 
 date_column_name = 'run_datetime'
-key_column_names = dict() 
-key_column_names['base'] = ['firm_crd_number', 'table_name']
-key_column_names['with_load'] = key_column_names['base'] + ['is_full_load']
-key_column_names['with_load_n_date'] = key_column_names['with_load'] + [date_column_name]
+key_column_names = get_key_column_names(date_column_name=date_column_name)
+
+logger.info({
+    'tableinfo_source': tableinfo_source,
+    'data_path_folder': data_path_folder,
+    'schema_folder_path': schema_folder_path,
+})
 
 
 
-
-
-# %% Create Session
+# %% Create Spark Session
 
 spark = create_spark()
 snowflake_ddl_params.spark = spark
@@ -442,7 +430,7 @@ table_special_records['customer_acct_info']['C'] = process_record_C_customer_acc
 # %% Extract Meta Data from Pershing FWT file
 
 @catch_error(logger)
-def extract_pershing_file_meta(file_path:str, firm_crd_number:str):
+def extract_pershing_file_meta(file_path:str, firm_crd_number:str, sql_ingest_table):
     """
     Extract Meta Data from Pershing FWT file (reading 1st line (header metadata) from inside the file)
     """
@@ -457,7 +445,7 @@ def extract_pershing_file_meta(file_path:str, firm_crd_number:str):
         'file_name': os.path.basename(file_path),
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
-        'firm_crd_number': firm_crd_number,
+        FirmCRDNumber: firm_crd_number,
     }
 
     for field_name, pos in header_schema.items():
@@ -471,51 +459,10 @@ def extract_pershing_file_meta(file_path:str, firm_crd_number:str):
 
 
 
-# %% Create Ingest Table from files_meta
-
-@catch_error(logger)
-def ingest_table_from_files_meta(files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str, sql_ingest_table):
-    """
-    Create Ingest Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
-    """
-    ingest_table = spark.createDataFrame(files_meta)
-    ingest_table = ingest_table.select(
-        col('firm_crd_number').cast(StringType()),
-        col('table_name').cast(StringType()),
-        to_date(col('date_of_data'), format='MM/dd/yyyy').alias('date_of_data'),
-        to_timestamp(col(date_column_name)).alias(date_column_name),
-        col('is_full_load').cast(BooleanType()),
-        lit(firm_name).cast(StringType()).alias('firm_name'),
-        lit(storage_account_name).cast(StringType()).alias('storage_account_name'),
-        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr'),
-        lit(None).cast(StringType()).alias('remote_source'),
-        col('folder_path').cast(StringType()).alias('folder_path'),
-        col('file_name').cast(StringType()).alias('file_name'),
-        to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
-        lit(True).cast(BooleanType()).alias('is_ingested'),
-        to_timestamp(lit(None)).alias('full_load_date'),
-        col('remote_id').cast(StringType()).alias('remote_id'),
-        col('form_name').cast(StringType()).alias('form_name'),
-    )
-
-    ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names['with_load_n_date'])
-
-    if not sql_ingest_table:
-        sql_ingest_table = spark.createDataFrame(spark.sparkContext.emptyRDD(), ingest_table.schema)
-        write_sql_ingest_table(
-            sql_ingest_table = sql_ingest_table,
-            tableinfo_source = tableinfo_source,
-            mode = 'overwrite',
-        )
-
-    return ingest_table, sql_ingest_table
-
-
-
 # %% Main Processing of Pershing File
 
 @catch_error(logger)
-def process_pershing_file(file_meta):
+def process_pershing_file(file_meta, sql_ingest_table):
     """
     Main Processing of single Pershing file
     """
@@ -523,13 +470,13 @@ def process_pershing_file(file_meta):
 
     logger.info(file_meta)
 
-    firm_crd_number = file_meta['firm_crd_number']
+    firm_crd_number = file_meta[FirmCRDNumber]
     file_name = file_meta['file_name']
 
     firm_path_folder = os.path.join(data_path_folder, firm_crd_number)
     file_path = os.path.join(firm_path_folder, file_name)
 
-    file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number)
+    file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, sql_ingest_table=sql_ingest_table)
     table_name = file_meta['table_name']
 
     table = create_table_from_fwt_file(
@@ -540,6 +487,10 @@ def process_pershing_file(file_meta):
         groupBy=groupBy,
     )
     if not table: return
+
+    table = remove_column_spaces(table_to_remove = table)
+    table = table.withColumn(date_column_name, lit(str(file_meta[date_column_name])))
+    table = table.withColumn(FirmCRDNumber, lit(str(file_meta[FirmCRDNumber])))
 
     table = add_id_key(table, key_column_names=groupBy)
 
@@ -560,13 +511,19 @@ def process_pershing_file(file_meta):
 
 # %% Iterate over all the files in all the firms and process them.
 
+additional_ingest_columns = [
+    to_date(col('date_of_data'), format='MM/dd/yyyy').alias('date_of_data'),
+    col('remote_id').cast(StringType()).alias('remote_id'),
+    col('form_name').cast(StringType()).alias('form_name'),
+    ]
+
 all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
     spark = spark,
     firms = firms,
     data_path_folder = data_path_folder,
     fn_extract_file_meta = extract_pershing_file_meta,
     date_start = date_start,
-    fn_ingest_table_from_files_meta = ingest_table_from_files_meta,
+    additional_ingest_columns = additional_ingest_columns,
     fn_process_file = process_pershing_file,
     key_column_names = key_column_names,
     tableinfo_source = tableinfo_source,
