@@ -29,7 +29,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end
-from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake
+from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake, to_string
 from modules.snowflake_ddl import snowflake_ddl_params
 
 
@@ -142,6 +142,8 @@ def reverse_etl_all_tables():
             password = sf_pass,
             )
 
+        table = to_string(table, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
+
         write_sql(
             table = table,
             table_name = table_name.lower(),
@@ -152,7 +154,7 @@ def reverse_etl_all_tables():
             password = sql_pass,
             mode = 'overwrite',
         )
-    
+
     logger.info('Finished Reverse ETL for all tables')
 
 
