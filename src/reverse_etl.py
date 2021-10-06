@@ -152,7 +152,7 @@ def reverse_etl_all_tables():
             password = sql_pass,
             mode = 'overwrite',
         )
-    
+
     logger.info('Finished Reverse ETL for all tables')
 
 

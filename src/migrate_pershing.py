@@ -177,6 +177,7 @@ def add_schema_fields_to_table(tables, table, schema, record_name:str, condition
             schema_dict = schema_row.asDict()
             table = extract_field_from_fwt(table=table, field_name=schema_dict['field_name'], position_start=schema_dict['position_start'], length=schema_dict['length'])
 
+    table = table.drop('value')
     tables[(record_name, conditional_changes)] = table
 
 
@@ -489,7 +490,7 @@ def process_pershing_file(file_meta, sql_ingest_table):
     if not table: return
 
     table = remove_column_spaces(table_to_remove = table)
-    table = table.withColumn(date_column_name, lit(str(file_meta[date_column_name])))
+    table = table.withColumn(date_column_name, to_timestamp(lit(file_meta[date_column_name])))
     table = table.withColumn(FirmCRDNumber, lit(str(file_meta[FirmCRDNumber])))
 
     table = add_id_key(table, key_column_names=groupBy)
