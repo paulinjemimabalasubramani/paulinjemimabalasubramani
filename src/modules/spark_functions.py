@@ -244,7 +244,7 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
     """
     Read from Snowflake Table or Query
     """
-    logger.info(f"Reading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', table='{schema}.{table_name}'")
+    logger.info(f"Reading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', schema='{schema}', table='{table_name}'")
     sf_options = {
         'sfUrl': f'{account}.snowflakecomputing.com',
         'sfUser': user,
