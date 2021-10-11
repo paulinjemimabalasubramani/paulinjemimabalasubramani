@@ -26,7 +26,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, post_log_data
+from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, post_log_data, data_settings
 from modules.spark_functions import create_spark, read_snowflake, table_to_list_dict
 from modules.snowflake_ddl import snowflake_ddl_params, connect_to_snowflake
 
@@ -37,7 +37,7 @@ from modules.snowflake_ddl import snowflake_ddl_params, connect_to_snowflake
 sf_account = snowflake_ddl_params.snowflake_account
 sf_role = snowflake_ddl_params.snowflake_role
 sf_warehouse = snowflake_ddl_params.snowflake_raw_warehouse
-sf_database = snowflake_ddl_params.snowflake_curated_database
+sf_databases = data_settings.copy_history_log_databases
 sf_schema = snowflake_ddl_params.elt_stage_schema
 
 stream_name = f'{sf_schema}.SNOWFLAKE_COPY_HISTORY_LOG_STREAM'
@@ -67,7 +67,7 @@ _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(
 # %% Post Snowflake Copy History Log to Azure Monitor
 
 @catch_error(logger)
-def post_copy_history():
+def post_copy_history(sf_database):
     """
     Post Snowflake Copy History Log to Azure Monitor
     """
@@ -157,10 +157,16 @@ WHERE S.METADATA$ACTION = 'INSERT';
 
 
 
+# %% Iterate over given databases
 
-post_copy_history()
+@catch_error(logger)
+def iterate_over_given_databases(sf_databases):
+    for sf_database in sf_databases:
+        post_copy_history(sf_database=sf_database)
 
 
+
+iterate_over_given_databases(sf_databases=sf_databases)
 
 
 

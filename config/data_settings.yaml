@@ -15,3 +15,12 @@ data_paths_per_source:
     # Client and Account:
     PERSHING: /usr/local/spark/resources/fileshare/Shared/PERSHING
 
+
+
+
+copy_history_log_databases: 
+    - QA_FP
+    - QA_CA
+
+
+
