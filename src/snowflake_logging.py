@@ -26,13 +26,9 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, post_log_data, \
-    get_log_data
-from modules.spark_functions import collect_column, create_spark, read_snowflake, table_to_list_dict
-from modules.snowflake_ddl import snowflake_ddl_params
-
-
-from pyspark.sql.functions import col, lit
+from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, post_log_data
+from modules.spark_functions import create_spark, read_snowflake, table_to_list_dict
+from modules.snowflake_ddl import snowflake_ddl_params, connect_to_snowflake
 
 
 
@@ -41,8 +37,11 @@ from pyspark.sql.functions import col, lit
 sf_account = snowflake_ddl_params.snowflake_account
 sf_role = snowflake_ddl_params.snowflake_role
 sf_warehouse = snowflake_ddl_params.snowflake_raw_warehouse
+sf_database = snowflake_ddl_params.snowflake_curated_database
+sf_schema = snowflake_ddl_params.elt_stage_schema
 
-sf_databases = [snowflake_ddl_params.snowflake_raw_database]
+stream_name = f'{sf_schema}.SNOWFLAKE_COPY_HISTORY_LOG_STREAM'
+stream_dump_name = f'{stream_name}_DUMP'
 
 
 
@@ -52,6 +51,12 @@ spark = create_spark()
 snowflake_ddl_params.spark = spark
 
 
+# %% Connect to SnowFlake
+
+snowflake_connection = connect_to_snowflake()
+snowflake_ddl_params.snowflake_connection = snowflake_connection
+
+
 
 # %% Read Key Vault Data
 
@@ -59,81 +64,75 @@ _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(
 
 
 
-# %% get previous log LAST_LOAD_TIME
-
-kusto_query ='SnowflakeCopyHistory_CL | summarize MAX_LOAD_TIME = max(LAST_LOAD_TIME_t) by TABLE_CATALOG_NAME_s, TABLE_SCHEMA_NAME_s, TABLE_NAME_s'
-
-# prev_log_data = get_log_data(kusto_query=kusto_query)
-
-
-
-
-
-
-
-
-
-# %% Get List of Schemas for a given database from Information Schema
+# %% Post Snowflake Copy History Log to Azure Monitor
 
 @catch_error(logger)
-def get_sf_schema_list(sf_database:str):
+def post_copy_history():
     """
-    Get List of Schemas for a given database from Information Schema
+    Post Snowflake Copy History Log to Azure Monitor
     """
-    logger.info('Get List of Tables from Information Schema...')
-    tables = read_snowflake(
-        spark = spark,
-        table_name = 'TABLES',
-        schema = 'INFORMATION_SCHEMA',
-        database = sf_database,
-        warehouse = sf_warehouse,
-        role = sf_role,
-        account = sf_account,
-        user = sf_id,
-        password = sf_pass,
-        )
+    query_insert = f"""
+USE ROLE {sf_role};
+USE WAREHOUSE {sf_warehouse};
+USE DATABASE {sf_database};
 
-    tables = tables.where(
-        (col('TABLE_TYPE')==lit('BASE TABLE')) &
-        (col('IS_TRANSIENT')==lit('NO'))
+INSERT OVERWRITE INTO {stream_dump_name}
+    (
+    FILE_NAME
+    ,STAGE_LOCATION
+    ,LAST_LOAD_TIME
+    ,ROW_COUNT
+    ,ROW_PARSED
+    ,FILE_SIZE
+    ,FIRST_ERROR_MESSAGE
+    ,FIRST_ERROR_LINE_NUMBER
+    ,FIRST_ERROR_CHARACTER_POS
+    ,FIRST_ERROR_COLUMN_NAME
+    ,ERROR_COUNT
+    ,ERROR_LIMIT
+    ,STATUS
+    ,TABLE_CATALOG_NAME
+    ,TABLE_SCHEMA_NAME
+    ,TABLE_NAME
+    ,PIPE_CATALOG_NAME
+    ,PIPE_SCHEMA_NAME
+    ,PIPE_NAME
+    ,PIPE_RECEIVED_TIME
+    ,INTEGRATION_ID
+    ,EXECUTION_DATE
     )
+SELECT  
+    FILE_NAME
+    ,STAGE_LOCATION
+    ,LAST_LOAD_TIME
+    ,ROW_COUNT
+    ,ROW_PARSED
+    ,FILE_SIZE
+    ,FIRST_ERROR_MESSAGE
+    ,FIRST_ERROR_LINE_NUMBER
+    ,FIRST_ERROR_CHARACTER_POS
+    ,FIRST_ERROR_COLUMN_NAME
+    ,ERROR_COUNT
+    ,ERROR_LIMIT
+    ,STATUS
+    ,TABLE_CATALOG_NAME
+    ,TABLE_SCHEMA_NAME
+    ,TABLE_NAME
+    ,PIPE_CATALOG_NAME
+    ,PIPE_SCHEMA_NAME
+    ,PIPE_NAME
+    ,PIPE_RECEIVED_TIME
+    ,INTEGRATION_ID
+    ,EXECUTION_DATE
+FROM {stream_name} S
+WHERE S.METADATA$ACTION = 'INSERT';
+"""
 
-    sf_schemas = collect_column(table=tables, column_name='TABLE_SCHEMA', distinct=True)
-
-    logger.info({
-        'database': f'{sf_database}',
-        'count_schemas': len(sf_schemas),
-        'schemas': sf_schemas,
-        })
-    return sf_schemas, tables
-
-
-
-# %% Get Logs of Copy History from Snowflake
-
-@catch_error(logger)
-def get_snowflake_copy_history(spark, sf_database:str, sf_schema:str, table_name:str, start_time:str=None):
-    """
-    Get Logs of Copy History from Snowflake
-    """
-    if start_time:
-        start_timex = f"DATEADD(SECONDS, 1, TO_TIMESTAMP_LTZ('{start_time}'))"
-    else:
-        start_timex = f"DATEADD(HOURS, -2, CURRENT_TIMESTAMP())"
-
-    sqlstr = f"SELECT * FROM TABLE(INFORMATION_SCHEMA.COPY_HISTORY(TABLE_NAME=>'{table_name}', START_TIME=>{start_timex}));"
-
-    logger.info({
-        'sqlstr': sqlstr,
-        'schema': sf_schema,
-        'database': sf_database,
-        'warehouse': sf_warehouse,
-        'role': sf_role,
-        })
+    exec_status = snowflake_connection.execute_string(sql_text=query_insert)
 
     table = read_snowflake(
         spark = spark,
-        table_name = sqlstr,
+        table_name = stream_dump_name,
         schema = sf_schema,
         database = sf_database,
         warehouse = sf_warehouse,
@@ -141,42 +140,27 @@ def get_snowflake_copy_history(spark, sf_database:str, sf_schema:str, table_name
         account = sf_account,
         user = sf_id,
         password = sf_pass,
-        is_query = True,
+        is_query = False,
         )
-    return table
+
+    table_collect = table_to_list_dict(table)
+
+    logger.info({
+        'row_count': len(table_collect),
+    })
+
+    for log_data in table_collect:
+        try:
+            post_log_data(log_data=log_data, log_type='SnowflakeCopyHistory', logger=logger)
+        except Exception as e:
+            logger.error(str(e))
 
 
 
-# %% Iterate over all Databases, Schemas and Tables
 
-@catch_error(logger)
-def post_all_snowflake_copy_history_log():
-    """
-    Iterate over all Databases, Schemas and Tables to retrieve logs and send to Azure
-    """
-    for sf_database in sf_databases:
-        sf_schemas, tables = get_sf_schema_list(sf_database=sf_database)
-
-        for sf_schema in sf_schemas:
-            if (sf_schema.upper() in ['INFORMATION_SCHEMA']):
-                continue
-
-            tables_per_schema = collect_column(table=tables.where(col('TABLE_SCHEMA')==lit(sf_schema)), column_name='TABLE_NAME', distinct=True)
-
-            for table_name in tables_per_schema:
-                if table_name.upper() in ['CICD_CHANGE_HISTORY']:
-                    continue
-                logger.info(f'Getting Log Data from {sf_database}.{sf_schema}.{table_name}')
-
-                table = get_snowflake_copy_history(spark=spark, sf_database=sf_database, sf_schema=sf_schema, table_name=table_name, start_time=None)
-                table_collect = table_to_list_dict(table)
-
-                for log_data in table_collect:
-                    post_log_data(log_data=log_data, log_type='SnowflakeCopyHistory', logger=logger)
+post_copy_history()
 
 
-
-post_all_snowflake_copy_history_log()
 
 
 
