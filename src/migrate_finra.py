@@ -34,7 +34,7 @@ from modules.azure_functions import tableinfo_name, get_firms_with_crd, read_tab
 
 from modules.build_finra_tables import build_branch_table, build_individual_table
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
-from modules.migrate_files import save_tableinfo_dict_and_sql_ingest_table, process_all_files_with_incrementals, FirmCRDNumber, \
+from modules.migrate_files import save_tableinfo_dict_and_cloud_file_history, process_all_files_with_incrementals, FirmCRDNumber, \
     get_key_column_names
 
 
@@ -334,7 +334,7 @@ additional_ingest_columns = [
     to_json(col('xml_rowtags')).alias('xml_rowtags'),
     ]
 
-all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
+cloud_file_history, all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
     spark = spark,
     firms = firms,
     data_path_folder = data_path_folder,
@@ -352,11 +352,12 @@ all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
 
 # %% Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
 
-tableinfo = save_tableinfo_dict_and_sql_ingest_table(
+tableinfo = save_tableinfo_dict_and_cloud_file_history(
     spark = spark,
     tableinfo = tableinfo,
     tableinfo_source = tableinfo_source,
     all_new_files = all_new_files,
+    cloud_file_history = cloud_file_history,
     save_tableinfo_adls_flag = save_tableinfo_adls_flag,
     )
 

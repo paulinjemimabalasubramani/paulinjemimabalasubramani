@@ -13,6 +13,7 @@ from collections import OrderedDict
 
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
+from azure.storage.filedatalake import DataLakeServiceClient
 
 
 
@@ -119,6 +120,8 @@ execution_date_start = datetime.now()
 strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
 execution_date = execution_date_start.strftime(strftime)
 EXECUTION_DATE_str = 'EXECUTION_DATE'
+
+azure_filesystem_uri = 'dfs.core.windows.net'
 
 is_pc = platform.system().lower() == 'windows'
 
@@ -591,6 +594,21 @@ def to_OrderedDict(dict_:dict, reverse:bool=False):
     Utility function to convert dict to OrderedDict
     """
     return OrderedDict(sorted(dict_.items(), key=lambda x:x[0], reverse=reverse))
+
+
+
+# %% Get ADLS Gen 2 Service Client
+
+@catch_error(logger)
+def get_adls_gen2_service_client(storage_account_name):
+    """
+    Get ADLS Gen 2 Service Client Handler
+    """
+    azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
+
+    credential = ClientSecretCredential(tenant_id=azure_tenant_id, client_id=sp_id, client_secret=sp_pass)
+    service_client = DataLakeServiceClient(account_url=f'https://{storage_account_name}.{azure_filesystem_uri}', credential=credential)
+    return service_client
 
 
 
