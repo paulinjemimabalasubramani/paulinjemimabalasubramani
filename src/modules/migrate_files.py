@@ -37,18 +37,7 @@ schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINT
 tmpdirs = []
 
 FirmCRDNumber = 'firm_crd_number'
-
-
-cloud_file_histdict = {
-    'sql_server': 'DSQLOLTP02',
-    'sql_database': 'EDIPIngestion',
-    'sql_schema': 'edip',
-    'cloud_file_history_name': 'file_history',
-    'sql_key_vault_account': 'sqledipingestion',
-}
-
-_, cloud_file_histdict['sql_id'], cloud_file_histdict['sql_pass'] = get_secrets(cloud_file_histdict['sql_key_vault_account'].lower(), logger=logger)
-
+cloud_file_history_name = 'file_history'
 
 
 
@@ -691,7 +680,6 @@ def get_cloud_file_history(spark, tableinfo_source):
     service_client = get_adls_gen2_service_client(storage_account_name=storage_account_name)
     file_system_client = service_client.get_file_system_client(file_system=container_name)
 
-    cloud_file_history_name = cloud_file_histdict['cloud_file_history_name']
     container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source)
     cloud_file_history_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=cloud_file_history_name)
     cloud_file_history_exists = file_system_client.get_file_client(cloud_file_history_path).exists()
@@ -716,7 +704,6 @@ def write_cloud_file_history(file_history, cloud_file_history, tableinfo_source)
     union_columns = cloud_file_history.columns
     all_files = cloud_file_history.select(union_columns).union(file_history.select(union_columns)).distinct()
 
-    cloud_file_history_name = cloud_file_histdict['cloud_file_history_name']
     storage_account_name = default_storage_account_name
     container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source)
     save_adls_gen2(table=all_files, storage_account_name=storage_account_name, container_name=container_name, container_folder=container_folder, table_name=cloud_file_history_name, file_format='parquet')

@@ -463,7 +463,7 @@ def extract_pershing_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
 # %% Main Processing of Pershing File
 
 @catch_error(logger)
-def process_pershing_file(file_meta, sql_ingest_table):
+def process_pershing_file(file_meta, cloud_file_history):
     """
     Main Processing of single Pershing file
     """
@@ -477,7 +477,7 @@ def process_pershing_file(file_meta, sql_ingest_table):
     firm_path_folder = os.path.join(data_path_folder, firm_crd_number)
     file_path = os.path.join(firm_path_folder, file_name)
 
-    file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, sql_ingest_table=sql_ingest_table)
+    file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, cloud_file_history=cloud_file_history)
     table_name = file_meta['table_name']
 
     table = create_table_from_fwt_file(

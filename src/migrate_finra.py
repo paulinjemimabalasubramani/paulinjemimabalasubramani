@@ -309,7 +309,7 @@ def process_columns_for_elt(table_list, file_meta):
 # %% Main Processing of Finra file
 
 @catch_error(logger)
-def process_finra_file(file_meta, sql_ingest_table):
+def process_finra_file(file_meta, cloud_file_history):
     """
     Main Processing of single Finra file
     """
