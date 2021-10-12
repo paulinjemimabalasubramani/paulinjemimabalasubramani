@@ -431,7 +431,7 @@ table_special_records['customer_acct_info']['C'] = process_record_C_customer_acc
 # %% Extract Meta Data from Pershing FWT file
 
 @catch_error(logger)
-def extract_pershing_file_meta(file_path:str, firm_crd_number:str, sql_ingest_table):
+def extract_pershing_file_meta(file_path:str, firm_crd_number:str, cloud_file_history):
     """
     Extract Meta Data from Pershing FWT file (reading 1st line (header metadata) from inside the file)
     """

@@ -139,7 +139,7 @@ def extract_data_from_finra_file_path(file_path:str, firm_crd_number:str):
 # %% Get Meta Data from Finra XML File
 
 @catch_error(logger)
-def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, sql_ingest_table):
+def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, cloud_file_history):
     """
     Get Meta Data from Finra XML File (reading metadata from inside the file and also use metadata from file name)
     """
@@ -151,8 +151,8 @@ def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, sql_ingest_table
         return
 
     fcol = None
-    if sql_ingest_table:
-        filtersql = sql_ingest_table.where(
+    if cloud_file_history:
+        filtersql = cloud_file_history.where(
             (col(FirmCRDNumber)==lit(file_meta[FirmCRDNumber])) &
             (col('table_name')==lit(file_meta['table_name'])) &
             (col(date_column_name)==to_date(lit(file_meta[date_column_name]), format='yyyy-MM-dd')) &
