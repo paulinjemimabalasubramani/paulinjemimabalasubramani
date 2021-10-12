@@ -682,7 +682,7 @@ def get_cloud_file_history(spark, tableinfo_source):
 
     container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source)
     cloud_file_history_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=cloud_file_history_name)
-    cloud_file_history_exists = file_system_client.get_file_client(cloud_file_history_path).exists()
+    cloud_file_history_exists = file_system_client.get_directory_client(container_folder+'/'+cloud_file_history_name).exists()
 
     if cloud_file_history_exists:
         cloud_file_history = read_adls_gen2(spark=spark, storage_account_name=storage_account_name, container_name=container_name, container_folder=container_folder, table_name=cloud_file_history_name, file_format='parquet')
