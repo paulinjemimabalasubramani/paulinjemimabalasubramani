@@ -490,7 +490,7 @@ def process_pershing_file(file_meta, sql_ingest_table):
     if not table: return
 
     table = remove_column_spaces(table_to_remove = table)
-    table = table.withColumn(date_column_name, to_timestamp(lit(file_meta[date_column_name])))
+    table = table.withColumn(date_column_name, lit(str(file_meta[date_column_name])))
     table = table.withColumn(FirmCRDNumber, lit(str(file_meta[FirmCRDNumber])))
 
     table = add_id_key(table, key_column_names=groupBy)

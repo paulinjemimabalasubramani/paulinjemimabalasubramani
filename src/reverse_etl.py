@@ -130,28 +130,35 @@ def reverse_etl_all_tables():
     Loop over all tables to read from Snowflake and write to SQL Server
     """
     for table_name in table_names:
-        table = read_snowflake(
-            spark = spark,
-            table_name = table_name,
-            schema = sf_schema,
-            database = sf_database,
-            warehouse = sf_warehouse,
-            role = sf_role,
-            account = sf_account,
-            user = sf_id,
-            password = sf_pass,
+        if table_name in ['CICD_CHANGE_HISTORY']: continue
+
+        try:
+            table = read_snowflake(
+                spark = spark,
+                table_name = f'SELECT * FROM {table_name} WHERE SCD_IS_CURRENT=1;',
+                schema = sf_schema,
+                database = sf_database,
+                warehouse = sf_warehouse,
+                role = sf_role,
+                account = sf_account,
+                user = sf_id,
+                password = sf_pass,
+                is_query = True,
+                )
+
+            write_sql(
+                table = table,
+                table_name = table_name.lower(),
+                schema = sql_schema,
+                database = sql_database,
+                server = sql_server,
+                user = sql_id,
+                password = sql_pass,
+                mode = 'overwrite',
             )
 
-        write_sql(
-            table = table,
-            table_name = table_name.lower(),
-            schema = sql_schema,
-            database = sql_database,
-            server = sql_server,
-            user = sql_id,
-            password = sql_pass,
-            mode = 'overwrite',
-        )
+        except Exception as e:
+            logger.error(str(e))
 
     logger.info('Finished Reverse ETL for all tables')
 
