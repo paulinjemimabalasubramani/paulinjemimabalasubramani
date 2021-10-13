@@ -519,7 +519,7 @@ additional_ingest_columns = [
     col('form_name').cast(StringType()).alias('form_name'),
     ]
 
-cloud_file_history, all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
+all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
     spark = spark,
     firms = firms,
     data_path_folder = data_path_folder,
@@ -542,7 +542,6 @@ tableinfo = save_tableinfo_dict_and_cloud_file_history(
     tableinfo = tableinfo,
     tableinfo_source = tableinfo_source,
     all_new_files = all_new_files,
-    cloud_file_history = cloud_file_history,
     save_tableinfo_adls_flag = save_tableinfo_adls_flag,
     )
 

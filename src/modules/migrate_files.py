@@ -8,19 +8,19 @@ Common Library for translating data types from source database to target databas
 import os, sys, re, tempfile, shutil, copy
 from pprint import pprint
 from collections import defaultdict
-from typing import cast
 from datetime import datetime
 
-from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, get_adls_gen2_service_client
+from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
     default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder, to_storage_account_name, \
-    add_table_to_tableinfo, azure_data_path_create
+    add_table_to_tableinfo
 from .spark_functions import collect_column, read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
-    metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value
+    metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value, \
+    get_sql_table_names, write_sql
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit, row_number, sumDistinct, when, to_timestamp
+from pyspark.sql.functions import col, lit, row_number, when, to_timestamp
 from pyspark.sql.types import IntegerType, StringType, BooleanType
 from pyspark.sql.window import Window
 
@@ -38,6 +38,14 @@ tmpdirs = []
 
 FirmCRDNumber = 'firm_crd_number'
 cloud_file_history_name = 'file_history'
+cloud_file_histdict = {
+    'sql_server': 'DW1SQLOLTP02',
+    'sql_database': 'EDIPIngestion',
+    'sql_schema': 'edip',
+    'sql_key_vault_account': 'sqledipingestion',
+}
+
+_, cloud_file_histdict['sql_id'], cloud_file_histdict['sql_pass'] = get_secrets(cloud_file_histdict['sql_key_vault_account'].lower(), logger=logger)
 
 
 
@@ -669,26 +677,36 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
 
 
 
-# %% Get history of the files ingested
+# %% Get history of the files ingested in SQL Server
 
 @catch_error(logger)
 def get_cloud_file_history(spark, tableinfo_source):
     """
-    Get history of the files ingested
+    Get history of the files ingested in SQL Server
     """
-    storage_account_name = default_storage_account_name
-    service_client = get_adls_gen2_service_client(storage_account_name=storage_account_name)
-    file_system_client = service_client.get_file_system_client(file_system=container_name)
+    table_names, sql_tables = get_sql_table_names(
+        spark = spark,
+        schema = cloud_file_histdict['sql_schema'],
+        database = cloud_file_histdict['sql_database'],
+        server = cloud_file_histdict['sql_server'],
+        user = cloud_file_histdict['sql_id'],
+        password = cloud_file_histdict['sql_pass'],
+        )
 
-    container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source)
-    cloud_file_history_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=cloud_file_history_name)
-    cloud_file_history_exists = file_system_client.get_directory_client(container_folder+'/'+cloud_file_history_name).exists()
+    cloud_file_history_name1 = '_'.join([cloud_file_history_name, tableinfo_source])
+    cloud_file_history_exists = cloud_file_history_name1 in table_names
 
+    cloud_file_history = None
     if cloud_file_history_exists:
-        cloud_file_history = read_adls_gen2(spark=spark, storage_account_name=storage_account_name, container_name=container_name, container_folder=container_folder, table_name=cloud_file_history_name, file_format='parquet')
-    else:
-        cloud_file_history = None
-        logger.warning(f'File History does not exist: {cloud_file_history_path}')
+        cloud_file_history = read_sql(
+            spark = spark,
+            user = cloud_file_histdict['sql_id'],
+            password = cloud_file_histdict['sql_pass'],
+            schema = cloud_file_histdict['sql_schema'],
+            table_name = cloud_file_history_name1,
+            database = cloud_file_histdict['sql_database'],
+            server = cloud_file_histdict['sql_server'],
+            )
 
     return cloud_file_history
 
@@ -697,23 +715,27 @@ def get_cloud_file_history(spark, tableinfo_source):
 # %% Write history of the files ingested
 
 @catch_error(logger)
-def write_cloud_file_history(file_history, cloud_file_history, tableinfo_source):
+def write_cloud_file_history(cloud_file_history, tableinfo_source, mode:str='append'):
     """
     Write history of the files ingested
     """
-    union_columns = cloud_file_history.columns
-    all_files = cloud_file_history.select(union_columns).union(file_history.select(union_columns)).distinct()
-
-    storage_account_name = default_storage_account_name
-    container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source)
-    save_adls_gen2(table=all_files, storage_account_name=storage_account_name, container_name=container_name, container_folder=container_folder, table_name=cloud_file_history_name, file_format='parquet')
+    write_sql(
+        table = cloud_file_history,
+        table_name = '_'.join([cloud_file_history_name, tableinfo_source]),
+        schema = cloud_file_histdict['sql_schema'],
+        database = cloud_file_histdict['sql_database'],
+        server = cloud_file_histdict['sql_server'],
+        user = cloud_file_histdict['sql_id'],
+        password = cloud_file_histdict['sql_pass'],
+        mode = mode,
+    )
 
 
 
 # %% Save Tableinfo metadata table into Azure and Save files history metadata to cloud
 
 @catch_error(logger)
-def save_tableinfo_dict_and_cloud_file_history(spark, tableinfo:defaultdict, tableinfo_source:str, all_new_files, cloud_file_history, save_tableinfo_adls_flag:bool=True):
+def save_tableinfo_dict_and_cloud_file_history(spark, tableinfo:defaultdict, tableinfo_source:str, all_new_files, save_tableinfo_adls_flag:bool=True):
     """
     Save Tableinfo metadata table into Azure and Save files hitory metadata to cloud
     """
@@ -745,7 +767,7 @@ def save_tableinfo_dict_and_cloud_file_history(spark, tableinfo:defaultdict, tab
             )
 
         if all_new_files: # Write file history metadata to cloud so that the old files are not re-ingested next time.
-            write_cloud_file_history(file_history=all_new_files, cloud_file_history=cloud_file_history, tableinfo_source=tableinfo_source)
+            write_cloud_file_history(cloud_file_history=all_new_files, tableinfo_source=tableinfo_source, mode='append')
 
     return meta_tableinfo
 
@@ -984,7 +1006,7 @@ def iterate_over_selected_files_per_firm(selected_files, fn_process_file, cloud_
 # %% Create Common File History Table from files_meta
 
 @catch_error(logger)
-def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str, cloud_file_history, key_column_names:dict, additional_ingest_columns:list):
+def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str, tableinfo_source:str, cloud_file_history, key_column_names:dict, additional_ingest_columns:list):
     """
     Create Common File History Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
     """
@@ -1010,6 +1032,11 @@ def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_acco
 
     if not cloud_file_history:
         cloud_file_history = spark.createDataFrame(spark.sparkContext.emptyRDD(), file_history.schema)
+        write_cloud_file_history(
+            cloud_file_history = cloud_file_history,
+            tableinfo_source = tableinfo_source,
+            mode = 'overwrite',
+        )
 
     return file_history, cloud_file_history
 
@@ -1064,6 +1091,7 @@ def process_all_files_with_incrementals(
             firm_name = firm['firm_name'],
             storage_account_name = storage_account_name,
             storage_account_abbr = firm['storage_account_abbr'],
+            tableinfo_source = tableinfo_source,
             cloud_file_history = cloud_file_history,
             key_column_names = key_column_names,
             additional_ingest_columns = additional_ingest_columns,
@@ -1095,7 +1123,7 @@ def process_all_files_with_incrementals(
         cleanup_tmpdirs()
 
     logger.info('Finished processing all Files and Firms')
-    return cloud_file_history, all_new_files, PARTITION_list, tableinfo
+    return all_new_files, PARTITION_list, tableinfo
 
 
 
