@@ -21,20 +21,16 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, mark_execution_end, get_secrets, catch_error
+from modules.common_functions import logger, mark_execution_end, catch_error, get_adls_gen2_service_client
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, default_storage_account_abbr, get_firms_with_crd, \
-    to_storage_account_name, azure_data_path_create, azure_filesystem_uri, data_folder
-
-
-from azure.identity import ClientSecretCredential
-from azure.storage.filedatalake import DataLakeServiceClient
+    to_storage_account_name, azure_data_path_create, data_folder
 
 
 
 # %% Parameters
 
-days_to_retain = 7 # How many days to retain for vacuuming
+days_to_retain = 7 # How many days of data to retain during vacuuming
 
 firms_source = 'FINRA'
 
@@ -53,10 +49,7 @@ def get_container_names(storage_account_name:str):
     """
     Get list of Container Names for a given storage_account_name
     """
-    azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
-
-    credential = ClientSecretCredential(tenant_id = azure_tenant_id, client_id = sp_id, client_secret = sp_pass)
-    service_client = DataLakeServiceClient(account_url=f'https://{storage_account_name}.{azure_filesystem_uri}', credential=credential)
+    service_client = get_adls_gen2_service_client(storage_account_name)
 
     file_systems = service_client.list_file_systems()
     container_names = [file_system.name for file_system in file_systems]
@@ -78,10 +71,7 @@ def get_all_paths_inside_container(storage_account_name:str, container_name:str)
     account_url = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder='', table_name='')
     logger.info(f'Getting paths from {account_url}')
 
-    azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
-
-    credential = ClientSecretCredential(tenant_id = azure_tenant_id, client_id = sp_id, client_secret = sp_pass)
-    service_client = DataLakeServiceClient(account_url=f'https://{storage_account_name}.{azure_filesystem_uri}', credential=credential)
+    service_client = get_adls_gen2_service_client(storage_account_name)
 
     file_system_client = service_client.get_file_system_client(file_system=container_name)
     paths = file_system_client.get_paths(path=None, recursive=True, max_results=None)

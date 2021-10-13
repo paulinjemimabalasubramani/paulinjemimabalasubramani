@@ -8,7 +8,8 @@ Library for Azure Functions
 import re, sys
 from collections import defaultdict
 
-from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, post_log_data
+from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, post_log_data, \
+    azure_filesystem_uri
 from .spark_functions import IDKeyIndicator, MD5KeyIndicator, partitionBy, metadata_FirmSourceMap, \
     elt_audit_columns, column_regex, partitionBy_value, table_to_list_dict
 
@@ -29,8 +30,6 @@ data_folder = 'data'
 
 file_format = 'delta' # Default File Format
 default_storage_account_abbr = 'AGGR'
-
-azure_filesystem_uri = 'dfs.core.windows.net'
 
 
 # %% firm_name to storage_account_name

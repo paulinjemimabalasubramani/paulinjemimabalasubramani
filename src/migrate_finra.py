@@ -34,7 +34,7 @@ from modules.azure_functions import tableinfo_name, get_firms_with_crd, read_tab
 
 from modules.build_finra_tables import build_branch_table, build_individual_table
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
-from modules.migrate_files import save_tableinfo_dict_and_sql_ingest_table, process_all_files_with_incrementals, FirmCRDNumber, \
+from modules.migrate_files import save_tableinfo_dict_and_cloud_file_history, process_all_files_with_incrementals, FirmCRDNumber, \
     get_key_column_names
 
 
@@ -139,7 +139,7 @@ def extract_data_from_finra_file_path(file_path:str, firm_crd_number:str):
 # %% Get Meta Data from Finra XML File
 
 @catch_error(logger)
-def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, sql_ingest_table):
+def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, cloud_file_history):
     """
     Get Meta Data from Finra XML File (reading metadata from inside the file and also use metadata from file name)
     """
@@ -151,8 +151,8 @@ def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, sql_ingest_table
         return
 
     fcol = None
-    if sql_ingest_table:
-        filtersql = sql_ingest_table.where(
+    if cloud_file_history:
+        filtersql = cloud_file_history.where(
             (col(FirmCRDNumber)==lit(file_meta[FirmCRDNumber])) &
             (col('table_name')==lit(file_meta['table_name'])) &
             (col(date_column_name)==to_date(lit(file_meta[date_column_name]), format='yyyy-MM-dd')) &
@@ -309,7 +309,7 @@ def process_columns_for_elt(table_list, file_meta):
 # %% Main Processing of Finra file
 
 @catch_error(logger)
-def process_finra_file(file_meta, sql_ingest_table):
+def process_finra_file(file_meta, cloud_file_history):
     """
     Main Processing of single Finra file
     """
@@ -352,7 +352,7 @@ all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
 
 # %% Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
 
-tableinfo = save_tableinfo_dict_and_sql_ingest_table(
+tableinfo = save_tableinfo_dict_and_cloud_file_history(
     spark = spark,
     tableinfo = tableinfo,
     tableinfo_source = tableinfo_source,

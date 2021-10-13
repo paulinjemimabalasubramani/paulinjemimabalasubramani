@@ -8,7 +8,6 @@ Common Library for translating data types from source database to target databas
 import os, sys, re, tempfile, shutil, copy
 from pprint import pprint
 from collections import defaultdict
-from typing import cast
 from datetime import datetime
 
 from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets
@@ -35,19 +34,20 @@ modified_datetime = execution_date
 INFORMATION_SCHEMA = 'INFORMATION_SCHEMA'.upper()
 schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINTS']
 
-sql_ingestion = {
-    'sql_server': 'DSQLOLTP02',
-    'sql_database': 'EDIPIngestion',
-    'sql_schema': 'edip',
-    'sql_ingest_table_name': lambda tableinfo_source: f'{tableinfo_source.lower()}_ingest',
-    'sql_key_vault_account': 'sqledipingestion',
-}
-
-_, sql_ingestion['sql_id'], sql_ingestion['sql_pass'] = get_secrets(sql_ingestion['sql_key_vault_account'].lower(), logger=logger)
-
 tmpdirs = []
 
 FirmCRDNumber = 'firm_crd_number'
+cloud_file_histdict = {
+    'sql_server': 'DW1SQLOLTP02',
+    'sql_database': 'EDIPIngestion',
+    'sql_schema': 'edip',
+    'sql_key_vault_account': 'sqledipingestion',
+}
+
+_, cloud_file_histdict['sql_id'], cloud_file_histdict['sql_pass'] = get_secrets(cloud_file_histdict['sql_key_vault_account'].lower(), logger=logger)
+
+def to_cloud_file_history_name(tableinfo_source):
+    return tableinfo_source.lower() + '_file_history'
 
 
 
@@ -679,67 +679,67 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
 
 
 
-# %% Get SQL Ingest Table
+# %% Get history of the files ingested in SQL Server
 
 @catch_error(logger)
-def get_sql_ingest_table(spark, tableinfo_source):
+def get_cloud_file_history(spark, tableinfo_source):
     """
-    Get SQL Ingest Table - the history of files ingested in SQL Server
+    Get history of the files ingested in SQL Server
     """
     table_names, sql_tables = get_sql_table_names(
         spark = spark,
-        schema = sql_ingestion['sql_schema'],
-        database = sql_ingestion['sql_database'],
-        server = sql_ingestion['sql_server'],
-        user = sql_ingestion['sql_id'],
-        password = sql_ingestion['sql_pass'],
+        schema = cloud_file_histdict['sql_schema'],
+        database = cloud_file_histdict['sql_database'],
+        server = cloud_file_histdict['sql_server'],
+        user = cloud_file_histdict['sql_id'],
+        password = cloud_file_histdict['sql_pass'],
         )
 
-    sql_ingest_table_name = sql_ingestion['sql_ingest_table_name'](tableinfo_source)
-    sql_ingest_table_exists = sql_ingest_table_name in table_names
+    cloud_file_history_name = to_cloud_file_history_name(tableinfo_source=tableinfo_source)
+    cloud_file_history_exists = cloud_file_history_name in table_names
 
-    sql_ingest_table = None
-    if sql_ingest_table_exists:
-        sql_ingest_table = read_sql(
+    cloud_file_history = None
+    if cloud_file_history_exists:
+        cloud_file_history = read_sql(
             spark = spark,
-            user = sql_ingestion['sql_id'],
-            password = sql_ingestion['sql_pass'],
-            schema = sql_ingestion['sql_schema'],
-            table_name = sql_ingest_table_name,
-            database = sql_ingestion['sql_database'],
-            server = sql_ingestion['sql_server'],
+            user = cloud_file_histdict['sql_id'],
+            password = cloud_file_histdict['sql_pass'],
+            schema = cloud_file_histdict['sql_schema'],
+            table_name = cloud_file_history_name,
+            database = cloud_file_histdict['sql_database'],
+            server = cloud_file_histdict['sql_server'],
             )
 
-    return sql_ingest_table
+    return cloud_file_history
 
 
 
-# %% Write SQL Ingest Table
+# %% Write history of the files ingested
 
 @catch_error(logger)
-def write_sql_ingest_table(sql_ingest_table, tableinfo_source, mode:str='append'):
+def write_cloud_file_history(cloud_file_history, tableinfo_source, mode:str='append'):
     """
-    Write SQL Ingest Table - the history of files ingested
+    Write history of the files ingested
     """
     write_sql(
-        table = sql_ingest_table,
-        table_name = sql_ingestion['sql_ingest_table_name'](tableinfo_source),
-        schema = sql_ingestion['sql_schema'],
-        database = sql_ingestion['sql_database'],
-        server = sql_ingestion['sql_server'],
-        user = sql_ingestion['sql_id'],
-        password = sql_ingestion['sql_pass'],
+        table = cloud_file_history,
+        table_name = to_cloud_file_history_name(tableinfo_source=tableinfo_source),
+        schema = cloud_file_histdict['sql_schema'],
+        database = cloud_file_histdict['sql_database'],
+        server = cloud_file_histdict['sql_server'],
+        user = cloud_file_histdict['sql_id'],
+        password = cloud_file_histdict['sql_pass'],
         mode = mode,
     )
 
 
 
-# %% Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
+# %% Save Tableinfo metadata table into Azure and Save files history metadata to cloud
 
 @catch_error(logger)
-def save_tableinfo_dict_and_sql_ingest_table(spark, tableinfo:defaultdict, tableinfo_source:str, all_new_files, save_tableinfo_adls_flag:bool=True):
+def save_tableinfo_dict_and_cloud_file_history(spark, tableinfo:defaultdict, tableinfo_source:str, all_new_files, save_tableinfo_adls_flag:bool=True):
     """
-    Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
+    Save Tableinfo metadata table into Azure and Save files hitory metadata to cloud
     """
     if not tableinfo:
         logger.warning('No data in TableInfo --> Skipping write to Azure')
@@ -768,8 +768,8 @@ def save_tableinfo_dict_and_sql_ingest_table(spark, tableinfo:defaultdict, table
                 file_format = file_format,
             )
 
-        if all_new_files: # Write ingest metadata to SQL so that the old files are not re-ingested next time.
-            write_sql_ingest_table(sql_ingest_table=all_new_files, tableinfo_source=tableinfo_source, mode='append')
+        if all_new_files: # Write file history metadata to cloud so that the old files are not re-ingested next time.
+            write_cloud_file_history(cloud_file_history=all_new_files, tableinfo_source=tableinfo_source, mode='append')
 
     return meta_tableinfo
 
@@ -806,7 +806,7 @@ def get_key_column_names(date_column_name:str):
 # %% Process Single File
 
 @catch_error(logger)
-def process_one_file(file_meta, fn_process_file, sql_ingest_table):
+def process_one_file(file_meta, fn_process_file, cloud_file_history):
     """
     Process Single File - Unzipped or ZIP file
     """
@@ -825,26 +825,26 @@ def process_one_file(file_meta, fn_process_file, sql_ingest_table):
                 file_meta1['folder_path'] = root1
                 file_meta1['file_name'] = file1
                 file_meta1['file_path'] = os.path.join(root1, file1)
-                return fn_process_file(file_meta=file_meta1, sql_ingest_table=sql_ingest_table)
+                return fn_process_file(file_meta=file_meta1, cloud_file_history=cloud_file_history)
     else:
-        return fn_process_file(file_meta=file_meta, sql_ingest_table=sql_ingest_table)
+        return fn_process_file(file_meta=file_meta, cloud_file_history=cloud_file_history)
 
 
 
 # %% Get Selected Files
 
 @catch_error(logger)
-def get_selected_files(ingest_table, sql_ingest_table, key_column_names, date_column_name:str):
+def get_selected_files(file_history, cloud_file_history, key_column_names, date_column_name:str):
     """
     Select only the files that need to be ingested this time.
     """
     # Union all files
-    new_files = ingest_table.alias('t'
-        ).join(sql_ingest_table, ingest_table[MD5KeyIndicator]==sql_ingest_table[MD5KeyIndicator], how='left_anti'
+    new_files = file_history.alias('t'
+        ).join(cloud_file_history, file_history[MD5KeyIndicator]==cloud_file_history[MD5KeyIndicator], how='left_anti'
         ).select('t.*')
 
     union_columns = new_files.columns
-    all_files = new_files.select(union_columns).union(sql_ingest_table.select(union_columns)).sort(key_column_names['with_load_n_date'])
+    all_files = new_files.select(union_columns).union(cloud_file_history.select(union_columns)).sort(key_column_names['with_load_n_date'])
 
     # Filter out old files
     full_files = all_files.where('is_full_load').withColumn('row_number', 
@@ -918,7 +918,7 @@ def write_table_list_to_azure(PARTITION_list:defaultdict, table_list:dict, table
 # %% Get Meta Data from file
 
 @catch_error(logger)
-def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta, sql_ingest_table):
+def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta, cloud_file_history):
     """
     Get Meta Data from file
     Handles Zip files extraction as well
@@ -930,13 +930,13 @@ def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta, sql_
             for root1, dirs1, files1 in os.walk(tmpdir):
                 for file1 in files1:
                     file_path1 = os.path.join(root1, file1)
-                    file_meta = fn_extract_file_meta(file_path=file_path1, firm_crd_number=firm_crd_number, sql_ingest_table=sql_ingest_table)
+                    file_meta = fn_extract_file_meta(file_path=file_path1, firm_crd_number=firm_crd_number, cloud_file_history=cloud_file_history)
                     k += 1
                     break
                 if k>0: break
 
     else:
-        file_meta = fn_extract_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, sql_ingest_table=sql_ingest_table)
+        file_meta = fn_extract_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, cloud_file_history=cloud_file_history)
 
     if file_meta:
         file_meta['file_name'] = os.path.basename(file_path)
@@ -951,7 +951,7 @@ def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta, sql_
 # %% Get all files meta data for a given folder_path
 
 @catch_error(logger)
-def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_extract_file_meta, sql_ingest_table, date_column_name, inclusive:bool=True):
+def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_extract_file_meta, cloud_file_history, date_column_name, inclusive:bool=True):
     """
     Get all files meta data for a given folder_path.
     Filters files for dates after the given date_start
@@ -961,7 +961,7 @@ def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_
     for root, dirs, files in os.walk(folder_path):
         for file in files:
             file_path = os.path.join(root, file)
-            file_meta = get_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, fn_extract_file_meta=fn_extract_file_meta, sql_ingest_table=sql_ingest_table)
+            file_meta = get_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, fn_extract_file_meta=fn_extract_file_meta, cloud_file_history=cloud_file_history)
 
             if file_meta and (date_start<file_meta[date_column_name] or (date_start==file_meta[date_column_name] and inclusive)):
                 files_meta.append(file_meta)
@@ -974,7 +974,7 @@ def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_
 # %% Iterate over selected files for a given Firm and Union List of Tables by table name
 
 @catch_error(logger)
-def iterate_over_selected_files_per_firm(selected_files, fn_process_file, sql_ingest_table):
+def iterate_over_selected_files_per_firm(selected_files, fn_process_file, cloud_file_history):
     """
     Iterate over selected files for a given Firm and Union List of Tables by table name
     """
@@ -983,7 +983,7 @@ def iterate_over_selected_files_per_firm(selected_files, fn_process_file, sql_in
     for ingest_row in selected_files.rdd.toLocalIterator():
         file_meta = ingest_row.asDict()
 
-        table_list = process_one_file(file_meta=file_meta, fn_process_file=fn_process_file, sql_ingest_table=sql_ingest_table)
+        table_list = process_one_file(file_meta=file_meta, fn_process_file=fn_process_file, cloud_file_history=cloud_file_history)
 
         if table_list:
             for table_name, table in table_list.items():
@@ -1005,15 +1005,15 @@ def iterate_over_selected_files_per_firm(selected_files, fn_process_file, sql_in
 
 
 
-# %% Create Common Ingest Table from files_meta
+# %% Create Common File History Table from files_meta
 
 @catch_error(logger)
-def ingest_table_from_files_meta(spark, files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str, tableinfo_source:str, sql_ingest_table, key_column_names:dict, additional_ingest_columns:list):
+def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str, tableinfo_source:str, cloud_file_history, key_column_names:dict, additional_ingest_columns:list):
     """
-    Create Common Ingest Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
+    Create Common File History Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
     """
-    ingest_table = spark.createDataFrame(files_meta)
-    ingest_table = ingest_table.select(
+    file_history = spark.createDataFrame(files_meta)
+    file_history = file_history.select(
         col(FirmCRDNumber).cast(StringType()),
         col('table_name').cast(StringType()),
         col('is_full_load').cast(BooleanType()),
@@ -1030,18 +1030,17 @@ def ingest_table_from_files_meta(spark, files_meta, firm_name:str, storage_accou
         *additional_ingest_columns,
     )
 
-    ingest_table = add_md5_key(ingest_table, key_column_names=key_column_names['with_load_n_date'])
+    file_history = add_md5_key(file_history, key_column_names=key_column_names['with_load_n_date'])
 
-    if not sql_ingest_table:
-        sql_ingest_table_exists = True
-        sql_ingest_table = spark.createDataFrame(spark.sparkContext.emptyRDD(), ingest_table.schema)
-        write_sql_ingest_table(
-            sql_ingest_table = sql_ingest_table,
+    if not cloud_file_history:
+        cloud_file_history = spark.createDataFrame(spark.sparkContext.emptyRDD(), file_history.schema)
+        write_cloud_file_history(
+            cloud_file_history = cloud_file_history,
             tableinfo_source = tableinfo_source,
             mode = 'overwrite',
         )
 
-    return ingest_table, sql_ingest_table
+    return file_history, cloud_file_history
 
 
 
@@ -1070,7 +1069,7 @@ def process_all_files_with_incrementals(
     tableinfo = defaultdict(list)
     all_new_files = None
 
-    sql_ingest_table = get_sql_ingest_table(spark=spark, tableinfo_source=tableinfo_source)
+    cloud_file_history = get_cloud_file_history(spark=spark, tableinfo_source=tableinfo_source)
 
     for firm in firms:
         folder_path = os.path.join(data_path_folder, firm['crd_number'])
@@ -1080,7 +1079,7 @@ def process_all_files_with_incrementals(
             logger.warning(f'Path does not exist: {folder_path}   -> SKIPPING')
             continue
 
-        files_meta = get_all_file_meta(folder_path=folder_path, date_start=date_start, firm_crd_number=firm['crd_number'], fn_extract_file_meta=fn_extract_file_meta, sql_ingest_table=sql_ingest_table, date_column_name=date_column_name)
+        files_meta = get_all_file_meta(folder_path=folder_path, date_start=date_start, firm_crd_number=firm['crd_number'], fn_extract_file_meta=fn_extract_file_meta, cloud_file_history=cloud_file_history, date_column_name=date_column_name)
         if not files_meta:
             continue
 
@@ -1088,18 +1087,18 @@ def process_all_files_with_incrementals(
         setup_spark_adls_gen2_connection(spark, storage_account_name)
 
         logger.info('Getting New Files')
-        ingest_table, sql_ingest_table = ingest_table_from_files_meta(
+        file_history, cloud_file_history = files_history_from_files_meta(
             spark = spark,
             files_meta = files_meta,
             firm_name = firm['firm_name'],
             storage_account_name = storage_account_name,
             storage_account_abbr = firm['storage_account_abbr'],
             tableinfo_source = tableinfo_source,
-            sql_ingest_table = sql_ingest_table,
+            cloud_file_history = cloud_file_history,
             key_column_names = key_column_names,
             additional_ingest_columns = additional_ingest_columns,
             )
-        new_files, selected_files = get_selected_files(ingest_table=ingest_table, sql_ingest_table=sql_ingest_table, key_column_names=key_column_names, date_column_name=date_column_name)
+        new_files, selected_files = get_selected_files(file_history=file_history, cloud_file_history=cloud_file_history, key_column_names=key_column_names, date_column_name=date_column_name)
 
         logger.info(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
 
@@ -1109,7 +1108,7 @@ def process_all_files_with_incrementals(
         else:
             all_new_files = new_files
 
-        table_list_union = iterate_over_selected_files_per_firm(selected_files=selected_files, fn_process_file=fn_process_file, sql_ingest_table=sql_ingest_table)
+        table_list_union = iterate_over_selected_files_per_firm(selected_files=selected_files, fn_process_file=fn_process_file, cloud_file_history=cloud_file_history)
 
         PARTITION_list, tableinfo = write_table_list_to_azure(
             PARTITION_list = PARTITION_list,

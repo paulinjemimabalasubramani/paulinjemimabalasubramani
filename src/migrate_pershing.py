@@ -29,7 +29,7 @@ from modules.spark_functions import create_spark, read_csv, read_text, column_re
     add_id_key, add_elt_columns
 from modules.azure_functions import read_tableinfo_rows, tableinfo_name, get_firms_with_crd
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
-from modules.migrate_files import save_tableinfo_dict_and_sql_ingest_table, process_all_files_with_incrementals, FirmCRDNumber, \
+from modules.migrate_files import save_tableinfo_dict_and_cloud_file_history, process_all_files_with_incrementals, FirmCRDNumber, \
     get_key_column_names
 
 
@@ -431,7 +431,7 @@ table_special_records['customer_acct_info']['C'] = process_record_C_customer_acc
 # %% Extract Meta Data from Pershing FWT file
 
 @catch_error(logger)
-def extract_pershing_file_meta(file_path:str, firm_crd_number:str, sql_ingest_table):
+def extract_pershing_file_meta(file_path:str, firm_crd_number:str, cloud_file_history):
     """
     Extract Meta Data from Pershing FWT file (reading 1st line (header metadata) from inside the file)
     """
@@ -463,7 +463,7 @@ def extract_pershing_file_meta(file_path:str, firm_crd_number:str, sql_ingest_ta
 # %% Main Processing of Pershing File
 
 @catch_error(logger)
-def process_pershing_file(file_meta, sql_ingest_table):
+def process_pershing_file(file_meta, cloud_file_history):
     """
     Main Processing of single Pershing file
     """
@@ -477,7 +477,7 @@ def process_pershing_file(file_meta, sql_ingest_table):
     firm_path_folder = os.path.join(data_path_folder, firm_crd_number)
     file_path = os.path.join(firm_path_folder, file_name)
 
-    file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, sql_ingest_table=sql_ingest_table)
+    file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, cloud_file_history=cloud_file_history)
     table_name = file_meta['table_name']
 
     table = create_table_from_fwt_file(
@@ -537,7 +537,7 @@ all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
 
 # %% Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
 
-tableinfo = save_tableinfo_dict_and_sql_ingest_table(
+tableinfo = save_tableinfo_dict_and_cloud_file_history(
     spark = spark,
     tableinfo = tableinfo,
     tableinfo_source = tableinfo_source,
