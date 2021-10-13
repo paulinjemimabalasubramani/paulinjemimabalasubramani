@@ -37,7 +37,6 @@ schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINT
 tmpdirs = []
 
 FirmCRDNumber = 'firm_crd_number'
-cloud_file_history_name = 'file_history'
 cloud_file_histdict = {
     'sql_server': 'DW1SQLOLTP02',
     'sql_database': 'EDIPIngestion',
@@ -46,6 +45,9 @@ cloud_file_histdict = {
 }
 
 _, cloud_file_histdict['sql_id'], cloud_file_histdict['sql_pass'] = get_secrets(cloud_file_histdict['sql_key_vault_account'].lower(), logger=logger)
+
+def to_cloud_file_history_name(tableinfo_source):
+    return tableinfo_source.lower() + '_file_history'
 
 
 
@@ -693,8 +695,8 @@ def get_cloud_file_history(spark, tableinfo_source):
         password = cloud_file_histdict['sql_pass'],
         )
 
-    cloud_file_history_name1 = '_'.join([cloud_file_history_name, tableinfo_source])
-    cloud_file_history_exists = cloud_file_history_name1 in table_names
+    cloud_file_history_name = to_cloud_file_history_name(tableinfo_source=tableinfo_source)
+    cloud_file_history_exists = cloud_file_history_name in table_names
 
     cloud_file_history = None
     if cloud_file_history_exists:
@@ -703,7 +705,7 @@ def get_cloud_file_history(spark, tableinfo_source):
             user = cloud_file_histdict['sql_id'],
             password = cloud_file_histdict['sql_pass'],
             schema = cloud_file_histdict['sql_schema'],
-            table_name = cloud_file_history_name1,
+            table_name = cloud_file_history_name,
             database = cloud_file_histdict['sql_database'],
             server = cloud_file_histdict['sql_server'],
             )
@@ -721,7 +723,7 @@ def write_cloud_file_history(cloud_file_history, tableinfo_source, mode:str='app
     """
     write_sql(
         table = cloud_file_history,
-        table_name = '_'.join([cloud_file_history_name, tableinfo_source]),
+        table_name = to_cloud_file_history_name(tableinfo_source=tableinfo_source),
         schema = cloud_file_histdict['sql_schema'],
         database = cloud_file_histdict['sql_database'],
         server = cloud_file_histdict['sql_server'],
