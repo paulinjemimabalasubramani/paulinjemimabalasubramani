@@ -9,7 +9,7 @@ import re, sys
 from collections import defaultdict
 
 from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, post_log_data, \
-    azure_filesystem_uri
+    azure_filesystem_uri, data_settings
 from .spark_functions import IDKeyIndicator, MD5KeyIndicator, partitionBy, metadata_FirmSourceMap, \
     elt_audit_columns, column_regex, partitionBy_value, table_to_list_dict
 
@@ -29,22 +29,22 @@ metadata_folder = 'metadata'
 data_folder = 'data'
 
 file_format = 'delta' # Default File Format
-default_storage_account_abbr = 'AGGR'
+default_storage_account_abbr = data_settings.azure_storage_accounts_default_mid.upper()
 
 
 # %% firm_name to storage_account_name
 
 @catch_error(logger)
-def to_storage_account_name(firm_name:str=None, source_system:str=''):
+def to_storage_account_name(firm_name:str=None):
     """
     Converts firm_name to storage_account_name
     """
-    if firm_name and source_system.upper() not in ['LR', 'MIPS', 'SF']:
+    if firm_name:
         account = firm_name
     else:
         account = default_storage_account_abbr # Default Aggregate Account
 
-    return f"ag{account}lakescd".lower()
+    return f"{data_settings.azure_storage_accounts_prefix}{account}{data_settings.azure_storage_accounts_suffix}".lower()
 
 
 
@@ -311,7 +311,7 @@ def get_firms_with_crd(spark, tableinfo_source):
     """
     Get Firms with CRD Number from Azure
     """
-    storage_account_name = to_storage_account_name()
+    storage_account_name = default_storage_account_name
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     firms_table = read_adls_gen2(

@@ -31,21 +31,20 @@ class module_params_class:
     create_or_replace = True # Default False - Use True for Schema Change Update
     create_cicd_file = data_settings.create_cicd_file
 
-    snowflake_account = 'advisorgroup-edip'
-    sf_key_vault_account = 'snowflake'
+    snowflake_account = data_settings.snowflake_account
+    sf_key_vault_account = data_settings.snowflake_key_vault_account
 
     domain_name = sys.domain_name
     domain_abbr = sys.domain_abbr
     environment = data_settings.environment
-    snowflake_raw_warehouse = f'{environment}_RAW_WH'.upper()
+    snowflake_raw_warehouse = data_settings.snowflake_warehouse
     snowflake_raw_database = f'{environment}_{domain_abbr}'.upper()
     snowflake_curated_database = f'{environment}_{domain_abbr}'.upper()
 
     common_elt_stage_name = default_storage_account_abbr
     common_storage_account = default_storage_account_name
 
-    snowflake_role = f'AD_SNOWFLAKE_{environment}_DBA'.upper()
-    engineer_role = f"AD_SNOWFLAKE_{environment}_ENGINEER".upper()
+    snowflake_role = data_settings.snowflake_role
 
     ddl_folder = 'DDL'
 
@@ -76,11 +75,6 @@ class module_params_class:
 
 wid = module_params_class()
 snowflake_ddl_params = wid
-
-if not is_pc:
-    wid.save_to_adls = False # Default False
-    wid.execute_at_snowflake = False # Default False
-    wid.create_or_replace = True # Default False - Use True for Schema Change Update
 
 if wid.create_cicd_file:
     os.makedirs(name=wid.cicd_folder_path, exist_ok=True)
@@ -179,7 +173,7 @@ def action_step(step:int):
                 pprint(sqlstr)
 
             if wid.save_to_adls:
-                storage_account_name = to_storage_account_name(firm_name=kwargs['schema_name'], source_system=kwargs['source_system'])
+                storage_account_name = default_storage_account_name
                 setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
 
                 save_adls_gen2(
@@ -354,36 +348,6 @@ def create_ingest_data_table(ingest_data_per_source_system, container_folder:str
 
 
 
-# %% Create grant_permissions file
-
-@catch_error(logger)
-@action_source_level_tables('grant_permissions')
-def create_grant_permissions_file(source_system:str, container_folder:str, storage_account_name:str):
-    """
-    Create grant_permissions file and save it as per @action_source_level_tables wrapper
-    """
-    sqlstr = f"""USE ROLE {wid.snowflake_role};
-
-GRANT USAGE ON DATABASE {wid.snowflake_raw_database} TO ROLE {wid.engineer_role};
-
-GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
-GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
-GRANT USAGE ON SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_schema} TO ROLE {wid.engineer_role};
-
-GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {wid.snowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
-GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
-GRANT SELECT, INSERT,UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_schema} TO ROLE {wid.engineer_role};
-
-GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{source_system}_RAW TO ROLE {wid.engineer_role};
-GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{source_system} TO ROLE {wid.engineer_role};
-GRANT SELECT ON ALL VIEWS IN SCHEMA {wid.snowflake_raw_database}.{wid.elt_stage_schema} TO ROLE {wid.engineer_role};
-"""
-
-    return sqlstr
-
-
-
-
 # %% Create Task that Triggers USP_INGEST() file
 
 @catch_error(logger)
@@ -463,12 +427,6 @@ def create_source_level_tables(ingest_data_list:defaultdict):
 
         create_ingest_data_table(
             ingest_data_per_source_system = ingest_data_per_source_system,
-            container_folder = container_folder,
-            storage_account_name = storage_account_name,
-            )
-
-        create_grant_permissions_file(
-            source_system = source_system,
             container_folder = container_folder,
             storage_account_name = storage_account_name,
             )
