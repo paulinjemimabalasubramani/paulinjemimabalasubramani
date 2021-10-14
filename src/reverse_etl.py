@@ -28,7 +28,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end
+from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings
 from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake
 from modules.snowflake_ddl import snowflake_ddl_params
 
@@ -39,16 +39,14 @@ from pyspark.sql.functions import col, lit
 
 # %% Parameters
 
-sql_server = 'DSQLOLTP02'
-sql_database = 'FinancialProfessional'
-sql_schema = 'edip'
-sql_key_vault_account = sql_server
+reverse_etl_map = data_settings.reverse_etl_map
+
+sql_server = data_settings.reverse_etl_sql_server
+sql_key_vault_account = data_settings.reverse_etl_sql_key_vault_account
 
 sf_account = snowflake_ddl_params.snowflake_account
 sf_role = snowflake_ddl_params.snowflake_role
 sf_warehouse = snowflake_ddl_params.snowflake_raw_warehouse
-sf_database = snowflake_ddl_params.snowflake_curated_database
-sf_schema = 'EDIP'
 
 
 
@@ -69,7 +67,7 @@ _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(
 # %% Get List of Tables and Columns from Information Schema
 
 @catch_error(logger)
-def get_sf_table_list(schema_name:str):
+def get_sf_table_list(sf_database:str, sf_schema:str):
     """
     Get List of Tables and Columns from Snowflake database Information Schema
     """
@@ -99,18 +97,18 @@ def get_sf_table_list(schema_name:str):
         )
 
     tables = tables.where(
-        (col('TABLE_SCHEMA')==lit(schema_name)) & 
+        (col('TABLE_SCHEMA')==lit(sf_schema)) & 
         (col('TABLE_TYPE')==lit('BASE TABLE')) &
         (col('IS_TRANSIENT')==lit('NO'))
         )
 
-    columns = columns.where(col('TABLE_SCHEMA')==lit(schema_name))
+    columns = columns.where(col('TABLE_SCHEMA')==lit(sf_schema))
     columns = columns.alias('c').join(tables.alias('t'), columns['TABLE_NAME']==tables['TABLE_NAME'], how='inner').select('c.*')
 
     table_names = collect_column(table=columns, column_name='TABLE_NAME', distinct=True)
 
     logger.info({
-        'schema': f'{sf_database}.{schema_name}',
+        'schema': f'{sf_database}.{sf_schema}',
         'count_tables': len(table_names),
         'tables': table_names,
         })
@@ -118,14 +116,10 @@ def get_sf_table_list(schema_name:str):
 
 
 
-table_names, columns = get_sf_table_list(schema_name=sf_schema)
-
-
-
 # %% Loop over all tables
 
 @catch_error(logger)
-def reverse_etl_all_tables():
+def reverse_etl_all_tables(table_names, sf_database:str, sf_schema:str, sql_database:str, sql_schema:str):
     """
     Loop over all tables to read from Snowflake and write to SQL Server
     """
@@ -160,11 +154,26 @@ def reverse_etl_all_tables():
         except Exception as e:
             logger.error(str(e))
 
-    logger.info('Finished Reverse ETL for all tables')
+    logger.info(f'Finished Reverse ETL for all tables for {sf_database}.{sf_schema}')
 
 
 
-reverse_etl_all_tables()
+# %% Loop over all databases
+
+@catch_error(logger)
+def reverse_etl_all_databases():
+    """
+    Loop over all databases and tables to read from Snowflake and write to SQL Server
+    """
+    for sf_database, val in reverse_etl_map.items():
+        sf_schema = val['snowflake_schema']
+        logger.info(f'Reverse ETL {sf_database}.{sf_schema}')
+        table_names, columns = get_sf_table_list(sf_database=sf_database, sf_schema=sf_schema)
+        reverse_etl_all_tables(table_names=table_names, sf_database=sf_database, sf_schema=sf_schema, sql_database=val['sql_database'], sql_schema=val['sql_schema'])
+
+
+
+reverse_etl_all_databases()
 
 
 

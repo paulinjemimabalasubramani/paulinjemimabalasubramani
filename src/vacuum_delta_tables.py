@@ -21,7 +21,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, mark_execution_end, catch_error, get_adls_gen2_service_client
+from modules.common_functions import logger, mark_execution_end, catch_error, get_adls_gen2_service_client, data_settings
 from modules.spark_functions import create_spark
 from modules.azure_functions import setup_spark_adls_gen2_connection, default_storage_account_abbr, get_firms_with_crd, \
     to_storage_account_name, azure_data_path_create, data_folder
@@ -30,7 +30,7 @@ from modules.azure_functions import setup_spark_adls_gen2_connection, default_st
 
 # %% Parameters
 
-days_to_retain = 7 # How many days of data to retain during vacuuming
+days_to_retain = int(data_settings.vacuuming_days_to_retain) # How many days of data to retain during vacuuming
 
 firms_source = 'FINRA'
 

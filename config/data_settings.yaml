@@ -1,8 +1,15 @@
 environment: QA
 
+
 output_log_path: /usr/local/spark/resources/fileshare/Shared/logs
 output_cicd_path: /usr/local/spark/resources/fileshare/Shared/CICD
 create_cicd_file: true
+
+
+azure_storage_accounts_prefix: ag
+azure_storage_accounts_default_mid: aggr
+azure_storage_accounts_suffix: lakescd
+
 
 
 data_paths_per_source:
@@ -21,6 +28,38 @@ data_paths_per_source:
 copy_history_log_databases: 
     - QA_FP
     - QA_CA
+
+
+
+snowflake_account: advisorgroup-edip
+snowflake_key_vault_account: snowflake
+snowflake_role: AD_SNOWFLAKE_QA_DBA
+snowflake_warehouse: QA_RAW_WH
+
+
+lr_sql_server: TSQLOLTP01
+lr_sql_key_vault_account: TSQLOLTP01
+
+
+reverse_etl_sql_server: DW1SQLOLTP02
+reverse_etl_sql_key_vault_account: DSQLOLTP02
+
+reverse_etl_map:
+    QA_FP:
+        snowflake_schema: EDIP
+        sql_database: FinancialProfessional
+        sql_schema: edip
+
+
+
+file_history_sql_server: DW1SQLOLTP02
+file_history_sql_key_vault_account: sqledipingestion
+file_history_sql_database: EDIPIngestion
+file_history_sql_schema: edip
+
+
+
+vacuuming_days_to_retain: 7
 
 
 

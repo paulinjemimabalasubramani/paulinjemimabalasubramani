@@ -22,7 +22,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 from modules.common_functions import logger, catch_error, is_pc, config_path, execution_date, mark_execution_end
 from modules.spark_functions import create_spark, read_csv, remove_column_spaces, metadata_DataTypeTranslation, metadata_MasterIngestList, \
     metadata_FirmSourceMap, partitionBy, partitionBy_value
-from modules.azure_functions import setup_spark_adls_gen2_connection, to_storage_account_name, file_format, save_adls_gen2, \
+from modules.azure_functions import setup_spark_adls_gen2_connection, default_storage_account_name, file_format, save_adls_gen2, \
     tableinfo_container_name, metadata_folder, azure_container_folder_path
 
 
@@ -34,7 +34,7 @@ from pyspark.sql.types import StringType, IntegerType
 
 # %% Parameters
 
-storage_account_name = to_storage_account_name()
+storage_account_name = default_storage_account_name
 
 created_datetime = execution_date
 modified_datetime = execution_date

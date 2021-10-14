@@ -35,8 +35,8 @@ from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_
 
 ingest_from_files_flag = True
 
-sql_server = 'TSQLOLTP01'
-sql_key_vault_account = sql_server
+sql_server = data_settings.lr_sql_server
+sql_key_vault_account = data_settings.lr_sql_key_vault_account
 
 storage_account_name = default_storage_account_name
 
