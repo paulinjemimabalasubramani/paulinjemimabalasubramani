@@ -63,3 +63,10 @@ vacuuming_days_to_retain: 7
 
 
 
+salesforce_api_version: "40.0"
+triad_salesforce_key_vault_account: salesforce
+triad_salesforce_host: triadadvisors.my.salesforce.com
+is_triad_salesforce_sandbox: false
+
+
+
