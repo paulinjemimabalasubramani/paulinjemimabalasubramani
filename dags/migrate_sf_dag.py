@@ -65,7 +65,7 @@ with DAG(
          dag = dag
          )
 
-    startpipe >> [extractdata] >> [migratedata]
+    startpipe >> extractdata >> migratedata
 
 
 
