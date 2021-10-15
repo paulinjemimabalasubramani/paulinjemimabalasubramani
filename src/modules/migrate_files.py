@@ -338,7 +338,7 @@ def add_precision(columns):
 # %% Get Files Meta
 
 @catch_error(logger)
-def get_files_meta(data_path_folder:str, default_schema:str='dbo'):
+def get_csv_files_meta(data_path_folder:str, default_schema:str='dbo'):
     """
     Get Files Metadata from given data path
     """
@@ -563,7 +563,7 @@ def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, def
     translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
 
     if ingest_from_files_flag:
-        files_meta = get_files_meta(data_path_folder=data_path_folder, default_schema=default_schema)
+        files_meta = get_csv_files_meta(data_path_folder=data_path_folder, default_schema=default_schema)
         if not files_meta:
             logger.warning('No files found, exiting program.')
             exit()
@@ -730,47 +730,6 @@ def write_cloud_file_history(cloud_file_history, tableinfo_source, mode:str='app
         password = cloud_file_histdict['sql_pass'],
         mode = mode,
     )
-
-
-
-# %% Save Tableinfo metadata table into Azure and Save files history metadata to cloud
-
-@catch_error(logger)
-def save_tableinfo_dict_and_cloud_file_history(spark, tableinfo:defaultdict, tableinfo_source:str, all_new_files, save_tableinfo_adls_flag:bool=True):
-    """
-    Save Tableinfo metadata table into Azure and Save files hitory metadata to cloud
-    """
-    if not tableinfo:
-        logger.warning('No data in TableInfo --> Skipping write to Azure')
-        return
-
-    tableinfo_values = list(tableinfo.values())
-
-    list_of_dict = []
-    for vi in range(len(tableinfo_values[0])):
-        list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
-
-    meta_tableinfo = spark.createDataFrame(list_of_dict)
-    meta_tableinfo = select_tableinfo_columns(tableinfo=meta_tableinfo)
-
-    storage_account_name = default_storage_account_name # keep default storage account name for tableinfo
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-    if save_tableinfo_adls_flag:
-        save_adls_gen2(
-                table = meta_tableinfo,
-                storage_account_name = storage_account_name,
-                container_name = tableinfo_container_name,
-                container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
-                table_name = tableinfo_name,
-                partitionBy = partitionBy,
-                file_format = file_format,
-            )
-
-        if all_new_files: # Write file history metadata to cloud so that the old files are not re-ingested next time.
-            write_cloud_file_history(cloud_file_history=all_new_files, tableinfo_source=tableinfo_source, mode='append')
-
-    return meta_tableinfo
 
 
 
@@ -1013,15 +972,15 @@ def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_acco
     """
     file_history = spark.createDataFrame(files_meta)
     file_history = file_history.select(
-        col(FirmCRDNumber).cast(StringType()),
-        col('table_name').cast(StringType()),
+        col(FirmCRDNumber).cast(StringType()).alias(FirmCRDNumber, metadata={'maxlength': 50}),
+        col('table_name').cast(StringType()).alias('table_name', metadata={'maxlength': 1000}),
         col('is_full_load').cast(BooleanType()),
-        lit(firm_name).cast(StringType()).alias('firm_name'),
-        lit(storage_account_name).cast(StringType()).alias('storage_account_name'),
-        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr'),
-        lit(None).cast(StringType()).alias('remote_source'),
-        col('folder_path').cast(StringType()).alias('folder_path'),
-        col('file_name').cast(StringType()).alias('file_name'),
+        lit(firm_name).cast(StringType()).alias('firm_name', metadata={'maxlength': 255}),
+        lit(storage_account_name).cast(StringType()).alias('storage_account_name', metadata={'maxlength': 255}),
+        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr', metadata={'maxlength': 255}),
+        lit(None).cast(StringType()).alias('remote_source', metadata={'maxlength': 255}),
+        col('folder_path').cast(StringType()).alias('folder_path', metadata={'maxlength': 1000}),
+        col('file_name').cast(StringType()).alias('file_name', metadata={'maxlength': 150}),
         to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
         lit(True).cast(BooleanType()).alias('is_ingested'),
         to_timestamp(lit(None)).alias('full_load_date'),
@@ -1056,7 +1015,7 @@ def process_all_files_with_incrementals(
     fn_process_file:object,
     key_column_names:dict,
     tableinfo_source:str,
-    save_data_to_adls_flag: bool,
+    save_data_to_adls_flag:bool,
     date_column_name:str,
     ):
 
@@ -1126,6 +1085,46 @@ def process_all_files_with_incrementals(
     logger.info('Finished processing all Files and Firms')
     return all_new_files, PARTITION_list, tableinfo
 
+
+
+# %% Save Tableinfo metadata table into Azure and Save files history metadata to cloud
+
+@catch_error(logger)
+def save_tableinfo_dict_and_cloud_file_history(spark, tableinfo:defaultdict, tableinfo_source:str, all_new_files, save_tableinfo_adls_flag:bool=True):
+    """
+    Save Tableinfo metadata table into Azure and Save files hitory metadata to cloud
+    """
+    if not tableinfo:
+        logger.warning('No data in TableInfo --> Skipping write to Azure')
+        return
+
+    tableinfo_values = list(tableinfo.values())
+
+    list_of_dict = []
+    for vi in range(len(tableinfo_values[0])):
+        list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
+
+    meta_tableinfo = spark.createDataFrame(list_of_dict)
+    meta_tableinfo = select_tableinfo_columns(tableinfo=meta_tableinfo)
+
+    storage_account_name = default_storage_account_name # keep default storage account name for tableinfo
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+    if save_tableinfo_adls_flag:
+        save_adls_gen2(
+                table = meta_tableinfo,
+                storage_account_name = storage_account_name,
+                container_name = tableinfo_container_name,
+                container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
+                table_name = tableinfo_name,
+                partitionBy = partitionBy,
+                file_format = file_format,
+            )
+
+        if all_new_files: # Write file history metadata to cloud so that the old files are not re-ingested next time.
+            write_cloud_file_history(cloud_file_history=all_new_files, tableinfo_source=tableinfo_source, mode='append')
+
+    return meta_tableinfo
 
 
 

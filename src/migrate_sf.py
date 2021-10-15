@@ -50,7 +50,7 @@ data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_sour
 logger.info({
     'tableinfo_source': tableinfo_source,
     'data_path_folder': data_path_folder,
-})
+    })
 
 
 # %% Create Session

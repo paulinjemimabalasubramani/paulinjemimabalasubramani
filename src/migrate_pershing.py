@@ -68,6 +68,8 @@ groupBy = ['account_number']
 date_column_name = 'run_datetime'
 key_column_names = get_key_column_names(date_column_name=date_column_name)
 
+firms_source = 'FINRA'
+
 logger.info({
     'tableinfo_source': tableinfo_source,
     'data_path_folder': data_path_folder,
@@ -84,7 +86,7 @@ snowflake_ddl_params.spark = spark
 
 # %% Get Firms that have CRD Number
 
-firms = get_firms_with_crd(spark=spark, tableinfo_source='FINRA')
+firms = get_firms_with_crd(spark=spark, tableinfo_source=firms_source)
 
 if is_pc: pprint(firms)
 
@@ -515,8 +517,8 @@ def process_pershing_file(file_meta, cloud_file_history):
 additional_ingest_columns = [
     to_timestamp(col(date_column_name)).alias(date_column_name),
     to_date(col('date_of_data'), format='MM/dd/yyyy').alias('date_of_data'),
-    col('remote_id').cast(StringType()).alias('remote_id'),
-    col('form_name').cast(StringType()).alias('form_name'),
+    col('remote_id').cast(StringType()).alias('remote_id', metadata={'maxlength': 50}),
+    col('form_name').cast(StringType()).alias('form_name', metadata={'maxlength': 50}),
     ]
 
 all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(

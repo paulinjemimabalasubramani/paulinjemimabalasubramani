@@ -389,7 +389,7 @@ def add_md5_key(table, key_column_names:list=[]):
     if not key_column_names:
         key_column_names = table.columns
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
-    table = table.withColumn(MD5KeyIndicator, md5(concat_ws('_', *coalesce_list)))
+    table = table.withColumn(MD5KeyIndicator, md5(concat_ws('_', *coalesce_list)).alias(MD5KeyIndicator, metadata={'maxlength': 300}))
     return table
 
 

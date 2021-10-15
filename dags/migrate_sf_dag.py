@@ -42,8 +42,16 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
+
+    extractdata = BashOperator(
+        task_id = 'extract_salesforce_data',
+        bash_command = 'cd /usr/local/spark/app && python extract_sf.py',
+        dag = dag
+    )
+
+
     migratedata = SparkSubmitOperator(
-         task_id = "migrate_sf",
+         task_id = "migrate_salesforce",
          application = "/usr/local/spark/app/migrate_sf.py", # mapped to ..\EDIP-Code\src
          name = spark_app_name,
          jars = "/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar,/usr/local/spark/resources/jars/spark-xml_2.12-0.12.0.jar",
@@ -57,7 +65,8 @@ with DAG(
          dag = dag
          )
 
-    startpipe >> [migratedata]
+    startpipe >> [extractdata] >> [migratedata]
+
 
 
 # %%

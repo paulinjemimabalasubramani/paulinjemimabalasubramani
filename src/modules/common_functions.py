@@ -203,10 +203,12 @@ def get_azure_key_vault(logger=None):
 # %% Get Secrets
 
 @catch_error()
-def get_secrets(account_name:str, logger=None):
+def get_secrets(account_name:str, logger=None, additional_secrets:list=[]):
     """
     Read Secrets (-id and -pass) from Azure Key Vault
     """
+    sp_additional_secrets = []
+
     try:
         environment = data_settings.environment.lower()
         account_name = account_name.lower()
@@ -215,6 +217,9 @@ def get_secrets(account_name:str, logger=None):
         sp_id = client.get_secret(f'{environment}-{account_name}-id').value
         sp_pass = client.get_secret(f'{environment}-{account_name}-pass').value
 
+        for additional_secret in additional_secrets:
+            sp_additional_secrets.append(client.get_secret(f'{environment}-{account_name}-{additional_secret}').value)
+
     except Exception as e:
         if logger:
             logger.error(str(e))
@@ -222,7 +227,7 @@ def get_secrets(account_name:str, logger=None):
             pprint(e)
         raise e
 
-    return azure_tenant_id, sp_id, sp_pass
+    return azure_tenant_id, sp_id, sp_pass, *sp_additional_secrets
 
 
 
