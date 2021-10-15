@@ -517,8 +517,8 @@ def process_pershing_file(file_meta, cloud_file_history):
 additional_ingest_columns = [
     to_timestamp(col(date_column_name)).alias(date_column_name),
     to_date(col('date_of_data'), format='MM/dd/yyyy').alias('date_of_data'),
-    col('remote_id').cast(StringType()).alias('remote_id'),
-    col('form_name').cast(StringType()).alias('form_name'),
+    col('remote_id').cast(StringType()).alias('remote_id', metadata={'maxlength': 50}),
+    col('form_name').cast(StringType()).alias('form_name', metadata={'maxlength': 50}),
     ]
 
 all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(

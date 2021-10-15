@@ -972,15 +972,15 @@ def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_acco
     """
     file_history = spark.createDataFrame(files_meta)
     file_history = file_history.select(
-        col(FirmCRDNumber).cast(StringType()),
-        col('table_name').cast(StringType()),
+        col(FirmCRDNumber).cast(StringType()).alias(FirmCRDNumber, metadata={'maxlength': 50}),
+        col('table_name').cast(StringType()).alias('table_name', metadata={'maxlength': 1000}),
         col('is_full_load').cast(BooleanType()),
-        lit(firm_name).cast(StringType()).alias('firm_name'),
-        lit(storage_account_name).cast(StringType()).alias('storage_account_name'),
-        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr'),
-        lit(None).cast(StringType()).alias('remote_source'),
-        col('folder_path').cast(StringType()).alias('folder_path'),
-        col('file_name').cast(StringType()).alias('file_name'),
+        lit(firm_name).cast(StringType()).alias('firm_name', metadata={'maxlength': 255}),
+        lit(storage_account_name).cast(StringType()).alias('storage_account_name', metadata={'maxlength': 255}),
+        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr', metadata={'maxlength': 255}),
+        lit(None).cast(StringType()).alias('remote_source', metadata={'maxlength': 255}),
+        col('folder_path').cast(StringType()).alias('folder_path', metadata={'maxlength': 1000}),
+        col('file_name').cast(StringType()).alias('file_name', metadata={'maxlength': 150}),
         to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
         lit(True).cast(BooleanType()).alias('is_ingested'),
         to_timestamp(lit(None)).alias('full_load_date'),
@@ -1015,7 +1015,7 @@ def process_all_files_with_incrementals(
     fn_process_file:object,
     key_column_names:dict,
     tableinfo_source:str,
-    save_data_to_adls_flag: bool,
+    save_data_to_adls_flag:bool,
     date_column_name:str,
     ):
 

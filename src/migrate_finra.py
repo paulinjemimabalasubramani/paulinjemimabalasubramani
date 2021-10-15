@@ -330,8 +330,8 @@ def process_finra_file(file_meta, cloud_file_history):
 
 additional_ingest_columns = [
     to_date(col(date_column_name), format='yyyy-MM-dd').alias(date_column_name),
-    to_json(col('xml_criteria')).alias('xml_criteria'),
-    to_json(col('xml_rowtags')).alias('xml_rowtags'),
+    to_json(col('xml_criteria')).alias('xml_criteria', metadata={'maxlength': 1000}),
+    to_json(col('xml_rowtags')).alias('xml_rowtags', metadata={'maxlength': 1000}),
     ]
 
 all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
