@@ -20,8 +20,6 @@ sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'financial_professional'
 sys.domain_abbr = 'FP'
 
-from pprint import pprint
-
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
@@ -30,6 +28,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings
 from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake
+from modules.azure_functions import default_storage_account_name, setup_spark_adls_gen2_connection
+from modules.migrate_files import get_DataTypeTranslation_table
 from modules.snowflake_ddl import snowflake_ddl_params
 
 
@@ -48,6 +48,8 @@ sf_account = snowflake_ddl_params.snowflake_account
 sf_role = snowflake_ddl_params.snowflake_role
 sf_warehouse = snowflake_ddl_params.snowflake_raw_warehouse
 
+data_type_translation_id = 'snowflake_sqlserver'
+
 
 
 # %% Create Session
@@ -61,6 +63,14 @@ snowflake_ddl_params.spark = spark
 
 _, sql_id, sql_pass = get_secrets(sql_key_vault_account.lower(), logger=logger)
 _, sf_id, sf_pass = get_secrets(snowflake_ddl_params.sf_key_vault_account.lower(), logger=logger)
+
+
+
+# %% Get Translation Table
+storage_account_name = default_storage_account_name
+setup_spark_adls_gen2_connection(spark, storage_account_name)
+
+translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
 
 
 
