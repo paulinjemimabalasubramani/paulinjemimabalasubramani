@@ -228,7 +228,7 @@ def get_data_settings():
             env_data_settings_names.append(f'data_path_{source}')
 
         for envv in env_data_settings_names:
-            setattr(data_settings, envv, get_env(variable_name=envv))
+            setattr(data_settings, envv, get_env(variable_name=envv.upper()))
 
         data_settings.copy_history_log_databases = [f'{data_settings.environment}_{domain}' for domain in copy_history_log_domains if getattr(data_settings, f'copy_history_log_databases_{domain}')]
 
