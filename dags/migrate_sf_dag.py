@@ -42,16 +42,9 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-
-    setdirectory = BashOperator(
-        task_id = 'set_salesforce_directory',
-        bash_command = 'pushd /usr/local/spark/app',
-        dag = dag
-    )
-
     extractdata = BashOperator(
         task_id = 'extract_salesforce_data',
-        bash_command = 'python extract_sf.py',
+        bash_command = 'python /usr/local/spark/app/extract_sf.py',
         dag = dag
     )
 
@@ -71,7 +64,7 @@ with DAG(
          dag = dag
          )
 
-    startpipe >> [setdirectory >> extractdata] >> migratedata
+    startpipe >> extractdata >> migratedata
 
 
 
