@@ -46,14 +46,18 @@ def catch_error(logger=None, raise_error:bool=True):
 # %% Get Environment Variable
 
 @catch_error()
-def get_env(variable_name:str, logger=None):
+def get_env(variable_name:str, default:str=None, logger=None):
     """
     Get Environment Variable
     """
     try:
-        value = os.environ.get(variable_name)
+        value = os.environ.get(key=variable_name, default=default)
         if not value:
             raise ValueError(f'Environment variable does not exist: {variable_name}')
+        elif value.isnumeric() and variable_name not in ['salesforce_api_version']:
+            value = float(value) if '.' in value else int(value)
+        elif value.lower() in ['true', 'false']:
+            value = value.lower()=='true'
 
     except Exception as e:
         if logger:
@@ -83,16 +87,17 @@ class Config:
             for name, value in defaults.items():
                 setattr(self, name, value) # Write defaults
 
-            try:
-                with open(file_path, 'r') as f:
-                    contents = yaml.load(f, Loader=yaml.FullLoader)
-            except Exception as e:
-                except_str = f'Error File was not read: {file_path}'
-                pprint(except_str)
-                return
+            if file_path:
+                try:
+                    with open(file_path, 'r') as f:
+                        contents = yaml.load(f, Loader=yaml.FullLoader)
+                except Exception as e:
+                    except_str = f'Error File was not read: {file_path}'
+                    pprint(except_str)
+                    return
 
-            for name, value in contents.items():
-                setattr(self, name, value) # Overwrite defaults from file
+                for name, value in contents.items():
+                    setattr(self, name, value) # Overwrite defaults from file
 
         except Exception as e:
             if logger:
@@ -152,24 +157,95 @@ if is_pc:
     join_drivers_by = ';' # for extraClassPath
 
 
-defaults = {
-    'default_data_path': fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''),
-    'environment': sys.environment if hasattr(sys, 'environment') else 'QA',
-    'create_cicd_file': False,
-}
 
-data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults=defaults)
-data_settings.data_path = data_settings.default_data_path
+# %% Get Data Settings
 
-if is_pc:
-    data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
+@catch_error()
+def get_data_settings():
+    if is_pc: # Read Data Settings from file
+        defaults = {
+            'default_data_path': fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''),
+            'environment': sys.environment if hasattr(sys, 'environment') else 'QA',
+            'create_cicd_file': False,
+        }
 
-data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
-for source, source_path in data_paths_per_source.items():
-    _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=source_path)
+        data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults=defaults)
+        data_settings.data_path = data_settings.default_data_path
 
-    if is_pc:
-        setattr(data_settings, f'data_path_{source}', os.path.join(data_settings.data_path, source))
+        if is_pc:
+            data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
+
+        data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
+        for source, source_path in data_paths_per_source.items():
+            _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=source_path)
+
+            if is_pc:
+                setattr(data_settings, f'data_path_{source}', os.path.join(data_settings.data_path, source))
+
+    else: # Read Data Settings from Environment
+        data_settings = Config(file_path='', defaults={})
+
+        copy_history_log_domains = ['FP', 'CA']
+        reverse_etl_domains = ['FP']
+        data_sources = ['FINRA', 'LR', 'MIPS', 'SF', 'PERSHING']
+
+        env_data_settings_names = [
+            'environment',
+            'output_log_path',
+            'output_cicd_path',
+            'create_cicd_file',
+            'azure_storage_accounts_prefix',
+            'azure_storage_accounts_default_mid',
+            'azure_storage_accounts_suffix',
+            'snowflake_account',
+            'snowflake_key_vault_account',
+            'snowflake_role',
+            'snowflake_warehouse',
+            'lr_sql_server',
+            'lr_sql_key_vault_account',
+            'reverse_etl_sql_server',
+            'reverse_etl_sql_key_vault_account',
+            'file_history_sql_server',
+            'file_history_sql_key_vault_account',
+            'file_history_sql_database',
+            'file_history_sql_schema',
+            'vacuuming_days_to_retain',
+            'salesforce_api_version',
+            'triad_salesforce_key_vault_account',
+            'triad_salesforce_host',
+            'is_triad_salesforce_sandbox',
+            ]
+
+        for domain in copy_history_log_domains:
+            env_data_settings_names.append(f'copy_history_log_databases_{domain}')
+
+        for domain in reverse_etl_domains:
+            env_data_settings_names.append(f'reverse_etl_map_{domain}_snowflake_schema')
+            env_data_settings_names.append(f'reverse_etl_map_{domain}_sql_database')
+            env_data_settings_names.append(f'reverse_etl_map_{domain}_sql_schema')
+
+        for source in data_sources:
+            env_data_settings_names.append(f'data_path_{source}')
+
+        for envv in env_data_settings_names:
+            setattr(data_settings, envv, get_env(variable_name=envv))
+
+        data_settings.copy_history_log_databases = [f'{data_settings.environment}_{domain}' for domain in copy_history_log_domains if getattr(data_settings, f'copy_history_log_databases_{domain}')]
+
+        data_settings.reverse_etl_map = {
+            f'{data_settings.environment}_{domain}': {
+                'snowflake_schema': getattr(data_settings, f'reverse_etl_map_{domain}_snowflake_schema'),
+                'sql_database': getattr(data_settings, f'reverse_etl_map_{domain}_sql_database'),
+                'sql_schema': getattr(data_settings, f'reverse_etl_map_{domain}_sql_schema'),
+                }
+            for domain in reverse_etl_domains
+            }
+
+    return data_settings
+
+
+
+data_settings = get_data_settings()
 
 
 
