@@ -51,7 +51,6 @@ def get_env(variable_name:str, default:str=None, logger=None):
     Get Environment Variable
     """
     try:
-        variable_name = variable_name.upper()
         value = os.environ.get(key=variable_name, default=default)
         if not value:
             raise ValueError(f'Environment variable does not exist: {variable_name}')
@@ -185,36 +184,38 @@ def get_data_settings():
 
     else: # Read Data Settings from Environment
         data_settings = Config(file_path='', defaults={})
-
+        data_settings.data_path = fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else '')
+        if is_pc:
+            data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
         copy_history_log_domains = ['FP', 'CA']
         reverse_etl_domains = ['FP']
         data_sources = ['FINRA', 'LR', 'MIPS', 'SF', 'PERSHING']
 
         env_data_settings_names = [
-            'ENVIRONMENT',
-            'OUTPUT_LOG_PATH',
-            'OUTPUT_CICD_PATH',
-            'CREATE_CICD_FILE',
-            'AZURE_STORAGE_ACCOUNTS_PREFIX',
-            'AZURE_STORAGE_ACCOUNTS_DEFAULT_MID',
-            'AZURE_STORAGE_ACCOUNTS_SUFFIX',
-            'SNOWFLAKE_ACCOUNT',
-            'SNOWFLAKE_KEY_VAULT_ACCOUNT',
-            'SNOWFLAKE_ROLE',
-            'SNOWFLAKE_WAREHOUSE',
-            'LR_SQL_SERVER',
-            'LR_SQL_KEY_VAULT_ACCOUNT',
-            'REVERSE_ETL_SQL_SERVER',
-            'REVERSE_ETL_SQL_KEY_VAULT_ACCOUNT',
-            'FILE_HISTORY_SQL_SERVER',
-            'FILE_HISTORY_SQL_KEY_VAULT_ACCOUNT',
-            'FILE_HISTORY_SQL_DATABASE',
-            'FILE_HISTORY_SQL_SCHEMA',
-            'VACUUMING_DAYS_TO_RETAIN',
-            'SALESFORCE_API_VERSION',
-            'TRIAD_SALESFORCE_KEY_VAULT_ACCOUNT',
-            'TRIAD_SALESFORCE_HOST',
-            'IS_TRIAD_SALESFORCE_SANDBOX',
+            'environment',
+            'output_log_path',
+            'output_cicd_path',
+            'create_cicd_file',
+            'azure_storage_accounts_prefix',
+            'azure_storage_accounts_default_mid',
+            'azure_storage_accounts_suffix',
+            'snowflake_account',
+            'snowflake_key_vault_account',
+            'snowflake_role',
+            'snowflake_warehouse',
+            'lr_sql_server',
+            'lr_sql_key_vault_account',
+            'reverse_etl_sql_server',
+            'reverse_etl_sql_key_vault_account',
+            'file_history_sql_server',
+            'file_history_sql_key_vault_account',
+            'file_history_sql_database',
+            'file_history_sql_schema',
+            'vacuuming_days_to_retain',
+            'salesforce_api_version',
+            'triad_salesforce_key_vault_account',
+            'triad_salesforce_host',
+            'is_triad_salesforce_sandbox',
             ]
 
         for domain in copy_history_log_domains:
