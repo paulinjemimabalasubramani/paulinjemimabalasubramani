@@ -262,7 +262,7 @@ def get_azure_key_vault(logger=None):
         azure_tenant_id = get_env('AZURE_TENANT_ID', logger=logger)
         azure_client_id = get_env('AZURE_KV_ID', logger=logger)
         azure_client_secret = get_env('AZURE_KV_SECRET', logger=logger)
-        vault_endpoint = 'https://ag-kv-west2-secondary.vault.azure.net/'
+        vault_endpoint = get_env('KEYVAULTURL', logger=logger)
 
         credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
         client = SecretClient(vault_endpoint, credential, logging_enable=True)
