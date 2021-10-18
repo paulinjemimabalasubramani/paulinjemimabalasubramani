@@ -303,7 +303,10 @@ def get_secrets(account_name:str, logger=None, additional_secrets:list=[]):
             pprint(e)
         raise e
 
-    return azure_tenant_id, sp_id, sp_pass, *sp_additional_secrets
+    if sp_additional_secrets:
+        return azure_tenant_id, sp_id, sp_pass, sp_additional_secrets[0]
+    else:
+        return azure_tenant_id, sp_id, sp_pass
 
 
 
