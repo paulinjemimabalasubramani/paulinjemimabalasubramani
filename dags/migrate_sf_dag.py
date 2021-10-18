@@ -45,7 +45,7 @@ with DAG(
 
     extractdata = BashOperator(
         task_id = 'extract_salesforce_data',
-        bash_command = 'pushd /usr/local/spark/app; python extract_sf.py;',
+        bash_command = 'pushd /usr/local/spark/app && python extract_sf.py',
         dag = dag
     )
 
