@@ -25,4 +25,4 @@ sqlserver_snowflake,binary,binary,sqlserver,snowflake
 sqlserver_snowflake,varbinary,varbinary,sqlserver,snowflake
 sqlserver_snowflake,xml,variant,sqlserver,snowflake
 snowflake_sqlserver,variant,varchar,snowflake,sqlserver
-snowflake_sqlserver,boolean,,snowflake,sqlserver
+snowflake_sqlserver,boolean,bit,snowflake,sqlserver
