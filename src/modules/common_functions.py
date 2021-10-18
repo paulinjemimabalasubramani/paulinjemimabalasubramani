@@ -51,6 +51,7 @@ def get_env(variable_name:str, default:str=None, logger=None):
     Get Environment Variable
     """
     try:
+        variable_name = variable_name.upper()
         value = os.environ.get(key=variable_name, default=default)
         if not value:
             raise ValueError(f'Environment variable does not exist: {variable_name}')
