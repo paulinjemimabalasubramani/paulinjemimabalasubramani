@@ -44,7 +44,7 @@ with DAG(
 
 
     setdirectory = BashOperator(
-        task_id = 'extract_salesforce_data',
+        task_id = 'set_salesforce_directory',
         bash_command = 'pushd /usr/local/spark/app',
         dag = dag
     )
