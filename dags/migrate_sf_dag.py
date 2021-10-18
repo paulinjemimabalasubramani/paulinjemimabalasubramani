@@ -43,9 +43,15 @@ with DAG(
     )
 
 
+    setdirectory = BashOperator(
+        task_id = 'extract_salesforce_data',
+        bash_command = 'pushd /usr/local/spark/app',
+        dag = dag
+    )
+
     extractdata = BashOperator(
         task_id = 'extract_salesforce_data',
-        bash_command = 'pushd /usr/local/spark/app && python extract_sf.py',
+        bash_command = 'python extract_sf.py',
         dag = dag
     )
 
@@ -65,7 +71,7 @@ with DAG(
          dag = dag
          )
 
-    startpipe >> extractdata >> migratedata
+    startpipe >> [setdirectory >> extractdata] >> migratedata
 
 
 
