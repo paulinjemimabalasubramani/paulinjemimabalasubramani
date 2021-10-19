@@ -36,6 +36,9 @@ from modules.snowflake_ddl import snowflake_ddl_params
 from pyspark.sql.functions import col, lit
 
 
+import pymssql
+
+
 
 # %% Parameters
 
@@ -72,6 +75,24 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
 
+
+
+# %%
+
+for sf_database, val in reverse_etl_map.items():
+    pass
+
+# %%
+
+conn = pymssql.connect(sql_server, sql_id, sql_pass, val['sql_database'])
+cursor = conn.cursor()
+
+# %%
+
+
+cursor.execute("""DROP TABLE IF EXISTS EDIP.TESTSM1;""")
+conn.commit()
+conn.close()
 
 
 # %% Get List of Tables and Columns from Information Schema

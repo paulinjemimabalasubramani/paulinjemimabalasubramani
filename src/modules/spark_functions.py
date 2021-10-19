@@ -157,7 +157,7 @@ def remove_column_spaces(table_to_remove):
     """
     Removes spaces from column names
     """
-    new_table_to_remove = table_to_remove.select([col(c).alias(re.sub(column_regex, '_', c.strip())) for c in table_to_remove.columns])
+    new_table_to_remove = table_to_remove.select([col(f'`{c}`').alias(re.sub(column_regex, '_', c.strip())) for c in table_to_remove.columns])
     return new_table_to_remove
 
 
