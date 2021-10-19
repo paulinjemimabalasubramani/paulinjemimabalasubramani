@@ -15,7 +15,7 @@ https://docs.databricks.com/_static/notebooks/snowflake-python.html
 
 # %% Import Libraries
 
-import os, sys
+import os, sys, pymssql
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'financial_professional'
 sys.domain_abbr = 'FP'
@@ -26,17 +26,16 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings
+from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings, \
+    execution_date
 from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake
-from modules.azure_functions import default_storage_account_name, setup_spark_adls_gen2_connection
-from modules.migrate_files import get_DataTypeTranslation_table
+from modules.azure_functions import default_storage_account_name, default_storage_account_abbr, setup_spark_adls_gen2_connection
+from modules.migrate_files import get_DataTypeTranslation_table, add_TargetDataType, rename_columns, add_precision
 from modules.snowflake_ddl import snowflake_ddl_params
 
 
+from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
-
-
-import pymssql
 
 
 
@@ -75,24 +74,6 @@ setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
 
-
-
-# %%
-
-for sf_database, val in reverse_etl_map.items():
-    pass
-
-# %%
-
-conn = pymssql.connect(sql_server, sql_id, sql_pass, val['sql_database'])
-cursor = conn.cursor()
-
-# %%
-
-
-cursor.execute("""DROP TABLE IF EXISTS EDIP.TESTSM1;""")
-conn.commit()
-conn.close()
 
 
 # %% Get List of Tables and Columns from Information Schema
@@ -147,10 +128,96 @@ def get_sf_table_list(sf_database:str, sf_schema:str):
 
 
 
+# %% Testing / Debug
+
+for sf_database, val in reverse_etl_map.items():
+    sf_schema = val['snowflake_schema']
+    sql_database=val['sql_database']
+    sql_schema=val['sql_schema']
+
+
+table_names, columns = get_sf_table_list(sf_database=sf_database, sf_schema=sf_schema)
+
+
+table_name = table_names[0]
+print(table_name)
+
+table = read_snowflake(
+    spark = spark,
+    table_name = f'SELECT * FROM {table_name} WHERE SCD_IS_CURRENT=1;',
+    schema = sf_schema,
+    database = sf_database,
+    warehouse = sf_warehouse,
+    role = sf_role,
+    account = sf_account,
+    user = sf_id,
+    password = sf_pass,
+    is_query = True,
+    )
+
+
+
+# %% Re-create SQL Table with the latest schema
+
+@catch_error(logger)
+def recreate_sql_table(table, columns, table_name:str, schema:str, database:str, server:str, user:str, password:str):
+    """
+    Re-create SQL Table with the latest schema
+    """
+    conn = pymssql.connect(server, user, password, database)
+    cursor = conn.cursor()
+    cursor.execute(f'DROP TABLE IF EXISTS {schema}.{table_name};')
+    conn.commit()
+    conn.close()
+
+    columns = columns.where(
+        (F.upper(col('TABLE_SCHEMA'))==lit(schema.upper())) & 
+        (F.upper(col('TABLE_NAME'))==lit(table_name.upper()))
+        ).distinct().orderBy(col('ORDINAL_POSITION').asc())
+
+    columns = rename_columns(
+        columns = columns,
+        storage_account_name = default_storage_account_name,
+        created_datetime = execution_date,
+        modified_datetime = execution_date,
+        storage_account_abbr = default_storage_account_abbr,
+        )
+
+    columns = add_TargetDataType(columns=columns, translation=translation)
+    columns = add_precision(columns=columns)
+
+    return columns
+
+
+columns1 = recreate_sql_table(
+    table = table,
+    columns = columns,
+    table_name = table_name.lower(),
+    schema = sql_schema,
+    database = sql_database,
+    server = sql_server,
+    user = sql_id,
+    password = sql_pass,
+)
+
+
+
+
+columns1
+
+
+
+
+
+
+
+
+
+
 # %% Loop over all tables
 
 @catch_error(logger)
-def reverse_etl_all_tables(table_names, sf_database:str, sf_schema:str, sql_database:str, sql_schema:str):
+def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str, sql_database:str, sql_schema:str):
     """
     Loop over all tables to read from Snowflake and write to SQL Server
     """
@@ -171,6 +238,17 @@ def reverse_etl_all_tables(table_names, sf_database:str, sf_schema:str, sql_data
                 is_query = True,
                 )
 
+            recreate_sql_table(
+                table = table,
+                columns = columns,
+                table_name = table_name.lower(),
+                schema = sql_schema,
+                database = sql_database,
+                server = sql_server,
+                user = sql_id,
+                password = sql_pass,
+            )
+
             write_sql(
                 table = table,
                 table_name = table_name.lower(),
@@ -179,7 +257,7 @@ def reverse_etl_all_tables(table_names, sf_database:str, sf_schema:str, sql_data
                 server = sql_server,
                 user = sql_id,
                 password = sql_pass,
-                mode = 'overwrite',
+                mode = 'append',
             )
 
         except Exception as e:
@@ -200,7 +278,7 @@ def reverse_etl_all_databases():
         sf_schema = val['snowflake_schema']
         logger.info(f'Reverse ETL {sf_database}.{sf_schema}')
         table_names, columns = get_sf_table_list(sf_database=sf_database, sf_schema=sf_schema)
-        reverse_etl_all_tables(table_names=table_names, sf_database=sf_database, sf_schema=sf_schema, sql_database=val['sql_database'], sql_schema=val['sql_schema'])
+        reverse_etl_all_tables(table_names=table_names, columns=columns, sf_database=sf_database, sf_schema=sf_schema, sql_database=val['sql_database'], sql_schema=val['sql_schema'])
 
 
 

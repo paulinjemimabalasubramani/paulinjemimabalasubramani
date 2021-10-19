@@ -314,11 +314,13 @@ def process_finra_file(file_meta, cloud_file_history):
     Main Processing of single Finra file
     """
     file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
-    rowTags = file_meta['xml_rowtags']
+    rowTags = json.loads(file_meta['xml_rowtags'])
 
     logger.info(file_meta)
 
     xml_table = read_xml_file(table_name=file_meta['table_name'], file_path=file_path, rowTag=rowTags[0])
+    if is_pc: xml_table.show(5)
+
     xml_table_list = get_xml_table_list(xml_table=xml_table, table_name=file_meta['table_name'], crd_number=file_meta[FirmCRDNumber])
     xml_table_list = process_columns_for_elt(table_list=xml_table_list, file_meta=file_meta)
 

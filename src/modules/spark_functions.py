@@ -295,6 +295,8 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     xml_table_load = xml_table.load(file_path)
     xml_table_load.persist(StorageLevel.MEMORY_AND_DISK)
 
+    if is_pc: xml_table_load.show(5)
+
     logger.info('Finished reading XML file')
     return xml_table_load
 

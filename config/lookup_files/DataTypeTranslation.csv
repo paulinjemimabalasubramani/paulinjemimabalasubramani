@@ -27,7 +27,7 @@ sqlserver_snowflake,xml,variant,sqlserver,snowflake
 snowflake_sqlserver,variant,varchar,snowflake,sqlserver
 snowflake_sqlserver,boolean,bit,snowflake,sqlserver
 snowflake_sqlserver,text,varchar,snowflake,sqlserver
-snowflake_sqlserver,number,numeric,snowflake,sqlserver
+snowflake_sqlserver,number,decimal,snowflake,sqlserver
 snowflake_sqlserver,float,float,snowflake,sqlserver
 snowflake_sqlserver,timestamp_ntz,datetime,snowflake,sqlserver
 snowflake_sqlserver,timestamp_ltz,datetime,snowflake,sqlserver
