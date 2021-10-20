@@ -26,8 +26,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings, \
-    execution_date
+from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings, execution_date
 from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake
 from modules.azure_functions import default_storage_account_name, default_storage_account_abbr, setup_spark_adls_gen2_connection
 from modules.migrate_files import get_DataTypeTranslation_table, add_TargetDataType, rename_columns, add_precision
@@ -128,52 +127,23 @@ def get_sf_table_list(sf_database:str, sf_schema:str):
 
 
 
-# %% Testing / Debug
-
-for sf_database, val in reverse_etl_map.items():
-    sf_schema = val['snowflake_schema']
-    sql_database=val['sql_database']
-    sql_schema=val['sql_schema']
-
-
-table_names, columns = get_sf_table_list(sf_database=sf_database, sf_schema=sf_schema)
-
-
-table_name = table_names[0]
-print(table_name)
-
-table = read_snowflake(
-    spark = spark,
-    table_name = f'SELECT * FROM {table_name} WHERE SCD_IS_CURRENT=1;',
-    schema = sf_schema,
-    database = sf_database,
-    warehouse = sf_warehouse,
-    role = sf_role,
-    account = sf_account,
-    user = sf_id,
-    password = sf_pass,
-    is_query = True,
-    )
-
-
-
 # %% Re-create SQL Table with the latest schema
 
 @catch_error(logger)
-def recreate_sql_table(table, columns, table_name:str, schema:str, database:str, server:str, user:str, password:str):
+def recreate_sql_table(columns, table_name:str, schema:str, database:str, server:str, user:str, password:str):
     """
     Re-create SQL Table with the latest schema
     """
-    conn = pymssql.connect(server, user, password, database)
-    cursor = conn.cursor()
-    cursor.execute(f'DROP TABLE IF EXISTS {schema}.{table_name};')
-    conn.commit()
-    conn.close()
+    logger.info(f'Recreating SQL Server table: {database}.{schema}.{table_name}')
 
-    columns = columns.where(
-        (F.upper(col('TABLE_SCHEMA'))==lit(schema.upper())) & 
-        (F.upper(col('TABLE_NAME'))==lit(table_name.upper()))
-        ).distinct().orderBy(col('ORDINAL_POSITION').asc())
+    columns = (columns
+        .where(
+            (F.upper(col('TABLE_SCHEMA'))==lit(schema.upper())) & 
+            (F.upper(col('TABLE_NAME'))==lit(table_name.upper()))
+            )
+        .distinct()
+        .withColumn('KEY_COLUMN_NAME', lit(0))
+        )
 
     columns = rename_columns(
         columns = columns,
@@ -184,33 +154,20 @@ def recreate_sql_table(table, columns, table_name:str, schema:str, database:str,
         )
 
     columns = add_TargetDataType(columns=columns, translation=translation)
-    columns = add_precision(columns=columns)
+    columns = add_precision(columns=columns, truncate_max_varchar=1000)
 
-    return columns
+    columns = columns.orderBy(col('OrdinalPosition').asc()).select('TargetColumnName', 'TargetDataType', 'IsNullable').distinct().collect()
+    name_type_pairs = sorted([f"[{c['TargetColumnName']}] {c['TargetDataType']} {'NULL' if c['IsNullable']>0 else 'NOT NULL'}" for c in columns])
+    column_list = '\n  ,'.join(name_type_pairs)
+    sqlstr = f'CREATE TABLE [{schema}].[{table_name}] ({column_list});'
 
-
-columns1 = recreate_sql_table(
-    table = table,
-    columns = columns,
-    table_name = table_name.lower(),
-    schema = sql_schema,
-    database = sql_database,
-    server = sql_server,
-    user = sql_id,
-    password = sql_pass,
-)
-
-
-
-
-columns1
-
-
-
-
-
-
-
+    conn = pymssql.connect(server, user, password, database)
+    cursor = conn.cursor()
+    cursor.execute(f'DROP TABLE IF EXISTS {schema}.{table_name};')
+    conn.commit()
+    cursor.execute(sqlstr)
+    conn.commit()
+    conn.close()
 
 
 
@@ -239,7 +196,6 @@ def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str,
                 )
 
             recreate_sql_table(
-                table = table,
                 columns = columns,
                 table_name = table_name.lower(),
                 schema = sql_schema,

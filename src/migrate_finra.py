@@ -253,6 +253,9 @@ def get_xml_table_list(xml_table, table_name:str, crd_number:str):
     Get list of sub-tables for a given nested XML Table
     """
     xml_table_list = {}
+    if xml_table.rdd.isEmpty():
+        logger.warning(f'XML Table "{table_name}" is Empty. Firm CRD Number: {crd_number}')
+        return xml_table_list
 
     if flatten_n_divide_flag:
         xml_table_list={**xml_table_list, **flatten_n_divide_table(table=xml_table, table_name=table_name)}
