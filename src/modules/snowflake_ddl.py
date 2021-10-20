@@ -16,7 +16,7 @@ from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_
 
 from snowflake.connector import connect as snowflake_connect
 from pyspark.sql.types import StringType
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, lit
 
 
 
@@ -117,13 +117,13 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
     """
     Get column names, types and other metadata from tableinfo
     """
-    filtered_tableinfo = tableinfo.filter(
-        (col('TableName') == table_name) &
-        (col('SourceSchema') == schema_name) &
-        (col('SourceDatabase') == source_system)
+    filtered_tableinfo = tableinfo.where(
+        (col('TableName')==lit(table_name)) &
+        (col('SourceSchema')==lit(schema_name)) &
+        (col('SourceDatabase')==lit(source_system))
         )
 
-    filtered_column_names = filtered_tableinfo.select('TargetColumnName', 'SourceColumnName', 'TargetDataType', 'KeyIndicator').collect()
+    filtered_column_names = filtered_tableinfo.select('TargetColumnName', 'SourceColumnName', 'TargetDataType', 'KeyIndicator').distinct().collect()
 
     column_names = sorted([c['TargetColumnName'] for c in filtered_column_names])
 

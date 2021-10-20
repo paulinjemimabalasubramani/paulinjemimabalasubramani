@@ -92,6 +92,7 @@ def select_tableinfo_columns(tableinfo):
         'SourceDatabase',
         'SourceSchema',
         'TableName',
+        'OrdinalPosition',
     ]
 
     selected_tableinfo = tableinfo.select(*column_names).distinct().orderBy(*column_orderby)
