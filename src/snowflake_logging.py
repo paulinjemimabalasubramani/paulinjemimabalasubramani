@@ -78,7 +78,7 @@ USE DATABASE {sf_database};
 
 INSERT OVERWRITE INTO {stream_dump_name}
     (
-    FILE_NAME
+     FILE_NAME
     ,STAGE_LOCATION
     ,LAST_LOAD_TIME
     ,ROW_COUNT
@@ -102,7 +102,7 @@ INSERT OVERWRITE INTO {stream_dump_name}
     ,EXECUTION_DATE
     )
 SELECT  
-    FILE_NAME
+     FILE_NAME
     ,STAGE_LOCATION
     ,LAST_LOAD_TIME
     ,ROW_COUNT
@@ -127,6 +127,10 @@ SELECT
 FROM {stream_name} S
 WHERE S.METADATA$ACTION = 'INSERT';
 """
+
+    logger.info({
+        'execute_string': query_insert,
+    })
 
     exec_status = snowflake_connection.execute_string(sql_text=query_insert)
 

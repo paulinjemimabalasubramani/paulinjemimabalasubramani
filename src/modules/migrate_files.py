@@ -308,7 +308,7 @@ def add_TargetDataType(columns, translation):
     """
     columns = columns.alias('columns').join(
         translation,
-        columns.CleanType == translation.DataTypeFrom,
+        F.upper(columns.CleanType) == F.upper(translation.DataTypeFrom),
         how = 'left'
         ).select(
             'columns.*', 
@@ -323,11 +323,15 @@ def add_TargetDataType(columns, translation):
 # %% Add Precision
 
 @catch_error(logger)
-def add_precision(columns):
+def add_precision(columns, truncate_max_varchar:int=0):
     """
     Add precition information to COLUMNS table
     """
     columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['varchar'])) & (col('SourceDataLength')>0) & (col('SourceDataLength')<=1000), F.concat(lit('varchar('), col('SourceDataLength'), lit(')'))).otherwise(col('TargetDataType')))
+
+    if truncate_max_varchar>0:
+        columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['varchar'])), F.concat(lit(f'varchar({truncate_max_varchar})'))).otherwise(col('TargetDataType')))
+
     columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['decimal', 'numeric'])) & (col('SourceDataPrecision')>0), F.concat(lit('decimal('), col('SourceDataPrecision'), lit(','), col('SourceDataScale'), lit(')'))).otherwise(col('TargetDataType')))
 
     if is_pc: columns.printSchema()
