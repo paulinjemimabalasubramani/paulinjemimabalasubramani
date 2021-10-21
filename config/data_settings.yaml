@@ -48,7 +48,7 @@ reverse_etl_map:
     QA_FP:
         snowflake_schema: EDIP
         sql_database: FinancialProfessional
-        sql_schema: edip
+        sql_schema: sfexport
 
 
 

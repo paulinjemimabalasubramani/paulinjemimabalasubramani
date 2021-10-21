@@ -156,9 +156,11 @@ def recreate_sql_table(columns, table_name:str, schema:str, database:str, server
     columns = add_TargetDataType(columns=columns, translation=translation)
     columns = add_precision(columns=columns, truncate_max_varchar=1000)
 
-    columns = columns.orderBy(col('OrdinalPosition').asc()).select('TargetColumnName', 'TargetDataType', 'IsNullable').distinct().collect()
-    name_type_pairs = sorted([f"[{c['TargetColumnName']}] {c['TargetDataType']} {'NULL' if c['IsNullable']>0 else 'NOT NULL'}" for c in columns])
-    column_list = '\n  ,'.join(name_type_pairs)
+    column_list = columns.select('TargetColumnName', 'TargetDataType', 'IsNullable', 'OrdinalPosition').distinct().collect()
+    column_list = [(f"[{c['TargetColumnName']}] {c['TargetDataType']} {'NULL' if c['IsNullable']>0 else 'NOT NULL'}", c['OrdinalPosition']) for c in column_list]
+    column_list = sorted(column_list, key=lambda x: x[1])
+    column_list = [x[0] for x in column_list]
+    column_list = '\n  ,'.join(column_list)
     sqlstr = f'CREATE TABLE [{schema}].[{table_name}] ({column_list});'
 
     conn = pymssql.connect(server, user, password, database)
