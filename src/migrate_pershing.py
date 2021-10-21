@@ -515,10 +515,10 @@ def process_pershing_file(file_meta, cloud_file_history):
 # %% Iterate over all the files in all the firms and process them.
 
 additional_ingest_columns = [
-    to_timestamp(col(date_column_name)).alias(date_column_name),
-    to_date(col('date_of_data'), format='MM/dd/yyyy').alias('date_of_data'),
-    col('remote_id').cast(StringType()).alias('remote_id', metadata={'maxlength': 50}),
-    col('form_name').cast(StringType()).alias('form_name', metadata={'maxlength': 50}),
+    to_timestamp(col(date_column_name)).alias(date_column_name, metadata={'sqltype': '[datetime] NULL'}),
+    to_date(col('date_of_data'), format='MM/dd/yyyy').alias('date_of_data', metadata={'sqltype': '[date] NULL'}),
+    col('remote_id').cast(StringType()).alias('remote_id', metadata={'maxlength': 50, 'sqltype': 'varchar(50)'}),
+    col('form_name').cast(StringType()).alias('form_name', metadata={'maxlength': 50, 'sqltype': 'varchar(50)'}),
     ]
 
 all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
