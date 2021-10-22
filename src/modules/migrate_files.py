@@ -5,7 +5,7 @@ Common Library for translating data types from source database to target databas
 
 # %% Import Libraries
 
-import os, sys, re, tempfile, shutil, copy
+import os, sys, re, tempfile, shutil, copy, pymssql, json
 from pprint import pprint
 from collections import defaultdict
 from datetime import datetime
@@ -976,19 +976,19 @@ def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_acco
     """
     file_history = spark.createDataFrame(files_meta)
     file_history = file_history.select(
-        col(FirmCRDNumber).cast(StringType()).alias(FirmCRDNumber, metadata={'maxlength': 50}),
-        col('table_name').cast(StringType()).alias('table_name', metadata={'maxlength': 1000}),
-        col('is_full_load').cast(BooleanType()),
-        lit(firm_name).cast(StringType()).alias('firm_name', metadata={'maxlength': 255}),
-        lit(storage_account_name).cast(StringType()).alias('storage_account_name', metadata={'maxlength': 255}),
-        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr', metadata={'maxlength': 255}),
-        lit(None).cast(StringType()).alias('remote_source', metadata={'maxlength': 255}),
-        col('folder_path').cast(StringType()).alias('folder_path', metadata={'maxlength': 1000}),
-        col('file_name').cast(StringType()).alias('file_name', metadata={'maxlength': 150}),
-        to_timestamp(lit(None)).alias('ingestion_date'), # execution_date
-        lit(True).cast(BooleanType()).alias('is_ingested'),
-        to_timestamp(lit(None)).alias('full_load_date'),
-        to_timestamp(col('date_file_modified')).alias('date_file_modified'),
+        col(FirmCRDNumber).cast(StringType()).alias(FirmCRDNumber, metadata={'maxlength': 50, 'sqltype': 'varchar(50)'}),
+        col('table_name').cast(StringType()).alias('table_name', metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}),
+        col('is_full_load').cast(BooleanType()).alias('is_full_load', metadata={'sqltype': '[bit] NULL'}),
+        lit(firm_name).cast(StringType()).alias('firm_name', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
+        lit(storage_account_name).cast(StringType()).alias('storage_account_name', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
+        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
+        lit(None).cast(StringType()).alias('remote_source', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
+        col('folder_path').cast(StringType()).alias('folder_path', metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}),
+        col('file_name').cast(StringType()).alias('file_name', metadata={'maxlength': 150, 'sqltype': 'varchar(150)'}),
+        to_timestamp(lit(None)).alias('ingestion_date', metadata={'sqltype': '[datetime] NULL'}), # execution_date
+        lit(True).cast(BooleanType()).alias('is_ingested', metadata={'sqltype': '[bit] NOT NULL'}),
+        to_timestamp(lit(None)).alias('full_load_date', metadata={'sqltype': '[datetime] NULL'}),
+        to_timestamp(col('date_file_modified')).alias('date_file_modified', metadata={'sqltype': '[datetime] NULL'}),
         *additional_ingest_columns,
     )
 
@@ -996,11 +996,20 @@ def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_acco
 
     if not cloud_file_history:
         cloud_file_history = spark.createDataFrame(spark.sparkContext.emptyRDD(), file_history.schema)
-        write_cloud_file_history(
-            cloud_file_history = cloud_file_history,
-            tableinfo_source = tableinfo_source,
-            mode = 'overwrite',
-        )
+
+        _, sql_id, sql_pass = get_secrets(data_settings.file_history_sql_key_vault_account.lower(), logger=logger)
+        cloud_file_history_name = to_cloud_file_history_name(tableinfo_source=tableinfo_source)
+
+        schema_json = json.loads(file_history._jdf.schema().json())
+        column_list = '\n  ,'.join([f"[{s['name']}] {s['metadata']['sqltype']}" for s in schema_json['fields']])
+        sqlstr = f'CREATE TABLE [{data_settings.file_history_sql_schema}].[{cloud_file_history_name}] ({column_list});'
+
+        logger.info({'execute': sqlstr})
+        conn = pymssql.connect(data_settings.file_history_sql_server, sql_id, sql_pass, data_settings.file_history_sql_database)
+        cursor = conn.cursor()
+        cursor.execute(sqlstr)
+        conn.commit()
+        conn.close()
 
     return file_history, cloud_file_history
 

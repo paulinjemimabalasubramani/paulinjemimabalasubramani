@@ -334,9 +334,9 @@ def process_finra_file(file_meta, cloud_file_history):
 # %% Iterate over all the files in all the firms and process them.
 
 additional_ingest_columns = [
-    to_date(col(date_column_name), format='yyyy-MM-dd').alias(date_column_name),
-    to_json(col('xml_criteria')).alias('xml_criteria', metadata={'maxlength': 1000}),
-    to_json(col('xml_rowtags')).alias('xml_rowtags', metadata={'maxlength': 1000}),
+    to_date(col(date_column_name), format='yyyy-MM-dd').alias(date_column_name, metadata={'sqltype': '[date] NULL'}),
+    to_json(col('xml_criteria')).alias('xml_criteria', metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}),
+    to_json(col('xml_rowtags')).alias('xml_rowtags', metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}),
     ]
 
 all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(

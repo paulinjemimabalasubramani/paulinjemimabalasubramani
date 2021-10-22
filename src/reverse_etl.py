@@ -26,7 +26,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings, execution_date
+from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings, execution_date, is_pc
 from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake
 from modules.azure_functions import default_storage_account_name, default_storage_account_abbr, setup_spark_adls_gen2_connection
 from modules.migrate_files import get_DataTypeTranslation_table, add_TargetDataType, rename_columns, add_precision
@@ -130,15 +130,15 @@ def get_sf_table_list(sf_database:str, sf_schema:str):
 # %% Re-create SQL Table with the latest schema
 
 @catch_error(logger)
-def recreate_sql_table(columns, table_name:str, schema:str, database:str, server:str, user:str, password:str):
+def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
     """
     Re-create SQL Table with the latest schema
     """
-    logger.info(f'Recreating SQL Server table: {database}.{schema}.{table_name}')
+    logger.info(f'Recreating SQL Server table: {sql_database}.{sql_schema}.{table_name}')
 
     columns = (columns
         .where(
-            (F.upper(col('TABLE_SCHEMA'))==lit(schema.upper())) & 
+            (F.upper(col('TABLE_SCHEMA'))==lit(sf_schema.upper())) & 
             (F.upper(col('TABLE_NAME'))==lit(table_name.upper()))
             )
         .distinct()
@@ -156,15 +156,18 @@ def recreate_sql_table(columns, table_name:str, schema:str, database:str, server
     columns = add_TargetDataType(columns=columns, translation=translation)
     columns = add_precision(columns=columns, truncate_max_varchar=1000)
 
-    columns = columns.orderBy(col('OrdinalPosition').asc()).select('TargetColumnName', 'TargetDataType', 'IsNullable').distinct().collect()
-    name_type_pairs = sorted([f"[{c['TargetColumnName']}] {c['TargetDataType']} {'NULL' if c['IsNullable']>0 else 'NOT NULL'}" for c in columns])
-    column_list = '\n  ,'.join(name_type_pairs)
-    sqlstr = f'CREATE TABLE [{schema}].[{table_name}] ({column_list});'
+    column_list = columns.select(['TargetColumnName', 'TargetDataType', 'IsNullable', 'OrdinalPosition']).distinct().collect()
+    column_list = [(f"[{c['TargetColumnName']}] {c['TargetDataType']} {'NULL' if c['IsNullable']>0 else 'NOT NULL'}", c['OrdinalPosition']) for c in column_list]
+    column_list = sorted(column_list, key=lambda x: x[1])
+    column_list = [x[0] for x in column_list]
+    column_list = '\n  ,'.join(column_list)
+    sqlstr = f'CREATE TABLE [{sql_schema}].[{table_name}] ({column_list});'
 
-    conn = pymssql.connect(server, user, password, database)
+    conn = pymssql.connect(sql_server, sql_id, sql_pass, sql_database)
     cursor = conn.cursor()
-    cursor.execute(f'DROP TABLE IF EXISTS {schema}.{table_name};')
+    cursor.execute(f'DROP TABLE IF EXISTS {sql_schema}.{table_name};')
     conn.commit()
+    logger.info({'execute': sqlstr})
     cursor.execute(sqlstr)
     conn.commit()
     conn.close()
@@ -198,11 +201,12 @@ def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str,
             recreate_sql_table(
                 columns = columns,
                 table_name = table_name.lower(),
-                schema = sql_schema,
-                database = sql_database,
-                server = sql_server,
-                user = sql_id,
-                password = sql_pass,
+                sf_schema = sf_schema,
+                sql_schema = sql_schema,
+                sql_database = sql_database,
+                sql_server = sql_server,
+                sql_id = sql_id,
+                sql_pass = sql_pass,
             )
 
             write_sql(
