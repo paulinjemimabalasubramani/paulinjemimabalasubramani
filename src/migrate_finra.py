@@ -61,7 +61,7 @@ reportDate_name = '_reportDate'
 firmCRDNumber_name = '_firmCRDNumber'
 DualRegistrations_name = 'DualRegistrations'
 
-date_start = '1990-01-01'
+date_start = data_settings.file_history_start_date[tableinfo_source]
 
 date_column_name = 'file_date'
 key_column_names = get_key_column_names(date_column_name=date_column_name)
@@ -98,6 +98,7 @@ def extract_data_from_finra_file_path(file_path:str, firm_crd_number:str):
     basename = os.path.basename(file_path)
     dirname = os.path.dirname(file_path)
     sp = basename.split("_")
+    date_column_format = r'%Y-%m-%d'
 
     ans = {
         'file_name': basename,
@@ -110,7 +111,7 @@ def extract_data_from_finra_file_path(file_path:str, firm_crd_number:str):
         ans = {**ans,
             FirmCRDNumber: firm_crd_number,
             'table_name': DualRegistrations_name.lower(),
-            date_column_name: datetime.strftime(datetime.strptime(execution_date, strftime), r'%Y-%m-%d'),
+            date_column_name: datetime.strftime(datetime.strptime(execution_date, strftime), date_column_format),
         }
         return ans
 
@@ -124,7 +125,7 @@ def extract_data_from_finra_file_path(file_path:str, firm_crd_number:str):
         if ans['table_name'].upper() == 'IndividualInformationReportDelta'.upper():
             ans['table_name'] = 'IndividualInformationReport'
 
-        _ = datetime.strptime(ans[date_column_name], r'%Y-%m-%d')
+        _ = datetime.strptime(ans[date_column_name], date_column_format)
         assert len(sp)==3 or (len(sp)==4 and sp[1].upper()==finra_individual_delta_name.upper())
 
         ans['table_name'] = ans['table_name'].lower()
@@ -147,7 +148,7 @@ def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, cloud_file_histo
     csv_flag = False
 
     file_meta = extract_data_from_finra_file_path(file_path=file_path, firm_crd_number=firm_crd_number)
-    if not file_meta:
+    if not file_meta or (date_start>file_meta[date_column_name]):
         return
 
     fcol = None
@@ -155,14 +156,17 @@ def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, cloud_file_histo
         filtersql = cloud_file_history.where(
             (col(FirmCRDNumber)==lit(file_meta[FirmCRDNumber])) &
             (col('table_name')==lit(file_meta['table_name'])) &
-            (col(date_column_name)==to_date(lit(file_meta[date_column_name]), format='yyyy-MM-dd')) &
             (col('file_name')==lit(file_meta['file_name'])) &
             (col('folder_path')==lit(file_meta['folder_path']))
             )
+
+        if file_meta['table_name'].upper() == DualRegistrations_name.upper():
+            filtersql = filtersql.where(col(date_column_name)==to_date(lit(file_meta[date_column_name]), format='yyyy-MM-dd'))
+
         if not filtersql.rdd.isEmpty():
-            fcol = filtersql.limit(1).collect()[0]
-            criteria = json.loads(fcol['xml_criteria'])
-            rowTags = json.loads(fcol['xml_rowtags'])
+            fcol = True # filtersql.limit(1).collect()[0]
+            criteria = {} # json.loads(fcol['xml_criteria'])
+            rowTags = [] # json.loads(fcol['xml_rowtags'])
 
     if not fcol:
         if file_meta['table_name'].upper() == DualRegistrations_name.upper():

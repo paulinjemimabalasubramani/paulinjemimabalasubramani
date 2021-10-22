@@ -70,3 +70,9 @@ is_triad_salesforce_sandbox: false
 
 
 
+file_history_start_date:
+    FINRA: "2021-08-15"
+    PERSHING: "2021-08-15"
+
+
+

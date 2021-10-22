@@ -182,7 +182,7 @@ def get_data_settings():
             if is_pc:
                 setattr(data_settings, f'data_path_{source}', os.path.join(data_settings.data_path, source))
 
-    else: # Read Data Settings from Environment
+    else: # Read Data Settings from Environment if not is_pc
         data_settings = Config(file_path='', defaults={})
         data_settings.data_path = fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else '')
         if is_pc:
@@ -190,6 +190,7 @@ def get_data_settings():
         copy_history_log_domains = ['FP', 'CA']
         reverse_etl_domains = ['FP']
         data_sources = ['FINRA', 'LR', 'MIPS', 'SF', 'PERSHING']
+        file_history_sources = ['FINRA', 'PERSHING']
 
         env_data_settings_names = [
             'environment',
@@ -229,7 +230,10 @@ def get_data_settings():
         for source in data_sources:
             env_data_settings_names.append(f'data_path_{source}')
 
-        for envv in env_data_settings_names:
+        for source in file_history_sources:
+            env_data_settings_names.append(f'file_history_start_date_{source}')
+
+        for envv in env_data_settings_names: # Read all the environmental variables
             setattr(data_settings, envv, get_env(variable_name=envv.upper()))
 
         data_settings.copy_history_log_databases = [f'{data_settings.environment}_{domain}' for domain in copy_history_log_domains if getattr(data_settings, f'copy_history_log_databases_{domain}')]
@@ -242,6 +246,8 @@ def get_data_settings():
                 }
             for domain in reverse_etl_domains
             }
+
+        data_settings.file_history_start_date = {source: getattr(data_settings, f'file_history_start_date_{source}') for source in file_history_sources}
 
     return data_settings
 
