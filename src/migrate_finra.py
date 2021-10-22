@@ -164,9 +164,10 @@ def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, cloud_file_histo
             filtersql = filtersql.where(col(date_column_name)==to_date(lit(file_meta[date_column_name]), format='yyyy-MM-dd'))
 
         if not filtersql.rdd.isEmpty():
-            fcol = True # filtersql.limit(1).collect()[0]
-            criteria = {} # json.loads(fcol['xml_criteria'])
-            rowTags = [] # json.loads(fcol['xml_rowtags'])
+            return
+            # fcol = filtersql.limit(1).collect()[0]
+            # criteria = json.loads(fcol['xml_criteria'])
+            # rowTags = json.loads(fcol['xml_rowtags'])
 
     if not fcol:
         if file_meta['table_name'].upper() == DualRegistrations_name.upper():
