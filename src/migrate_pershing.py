@@ -57,7 +57,7 @@ schema_folder_path = os.path.join(config_path, 'pershing_schema')
 table_special_records = defaultdict(dict)
 
 pershing_strftime = r'%m/%d/%Y %H:%M:%S' # http://strftime.org/
-date_start = datetime.strptime('01/01/1990 00:00:00', pershing_strftime)
+date_start = datetime.strptime(data_settings.file_history_start_date[tableinfo_source], r'%Y-%m-%d')
 
 header_str = 'BOF      PERSHING '
 trailer_str = 'EOF      PERSHING '

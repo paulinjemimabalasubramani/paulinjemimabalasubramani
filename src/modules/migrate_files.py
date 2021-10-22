@@ -913,7 +913,7 @@ def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta, clou
 # %% Get all files meta data for a given folder_path
 
 @catch_error(logger)
-def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_extract_file_meta, cloud_file_history, date_column_name, inclusive:bool=True):
+def get_all_file_meta(folder_path, date_start, firm_crd_number:str, fn_extract_file_meta, cloud_file_history, date_column_name):
     """
     Get all files meta data for a given folder_path.
     Filters files for dates after the given date_start
@@ -925,7 +925,7 @@ def get_all_file_meta(folder_path, date_start:datetime, firm_crd_number:str, fn_
             file_path = os.path.join(root, file)
             file_meta = get_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, fn_extract_file_meta=fn_extract_file_meta, cloud_file_history=cloud_file_history)
 
-            if file_meta and (date_start<file_meta[date_column_name] or (date_start==file_meta[date_column_name] and inclusive)):
+            if file_meta and (date_start<=file_meta[date_column_name]):
                 files_meta.append(file_meta)
 
     logger.info(f'Finished getting list of files. Total Files = {len(files_meta)}')
