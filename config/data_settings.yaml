@@ -1,9 +1,11 @@
 environment: QA
 
 
+
 output_log_path: /usr/local/spark/resources/fileshare/Shared/logs
 output_cicd_path: /usr/local/spark/resources/fileshare/Shared/CICD
 create_cicd_file: true
+
 
 
 azure_storage_accounts_prefix: ag
@@ -25,6 +27,10 @@ data_paths_per_source:
 
 
 
+temporary_file_path: /usr/local/spark/resources/Shared/TEMP
+
+
+
 copy_history_log_databases: 
     - QA_FP
     - QA_CA
@@ -37,8 +43,10 @@ snowflake_role: AD_SNOWFLAKE_QA_DBA
 snowflake_warehouse: QA_RAW_WH
 
 
+
 lr_sql_server: TSQLOLTP01
 lr_sql_key_vault_account: TSQLOLTP01
+
 
 
 reverse_etl_sql_server: DW1SQLOLTP02

@@ -777,7 +777,7 @@ def process_one_file(file_meta, fn_process_file, cloud_file_history):
     logger.info(f'Processing {file_path}')
 
     if file_path.lower().endswith('.zip'):
-        tmpdir = tempfile.TemporaryDirectory(dir=os.path.dirname(file_path))
+        tmpdir = tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path)
         tmpdirs.append(tmpdir)
         logger.info(f'Extracting {file_path} to {tmpdir.name}')
         shutil.unpack_archive(filename=file_path, extract_dir=tmpdir.name)
@@ -886,7 +886,7 @@ def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta, clou
     Handles Zip files extraction as well
     """
     if file_path.lower().endswith('.zip'):
-        with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
+        with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
             shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
             k = 0
             for root1, dirs1, files1 in os.walk(tmpdir):

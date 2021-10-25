@@ -179,7 +179,7 @@ def get_finra_file_xml_meta(file_path:str, firm_crd_number:str, cloud_file_histo
                 }
             xml_table_columns = xml_table.columns
         elif file_path.lower().endswith('.zip'):
-            with tempfile.TemporaryDirectory(dir=os.path.dirname(file_path)) as tmpdir:
+            with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
                 shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
                 k = 0
                 for root1, dirs1, files1 in os.walk(tmpdir):
