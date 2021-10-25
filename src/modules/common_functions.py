@@ -170,23 +170,20 @@ def get_data_settings():
         }
 
         data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults=defaults)
-        data_settings.data_path = data_settings.default_data_path
 
-        if is_pc:
-            data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
+        data_settings.data_path = data_settings.default_data_path
+        data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
+        data_settings.temporary_file_path = os.path.join(data_settings.data_path, 'TEMP')
 
         data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
         for source, source_path in data_paths_per_source.items():
             _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=source_path)
-
-            if is_pc:
-                setattr(data_settings, f'data_path_{source}', os.path.join(data_settings.data_path, source))
+            setattr(data_settings, f'data_path_{source}', os.path.join(data_settings.data_path, source))
 
     else: # Read Data Settings from Environment if not is_pc
         data_settings = Config(file_path='', defaults={})
         data_settings.data_path = fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else '')
-        if is_pc:
-            data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
+
         copy_history_log_domains = ['FP', 'CA']
         reverse_etl_domains = ['FP']
         data_sources = ['FINRA', 'LR', 'MIPS', 'SF', 'PERSHING']
@@ -249,6 +246,7 @@ def get_data_settings():
 
         data_settings.file_history_start_date = {source: getattr(data_settings, f'file_history_start_date_{source}') for source in file_history_sources}
 
+    os.makedirs(data_settings.temporary_file_path, exist_ok=True)
     return data_settings
 
 
