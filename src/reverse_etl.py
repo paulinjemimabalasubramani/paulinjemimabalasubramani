@@ -188,11 +188,13 @@ def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema:str, s
 @catch_error(logger)
 def merge_sql_table(column_list:list, table_name:str, sql_merge_schema:str, sql_schema:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
     id_columns = [c for c in column_list if c['IS_IDENTITY']=='YES']
-    merge_on = '\n    AND '.join([f"LTRIM(RTRIM(COALESCE(src.[{c['TargetColumnName']}],'N/A'))) = LTRIM(RTRIM(COALESCE(tgt.[{c['TargetColumnName']}],'N/A')))" for c in id_columns])
-    check_na = '\n    '.join([f"AND LTRIM(RTRIM(COALESCE(src.[{c['TargetColumnName']}],'N/A'))) != 'N/A'" for c in id_columns])
-    update_set = '\n   ,'.join([f"tgt.[{c['TargetColumnName']}]=src.[{c['TargetColumnName']}]" for c in column_list])
-    insert_columns = '\n   ,'.join([f"[{c['TargetColumnName']}]" for c in column_list])
-    insert_values = '\n   ,'.join([f"src.[{c['TargetColumnName']}]" for c in column_list])
+    trim_coalesce = lambda x: f"LTRIM(RTRIM(COALESCE({x},'N/A')))"
+    column_name = 'TargetColumnName'
+    merge_on = '\n    AND '.join([f"{trim_coalesce('src.['+c[column_name]+']')} = {trim_coalesce('tgt.['+c[column_name]+']')}" for c in id_columns])
+    check_na = '\n    '.join([f"AND {trim_coalesce('src.['+c[column_name]+']')} != 'N/A'" for c in id_columns])
+    update_set = '\n   ,'.join([f"tgt.[{c[column_name]}]=src.[{c[column_name]}]" for c in column_list])
+    insert_columns = '\n   ,'.join([f"[{c[column_name]}]" for c in column_list])
+    insert_values = '\n   ,'.join([f"src.[{c[column_name]}]" for c in column_list])
 
     sqlstr = f"""
 MERGE INTO [{sql_merge_schema}].[{table_name}] tgt
@@ -202,7 +204,7 @@ WHEN MATCHED {check_na}
 THEN UPDATE SET {update_set}
 WHEN NOT MATCHED {check_na}
 THEN
-  INSERT ({insert_columns}) 
+  INSERT ({insert_columns})
   VALUES ({insert_values})
 ;
 """
