@@ -51,6 +51,8 @@ sf_warehouse = snowflake_ddl_params.snowflake_raw_warehouse
 
 data_type_translation_id = 'snowflake_sqlserver'
 
+sql_merge_schema = 'EDIP'
+
 
 
 # %% Create Session
@@ -158,7 +160,7 @@ def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema:str, s
 
     column_list = get_columns_list_from_columns_table(
         columns = columns,
-        column_names = ['TargetColumnName', 'TargetDataType', 'IsNullable'],
+        column_names = ['TargetColumnName', 'TargetDataType', 'IsNullable', 'IS_IDENTITY'],
         OrdinalPosition = 'OrdinalPosition'
         )
 
@@ -184,11 +186,28 @@ def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema:str, s
 # %% Merge Raw SQL Table to final SQL Table
 
 @catch_error(logger)
-def merge_sql_table(column_list:list, table_name:str, sql_schema:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
-    pass
+def merge_sql_table(column_list:list, table_name:str, sql_merge_schema:str, sql_schema:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
+    id_columns = [c for c in column_list if c['IS_IDENTITY']=='YES']
+    merge_on = '\n    AND '.join([f"LTRIM(RTRIM(COALESCE(src.[{c['TargetColumnName']}],'N/A'))) = LTRIM(RTRIM(COALESCE(tgt.[{c['TargetColumnName']}],'N/A')))" for c in id_columns])
+    check_na = '\n    '.join([f"AND LTRIM(RTRIM(COALESCE(src.[{c['TargetColumnName']}],'N/A'))) != 'N/A'" for c in id_columns])
+    update_set = '\n   ,'.join([f"tgt.[{c['TargetColumnName']}]=src.[{c['TargetColumnName']}]" for c in column_list])
+    insert_columns = '\n   ,'.join([f"[{c['TargetColumnName']}]" for c in column_list])
+    insert_values = '\n   ,'.join([f"src.[{c['TargetColumnName']}]" for c in column_list])
 
+    sqlstr = f"""
+MERGE INTO [{sql_merge_schema}].[{table_name}] tgt
+USING [{sql_schema}].[{table_name}] src
+ON {merge_on}
+WHEN MATCHED {check_na}
+THEN UPDATE SET {update_set}
+WHEN NOT MATCHED {check_na}
+THEN
+  INSERT ({insert_columns}) 
+  VALUES ({insert_values})
+;
+"""
 
-
+    return sqlstr
 
 
 
@@ -241,6 +260,7 @@ def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str,
             merge_sql_table(
                 column_list = column_list,
                 table_name = table_name.lower(),
+                sql_merge_schema = sql_merge_schema,
                 sql_schema = sql_schema,
                 sql_database = sql_database,
                 sql_server = sql_server,
