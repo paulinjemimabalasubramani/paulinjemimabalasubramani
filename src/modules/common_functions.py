@@ -214,6 +214,7 @@ def get_data_settings():
             'triad_salesforce_key_vault_account',
             'triad_salesforce_host',
             'is_triad_salesforce_sandbox',
+            'temporary_file_path',
             ]
 
         for domain in copy_history_log_domains:
