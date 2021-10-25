@@ -4,7 +4,7 @@ Library for common generic functions
 """
 
 # %% Import Libraries
-import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64
+import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, collections
 
 from pprint import pprint
 from datetime import datetime
@@ -13,7 +13,38 @@ from collections import OrderedDict
 
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
-from azure.storage.filedatalake import DataLakeServiceClient
+
+
+
+# %% Parameters
+
+execution_date_start = datetime.now()
+strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
+execution_date = execution_date_start.strftime(strftime)
+EXECUTION_DATE_str = 'EXECUTION_DATE'
+
+is_pc = platform.system().lower() == 'windows'
+
+fileshare = '/usr/local/spark/resources/fileshare'
+drivers_path = fileshare + '/EDIP-Code/drivers'
+config_path = fileshare + '/EDIP-Code/config'
+
+data_settings_file_name = 'data_settings.yaml'
+
+
+if is_pc:
+    os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.1-bin-hadoop3.2'
+    os.environ["HADOOP_HOME"] = r'C:\Spark\Hadoop'
+    os.environ["JAVA_HOME"]   = r'C:\Program Files\Java\jre1.8.0_241'
+    #os.environ["PYSPARK_PYTHON"] = r'C:\Users\smammadov\AppData\Local\Programs\Python\Python38\python.exe' # add this line as necessary
+
+    sys.path.insert(0, '%SPARK_HOME%\bin')
+    sys.path.insert(0, '%HADOOP_HOME%\bin')
+    sys.path.insert(0, '%JAVA_HOME%\bin')
+
+    python_dirname = os.path.dirname(__file__)
+    drivers_path = os.path.realpath(python_dirname + '/../../drivers')
+    config_path = os.path.realpath(python_dirname + '/../../config')
 
 
 
@@ -118,123 +149,54 @@ class Config:
 
 
 
-
-# %% Parameters
-
-execution_date_start = datetime.now()
-strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
-execution_date = execution_date_start.strftime(strftime)
-EXECUTION_DATE_str = 'EXECUTION_DATE'
-
-azure_filesystem_uri = 'dfs.core.windows.net'
-
-is_pc = platform.system().lower() == 'windows'
-
-log_analytics_workspace_id = '' # TODO
-
-join_drivers_by = ':' # for extraClassPath
-
-fileshare = '/usr/local/spark/resources/fileshare'
-drivers_path = fileshare + '/EDIP-Code/drivers'
-config_path = fileshare + '/EDIP-Code/config'
-data_settings_file_name = 'data_settings.yaml'
-
-
-if is_pc:
-    os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.1-bin-hadoop3.2'
-    os.environ["HADOOP_HOME"] = r'C:\Spark\Hadoop'
-    os.environ["JAVA_HOME"]   = r'C:\Program Files\Java\jre1.8.0_241'
-    #os.environ["PYSPARK_PYTHON"] = r'C:\Users\smammadov\AppData\Local\Programs\Python\Python38\python.exe' # add this line as necessary
-
-    sys.path.insert(0, '%SPARK_HOME%\bin')
-    sys.path.insert(0, '%HADOOP_HOME%\bin')
-    sys.path.insert(0, '%JAVA_HOME%\bin')
-
-    python_dirname = os.path.dirname(__file__)
-    drivers_path = os.path.realpath(python_dirname + '/../../drivers')
-    config_path = os.path.realpath(python_dirname + '/../../config')
-
-    join_drivers_by = ';' # for extraClassPath
-
-
-
 # %% Get Data Settings
 
 @catch_error()
 def get_data_settings():
+    Config(file_path=os.path.join(config_path, data_settings_file_name), defaults={})
+    data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
+    file_history_start_date = data_settings.get_value(attr_name='file_history_start_date', default_value=dict())
+    reverse_etl_map = data_settings.get_value(attr_name='reverse_etl_map', default_value=dict())
+    copy_history_log_databases = data_settings.get_value(attr_name='copy_history_log_databases', default_value=[])
+
     if is_pc: # Read Data Settings from file
-        defaults = {
-            'default_data_path': fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''),
-            'environment': sys.environment if hasattr(sys, 'environment') else 'QA',
-            'create_cicd_file': False,
-        }
-
-        data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults=defaults)
-
-        data_settings.data_path = data_settings.default_data_path
         data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
         data_settings.temporary_file_path = os.path.join(data_settings.data_path, 'TEMP')
 
-        data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
         for source, source_path in data_paths_per_source.items():
-            _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=source_path)
             setattr(data_settings, f'data_path_{source}', os.path.join(data_settings.data_path, source))
 
+        data_settings.copy_history_log_databases = [f'{data_settings.environment}_{domain}' for domain in copy_history_log_databases]
+        data_settings.reverse_etl_map = {
+                f'{data_settings.environment}_{domain}': domain_val
+            for domain, domain_val in reverse_etl_map.items()
+            }
+
     else: # Read Data Settings from Environment if not is_pc
-        data_settings = Config(file_path='', defaults={})
         data_settings.data_path = fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else '')
 
-        copy_history_log_domains = ['FP', 'CA']
-        reverse_etl_domains = ['FP']
-        data_sources = ['FINRA', 'LR', 'MIPS', 'SF', 'PERSHING']
-        file_history_sources = ['FINRA', 'PERSHING']
+        env_data_settings_names = [k for k, v in data_settings.__dict__.items() if not isinstance(v, (list, tuple, collections.Mapping))]
 
-        env_data_settings_names = [
-            'environment',
-            'output_log_path',
-            'output_cicd_path',
-            'create_cicd_file',
-            'azure_storage_accounts_prefix',
-            'azure_storage_accounts_default_mid',
-            'azure_storage_accounts_suffix',
-            'snowflake_account',
-            'snowflake_key_vault_account',
-            'snowflake_role',
-            'snowflake_warehouse',
-            'lr_sql_server',
-            'lr_sql_key_vault_account',
-            'reverse_etl_sql_server',
-            'reverse_etl_sql_key_vault_account',
-            'file_history_sql_server',
-            'file_history_sql_key_vault_account',
-            'file_history_sql_database',
-            'file_history_sql_schema',
-            'vacuuming_days_to_retain',
-            'salesforce_api_version',
-            'triad_salesforce_key_vault_account',
-            'triad_salesforce_host',
-            'is_triad_salesforce_sandbox',
-            'temporary_file_path',
-            ]
-
-        for domain in copy_history_log_domains:
+        for domain in copy_history_log_databases:
             env_data_settings_names.append(f'copy_history_log_databases_{domain}')
 
-        for domain in reverse_etl_domains:
+        for domain in reverse_etl_map.keys():
             env_data_settings_names.append(f'reverse_etl_map_{domain}_snowflake_schema')
             env_data_settings_names.append(f'reverse_etl_map_{domain}_sql_database')
             env_data_settings_names.append(f'reverse_etl_map_{domain}_sql_schema')
 
-        for source in data_sources:
+        for source, source_path in data_paths_per_source.items():
+            _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=source_path)
             env_data_settings_names.append(f'data_path_{source}')
 
+        file_history_sources = list(file_history_start_date.keys())
         for source in file_history_sources:
             env_data_settings_names.append(f'file_history_start_date_{source}')
 
         for envv in env_data_settings_names: # Read all the environmental variables
             setattr(data_settings, envv, get_env(variable_name=envv.upper()))
 
-        data_settings.copy_history_log_databases = [f'{data_settings.environment}_{domain}' for domain in copy_history_log_domains if getattr(data_settings, f'copy_history_log_databases_{domain}')]
+        data_settings.copy_history_log_databases = [f'{data_settings.environment}_{domain}' for domain in copy_history_log_databases if getattr(data_settings, f'copy_history_log_databases_{domain}')]
 
         data_settings.reverse_etl_map = {
             f'{data_settings.environment}_{domain}': {
@@ -242,7 +204,7 @@ def get_data_settings():
                 'sql_database': getattr(data_settings, f'reverse_etl_map_{domain}_sql_database'),
                 'sql_schema': getattr(data_settings, f'reverse_etl_map_{domain}_sql_schema'),
                 }
-            for domain in reverse_etl_domains
+            for domain in reverse_etl_map.keys()
             }
 
         data_settings.file_history_start_date = {source: getattr(data_settings, f'file_history_start_date_{source}') for source in file_history_sources}
@@ -554,91 +516,15 @@ logger.info(system_info(logger=logger))
 
 
 
-
-# %% Obtain authentication token using a Service Principal
-
-@catch_error(logger, raise_error=False)
-def get_log_token():
-    """
-    Obtain authentication token for Azure Monotor using a Service Principal
-    """
-    login_url = 'https://login.microsoftonline.com/' + azure_tenant_id + '/oauth2/token'
-    resource = 'https://api.loganalytics.io'
-
-    payload = {
-        'grant_type': 'client_credentials',
-        'client_id': log_customer_id,
-        'client_secret': log_shared_key,
-        'Content-Type': 'x-www-form-urlencoded',
-        'resource': resource
-    }
-
-    try:
-        response = requests.post(login_url, data=payload, verify=True)
-    except Exception as e:
-        if logger:
-            logger.error(str(e))
-        else:
-            pprint(e)
-
-    if (response.status_code >= 200 and response.status_code <= 299):
-        if logger: logger.info('Log Token obtained')
-        token = json.loads(response.content)['access_token']
-        return {'Authorization': str('Bearer '+ token), 'Content-Type': 'application/json'}
-    else:
-        error_log = 'Unable to get log token: ' + format(response.status_code)
-        if logger:
-            logger.error(error_log)
-        else:
-            pprint(error_log)
-
-
-
-# %% Execute Kusto Query on an Azure Log Analytics Workspace to retrieve log data
-
-@catch_error(logger, raise_error=False)
-def get_log_data(kusto_query):
-    """
-    Execute Kusto Query on an Azure Log Analytics Workspace
-    Retrieve log data from Azure Monitor
-    https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/
-    https://dev.loganalytics.io/
-    """
-    log_token = get_log_token()
-    if not log_token:
-        return
-
-    az_url = 'https://api.loganalytics.io/v1/workspaces/'+ log_analytics_workspace_id + '/query'
-    query = {'query': kusto_query}
-
-    try:
-        response = requests.get(az_url, params=query, headers=log_token)
-    except Exception as e:
-        if logger:
-            logger.error(str(e))
-        else:
-            pprint(e)
-
-    if (response.status_code >= 200 and response.status_code <= 299):
-        if logger: logger.info('Kusto Query ran successfully')
-        return json.loads(response.content)
-    else:
-        error_log = 'Unable to run Kusto Query: ' + format(response.status_code)
-        if logger:
-            logger.error(error_log)
-        else:
-            pprint(error_log)
-
-
-
 # %% get extraClassPath:
 
 @catch_error(logger)
-def get_extraClassPath(drivers_path:str, join_drivers_by:str):
+def get_extraClassPath(drivers_path:str):
     """
     Get list of all the JAR files for PySpark
     """
     drivers = []
+    join_drivers_by = ':' if not is_pc else ';'
 
     for file in os.listdir(drivers_path):
         if file.endswith('.jar'):
@@ -649,7 +535,7 @@ def get_extraClassPath(drivers_path:str, join_drivers_by:str):
 
 
 
-extraClassPath = get_extraClassPath(drivers_path=drivers_path, join_drivers_by=join_drivers_by)
+extraClassPath = get_extraClassPath(drivers_path=drivers_path)
 
 
 
@@ -685,21 +571,6 @@ def to_OrderedDict(dict_:dict, reverse:bool=False):
     Utility function to convert dict to OrderedDict
     """
     return OrderedDict(sorted(dict_.items(), key=lambda x:x[0], reverse=reverse))
-
-
-
-# %% Get ADLS Gen 2 Service Client
-
-@catch_error(logger)
-def get_adls_gen2_service_client(storage_account_name):
-    """
-    Get ADLS Gen 2 Service Client Handler
-    """
-    azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
-
-    credential = ClientSecretCredential(tenant_id=azure_tenant_id, client_id=sp_id, client_secret=sp_pass)
-    service_client = DataLakeServiceClient(account_url=f'https://{storage_account_name}.{azure_filesystem_uri}', credential=credential)
-    return service_client
 
 
 

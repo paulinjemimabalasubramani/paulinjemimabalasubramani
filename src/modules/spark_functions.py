@@ -508,6 +508,28 @@ def flatten_n_divide_table(table, table_name:str):
 
 
 
+# %% Get List of Columns from "Columns" table order by OrdinalPosition
+
+@catch_error(logger)
+def get_columns_list_from_columns_table(columns, column_names:list, OrdinalPosition:str=None):
+    select_columns = column_names.copy()
+    if OrdinalPosition:
+        select_columns += [OrdinalPosition]
+    select_columns = list(set(select_columns))
+    column_list = columns.select(select_columns).distinct().collect()
+
+    if OrdinalPosition:
+        column_list = [({x:c[x] for x in column_names}, c[OrdinalPosition]) for c in column_list]
+    else:
+        column_list = [({x:c[x] for x in column_names}, (c[x] for x in column_names)) for c in column_list]
+
+    column_list = sorted(column_list, key=lambda x: x[1])
+    column_list = [x[0] for x in column_list]
+
+    return column_list
+
+
+
 # %%
 
 

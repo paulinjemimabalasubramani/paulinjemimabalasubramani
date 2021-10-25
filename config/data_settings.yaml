@@ -32,8 +32,8 @@ temporary_file_path: /usr/local/spark/resources/Shared/TEMP
 
 
 copy_history_log_databases: 
-    - QA_FP
-    - QA_CA
+    - FP
+    - CA
 
 
 
@@ -53,7 +53,7 @@ reverse_etl_sql_server: DW1SQLOLTP02
 reverse_etl_sql_key_vault_account: DSQLOLTP02
 
 reverse_etl_map:
-    QA_FP:
+    FP:
         snowflake_schema: EDIP
         sql_database: FinancialProfessional
         sql_schema: sfexport

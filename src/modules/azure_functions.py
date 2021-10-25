@@ -8,19 +8,23 @@ Library for Azure Functions
 import re, sys
 from collections import defaultdict
 
-from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, post_log_data, \
-    azure_filesystem_uri, data_settings
-from .spark_functions import IDKeyIndicator, MD5KeyIndicator, partitionBy, metadata_FirmSourceMap, \
-    elt_audit_columns, column_regex, partitionBy_value, table_to_list_dict
+from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, post_log_data, data_settings
+from .spark_functions import IDKeyIndicator, MD5KeyIndicator, partitionBy, metadata_FirmSourceMap, elt_audit_columns, \
+    column_regex, partitionBy_value, table_to_list_dict
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
 from pyspark import StorageLevel
 
 
+from azure.storage.filedatalake import DataLakeServiceClient
+from azure.identity import ClientSecretCredential
+
+
 
 # %% Parameters
 
+azure_filesystem_uri = 'dfs.core.windows.net'
 
 tableinfo_container_name = "tables"
 container_name = "ingress" # Default Container Name
@@ -30,6 +34,7 @@ data_folder = 'data'
 
 file_format = 'delta' # Default File Format
 default_storage_account_abbr = data_settings.azure_storage_accounts_default_mid.upper()
+
 
 
 # %% firm_name to storage_account_name
@@ -120,6 +125,21 @@ def setup_spark_adls_gen2_connection(spark, storage_account_name):
     spark.conf.set(f"fs.azure.account.oauth2.client.secret.{storage_account_name}.{azure_filesystem_uri}", sp_pass)
     spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_account_name}.{azure_filesystem_uri}", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token")
     spark.conf.set("fs.azure.createRemoteFileSystemDuringInitialization", "true")
+
+
+
+# %% Get ADLS Gen 2 Service Client
+
+@catch_error(logger)
+def get_adls_gen2_service_client(storage_account_name):
+    """
+    Get ADLS Gen 2 Service Client Handler
+    """
+    azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
+
+    credential = ClientSecretCredential(tenant_id=azure_tenant_id, client_id=sp_id, client_secret=sp_pass)
+    service_client = DataLakeServiceClient(account_url=f'https://{storage_account_name}.{azure_filesystem_uri}', credential=credential)
+    return service_client
 
 
 

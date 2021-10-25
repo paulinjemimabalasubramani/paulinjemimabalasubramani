@@ -27,7 +27,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
 from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings, execution_date, is_pc
-from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake
+from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake, get_columns_list_from_columns_table
 from modules.azure_functions import default_storage_account_name, default_storage_account_abbr, setup_spark_adls_gen2_connection
 from modules.migrate_files import get_DataTypeTranslation_table, add_TargetDataType, rename_columns, add_precision
 from modules.snowflake_ddl import snowflake_ddl_params
@@ -156,21 +156,39 @@ def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema:str, s
     columns = add_TargetDataType(columns=columns, translation=translation)
     columns = add_precision(columns=columns, truncate_max_varchar=1000)
 
-    column_list = columns.select(['TargetColumnName', 'TargetDataType', 'IsNullable', 'OrdinalPosition']).distinct().collect()
-    column_list = [(f"[{c['TargetColumnName']}] {c['TargetDataType']} {'NULL' if c['IsNullable']>0 else 'NOT NULL'}", c['OrdinalPosition']) for c in column_list]
-    column_list = sorted(column_list, key=lambda x: x[1])
-    column_list = [x[0] for x in column_list]
-    column_list = '\n  ,'.join(column_list)
-    sqlstr = f'CREATE TABLE [{sql_schema}].[{table_name}] ({column_list});'
+    column_list = get_columns_list_from_columns_table(
+        columns = columns,
+        column_names = ['TargetColumnName', 'TargetDataType', 'IsNullable'],
+        OrdinalPosition = 'OrdinalPosition'
+        )
+
+    column_listx = [f"[{c['TargetColumnName']}] {c['TargetDataType']} {'NULL' if c['IsNullable']>0 else 'NOT NULL'}" for c in column_list]
+    column_listx = '\n  ,'.join(column_listx)
+    sqlstr = f'CREATE TABLE [{sql_schema}].[{table_name}] ({column_listx});'
 
     conn = pymssql.connect(sql_server, sql_id, sql_pass, sql_database)
     cursor = conn.cursor()
-    cursor.execute(f'DROP TABLE IF EXISTS {sql_schema}.{table_name};')
+    sqlstr_drop = f'DROP TABLE IF EXISTS {sql_schema}.{table_name};'
+    logger.info({'execute': sqlstr_drop})
+    cursor.execute(sqlstr_drop)
     conn.commit()
     logger.info({'execute': sqlstr})
     cursor.execute(sqlstr)
     conn.commit()
     conn.close()
+
+    return column_list
+
+
+
+# %% Merge Raw SQL Table to final SQL Table
+
+@catch_error(logger)
+def merge_sql_table(column_list:list, table_name:str, sql_schema:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
+    pass
+
+
+
 
 
 
@@ -198,7 +216,7 @@ def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str,
                 is_query = True,
                 )
 
-            recreate_sql_table(
+            column_list = recreate_sql_table(
                 columns = columns,
                 table_name = table_name.lower(),
                 sf_schema = sf_schema,
@@ -219,6 +237,16 @@ def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str,
                 password = sql_pass,
                 mode = 'append',
             )
+
+            merge_sql_table(
+                column_list = column_list,
+                table_name = table_name.lower(),
+                sql_schema = sql_schema,
+                sql_database = sql_database,
+                sql_server = sql_server,
+                sql_id = sql_id,
+                sql_pass = sql_pass,
+                )
 
         except Exception as e:
             logger.error(str(e))
