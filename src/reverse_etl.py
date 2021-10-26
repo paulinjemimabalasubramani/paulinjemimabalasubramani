@@ -186,17 +186,22 @@ def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema:str, s
 # %% Merge Raw SQL Table to final SQL Table
 
 @catch_error(logger)
-def merge_sql_table(column_list:list, table_name:str, sql_merge_schema:str, sql_schema:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
+def merge_sql_table(column_list:list, table_name:str, sf_schema:str, sql_merge_schema:str, sql_schema:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
     id_columns = [c for c in column_list if c['IS_IDENTITY']=='YES']
-    trim_coalesce = lambda x: f"LTRIM(RTRIM(COALESCE({x},'N/A')))"
-    column_name = 'TargetColumnName'
-    merge_on = '\n    AND '.join([f"{trim_coalesce('src.['+c[column_name]+']')} = {trim_coalesce('tgt.['+c[column_name]+']')}" for c in id_columns])
-    check_na = '\n    '.join([f"AND {trim_coalesce('src.['+c[column_name]+']')} != 'N/A'" for c in id_columns])
-    update_set = '\n   ,'.join([f"tgt.[{c[column_name]}]=src.[{c[column_name]}]" for c in column_list])
-    insert_columns = '\n   ,'.join([f"[{c[column_name]}]" for c in column_list])
-    insert_values = '\n   ,'.join([f"src.[{c[column_name]}]" for c in column_list])
+    if len(id_columns)==0:
+        no_pk_warning = f'Snowflake table {sf_schema}.{table_name} does not have any primary key'
+        logger.warning(no_pk_warning)
+        sqlstr = '-- ' + no_pk_warning
+    else:
+        trim_coalesce = lambda x: f"LTRIM(RTRIM(COALESCE({x},'N/A')))"
+        column_name = 'TargetColumnName'
+        merge_on = '\n    AND '.join([f"{trim_coalesce('src.['+c[column_name]+']')} = {trim_coalesce('tgt.['+c[column_name]+']')}" for c in id_columns])
+        check_na = '\n    '.join([f"AND {trim_coalesce('src.['+c[column_name]+']')} != 'N/A'" for c in id_columns])
+        update_set = '\n   ,'.join([f"tgt.[{c[column_name]}]=src.[{c[column_name]}]" for c in column_list])
+        insert_columns = '\n   ,'.join([f"[{c[column_name]}]" for c in column_list])
+        insert_values = '\n   ,'.join([f"src.[{c[column_name]}]" for c in column_list])
 
-    sqlstr = f"""
+        sqlstr = f"""
 MERGE INTO [{sql_merge_schema}].[{table_name}] tgt
 USING [{sql_schema}].[{table_name}] src
 ON {merge_on}
@@ -209,7 +214,13 @@ THEN
 ;
 """
 
-    return sqlstr
+    file_folder_path = os.path.join(data_settings.output_cicd_path, 'reverse_etl', sys.domain_abbr)
+    os.makedirs(name=file_folder_path, exist_ok=True)
+    file_path = os.path.join(file_folder_path, f'{table_name}.sql')
+
+    logger.info(f'Writing: {file_path}')
+    with open(file_path, 'w') as f:
+        f.write(sqlstr)
 
 
 
@@ -262,6 +273,7 @@ def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str,
             merge_sql_table(
                 column_list = column_list,
                 table_name = table_name.lower(),
+                sf_schema = sf_schema,
                 sql_merge_schema = sql_merge_schema,
                 sql_schema = sql_schema,
                 sql_database = sql_database,

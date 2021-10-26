@@ -69,7 +69,7 @@ class module_params_class:
     cicd_file = None
     cicd_str_per_step = defaultdict(str)
 
-    cicd_folder_path = data_settings.get_value(attr_name='output_cicd_path', default_value=os.path.join(data_settings.data_path, 'CICD'))
+    cicd_folder_path = data_settings.output_cicd_path
 
 
 

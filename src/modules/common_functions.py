@@ -153,23 +153,20 @@ class Config:
 
 @catch_error()
 def get_data_settings():
-    Config(file_path=os.path.join(config_path, data_settings_file_name), defaults={})
-    data_paths_per_source = data_settings.get_value(attr_name='data_paths_per_source', default_value=dict())
-    file_history_start_date = data_settings.get_value(attr_name='file_history_start_date', default_value=dict())
-    reverse_etl_map = data_settings.get_value(attr_name='reverse_etl_map', default_value=dict())
-    copy_history_log_databases = data_settings.get_value(attr_name='copy_history_log_databases', default_value=[])
+    data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults={})
 
     if is_pc: # Read Data Settings from file
         data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
         data_settings.temporary_file_path = os.path.join(data_settings.data_path, 'TEMP')
 
-        for source, source_path in data_paths_per_source.items():
+        for source, source_path in data_settings.data_paths_per_source.items():
             setattr(data_settings, f'data_path_{source}', os.path.join(data_settings.data_path, source))
 
-        data_settings.copy_history_log_databases = [f'{data_settings.environment}_{domain}' for domain in copy_history_log_databases]
+        data_settings.copy_history_log_databases = [f'{data_settings.environment}_{domain}' for domain in data_settings.copy_history_log_databases]
+
         data_settings.reverse_etl_map = {
                 f'{data_settings.environment}_{domain}': domain_val
-            for domain, domain_val in reverse_etl_map.items()
+            for domain, domain_val in data_settings.reverse_etl_map.items()
             }
 
     else: # Read Data Settings from Environment if not is_pc
@@ -177,26 +174,26 @@ def get_data_settings():
 
         env_data_settings_names = [k for k, v in data_settings.__dict__.items() if not isinstance(v, (list, tuple, collections.Mapping))]
 
-        for domain in copy_history_log_databases:
+        for domain in data_settings.copy_history_log_databases:
             env_data_settings_names.append(f'copy_history_log_databases_{domain}')
 
-        for domain in reverse_etl_map.keys():
+        for domain in data_settings.reverse_etl_map.keys():
             env_data_settings_names.append(f'reverse_etl_map_{domain}_snowflake_schema')
             env_data_settings_names.append(f'reverse_etl_map_{domain}_sql_database')
             env_data_settings_names.append(f'reverse_etl_map_{domain}_sql_schema')
 
-        for source, source_path in data_paths_per_source.items():
+        for source, source_path in data_settings.data_paths_per_source.items():
             _ = data_settings.get_value(attr_name=f'data_path_{source}', default_value=source_path)
             env_data_settings_names.append(f'data_path_{source}')
 
-        file_history_sources = list(file_history_start_date.keys())
+        file_history_sources = list(data_settings.file_history_start_date.keys())
         for source in file_history_sources:
             env_data_settings_names.append(f'file_history_start_date_{source}')
 
         for envv in env_data_settings_names: # Read all the environmental variables
             setattr(data_settings, envv, get_env(variable_name=envv.upper()))
 
-        data_settings.copy_history_log_databases = [f'{data_settings.environment}_{domain}' for domain in copy_history_log_databases if getattr(data_settings, f'copy_history_log_databases_{domain}')]
+        data_settings.copy_history_log_databases = [f'{data_settings.environment}_{domain}' for domain in data_settings.copy_history_log_databases if getattr(data_settings, f'copy_history_log_databases_{domain}')]
 
         data_settings.reverse_etl_map = {
             f'{data_settings.environment}_{domain}': {
@@ -204,12 +201,13 @@ def get_data_settings():
                 'sql_database': getattr(data_settings, f'reverse_etl_map_{domain}_sql_database'),
                 'sql_schema': getattr(data_settings, f'reverse_etl_map_{domain}_sql_schema'),
                 }
-            for domain in reverse_etl_map.keys()
+            for domain in data_settings.reverse_etl_map.keys()
             }
 
         data_settings.file_history_start_date = {source: getattr(data_settings, f'file_history_start_date_{source}') for source in file_history_sources}
 
     os.makedirs(data_settings.temporary_file_path, exist_ok=True)
+    _ = data_settings.get_value(attr_name='output_cicd_path', default_value=os.path.join(data_settings.data_path, 'CICD'))
     return data_settings
 
 
