@@ -4,7 +4,7 @@ Library for common generic functions
 """
 
 # %% Import Libraries
-import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, collections
+import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, collections, pymssql
 
 from pprint import pprint
 from datetime import datetime
@@ -493,7 +493,8 @@ class CreateLogger:
         """
         Log warning message
         """
-        self.log(msg=msg, msg_type='WARNING', extra_log=system_info(logger=self.logger), backup_logger_func=self.logger.warning)
+        #self.log(msg=msg, msg_type='WARNING', extra_log=system_info(logger=self.logger), backup_logger_func=self.logger.warning)
+        self.log(msg=msg, msg_type='WARNING', backup_logger_func=self.logger.warning)
 
 
     @catch_error()
@@ -501,7 +502,8 @@ class CreateLogger:
         """
         Log error message
         """
-        self.log(msg=msg, msg_type='ERROR', extra_log=system_info(logger=self.logger), backup_logger_func=self.logger.error)
+        #self.log(msg=msg, msg_type='ERROR', extra_log=system_info(logger=self.logger), backup_logger_func=self.logger.error)
+        self.log(msg=msg, msg_type='ERROR', backup_logger_func=self.logger.error)
 
 
 
@@ -569,6 +571,49 @@ def to_OrderedDict(dict_:dict, reverse:bool=False):
     Utility function to convert dict to OrderedDict
     """
     return OrderedDict(sorted(dict_.items(), key=lambda x:x[0], reverse=reverse))
+
+
+
+# %% pymssql message handler - information sent by the server
+
+@catch_error(logger)
+def pymssql_msg_handler(msgstate, severity, srvname, procname, line, msgtext):
+    """
+    pymssql message handler - information sent by the server
+    http://www.pymssql.org/en/stable/_mssql_examples.html#custom-message-handlers
+    """
+    logger.info({
+        'function': 'pymssql_msg_handler',
+        'msgstate': msgstate,
+        'severity': severity,
+        'srvname': srvname,
+        'procname': procname,
+        'line': line,
+        'msgtext': msgtext,
+    })
+
+
+
+# %% pymssql execute non query statements
+
+@catch_error(logger)
+def pymssql_execute_non_query(sqlstr_list:list, sql_server:str, sql_id:str, sql_pass:str, sql_database:str):
+    """
+    pymssql execute non query statements
+    """
+    conn = pymssql.connect(
+        server = sql_server,
+        user = sql_id,
+        password = sql_pass,
+        database = sql_database,
+        appname = __name__,
+        autocommit = True,
+        )
+    conn._conn.set_msghandler(pymssql_msg_handler)
+    for sqlstr in sqlstr_list:
+        logger.info({'execute': sqlstr})
+        conn._conn.execute_non_query(sqlstr)
+    conn.close()
 
 
 

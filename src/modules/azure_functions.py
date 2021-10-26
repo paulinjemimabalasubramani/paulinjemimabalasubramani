@@ -102,7 +102,7 @@ def select_tableinfo_columns(tableinfo):
 
     selected_tableinfo = tableinfo.select(*column_names).distinct().orderBy(*column_orderby)
 
-    if is_pc: selected_tableinfo.printSchema()
+    if is_pc: selected_tableinfo.show(5)
     return selected_tableinfo
 
 
@@ -280,7 +280,6 @@ def read_adls_gen2(spark,
         .load(data_path)
         )
 
-    if is_pc: table.printSchema()
     if is_pc: table.show(5)
 
     table.persist(StorageLevel.MEMORY_AND_DISK)
@@ -318,7 +317,6 @@ def read_tableinfo_rows(tableinfo_name:str, tableinfo_source:str, tableinfo):
 
     logger.info('Check if there is a table with no primary key')
     nopk = tableinfo.groupBy(['SourceDatabase', 'SourceSchema', 'TableName']).agg(F.sum('KeyIndicator').alias('key_count')).where(F.col('key_count')==F.lit(0))
-    if is_pc: nopk.show()
     assert nopk.rdd.isEmpty(), f'Found tables with no primary keys: {nopk.collect()}'
 
     return table_rows

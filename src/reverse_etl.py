@@ -15,7 +15,7 @@ https://docs.databricks.com/_static/notebooks/snowflake-python.html
 
 # %% Import Libraries
 
-import os, sys, pymssql
+import os, sys
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'financial_professional'
 sys.domain_abbr = 'FP'
@@ -26,7 +26,8 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings, execution_date, is_pc
+from modules.common_functions import logger, catch_error, get_secrets, mark_execution_end, data_settings, execution_date, \
+    pymssql_execute_non_query
 from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake, get_columns_list_from_columns_table
 from modules.azure_functions import default_storage_account_name, default_storage_account_abbr, setup_spark_adls_gen2_connection
 from modules.migrate_files import get_DataTypeTranslation_table, add_TargetDataType, rename_columns, add_precision
@@ -50,8 +51,6 @@ sf_role = snowflake_ddl_params.snowflake_role
 sf_warehouse = snowflake_ddl_params.snowflake_raw_warehouse
 
 data_type_translation_id = 'snowflake_sqlserver'
-
-sql_merge_schema = 'EDIP'
 
 
 
@@ -132,11 +131,11 @@ def get_sf_table_list(sf_database:str, sf_schema:str):
 # %% Re-create SQL Table with the latest schema
 
 @catch_error(logger)
-def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
+def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema_raw:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
     """
     Re-create SQL Table with the latest schema
     """
-    logger.info(f'Recreating SQL Server table: {sql_database}.{sql_schema}.{table_name}')
+    logger.info(f'Recreating SQL Server table: {sql_database}.{sql_schema_raw}.{table_name}')
 
     columns = (columns
         .where(
@@ -166,19 +165,17 @@ def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema:str, s
 
     column_listx = [f"[{c['TargetColumnName']}] {c['TargetDataType']} {'NULL' if c['IsNullable']>0 else 'NOT NULL'}" for c in column_list]
     column_listx = '\n  ,'.join(column_listx)
-    sqlstr = f'CREATE TABLE [{sql_schema}].[{table_name}] ({column_listx});'
 
-    conn = pymssql.connect(sql_server, sql_id, sql_pass, sql_database)
-    cursor = conn.cursor()
-    sqlstr_drop = f'DROP TABLE IF EXISTS {sql_schema}.{table_name};'
-    logger.info({'execute': sqlstr_drop})
-    cursor.execute(sqlstr_drop)
-    conn.commit()
-    logger.info({'execute': sqlstr})
-    cursor.execute(sqlstr)
-    conn.commit()
-    conn.close()
+    sqlstr_drop = f'DROP TABLE IF EXISTS {sql_schema_raw}.{table_name};'
+    sqlstr = f'CREATE TABLE [{sql_schema_raw}].[{table_name}] ({column_listx});'
 
+    pymssql_execute_non_query(
+        sqlstr_list = [sqlstr_drop, sqlstr],
+        sql_server = sql_server,
+        sql_id = sql_id,
+        sql_pass = sql_pass,
+        sql_database = sql_database,
+    )
     return column_list
 
 
@@ -186,12 +183,15 @@ def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema:str, s
 # %% Merge Raw SQL Table to final SQL Table
 
 @catch_error(logger)
-def merge_sql_table(column_list:list, table_name:str, sf_schema:str, sql_merge_schema:str, sql_schema:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
+def merge_sql_table(column_list:list, table_name:str, sf_schema:str, sql_schema:str, sql_schema_raw:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
     id_columns = [c for c in column_list if c['IS_IDENTITY']=='YES']
+
+    no_pk_warning = None
     if len(id_columns)==0:
         no_pk_warning = f'Snowflake table {sf_schema}.{table_name} does not have any primary key'
         logger.warning(no_pk_warning)
         sqlstr = '-- ' + no_pk_warning
+
     else:
         trim_coalesce = lambda x: f"LTRIM(RTRIM(COALESCE({x},'N/A')))"
         column_name = 'TargetColumnName'
@@ -201,9 +201,8 @@ def merge_sql_table(column_list:list, table_name:str, sf_schema:str, sql_merge_s
         insert_columns = '\n   ,'.join([f"[{c[column_name]}]" for c in column_list])
         insert_values = '\n   ,'.join([f"src.[{c[column_name]}]" for c in column_list])
 
-        sqlstr = f"""
-MERGE INTO [{sql_merge_schema}].[{table_name}] tgt
-USING [{sql_schema}].[{table_name}] src
+        sqlstr = f"""MERGE INTO [{sql_schema}].[{table_name}] tgt
+USING [{sql_schema_raw}].[{table_name}] src
 ON {merge_on}
 WHEN MATCHED {check_na}
 THEN UPDATE SET {update_set}
@@ -222,12 +221,21 @@ THEN
     with open(file_path, 'w') as f:
         f.write(sqlstr)
 
+    if not no_pk_warning:
+        pymssql_execute_non_query(
+            sqlstr_list = [sqlstr],
+            sql_server = sql_server,
+            sql_id = sql_id,
+            sql_pass = sql_pass,
+            sql_database = sql_database,
+        )
+
 
 
 # %% Loop over all tables
 
 @catch_error(logger)
-def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str, sql_database:str, sql_schema:str):
+def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str, sql_database:str, sql_schema:str, sql_schema_raw:str):
     """
     Loop over all tables to read from Snowflake and write to SQL Server
     """
@@ -252,7 +260,7 @@ def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str,
                 columns = columns,
                 table_name = table_name.lower(),
                 sf_schema = sf_schema,
-                sql_schema = sql_schema,
+                sql_schema_raw = sql_schema_raw,
                 sql_database = sql_database,
                 sql_server = sql_server,
                 sql_id = sql_id,
@@ -262,7 +270,7 @@ def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str,
             write_sql(
                 table = table,
                 table_name = table_name.lower(),
-                schema = sql_schema,
+                schema = sql_schema_raw,
                 database = sql_database,
                 server = sql_server,
                 user = sql_id,
@@ -274,8 +282,8 @@ def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str,
                 column_list = column_list,
                 table_name = table_name.lower(),
                 sf_schema = sf_schema,
-                sql_merge_schema = sql_merge_schema,
                 sql_schema = sql_schema,
+                sql_schema_raw = sql_schema_raw,
                 sql_database = sql_database,
                 sql_server = sql_server,
                 sql_id = sql_id,
@@ -299,8 +307,18 @@ def reverse_etl_all_databases():
     for sf_database, val in reverse_etl_map.items():
         sf_schema = val['snowflake_schema']
         logger.info(f'Reverse ETL {sf_database}.{sf_schema}')
+
         table_names, columns = get_sf_table_list(sf_database=sf_database, sf_schema=sf_schema)
-        reverse_etl_all_tables(table_names=table_names, columns=columns, sf_database=sf_database, sf_schema=sf_schema, sql_database=val['sql_database'], sql_schema=val['sql_schema'])
+
+        reverse_etl_all_tables(
+            table_names = table_names,
+            columns = columns,
+            sf_database = sf_database,
+            sf_schema = sf_schema,
+            sql_database = val['sql_database'],
+            sql_schema = val['sql_schema'],
+            sql_schema_raw = val['sql_schema'] + '_raw',
+            )
 
 
 

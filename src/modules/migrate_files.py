@@ -5,12 +5,12 @@ Common Library for translating data types from source database to target databas
 
 # %% Import Libraries
 
-import os, sys, re, tempfile, shutil, copy, pymssql, json
+import os, sys, re, tempfile, shutil, copy, json
 from pprint import pprint
 from collections import defaultdict
 from datetime import datetime
 
-from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, data_settings
+from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, data_settings, pymssql_execute_non_query
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
     default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder, to_storage_account_name, \
@@ -127,7 +127,6 @@ def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
             col('sql_tables.TABLE_CATALOG'),
         )
 
-    if is_pc: tables.printSchema()
     if is_pc: tables.show(5)
 
     # Check if there is a table in the master_ingest_list that is not in the sql_tables
@@ -171,7 +170,6 @@ def filter_columns_by_tables(sql_columns, tables):
         how = 'left'
     ).select('sql_columns.*').where(col('TABLE_NAME').isNotNull())
 
-    if is_pc: columns.printSchema()
     return columns
 
 
@@ -208,7 +206,6 @@ def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_
             .select('constraints.*', 'usage.COLUMN_NAME')
             .distinct()
             )
-        if is_pc: constraints.printSchema()
 
         columns = columns.alias('columns').join(
             constraints.alias('constraints'),
@@ -254,7 +251,6 @@ def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_
 
         columns = columns.select(columns.columns).union(columnsnopk.select(columns.columns)).distinct()
 
-    if is_pc: columns.printSchema()
     return columns
 
 
@@ -294,7 +290,6 @@ def rename_columns(columns, storage_account_name:str, created_datetime:str, modi
 
     columns = columns.withColumn('SourceColumnName', F.regexp_replace(F.trim(col('SourceColumnName')), column_regex, '_'))
 
-    if is_pc: columns.printSchema()
     return columns
 
 
@@ -315,7 +310,6 @@ def add_TargetDataType(columns, translation):
             translation.DataTypeTo.alias('TargetDataType')
         )
 
-    if is_pc: columns.printSchema()
     return columns
 
 
@@ -334,7 +328,6 @@ def add_precision(columns, truncate_max_varchar:int=0):
 
     columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['decimal', 'numeric'])) & (col('SourceDataPrecision')>0), F.concat(lit('decimal('), col('SourceDataPrecision'), lit(','), col('SourceDataScale'), lit(')'))).otherwise(col('TargetDataType')))
 
-    if is_pc: columns.printSchema()
     return columns
 
 
@@ -483,7 +476,6 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
         schema_meta = sql_meta[schema_table_name]
         if schema_meta:
             schema_table = read_csv(spark=spark, file_path=schema_meta[0]['path'])
-            if is_pc: schema_table.printSchema()
         else:
             schema_table = None
         schema_tables[schema_table_name] = schema_table
@@ -506,31 +498,24 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
 
     logger.info('Join master_ingest_list with sql tables')
     tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
-    if is_pc: tables.show(5)
 
     logger.info('Filter columns by selected tables')
     columns = filter_columns_by_tables(sql_columns=sql_columns, tables=tables)
-    if is_pc: columns.show(5)
 
     logger.info('Join with table constraints and column usage')
     columns = join_tables_with_constraints(columns=columns, sql_table_constraints=sql_table_constraints, sql_key_column_usage=sql_key_column_usage)
-    if is_pc: columns.show(5)
 
     logger.info('Rename Columns')
     columns = rename_columns(columns=columns, storage_account_name=storage_account_name, created_datetime=created_datetime, modified_datetime=modified_datetime, storage_account_abbr=storage_account_abbr)
-    if is_pc: columns.show(5)
 
     logger.info('Add TargetDataType')
     columns = add_TargetDataType(columns=columns, translation=translation)
-    if is_pc: columns.show(5)
 
     logger.info('Add Precision')
     columns = add_precision(columns=columns)
-    if is_pc: columns.show(5)
 
     logger.info('Select Relevant columns only')
     tableinfo = select_tableinfo_columns(tableinfo=columns)
-    if is_pc: tableinfo.show(5)
 
     return tableinfo
 
@@ -546,9 +531,7 @@ def get_sql_schema_tables(spark, sql_id:str, sql_pass:str, sql_server:str, sql_d
     schema_tables = defaultdict()
     for schema_table_name in schema_table_names:
         schema_tables[schema_table_name] = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=INFORMATION_SCHEMA, table_name=schema_table_name, database=sql_database, server=sql_server)
-        if is_pc: schema_tables[schema_table_name].printSchema()
-        if is_pc: schema_tables[schema_table_name].show(5)
-    
+
     return schema_tables
 
 
@@ -1004,12 +987,13 @@ def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_acco
         column_list = '\n  ,'.join([f"[{s['name']}] {s['metadata']['sqltype']}" for s in schema_json['fields']])
         sqlstr = f'CREATE TABLE [{data_settings.file_history_sql_schema}].[{cloud_file_history_name}] ({column_list});'
 
-        logger.info({'execute': sqlstr})
-        conn = pymssql.connect(data_settings.file_history_sql_server, sql_id, sql_pass, data_settings.file_history_sql_database)
-        cursor = conn.cursor()
-        cursor.execute(sqlstr)
-        conn.commit()
-        conn.close()
+        pymssql_execute_non_query(
+            sqlstr_list = [sqlstr],
+            sql_server = data_settings.file_history_sql_server,
+            sql_id = sql_id,
+            sql_pass = sql_pass,
+            sql_database = data_settings.file_history_sql_database,
+        )
 
     return file_history, cloud_file_history
 

@@ -56,7 +56,7 @@ reverse_etl_map:
     FP:
         snowflake_schema: EDIP
         sql_database: FinancialProfessional
-        sql_schema: sfexport
+        sql_schema: EDIP
 
 
 

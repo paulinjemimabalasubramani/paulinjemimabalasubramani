@@ -87,7 +87,7 @@ def get_master_ingest_list_csv(master_ingest_list_path:str, domain_name:str, tab
     Get List of Tables of interest
     """
     master_ingest_list = read_csv(spark, master_ingest_list_path)
-    if is_pc: master_ingest_list.printSchema()
+    if is_pc: master_ingest_list.show(5)
 
     master_ingest_list = remove_column_spaces(master_ingest_list)
 
@@ -122,8 +122,6 @@ master_ingest_list = get_master_ingest_list_csv(
     tableinfo_source = 'LR',
     )
 
-if is_pc: master_ingest_list.show(5)
-
 
 
 # %% Get DataTypeTranslation table
@@ -134,9 +132,8 @@ def get_translation(data_type_translation_path:str):
     Get DataTypeTranslation table
     """
     translation = read_csv(spark, data_type_translation_path)
-    if is_pc: translation.printSchema()
-
     translation = add_config_elt_columns(config_table=translation)
+    if is_pc: translation.show(5)
 
     save_adls_gen2(
             table = translation,
@@ -156,8 +153,6 @@ translation = get_translation(
     data_type_translation_path = data_type_translation_path
     )
 
-if is_pc: translation.show(5)
-
 
 
 # %% Get FirmSourceMap
@@ -169,9 +164,8 @@ def get_firm_source_map(firm_source_map_path:str):
     """
 
     firm_source_map = read_csv(spark, firm_source_map_path)
-    if is_pc: firm_source_map.printSchema()
-
     firm_source_map = add_config_elt_columns(firm_source_map)
+    if is_pc: firm_source_map.show(5)
 
     save_adls_gen2(
             table = firm_source_map,
@@ -186,11 +180,11 @@ def get_firm_source_map(firm_source_map_path:str):
     return firm_source_map
 
 
+
 firm_source_map = get_firm_source_map(
     firm_source_map_path = firm_source_map_path
     )
 
-if is_pc: firm_source_map.show(5)
 
 
 
