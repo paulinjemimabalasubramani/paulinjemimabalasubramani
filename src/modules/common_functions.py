@@ -170,9 +170,8 @@ def get_data_settings():
             }
 
     else: # Read Data Settings from Environment if not is_pc
-        data_settings.data_path = fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else '')
-
         env_data_settings_names = [k for k, v in data_settings.__dict__.items() if not isinstance(v, (list, tuple, collections.Mapping))]
+        data_settings.data_path = fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else '')
 
         for domain in data_settings.copy_history_log_databases:
             env_data_settings_names.append(f'copy_history_log_databases_{domain}')
