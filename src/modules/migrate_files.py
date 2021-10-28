@@ -10,7 +10,8 @@ from pprint import pprint
 from collections import defaultdict
 from datetime import datetime
 
-from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, data_settings, pymssql_execute_non_query
+from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, data_settings, pymssql_execute_non_query, \
+    execution_date_start
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
     default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder, to_storage_account_name, \
@@ -47,6 +48,7 @@ cloud_file_histdict = {
 _, cloud_file_histdict['sql_id'], cloud_file_histdict['sql_pass'] = get_secrets(cloud_file_histdict['sql_key_vault_account'].lower(), logger=logger)
 
 to_cloud_file_history_name = lambda tableinfo_source: tableinfo_source.lower() + '_file_history'
+to_cloud_row_history_name = lambda tableinfo_source: tableinfo_source.lower() + '_row_history'
 
 
 
@@ -367,7 +369,7 @@ def get_csv_files_meta(data_path_folder:str, default_schema:str='dbo'):
                     'table': re.sub(column_regex, '_', table.strip()),
                 }
 
-                if schema !='' and table !='':
+                if file_meta['schema'] !='' and file_meta['table'] !='':
                     files_meta.append(file_meta)
 
     if is_pc: pprint(files_meta)
@@ -482,8 +484,6 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
 
     schema_tables['TABLES'] = create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables=schema_tables['TABLES'], master_ingest_list=master_ingest_list, tableinfo_source=tableinfo_source)
     schema_tables['COLUMNS'] = create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark=spark, sql_columns=schema_tables['COLUMNS'], tableinfo_source=tableinfo_source, files_meta=files_meta)
-
-
     return schema_tables
 
 
@@ -611,6 +611,104 @@ def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, t
 
 
 
+# %% filter sql_table from last max_timestamp
+
+@catch_error(logger)
+def filter_by_timestamp(sql_table, cloud_row_history, row_history_meta:list, table_name:str, schema:str, database:str):
+    """
+    filter sql_table from last max_timestamp
+    """
+    if cloud_row_history:
+        max_timestamp_row = (cloud_row_history
+            .where(
+                (col('table_name')==lit(table_name)) &
+                (col('schema_name')==lit(schema)) &
+                (col('database_name')==lit(database))
+                )
+            .orderBy(col('max_timestamp').desc())
+            .limit(1)
+            .select(['max_timestamp', 'max_timestamp_column_name'])
+            .collect()
+            )
+        if max_timestamp_row:
+            prev_max_timestamp = max_timestamp_row[0]['max_timestamp']
+            max_timestamp_column_name = max_timestamp_row[0]['max_timestamp_column_name']
+            if prev_max_timestamp and max_timestamp_column_name:
+                sql_table = sql_table.where(col(max_timestamp_column_name)>lit(prev_max_timestamp))
+
+    max_timestamp = None
+    max_timestamp_column_names = ['UpdateTS']
+
+    lower_column_names = [c.lower() for c in sql_table.columns]
+    for max_timestamp_column_name in max_timestamp_column_names:
+        if max_timestamp_column_name.lower() in lower_column_names:
+            max_timestamp = sql_table.select(F.max(col(max_timestamp_column_name))).collect()
+            if max_timestamp:
+                max_timestamp = max_timestamp[0][0]
+            break
+
+    if max_timestamp:
+        row_hist = {
+            'table_name': table_name,
+            'schema_name': schema,
+            'database_name': database,
+            'rows_ingested': sql_table.count(),
+            'max_timestamp': max_timestamp,
+            'max_timestamp_column_name': max_timestamp_column_name,
+            'ingestion_date': execution_date_start,
+            }
+        row_history_meta.append(row_hist)
+
+    return sql_table, row_history_meta
+
+
+
+# %% Append Cloud Row History
+
+@catch_error(logger)
+def append_cloud_row_history(spark, cloud_row_history, cloud_row_history_name:str, row_history_meta:list, sql_id:str, sql_pass:str):
+    """
+    Append Cloud Row History
+    """
+    if not row_history_meta:
+        return
+
+    row_history = spark.createDataFrame(row_history_meta)
+
+    if not cloud_row_history:
+        sqlstr = f"""
+            CREATE TABLE [{data_settings.file_history_sql_schema}].[{cloud_row_history_name}] (
+                 [table_name] varchar(300) NOT NULL
+                ,[schema_name] varchar(200) NOT NULL
+                ,[database_name] varchar(200) NOT NULL
+                ,[rows_ingested] [int] NOT NULL
+                ,[max_timestamp] varchar(300) NULL
+                ,[max_timestamp_column_name] varchar(300) NULL
+                ,[ingestion_date] [datetime] NOT NULL,
+            );
+            """
+
+        pymssql_execute_non_query(
+            sqlstr_list = [sqlstr],
+            sql_server = data_settings.file_history_sql_server,
+            sql_id = sql_id,
+            sql_pass = sql_pass,
+            sql_database = data_settings.file_history_sql_database,
+            )
+
+    write_sql(
+        table = row_history,
+        table_name = cloud_row_history_name,
+        schema = cloud_file_histdict['sql_schema'],
+        database = cloud_file_histdict['sql_database'],
+        server = cloud_file_histdict['sql_server'],
+        user = cloud_file_histdict['sql_id'],
+        password = cloud_file_histdict['sql_pass'],
+        mode = 'append',
+        )
+
+
+
 # %% Loop over all tables
 
 @catch_error(logger)
@@ -621,6 +719,9 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
     """
     PARTITION_list = defaultdict(str)
     table_count = len(table_rows)
+    row_history_meta = []
+    cloud_row_history_name = to_cloud_row_history_name(tableinfo_source=tableinfo_source)
+    cloud_row_history = get_ingestion_history_from_cloud(spark=spark, cloud_table_name=cloud_row_history_name)
 
     for i, r in enumerate(table_rows):
         database = r['SourceDatabase']
@@ -648,6 +749,15 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
             dml_type = 'I',
             )
 
+        sql_table, row_history_meta = filter_by_timestamp(
+            sql_table = sql_table,
+            cloud_row_history = cloud_row_history,
+            row_history_meta = row_history_meta,
+            table_name = table_name,
+            schema = schema,
+            database = database,
+            )
+
         userMetadata = save_adls_gen2(
             table = sql_table,
             storage_account_name = storage_account_name,
@@ -655,10 +765,12 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
             container_folder = container_folder,
             table_name = table_name,
             partitionBy = partitionBy,
-            file_format = file_format
-        )
+            file_format = file_format,
+            )
 
         PARTITION_list[(sys.domain_name, database, schema, table_name, storage_account_name)] = userMetadata
+
+    append_cloud_row_history(spark=spark, cloud_row_history=cloud_row_history, cloud_row_history_name=cloud_row_history_name, row_history_meta=row_history_meta, sql_id=sql_id, sql_pass=sql_pass)
 
     logger.info('Finished Migrating All Tables')
     return PARTITION_list
@@ -668,7 +780,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
 # %% Get history of the files ingested in SQL Server
 
 @catch_error(logger)
-def get_cloud_file_history(spark, tableinfo_source):
+def get_ingestion_history_from_cloud(spark, cloud_table_name:str):
     """
     Get history of the files ingested in SQL Server
     """
@@ -681,8 +793,7 @@ def get_cloud_file_history(spark, tableinfo_source):
         password = cloud_file_histdict['sql_pass'],
         )
 
-    cloud_file_history_name = to_cloud_file_history_name(tableinfo_source=tableinfo_source)
-    cloud_file_history_exists = cloud_file_history_name in table_names
+    cloud_file_history_exists = cloud_table_name in table_names
 
     cloud_file_history = None
     if cloud_file_history_exists:
@@ -691,7 +802,7 @@ def get_cloud_file_history(spark, tableinfo_source):
             user = cloud_file_histdict['sql_id'],
             password = cloud_file_histdict['sql_pass'],
             schema = cloud_file_histdict['sql_schema'],
-            table_name = cloud_file_history_name,
+            table_name = cloud_table_name,
             database = cloud_file_histdict['sql_database'],
             server = cloud_file_histdict['sql_server'],
             )
@@ -896,7 +1007,7 @@ def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta, clou
 # %% Get all files meta data for a given folder_path
 
 @catch_error(logger)
-def get_all_file_meta(folder_path, date_start, firm_crd_number:str, fn_extract_file_meta, cloud_file_history, date_column_name):
+def get_all_files_meta(folder_path, date_start, firm_crd_number:str, fn_extract_file_meta, cloud_file_history, date_column_name):
     """
     Get all files meta data for a given folder_path.
     Filters files for dates after the given date_start
@@ -1024,7 +1135,7 @@ def process_all_files_with_incrementals(
     tableinfo = defaultdict(list)
     all_new_files = None
 
-    cloud_file_history = get_cloud_file_history(spark=spark, tableinfo_source=tableinfo_source)
+    cloud_file_history = get_ingestion_history_from_cloud(spark=spark, cloud_table_name=to_cloud_file_history_name(tableinfo_source=tableinfo_source))
 
     for firm in firms:
         folder_path = os.path.join(data_path_folder, firm['crd_number'])
@@ -1034,7 +1145,7 @@ def process_all_files_with_incrementals(
             logger.warning(f'Path does not exist: {folder_path}   -> SKIPPING')
             continue
 
-        files_meta = get_all_file_meta(folder_path=folder_path, date_start=date_start, firm_crd_number=firm['crd_number'], fn_extract_file_meta=fn_extract_file_meta, cloud_file_history=cloud_file_history, date_column_name=date_column_name)
+        files_meta = get_all_files_meta(folder_path=folder_path, date_start=date_start, firm_crd_number=firm['crd_number'], fn_extract_file_meta=fn_extract_file_meta, cloud_file_history=cloud_file_history, date_column_name=date_column_name)
         if not files_meta:
             continue
 

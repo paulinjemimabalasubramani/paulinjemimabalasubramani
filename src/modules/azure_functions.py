@@ -192,10 +192,11 @@ def save_adls_gen2(
     elif file_format == 'csv':
         table.coalesce(1).write.csv(path=data_path, header='true', mode='overwrite')
     elif file_format == 'delta':
-        #partitionBy_value = table.select(F.max(col(partitionBy))).collect()[0][0]
-        if partitionBy_value:
+        if table.rdd.isEmpty():
+            logger.warning(f'Skipping saving of empty table to ADLS Gen 2 -> {data_path}')
+        else:
             userMetadata = f'{partitionBy}={partitionBy_value}'
-        table.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
+            table.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
     else:
         table.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
 

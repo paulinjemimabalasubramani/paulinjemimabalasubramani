@@ -7,7 +7,6 @@ Common Library for creating and executing (if required) Snowflake DDL Steps and 
 import json, os, sys
 from functools import wraps
 from collections import defaultdict, OrderedDict
-from pprint import pprint
 
 from .common_functions import logger, catch_error, is_pc, data_settings, execution_date, get_secrets, to_OrderedDict, EXECUTION_DATE_str
 from .spark_functions import elt_audit_columns
@@ -88,8 +87,8 @@ def connect_to_snowflake(
         snowflake_account:str=wid.snowflake_account,
         key_vault_account:str=wid.sf_key_vault_account,
         snowflake_database:str=None, 
-        snowflake_warehouse:str=None,
-        snowflake_role:str=None,
+        snowflake_warehouse:str=wid.snowflake_raw_warehouse,
+        snowflake_role:str=wid.snowflake_role,
         ):
     """
     Connect to SnowFlake account
@@ -168,9 +167,6 @@ def action_step(step:int):
         def inner(*args, **kwargs):
             logger.info(f"{kwargs['source_system']}/step_{step}/{kwargs['schema_name']}/{kwargs['table_name']}")
             sqlstr = step_fn(*args, **kwargs)
-
-            if is_pc and False:
-                pprint(sqlstr)
 
             if wid.save_to_adls:
                 storage_account_name = default_storage_account_name
@@ -404,7 +400,6 @@ ALTER PIPE {wid.elt_stage_schema}.{wid.common_elt_stage_name}_{wid.domain_abbr}_
     }
 
     post_log_data(log_data=log_data, log_type='AirflowSnowflakeRequests', logger=logger)
-
 
 
 
