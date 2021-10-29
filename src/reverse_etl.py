@@ -31,7 +31,7 @@ from modules.common_functions import logger, catch_error, get_secrets, mark_exec
 from modules.spark_functions import collect_column, create_spark, write_sql, read_snowflake, get_columns_list_from_columns_table
 from modules.azure_functions import default_storage_account_name, default_storage_account_abbr, setup_spark_adls_gen2_connection
 from modules.migrate_files import get_DataTypeTranslation_table, add_TargetDataType, rename_columns, add_precision
-from modules.snowflake_ddl import snowflake_ddl_params
+from modules.snowflake_ddl import snowflake_ddl_params, connect_to_snowflake
 
 
 from pyspark.sql import functions as F
@@ -73,6 +73,13 @@ storage_account_name = default_storage_account_name
 setup_spark_adls_gen2_connection(spark, storage_account_name)
 
 translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
+
+
+
+# %% Connect to SnowFlake
+
+snowflake_connection = connect_to_snowflake()
+snowflake_ddl_params.snowflake_connection = snowflake_connection
 
 
 
@@ -128,10 +135,46 @@ def get_sf_table_list(sf_database:str, sf_schema:str):
 
 
 
+# %% Add Primary Key
+
+@catch_error(logger)
+def add_primary_key(columns, sf_database:str, sf_schema:str, table_name:str):
+    """
+    Add Primary Key
+    """
+    sfcursor = snowflake_connection.cursor()
+    sfcursor.execute(f'SHOW PRIMARY KEYS IN TABLE {sf_database}.{sf_schema}.{table_name};')
+    primary_keys = sfcursor.fetchall()
+
+    sfcursor_columns = [c[0] for c in sfcursor.description]
+    pk_index = sfcursor_columns.index('column_name')
+
+    primary_key_names = [(x[pk_index],) for x in primary_keys]
+    if not primary_key_names:
+        primary_key_names = [('N/A',)]
+
+    pkcolumns = spark.createDataFrame(data=primary_key_names, schema=['column_name'])
+
+    columns = (columns
+        .alias('c')
+        .join(pkcolumns.alias('pk'),
+            (F.upper(columns.SourceDatabase) == F.upper(lit(sf_database))) &
+            (F.upper(columns.SourceSchema) == F.upper(lit(sf_schema))) &
+            (F.upper(columns.TableName) == F.upper(lit(table_name))) &
+            (F.upper(columns.SourceColumnName) == F.upper(pkcolumns.column_name)),
+            how = 'left'
+            )
+        .select('c.*', F.when(col('pk.column_name').isNotNull(), 1).otherwise(0).alias('IsPrimaryKey'))
+        )
+
+    return columns
+
+
+
 # %% Re-create SQL Table with the latest schema
 
 @catch_error(logger)
-def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema_raw:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
+def recreate_sql_table(spark, columns, table_name:str, sf_schema:str, sf_database:str, sql_schema_raw:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
     """
     Re-create SQL Table with the latest schema
     """
@@ -156,11 +199,12 @@ def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema_raw:st
 
     columns = add_TargetDataType(columns=columns, translation=translation)
     columns = add_precision(columns=columns, truncate_max_varchar=1000)
+    columns = add_primary_key(columns=columns, sf_database=sf_database, sf_schema=sf_schema, table_name=table_name)
 
     column_list = get_columns_list_from_columns_table(
         columns = columns,
-        column_names = ['TargetColumnName', 'TargetDataType', 'IsNullable', 'IS_IDENTITY'],
-        OrdinalPosition = 'OrdinalPosition'
+        column_names = ['TargetColumnName', 'TargetDataType', 'IsNullable', 'IsPrimaryKey'],
+        OrdinalPosition = 'OrdinalPosition',
         )
 
     column_listx = [f"[{c['TargetColumnName']}] {c['TargetDataType']} {'NULL' if c['IsNullable']>0 else 'NOT NULL'}" for c in column_list]
@@ -184,10 +228,10 @@ def recreate_sql_table(columns, table_name:str, sf_schema:str, sql_schema_raw:st
 
 @catch_error(logger)
 def merge_sql_table(column_list:list, table_name:str, sf_schema:str, sql_schema:str, sql_schema_raw:str, sql_database:str, sql_server:str, sql_id:str, sql_pass:str):
-    id_columns = [c for c in column_list if c['IS_IDENTITY']=='YES']
+    pk_columns = [c for c in column_list if c['IsPrimaryKey']==1]
 
     no_pk_warning = None
-    if len(id_columns)==0:
+    if len(pk_columns)==0:
         no_pk_warning = f'Snowflake table {sf_schema}.{table_name} does not have any primary key'
         logger.warning(no_pk_warning)
         sqlstr = '-- ' + no_pk_warning
@@ -195,8 +239,8 @@ def merge_sql_table(column_list:list, table_name:str, sf_schema:str, sql_schema:
     else:
         trim_coalesce = lambda x: f"LTRIM(RTRIM(COALESCE({x},'N/A')))"
         column_name = 'TargetColumnName'
-        merge_on = '\n    AND '.join([f"{trim_coalesce('src.['+c[column_name]+']')} = {trim_coalesce('tgt.['+c[column_name]+']')}" for c in id_columns])
-        check_na = '\n    '.join([f"AND {trim_coalesce('src.['+c[column_name]+']')} != 'N/A'" for c in id_columns])
+        merge_on = '\n    AND '.join([f"{trim_coalesce('src.['+c[column_name]+']')} = {trim_coalesce('tgt.['+c[column_name]+']')}" for c in pk_columns])
+        check_na = '\n    '.join([f"AND {trim_coalesce('src.['+c[column_name]+']')} != 'N/A'" for c in pk_columns])
         update_set = '\n   ,'.join([f"tgt.[{c[column_name]}]=src.[{c[column_name]}]" for c in column_list])
         insert_columns = '\n   ,'.join([f"[{c[column_name]}]" for c in column_list])
         insert_values = '\n   ,'.join([f"src.[{c[column_name]}]" for c in column_list])
@@ -257,9 +301,11 @@ def reverse_etl_all_tables(table_names, columns, sf_database:str, sf_schema:str,
                 )
 
             column_list = recreate_sql_table(
+                spark = spark,
                 columns = columns,
                 table_name = table_name.lower(),
                 sf_schema = sf_schema,
+                sf_database = sf_database,
                 sql_schema_raw = sql_schema_raw,
                 sql_database = sql_database,
                 sql_server = sql_server,
