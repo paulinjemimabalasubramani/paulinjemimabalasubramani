@@ -2,6 +2,7 @@
 # Start with a minimal pipeline that you can customize to build and deploy your code.
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
+name: $(SourceBranchName)_$(Build_Pipeline)_$(date:yyyyMMdd)$(rev:.r)
 
 trigger:
 - master
@@ -17,6 +18,18 @@ steps:
     SourceFolder: '$(agent.builddirectory)'
     Contents: '**'
     TargetFolder: '$(build.artifactstagingdirectory)'
+
+- task: Veracode@3
+  inputs:
+    ConnectionDetailsSelection: 'Endpoint'
+    AnalysisService: 'DA Veracode'
+    veracodeAppProfile: '$(system.teamProject)'
+    version: '$(build.buildNumber)'
+    filepath: '$(build.artifactstagingdirectory)'
+    importResults: true
+    failBuildOnPolicyFail: true
+    maximumWaitTime: '360'
+
 - task: PublishBuildArtifacts@1
   inputs:
     pathToPublish: $(build.artifactstagingdirectory)/s/src
