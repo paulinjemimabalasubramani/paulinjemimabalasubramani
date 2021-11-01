@@ -23,7 +23,7 @@ steps:
   inputs:
     ConnectionDetailsSelection: 'Endpoint'
     AnalysisService: 'DA Veracode'
-    veracodeAppProfile: '$(system.teamProject)'
+    veracodeAppProfile: 'EDIP-Code'
     version: '$(build.buildNumber)'
     filepath: '$(build.artifactstagingdirectory)'
     createProfile: true
