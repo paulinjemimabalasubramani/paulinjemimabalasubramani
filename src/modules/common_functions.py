@@ -123,7 +123,7 @@ class Config:
             if file_path:
                 try:
                     with open(file_path, 'r') as f:
-                        contents = yaml.load(f, Loader=yaml.FullLoader)
+                        contents = yaml.load(f, Loader=yaml.SafeLoader)
                 except Exception as e:
                     except_str = f'Error File was not read: {file_path}'
                     pprint(except_str)
