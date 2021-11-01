@@ -30,7 +30,7 @@ steps:
     failBuildIfUploadAndScanBuildStepFails: true
     importResults: true
     failBuildOnPolicyFail: true
-    maximumWaitTime: '3600'
+    maximumWaitTime: '1440'
 
 - task: PublishBuildArtifacts@1
   inputs:
