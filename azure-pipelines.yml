@@ -19,18 +19,6 @@ steps:
     Contents: '**'
     TargetFolder: '$(build.artifactstagingdirectory)'
 
-- task: Veracode@3
-  inputs:
-    ConnectionDetailsSelection: 'Endpoint'
-    AnalysisService: 'DA Veracode'
-    veracodeAppProfile: 'EDIP-Code'
-    version: '$(build.buildNumber)'
-    filepath: '$(build.artifactstagingdirectory)'
-    createProfile: true
-    failBuildIfUploadAndScanBuildStepFails: true
-    importResults: true
-    failBuildOnPolicyFail: true
-    maximumWaitTime: '1440'
 
 - task: PublishBuildArtifacts@1
   inputs:
