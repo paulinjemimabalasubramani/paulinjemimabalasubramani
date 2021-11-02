@@ -319,14 +319,15 @@ def add_TargetDataType(columns, translation):
 # %% Add Precision
 
 @catch_error(logger)
-def add_precision(columns, truncate_max_varchar:int=0):
+def add_precision(columns, truncate_max_varchar:int=0, ignore_varchar:bool=False):
     """
     Add precition information to COLUMNS table
     """
-    columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['varchar'])) & (col('SourceDataLength')>0) & (col('SourceDataLength')<=1000), F.concat(lit('varchar('), col('SourceDataLength'), lit(')'))).otherwise(col('TargetDataType')))
+    if not ignore_varchar:
+        columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['varchar'])) & (col('SourceDataLength')>0) & (col('SourceDataLength')<=1000), F.concat(lit('varchar('), col('SourceDataLength'), lit(')'))).otherwise(col('TargetDataType')))
 
-    if truncate_max_varchar>0:
-        columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['varchar'])), F.concat(lit(f'varchar({truncate_max_varchar})'))).otherwise(col('TargetDataType')))
+        if truncate_max_varchar>0:
+            columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['varchar'])), F.concat(lit(f'varchar({truncate_max_varchar})'))).otherwise(col('TargetDataType')))
 
     columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['decimal', 'numeric'])) & (col('SourceDataPrecision')>0), F.concat(lit('decimal('), col('SourceDataPrecision'), lit(','), col('SourceDataScale'), lit(')'))).otherwise(col('TargetDataType')))
 
@@ -512,7 +513,7 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
     columns = add_TargetDataType(columns=columns, translation=translation)
 
     logger.info('Add Precision')
-    columns = add_precision(columns=columns)
+    columns = add_precision(columns=columns, ignore_varchar=True)
 
     logger.info('Select Relevant columns only')
     tableinfo = select_tableinfo_columns(tableinfo=columns)
