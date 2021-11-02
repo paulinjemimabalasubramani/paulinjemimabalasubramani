@@ -6,6 +6,8 @@ Library for common generic functions
 # %% Import Libraries
 import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, collections, pymssql
 
+from logging import StreamHandler
+from logging.handlers import RotatingFileHandler
 from pprint import pprint
 from datetime import datetime
 from functools import wraps
@@ -121,7 +123,7 @@ class Config:
             if file_path:
                 try:
                     with open(file_path, 'r') as f:
-                        contents = yaml.load(f, Loader=yaml.FullLoader)
+                        contents = yaml.load(f, Loader=yaml.SafeLoader)
                 except Exception as e:
                     except_str = f'Error File was not read: {file_path}'
                     pprint(except_str)
@@ -345,49 +347,24 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
             'x-ms-date': rfc1123date,
         }
 
-        if True and logger and log_type==logger.log_type: # Temporarily stop sending print logs to Azure
-            if backup_logger_func:
-                backup_logger_func(body, exc_info=False)
-        else: 
+        if backup_logger_func:
+            backup_logger_func(body, exc_info=False)
+        else:
+            pprint(body)
+
+        if not logger or log_type!=logger.print_log_type: # Temporarily stop sending print logs to Azure
             response = requests.post(uri, data=body, headers=headers)
             if response.status_code >= 200 and response.status_code <= 299 and not is_pc:
                 #pprint('Log Accepted')
                 pass
             else:
                 pprint(f'Log Response code: {response.status_code}')
-                if backup_logger_func:
-                    backup_logger_func(body, exc_info=False)
 
     except Exception as e:
         if logger:
             logger.error(str(e))
         else:
             pprint(e)
-
-
-
-# %% Create file with associated directory tree
-
-@catch_error()
-def write_file(file_path:str, contents, mode = 'w', logger=None):
-    """
-    Create file with associated directory tree
-    if directory does not exist, then create the directory as well.
-    """
-    try:
-        dirname = os.path.dirname(file_path)
-        if dirname:
-            os.makedirs(dirname, exist_ok=True)
-
-        with open(file_path, mode) as f:
-            f.write(contents)
-
-    except Exception as e:
-        if logger:
-            logger.error(str(e))
-        else:
-            pprint(e)
-        raise e
 
 
 
@@ -438,25 +415,40 @@ class CreateLogger:
         """
         Initiate the class. Set Logging Policy.
         """
-        self.log_type = 'AirflowPrintedLogs'
-        self.logger = logging.getLogger(__name__)
+        self.print_log_type = 'AirflowPrintedLogs'
+        self.log_name = sys.parent_name.split('.')[0] if hasattr(sys, 'parent_name') else 'logs'
+        self.logger = logging.getLogger(self.log_name)
         self.logger.setLevel(logging_level)
 
+        log_format = logging.Formatter(fmt=r'%(asctime)s :: %(name)s :: %(levelname)-8s :: %(message)s', datefmt=r'%Y-%m-%d %H:%M:%S')
+
         log_path = data_settings.get_value(attr_name='output_log_path', default_value=os.path.join(data_settings.data_path, 'logs'))
-        log_file_name_no_ext = sys.parent_name.split('.')[0] if hasattr(sys, 'parent_name') else 'logs'
-        self.log_file = os.path.join(log_path, f'{log_file_name_no_ext}.log')
+        os.makedirs(log_path, exist_ok=True)
+        self.log_file = os.path.join(log_path, f'{self.log_name}.log')
 
-        write_file(file_path=self.log_file, contents='', mode='a')
+        stdout_handler = StreamHandler(sys.stdout)
+        stdout_handler.setLevel(logging.INFO)
+        stdout_handler.addFilter(lambda record: record.levelno <= logging.WARNING)
+        stdout_handler.setFormatter(log_format)
+        self.logger.addHandler(stdout_handler)
 
-        logging.basicConfig(
-            filename = self.log_file, 
-            filemode = 'a',
-            format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-            datefmt = '%d-%b-%y %H:%M:%S',
-            level = logging_level,
+        stderr_handler = StreamHandler(sys.stderr)
+        stderr_handler.setLevel(logging.ERROR)
+        stderr_handler.setFormatter(log_format)
+        self.logger.addHandler(stderr_handler)
+
+        file_handler = RotatingFileHandler(
+            filename = self.log_file,
+            mode = 'a',
+            encoding = 'utf-8',
+            maxBytes = 2 * (1024**2), # up to 2 Mb file size
+            backupCount = 3, # up to 3 file backups
             )
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(log_format)
+        self.logger.addHandler(file_handler)
 
-        warning_loggers = [
+        warning_loggers = [ # Elevate the following loggers to WARNING level
             'azure.core.pipeline.policies.http_logging_policy',
             'azure.identity._internal.get_token_mixin',
             ]
@@ -475,8 +467,7 @@ class CreateLogger:
             'msg_type': msg_type,
             **extra_log,
         }
-        pprint(log_data)
-        post_log_data(log_data=log_data, log_type=self.log_type, logger=self.logger, backup_logger_func=backup_logger_func)
+        post_log_data(log_data=log_data, log_type=self.print_log_type, logger=self, backup_logger_func=backup_logger_func)
 
 
     @catch_error()
