@@ -197,7 +197,7 @@ def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_
         ):
 
         constraints = (sql_table_constraints
-            .where(col('CONSTRAINT_TYPE')==lit('PRIMARY KEY'))
+            .where(F.upper(col('CONSTRAINT_TYPE'))==lit('PRIMARY KEY'))
             .alias('constraints')
             .join(sql_key_column_usage.alias('usage'),
                 (F.upper(col('constraints.TABLE_NAME')) == F.upper(col('usage.TABLE_NAME'))) &
