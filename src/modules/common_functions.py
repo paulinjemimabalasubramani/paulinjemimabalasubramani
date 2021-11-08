@@ -63,7 +63,7 @@ def catch_error(logger=None, raise_error:bool=True):
             response = None
             try:
                 response = fn(*args, **kwargs)
-            except Exception as e:
+            except (BaseException, AssertionError) as e:
                 exception_message  = f"Exception occurred inside '{fn.__name__}'"
                 exception_message += f"\nException Message: {e}"
                 pprint(exception_message)
@@ -158,7 +158,7 @@ def get_data_settings():
     data_settings = Config(file_path=os.path.join(config_path, data_settings_file_name), defaults={})
 
     if is_pc: # Read Data Settings from file
-        data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared'+ ('/'+sys.domain_name if hasattr(sys, 'domain_name') else ''))
+        data_settings.data_path = os.path.realpath(python_dirname + '/../../../Shared')
         data_settings.temporary_file_path = os.path.join(data_settings.data_path, 'TEMP')
 
         for source, source_path in data_settings.data_paths_per_source.items():
@@ -173,7 +173,7 @@ def get_data_settings():
 
     else: # Read Data Settings from Environment if not is_pc
         env_data_settings_names = [k for k, v in data_settings.__dict__.items() if not isinstance(v, (list, tuple, collections.Mapping))]
-        data_settings.data_path = fileshare + '/Shared' + ('/'+sys.domain_name if hasattr(sys, 'domain_name') else '')
+        data_settings.data_path = fileshare + '/Shared'
 
         for domain in data_settings.copy_history_log_databases:
             env_data_settings_names.append(f'copy_history_log_databases_{domain}')
