@@ -667,7 +667,7 @@ def filter_by_timestamp(sql_table, cloud_row_history, row_history_meta:list, tab
 # %% Append Cloud Row History
 
 @catch_error(logger)
-def append_cloud_row_history(spark, cloud_row_history, cloud_row_history_name:str, row_history_meta:list, sql_id:str, sql_pass:str):
+def append_cloud_row_history(spark, cloud_row_history, cloud_row_history_name:str, row_history_meta:list):
     """
     Append Cloud Row History
     """
@@ -678,7 +678,7 @@ def append_cloud_row_history(spark, cloud_row_history, cloud_row_history_name:st
 
     if not cloud_row_history:
         sqlstr = f"""
-            CREATE TABLE [{data_settings.file_history_sql_schema}].[{cloud_row_history_name}] (
+            CREATE TABLE [{cloud_file_histdict['sql_schema']}].[{cloud_row_history_name}] (
                  [table_name] varchar(300) NOT NULL
                 ,[schema_name] varchar(200) NOT NULL
                 ,[database_name] varchar(200) NOT NULL
@@ -691,10 +691,10 @@ def append_cloud_row_history(spark, cloud_row_history, cloud_row_history_name:st
 
         pymssql_execute_non_query(
             sqlstr_list = [sqlstr],
-            sql_server = data_settings.file_history_sql_server,
-            sql_id = sql_id,
-            sql_pass = sql_pass,
-            sql_database = data_settings.file_history_sql_database,
+            sql_server = cloud_file_histdict['sql_server'],
+            sql_id = cloud_file_histdict['sql_id'],
+            sql_pass = cloud_file_histdict['sql_pass'],
+            sql_database = cloud_file_histdict['sql_database'],
             )
 
     write_sql(
@@ -771,7 +771,7 @@ def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:l
 
         PARTITION_list[(sys.domain_name, database, schema, table_name, storage_account_name)] = userMetadata
 
-    append_cloud_row_history(spark=spark, cloud_row_history=cloud_row_history, cloud_row_history_name=cloud_row_history_name, row_history_meta=row_history_meta, sql_id=sql_id, sql_pass=sql_pass)
+    append_cloud_row_history(spark=spark, cloud_row_history=cloud_row_history, cloud_row_history_name=cloud_row_history_name, row_history_meta=row_history_meta)
 
     logger.info('Finished Migrating All Tables')
     return PARTITION_list
@@ -1091,8 +1091,6 @@ def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_acco
 
     if not cloud_file_history:
         cloud_file_history = spark.createDataFrame(spark.sparkContext.emptyRDD(), file_history.schema)
-
-        _, sql_id, sql_pass = get_secrets(data_settings.file_history_sql_key_vault_account.lower(), logger=logger)
         cloud_file_history_name = to_cloud_file_history_name(tableinfo_source=tableinfo_source)
 
         schema_json = json.loads(file_history._jdf.schema().json())
@@ -1101,11 +1099,11 @@ def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_acco
 
         pymssql_execute_non_query(
             sqlstr_list = [sqlstr],
-            sql_server = data_settings.file_history_sql_server,
-            sql_id = sql_id,
-            sql_pass = sql_pass,
-            sql_database = data_settings.file_history_sql_database,
-        )
+            sql_server = cloud_file_histdict['sql_server'],
+            sql_id = cloud_file_histdict['sql_id'],
+            sql_pass = cloud_file_histdict['sql_pass'],
+            sql_database = cloud_file_histdict['sql_database'],
+            )
 
     return file_history, cloud_file_history
 
