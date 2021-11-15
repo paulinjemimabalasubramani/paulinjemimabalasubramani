@@ -41,9 +41,9 @@ sf_databases = data_settings.copy_history_log_databases
 sf_schema = snowflake_ddl_params.elt_stage_schema
 
 copy_stream_name = f'{sf_schema}.SNOWFLAKE_COPY_HISTORY_LOG_STREAM'
-copy_stream_dump_name = f'{stream_name}_DUMP'
+copy_stream_dump_name = f'{copy_stream_name}_DUMP'
 merge_stream_name = f'{sf_schema}.SNOWFLAKE_MERGE_HISTORY_LOG_STREAM'
-merge_stream_dump_name = f'{stream_name}_DUMP'
+merge_stream_dump_name = f'{merge_stream_name}_DUMP'
 
 
 
@@ -78,7 +78,7 @@ USE ROLE {sf_role};
 USE WAREHOUSE {sf_warehouse};
 USE DATABASE {sf_database};
 
-INSERT OVERWRITE INTO {stream_dump_name}
+INSERT OVERWRITE INTO {copy_stream_dump_name}
     (
      FILE_NAME
     ,STAGE_LOCATION
@@ -126,7 +126,7 @@ SELECT
     ,PIPE_RECEIVED_TIME
     ,INTEGRATION_ID
     ,EXECUTION_DATE
-FROM {stream_name} S
+FROM {copy_stream_name} S
 WHERE S.METADATA$ACTION = 'INSERT';
 """
 
@@ -138,7 +138,7 @@ WHERE S.METADATA$ACTION = 'INSERT';
 
     table = read_snowflake(
         spark = spark,
-        table_name = stream_dump_name,
+        table_name = copy_stream_dump_name,
         schema = sf_schema,
         database = sf_database,
         warehouse = sf_warehouse,
@@ -174,7 +174,7 @@ USE ROLE {sf_role};
 USE WAREHOUSE {sf_warehouse};
 USE DATABASE {sf_database};
 
-INSERT OVERWRITE INTO {stream_dump_name}
+INSERT OVERWRITE INTO {merge_stream_dump_name}
     (
      QUERY_ID
     ,NAME
@@ -212,7 +212,7 @@ SELECT
     ,GRAPH_VERSION
     ,RUN_ID
     ,RETURN_VALUE
-FROM {stream_name} S
+FROM {merge_stream_name} S
 WHERE S.METADATA$ACTION = 'INSERT';
 """
 
@@ -224,7 +224,7 @@ WHERE S.METADATA$ACTION = 'INSERT';
 
     table = read_snowflake(
         spark = spark,
-        table_name = stream_dump_name,
+        table_name = merge_stream_dump_name,
         schema = sf_schema,
         database = sf_database,
         warehouse = sf_warehouse,
