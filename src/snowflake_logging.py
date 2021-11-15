@@ -40,8 +40,10 @@ sf_warehouse = snowflake_ddl_params.snowflake_raw_warehouse
 sf_databases = data_settings.copy_history_log_databases
 sf_schema = snowflake_ddl_params.elt_stage_schema
 
-stream_name = f'{sf_schema}.SNOWFLAKE_COPY_HISTORY_LOG_STREAM'
-stream_dump_name = f'{stream_name}_DUMP'
+copy_stream_name = f'{sf_schema}.SNOWFLAKE_COPY_HISTORY_LOG_STREAM'
+copy_stream_dump_name = f'{copy_stream_name}_DUMP'
+merge_stream_name = f'{sf_schema}.SNOWFLAKE_MERGE_HISTORY_LOG_STREAM'
+merge_stream_dump_name = f'{merge_stream_name}_DUMP'
 
 
 
@@ -76,7 +78,7 @@ USE ROLE {sf_role};
 USE WAREHOUSE {sf_warehouse};
 USE DATABASE {sf_database};
 
-INSERT OVERWRITE INTO {stream_dump_name}
+INSERT OVERWRITE INTO {copy_stream_dump_name}
     (
      FILE_NAME
     ,STAGE_LOCATION
@@ -124,7 +126,7 @@ SELECT
     ,PIPE_RECEIVED_TIME
     ,INTEGRATION_ID
     ,EXECUTION_DATE
-FROM {stream_name} S
+FROM {copy_stream_name} S
 WHERE S.METADATA$ACTION = 'INSERT';
 """
 
@@ -136,7 +138,7 @@ WHERE S.METADATA$ACTION = 'INSERT';
 
     table = read_snowflake(
         spark = spark,
-        table_name = stream_dump_name,
+        table_name = copy_stream_dump_name,
         schema = sf_schema,
         database = sf_database,
         warehouse = sf_warehouse,
@@ -160,6 +162,92 @@ WHERE S.METADATA$ACTION = 'INSERT';
             logger.error(str(e))
 
 
+# %% Post Snowflake Copy History Log to Azure Monitor
+
+@catch_error(logger)
+def post_merge_history(sf_database):
+    """
+    Post Snowflake Merge History Log to Azure Monitor
+    """
+    query_insert = f"""
+USE ROLE {sf_role};
+USE WAREHOUSE {sf_warehouse};
+USE DATABASE {sf_database};
+
+INSERT OVERWRITE INTO {merge_stream_dump_name}
+    (
+     QUERY_ID
+    ,NAME
+    ,DATABASE_NAME
+    ,SCHEMA_NAME
+    ,QUERY_TEXT
+    ,CONDITION_TEXT
+    ,STATE
+    ,ERROR_CODE
+    ,ERROR_MESSAGE
+    ,SCHEDULED_TIME
+    ,QUERY_START_TIME
+    ,NEXT_SCHEDULED_TIME
+    ,COMPLETED_TIME
+    ,ROOT_TASK_ID
+    ,GRAPH_VERSION
+    ,RUN_ID
+    ,RETURN_VALUE
+    )
+SELECT  
+     QUERY_ID
+    ,NAME
+    ,DATABASE_NAME
+    ,SCHEMA_NAME
+    ,QUERY_TEXT
+    ,CONDITION_TEXT
+    ,STATE
+    ,ERROR_CODE
+    ,ERROR_MESSAGE
+    ,SCHEDULED_TIME
+    ,QUERY_START_TIME
+    ,NEXT_SCHEDULED_TIME
+    ,COMPLETED_TIME
+    ,ROOT_TASK_ID
+    ,GRAPH_VERSION
+    ,RUN_ID
+    ,RETURN_VALUE
+FROM {merge_stream_name} S
+WHERE S.METADATA$ACTION = 'INSERT';
+"""
+
+    logger.info({
+        'execute_string': query_insert,
+    })
+
+    exec_status = snowflake_connection.execute_string(sql_text=query_insert)
+
+    table = read_snowflake(
+        spark = spark,
+        table_name = merge_stream_dump_name,
+        schema = sf_schema,
+        database = sf_database,
+        warehouse = sf_warehouse,
+        role = sf_role,
+        account = sf_account,
+        user = sf_id,
+        password = sf_pass,
+        is_query = False,
+        )
+
+    table_collect = table_to_list_dict(table)
+
+    logger.info({
+        'row_count': len(table_collect),
+    })
+
+    for log_data in table_collect:
+        try:
+            post_log_data(log_data=log_data, log_type='SnowflakeMergeHistory', logger=logger)
+        except Exception as e:
+            logger.error(str(e))
+
+
 
 # %% Iterate over given databases
 
@@ -167,6 +255,7 @@ WHERE S.METADATA$ACTION = 'INSERT';
 def iterate_over_given_databases(sf_databases):
     for sf_database in sf_databases:
         post_copy_history(sf_database=sf_database)
+        post_merge_history(sf_database=sf_database)
 
 
 
