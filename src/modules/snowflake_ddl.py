@@ -8,7 +8,7 @@ import json, os, sys
 from functools import wraps
 from collections import defaultdict, OrderedDict
 
-from .common_functions import logger, catch_error, is_pc, data_settings, execution_date, get_secrets, to_OrderedDict, EXECUTION_DATE_str
+from .common_functions import logger, catch_error, data_settings, execution_date, get_secrets, to_OrderedDict, EXECUTION_DATE_str
 from .spark_functions import elt_audit_columns
 from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
     to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder
@@ -38,7 +38,6 @@ class module_params_class:
     environment = data_settings.environment
     snowflake_raw_warehouse = data_settings.snowflake_warehouse
     snowflake_raw_database = f'{environment}_{domain_abbr}'.upper()
-    snowflake_curated_database = f'{environment}_{domain_abbr}'.upper()
 
     common_elt_stage_name = default_storage_account_abbr
     common_storage_account = default_storage_account_name
@@ -63,6 +62,7 @@ class module_params_class:
     stream_alias = 'src_strm'
     view_prefix = 'VW_'
     elt_stream_action_alias = 'ELT_STREAM_ACTION'
+    nlines = '\n' * 3
 
     spark = None
     snowflake_connection = None
@@ -137,6 +137,17 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
 
 
 
+# %% Base SQL Statement for USE ROLE, USE WAREHOUSE, USE RAW DATABASE
+
+@catch_error(logger)
+def use_role_warehouse_raw_database():
+    sqlstr = f"""USE ROLE {wid.snowflake_role};
+USE WAREHOUSE {wid.snowflake_raw_warehouse};
+USE DATABASE {wid.snowflake_raw_database};"""
+    return sqlstr
+
+
+
 # %% base sqlstr
 
 @catch_error(logger)
@@ -148,9 +159,7 @@ def base_sqlstr(schema_name, table_name, source_system, layer:str):
     SCHEMA_NAME = f'{source_system}{LAYER}'.upper()
     TABLE_NAME = f'{schema_name}_{table_name}'.upper()
 
-    sqlstr = f"""USE ROLE {wid.snowflake_role};
-USE WAREHOUSE {wid.snowflake_raw_warehouse};
-USE DATABASE {wid.snowflake_raw_database};
+    sqlstr = f"""{use_role_warehouse_raw_database()}
 USE SCHEMA {SCHEMA_NAME};
 """
     return SCHEMA_NAME, TABLE_NAME, sqlstr
@@ -284,7 +293,7 @@ def create_copy_into_sql(source_system:str, schema_name:str, table_name:str, PAR
     """
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
-    
+
     INGEST_STAGE_NAME = f'@{wid.elt_stage_schema}.{storage_account_abbr}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{PARTITION}/'
 
     copy_into_sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '{INGEST_STAGE_NAME}' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
@@ -345,37 +354,6 @@ def create_ingest_data_table(ingest_data_per_source_system, container_folder:str
 
 
 
-# %% Create Task that Triggers USP_INGEST() file
-
-@catch_error(logger)
-@action_source_level_tables('usp_ingest')
-def create_trigger_usp_ingest_file(source_system:str, container_folder:str, storage_account_name:str):
-    """
-    Create Task that Triggers USP_INGEST() file and save it as per @action_source_level_tables wrapper
-    """
-    stream_name = f'INGEST_REQUEST_VARIANT_STREAM'
-    task_name = f'{source_system}_INGEST_REQUEST_TASK'
-
-    sqlstr = f"""USE ROLE {wid.snowflake_role};
-USE WAREHOUSE {wid.snowflake_raw_warehouse};
-USE DATABASE {wid.snowflake_raw_database};
-USE SCHEMA {wid.elt_stage_schema};
-
-CREATE TASK IF NOT EXISTS {wid.elt_stage_schema}.{task_name}
-WAREHOUSE = {wid.snowflake_raw_warehouse}
-SCHEDULE = '1 minute'
-WHEN
-SYSTEM$STREAM_HAS_DATA('{wid.elt_stage_schema}.{stream_name}')
-AS
-  CALL {wid.elt_stage_schema}.USP_INGEST(); 
-
-USE ROLE {wid.snowflake_role};
-ALTER TASK {wid.elt_stage_schema}.{task_name} RESUME;
-"""
-
-    return sqlstr
-
-
 
 # %% Trigger snowpipe
 
@@ -384,10 +362,7 @@ def trigger_snowpipe(source_system:str):
     """
     Trigger snowpipe to read INGEST_REQUEST files
     """
-    sqlstr = f"""
-USE ROLE {wid.snowflake_role};
-USE WAREHOUSE {wid.snowflake_raw_warehouse};
-USE DATABASE {wid.snowflake_raw_database};
+    sqlstr = f"""{use_role_warehouse_raw_database()}
 
 ALTER PIPE {wid.elt_stage_schema}.{wid.common_elt_stage_name}_{wid.domain_abbr}_{source_system}_INGEST_REQUEST_PIPE REFRESH;
 """
@@ -427,16 +402,7 @@ def create_source_level_tables(ingest_data_list:defaultdict):
             storage_account_name = storage_account_name,
             )
 
-        create_trigger_usp_ingest_file(
-            source_system = source_system,
-            container_folder = container_folder,
-            storage_account_name = storage_account_name,
-            )
-
-        trigger_snowpipe(
-            source_system = source_system,
-            )
-
+        trigger_snowpipe(source_system=source_system)
 
 
 
@@ -468,7 +434,7 @@ def step1(source_system:str, schema_name:str, table_name:str):
     
     cicd_source_system = (SCHEMA_NAME, 'V0.0.1__Create_Tables')
     if not wid.cicd_str_per_step[cicd_source_system]:
-        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*3
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     wid.cicd_file = sqlstr
 
@@ -481,7 +447,7 @@ def step1(source_system:str, schema_name:str, table_name:str):
 
     sqlstr += step
     wid.cicd_file += step
-    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*3
+    wid.cicd_str_per_step[cicd_source_system] += step + wid.nlines
     return sqlstr
 
 
@@ -496,19 +462,19 @@ def step2(source_system:str, schema_name:str, table_name:str):
     """
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
-    
+
     cicd_source_system = (SCHEMA_NAME, 'V0.0.2__Create_Streams')
     if not wid.cicd_str_per_step[cicd_source_system]:
-        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*3
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     step = f"""
 {create_or_replace_func('STREAM')} {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix}
-ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
+ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} APPEND_ONLY = TRUE;
 """
 
     sqlstr += step
     wid.cicd_file += step
-    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*3
+    wid.cicd_str_per_step[cicd_source_system] += step + wid.nlines
     return sqlstr
 
 
@@ -590,7 +556,6 @@ FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}, job_id => '_l
 
 
 
-
 # %% Create Step 4
 
 @catch_error(logger)
@@ -604,7 +569,7 @@ def step4(source_system:str, schema_name:str, table_name:str, src_column_dict:Or
 
     cicd_source_system = (SCHEMA_NAME, 'V0.0.3__Create_Views')
     if not wid.cicd_str_per_step[cicd_source_system]:
-        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*3
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     column_list_src = '\n  ,'.join(
         [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
@@ -621,7 +586,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
 
     sqlstr += step
     wid.cicd_file += step
-    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*3
+    wid.cicd_str_per_step[cicd_source_system] += step + wid.nlines
     return sqlstr
 
 
@@ -639,7 +604,7 @@ def step5(source_system:str, schema_name:str, table_name:str, src_column_dict:Or
 
     cicd_source_system = (SCHEMA_NAME, 'V0.0.3__Create_Views')
     if not wid.cicd_str_per_step[cicd_source_system]:
-        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*3
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     column_list_src = '\n  ,'.join(
         [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
@@ -657,7 +622,7 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix};
 
     sqlstr += step
     wid.cicd_file += step
-    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*3
+    wid.cicd_str_per_step[cicd_source_system] += step + wid.nlines
     return sqlstr
 
 
@@ -675,7 +640,7 @@ def step6(source_system:str, schema_name:str, table_name:str, column_names:list,
 
     cicd_source_system = (SCHEMA_NAME, 'V0.0.3__Create_Views')
     if not wid.cicd_str_per_step[cicd_source_system]:
-        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*3
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
     column_list = '\n  ,'.join(column_names+elt_audit_columns)
@@ -707,7 +672,7 @@ WHERE top_slice = 1;
 
     sqlstr += step
     wid.cicd_file += step
-    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*3
+    wid.cicd_str_per_step[cicd_source_system] += step + wid.nlines
     return sqlstr
 
 
@@ -725,7 +690,7 @@ def step7(source_system:str, schema_name:str, table_name:str, data_types_dict:Or
 
     cicd_source_system = (SCHEMA_NAME, 'V0.0.1__Create_Tables')
     if not wid.cicd_str_per_step[cicd_source_system]:
-        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*3
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     column_list_types = '\n  ,'.join(
         [f'{target_column_name} {target_data_type}' for target_column_name, target_data_type in data_types_dict.items()] +
@@ -744,7 +709,7 @@ def step7(source_system:str, schema_name:str, table_name:str, data_types_dict:Or
 
     sqlstr += step
     wid.cicd_file += f"\n\nUSE SCHEMA {SCHEMA_NAME};\n\n{step}"
-    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*3
+    wid.cicd_str_per_step[cicd_source_system] += step + wid.nlines
     return sqlstr
 
 
@@ -763,7 +728,7 @@ def step8(source_system:str, schema_name:str, table_name:str, data_types_dict:Or
 
     cicd_source_system = (SCHEMA_NAME, 'V0.0.2__Create_Stored_Procedures')
     if not wid.cicd_str_per_step[cicd_source_system]:
-        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*3
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
 
@@ -843,7 +808,7 @@ $$;
 
     sqlstr += step
     wid.cicd_file += step
-    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*3
+    wid.cicd_str_per_step[cicd_source_system] += step + wid.nlines
     return sqlstr
 
 
@@ -861,7 +826,7 @@ def step9(source_system:str, schema_name:str, table_name:str):
 
     cicd_source_system = (SCHEMA_NAME, 'V0.0.3__Create_Tasks')
     if not wid.cicd_str_per_step[cicd_source_system]:
-        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*3
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     stored_procedure = f'{SCHEMA_NAME}.USP_{TABLE_NAME}_MERGE'
     task_suffix = '_MERGE_TASK'
@@ -883,7 +848,7 @@ ALTER TASK {task_name} RESUME;
 
     sqlstr += step
     wid.cicd_file += step
-    wid.cicd_str_per_step[cicd_source_system] += step + '\n'*3
+    wid.cicd_str_per_step[cicd_source_system] += step + wid.nlines
     return sqlstr
 
 
@@ -901,7 +866,7 @@ def step10(source_system:str, schema_name:str, table_name:str):
 
     cicd_source_system = (SCHEMA_NAME, 'V0.0.4__Resume_Tasks')
     if not wid.cicd_str_per_step[cicd_source_system]:
-        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + '\n'*3
+        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     task_suffix = '_MERGE_TASK'
     task_name = f'{TABLE_NAME}{task_suffix}'.upper()
