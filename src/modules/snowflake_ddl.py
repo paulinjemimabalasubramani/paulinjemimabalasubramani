@@ -616,7 +616,7 @@ CREATE OR REPLACE VIEW {SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}{wid.variant_l
 AS
 SELECT
    {column_list_src}
-   ,METADATA$ACTION AS {wid.elt_stream_action_alias}
+  ,METADATA$ACTION AS {wid.elt_stream_action_alias}
 FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix};
 """
 
@@ -642,10 +642,15 @@ def step6(source_system:str, schema_name:str, table_name:str, column_names:list,
     if not wid.cicd_str_per_step[cicd_source_system]:
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
-    column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
     column_list = '\n  ,'.join(column_names+elt_audit_columns)
     column_list_with_alias = '\n  ,'.join([f'{wid.src_alias}.{c}' for c in column_names+elt_audit_columns])
-    hash_columns = "MD5(CONCAT(\n       " + "\n      ,".join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in column_names_ex_pk]) + "\n      ))"
+
+    column_names_ex_pk = [c for c in column_names if c not in pk_column_names]
+    if column_names_ex_pk:
+        hash_columns = "MD5(CONCAT(\n       " + "\n      ,".join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in column_names_ex_pk]) + "\n      ))"
+    else:
+        hash_columns = "'All columns are Primary Keys'"
+
     INTEGRATION_ID = "TRIM(CONCAT(" + ', '.join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in pk_column_names]) + "))"
     pk_column_with_alias = ', '.join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in pk_column_names])
 
