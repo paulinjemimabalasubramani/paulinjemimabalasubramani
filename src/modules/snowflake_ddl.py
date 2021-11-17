@@ -668,8 +668,8 @@ SELECT
    {INTEGRATION_ID} as {wid.integration_id}
   ,{column_list_with_alias}
   ,{hash_columns} AS {wid.hash_column_name}
-  ,ROW_NUMBER() OVER (PARTITION BY {pk_column_with_alias} ORDER BY {pk_column_with_alias}, {wid.src_alias}.{EXECUTION_DATE_str} DESC) AS top_slice
   ,{wid.src_alias}.{wid.elt_stream_action_alias}
+  ,ROW_NUMBER() OVER (PARTITION BY {pk_column_with_alias} ORDER BY {pk_column_with_alias}, {wid.src_alias}.{EXECUTION_DATE_str} DESC) AS top_slice
 FROM {SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}{wid.variant_label}{wid.stream_suffix} {wid.src_alias}
 )
 WHERE top_slice = 1;
