@@ -775,7 +775,7 @@ TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) = TRIM(COALESCE({wid.
 WHEN MATCHED
 AND TRIM(COALESCE({wid.src_alias}.{wid.hash_column_name},'N/A')) != TRIM(COALESCE({wid.tgt_alias}.{wid.hash_column_name},'N/A'))
 AND TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) != 'N/A'
-AND {wid.elt_stream_action_alias} = 'INSERT'
+AND {wid.src_alias}.{wid.elt_stream_action_alias} = 'INSERT'
 THEN
   UPDATE
   SET
@@ -784,7 +784,7 @@ THEN
 
 WHEN NOT MATCHED
 AND TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) != 'N/A'
-AND {wid.elt_stream_action_alias} = 'INSERT'
+AND {wid.src_alias}.{wid.elt_stream_action_alias} = 'INSERT'
 THEN
   INSERT
   (
