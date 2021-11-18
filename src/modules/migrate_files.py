@@ -24,6 +24,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit, row_number, when, to_timestamp
 from pyspark.sql.types import IntegerType, StringType, BooleanType
 from pyspark.sql.window import Window
+from pyspark import StorageLevel
 
 
 
@@ -38,6 +39,7 @@ schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINT
 tmpdirs = []
 
 FirmCRDNumber = 'firm_crd_number'
+
 cloud_file_histdict = {
     'sql_server': data_settings.file_history_sql_server,
     'sql_database': data_settings.file_history_sql_database,
@@ -46,6 +48,10 @@ cloud_file_histdict = {
 }
 
 _, cloud_file_histdict['sql_id'], cloud_file_histdict['sql_pass'] = get_secrets(cloud_file_histdict['sql_key_vault_account'].lower(), logger=logger)
+
+file_metadata_dict = cloud_file_histdict.copy()
+file_metadata_dict['sql_schema'] = 'metadata'
+file_metadata_dict['sql_table_name_primary_key'] = 'PrimaryKey'
 
 to_cloud_file_history_name = lambda tableinfo_source: tableinfo_source.lower() + '_file_history'
 to_cloud_row_history_name = lambda tableinfo_source: tableinfo_source.lower() + '_row_history'
@@ -132,8 +138,9 @@ def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
     if is_pc: tables.show(5)
 
     # Check if there is a table in the master_ingest_list that is not in the sql_tables
-    null_rows = tables.filter(col('SQL_TABLE_NAME').isNull()).select(col('TABLE_NAME')).collect()
-    if null_rows:
+    null_rows = tables.filter(col('SQL_TABLE_NAME').isNull()).select(col('TABLE_NAME'))
+    if not null_rows.rdd.isEmpty():
+        null_rows = null_rows.collect()
         logger.warning(f"There are some tables in master_ingest_list that are not in sql_tables: {[x[0] for x in null_rows]}")
 
     tables = tables.where(col('SQL_TABLE_NAME').isNotNull())
@@ -179,7 +186,7 @@ def filter_columns_by_tables(sql_columns, tables):
 # %% Join with table constraints and column usage
 
 @catch_error(logger)
-def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_usage):
+def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_usage, metadata_primary_keys):
     """
     Join COLUMNS table with table constraints and column usage
     """
@@ -209,33 +216,45 @@ def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_
             .distinct()
             )
 
-        columns = columns.alias('columns').join(
-            constraints.alias('constraints'),
-            (F.upper(columns.TABLE_NAME) == F.upper(constraints.TABLE_NAME)) &
-            (F.upper(columns.TABLE_SCHEMA) == F.upper(constraints.TABLE_SCHEMA)) &
-            (F.upper(columns.TABLE_CATALOG) == F.upper(constraints.TABLE_CATALOG)) &
-            (F.upper(columns.COLUMN_NAME) == F.upper(constraints.COLUMN_NAME)),
-            how = 'left'
-            ).select(
+        columns = (columns
+            .alias('columns')
+            .join(constraints.alias('constraints'),
+                (F.upper(columns.TABLE_NAME) == F.upper(constraints.TABLE_NAME)) &
+                (F.upper(columns.TABLE_SCHEMA) == F.upper(constraints.TABLE_SCHEMA)) &
+                (F.upper(columns.TABLE_CATALOG) == F.upper(constraints.TABLE_CATALOG)) &
+                (F.upper(columns.COLUMN_NAME) == F.upper(constraints.COLUMN_NAME)),
+                how = 'left'
+                )
+            .select(
                 'columns.*', 
                 col('constraints.COLUMN_NAME').alias('KEY_COLUMN_NAME')
                 )
-    else:
-        logger.warning(f'{INFORMATION_SCHEMA}.TABLE_CONSTRAINTS and/or {INFORMATION_SCHEMA}.KEY_COLUMN_USAGE are not found, using default no constraints')
-        columns = columns.withColumn('KEY_COLUMN_NAME', F.when(F.upper(col('COLUMN_NAME'))==lit(IDKeyIndicator), col('COLUMN_NAME')).otherwise(lit(None)).cast(StringType()))
-
-        columnspk = (columns
-            .where(col('KEY_COLUMN_NAME').isNotNull())
-            .select(['TABLE_NAME', 'TABLE_SCHEMA', 'TABLE_CATALOG'])
-            .distinct()
             )
+
+    else:
+        columns = (columns
+            .alias('columns')
+            .join(metadata_primary_keys.alias('pk'),
+                (F.upper(columns.TABLE_NAME) == F.upper(metadata_primary_keys.TABLE_NAME)) &
+                (F.upper(columns.TABLE_SCHEMA) == F.upper(metadata_primary_keys.TABLE_SCHEMA)) &
+                (F.upper(columns.COLUMN_NAME) == F.upper(metadata_primary_keys.COLUMN_NAME)),
+                how = 'left'
+                )
+            .select(
+                'columns.*', 
+                col('pk.COLUMN_NAME').alias('KEY_COLUMN_NAME')
+                )
+            )
+
+        columns = columns.withColumn('KEY_COLUMN_NAME', F.when((F.upper(col('COLUMN_NAME'))==lit(IDKeyIndicator.upper())) | (col('KEY_COLUMN_NAME').isNotNull()), col('COLUMN_NAME')).otherwise(lit(None)).cast(StringType()))
 
         columnsnopk = (columns
             .groupBy(['TABLE_NAME', 'TABLE_SCHEMA', 'TABLE_CATALOG'])
-            .agg(F.count('COLUMN_NAME').alias('column_count'))
-            .alias('columnsnopk')
-            .join(columnspk.alias('columnspk'), ['TABLE_NAME', 'TABLE_SCHEMA', 'TABLE_CATALOG'], how='left_anti')
-            .select('columnsnopk.*')
+            .agg(
+                F.count('COLUMN_NAME').alias('column_count'),
+                F.sum(F.when(col('KEY_COLUMN_NAME').isNotNull(), lit(1)).otherwise(lit(0))).alias('key_column_count'),
+                )
+            .where(col('key_column_count')==lit(0))
             .withColumn('COLUMN_NAME', lit(MD5KeyIndicator))
             .withColumn('KEY_COLUMN_NAME', lit(MD5KeyIndicator))
             )
@@ -471,17 +490,23 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
     """
     Get Table and Column Metadata from information_schema table
     """
-    schemas_meta = [file_meta for file_meta in files_meta if file_meta['schema'].upper()==INFORMATION_SCHEMA]
-    sql_meta = {schema_table_name: [schema_meta for schema_meta in schemas_meta if schema_meta['table'].upper()==schema_table_name.upper()] for schema_table_name in schema_table_names}
-
     schema_tables = defaultdict()
-    for schema_table_name in schema_table_names:
-        schema_meta = sql_meta[schema_table_name]
-        if schema_meta:
-            schema_table = read_csv(spark=spark, file_path=schema_meta[0]['path'])
-        else:
-            schema_table = None
-        schema_tables[schema_table_name] = schema_table
+
+    if False:
+        schemas_meta = [file_meta for file_meta in files_meta if file_meta['schema'].upper()==INFORMATION_SCHEMA]
+        sql_meta = {schema_table_name: [schema_meta for schema_meta in schemas_meta if schema_meta['table'].upper()==schema_table_name.upper()] for schema_table_name in schema_table_names}
+
+        for schema_table_name in schema_table_names:
+            schema_meta = sql_meta[schema_table_name]
+            if schema_meta:
+                schema_table = read_csv(spark=spark, file_path=schema_meta[0]['path'])
+            else:
+                schema_table = None
+            schema_tables[schema_table_name] = schema_table
+
+    else: # Ignore file information schema provided in files folder
+        for schema_table_name in schema_table_names:
+            schema_tables[schema_table_name] = None
 
     schema_tables['TABLES'] = create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables=schema_tables['TABLES'], master_ingest_list=master_ingest_list, tableinfo_source=tableinfo_source)
     schema_tables['COLUMNS'] = create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark=spark, sql_columns=schema_tables['COLUMNS'], tableinfo_source=tableinfo_source, files_meta=files_meta)
@@ -492,7 +517,7 @@ def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, ma
 # %% Prepare TableInfo
 
 @catch_error(logger)
-def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str, storage_account_abbr:str):
+def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str, storage_account_abbr:str, metadata_primary_keys):
     """
     Prepare TableInfo table from given master_ingest_list and schema tables
     """
@@ -504,7 +529,7 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
     columns = filter_columns_by_tables(sql_columns=sql_columns, tables=tables)
 
     logger.info('Join with table constraints and column usage')
-    columns = join_tables_with_constraints(columns=columns, sql_table_constraints=sql_table_constraints, sql_key_column_usage=sql_key_column_usage)
+    columns = join_tables_with_constraints(columns=columns, sql_table_constraints=sql_table_constraints, sql_key_column_usage=sql_key_column_usage, metadata_primary_keys=metadata_primary_keys)
 
     logger.info('Rename Columns')
     columns = rename_columns(columns=columns, storage_account_name=storage_account_name, created_datetime=created_datetime, modified_datetime=modified_datetime, storage_account_abbr=storage_account_abbr)
@@ -518,6 +543,7 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
     logger.info('Select Relevant columns only')
     tableinfo = select_tableinfo_columns(tableinfo=columns)
 
+    tableinfo.persist(StorageLevel.MEMORY_AND_DISK)
     return tableinfo
 
 
@@ -537,6 +563,47 @@ def get_sql_schema_tables(spark, sql_id:str, sql_pass:str, sql_server:str, sql_d
 
 
 
+# %% get_metadata_primary_keys_from_sql_server
+
+@catch_error(logger)
+def get_metadata_primary_keys_from_sql_server(spark, tableinfo_source:str):
+    metadata_primary_keys = read_sql(
+        spark = spark, 
+        user = file_metadata_dict['sql_id'],
+        password = file_metadata_dict['sql_pass'],
+        schema = file_metadata_dict['sql_schema'],
+        table_name = file_metadata_dict['sql_table_name_primary_key'],
+        database = file_metadata_dict['sql_database'],
+        server = file_metadata_dict['sql_server'],
+        )
+
+    colpk = 'SystemPrimaryKey'
+    othercols = {
+        'AssetSchema': 'TABLE_SCHEMA',
+        'AssetName': 'TABLE_NAME',
+        }
+
+    metadata_primary_keys = (metadata_primary_keys
+        .where(
+            (F.upper(col('DataSource'))==lit(tableinfo_source.upper())) &
+            (col(colpk).isNotNull()) &
+            (F.trim(col(colpk))!=lit(''))
+            )
+        .withColumn(colpk, F.split(col(colpk), pattern=',')) \
+        .select([*[F.upper(c).alias(c) for c in othercols], F.explode(col(colpk)).alias(colpk)]) \
+        .withColumn(colpk, F.upper(F.trim(col(colpk)))) \
+        .withColumnRenamed(colpk, 'COLUMN_NAME')
+        .distinct()
+        )
+
+    for key, val in othercols.items():
+        metadata_primary_keys = metadata_primary_keys.withColumnRenamed(key, val)
+
+    return metadata_primary_keys
+
+
+
+
 # %% Make TableInfo
 
 @catch_error(logger)
@@ -549,6 +616,7 @@ def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, def
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
+    metadata_primary_keys = get_metadata_primary_keys_from_sql_server(spark=spark, tableinfo_source=tableinfo_source)
 
     if ingest_from_files_flag:
         files_meta = get_csv_files_meta(data_path_folder=data_path_folder, default_schema=default_schema)
@@ -571,6 +639,7 @@ def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, def
         sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
         storage_account_name = storage_account_name,
         storage_account_abbr = default_storage_account_abbr,
+        metadata_primary_keys = metadata_primary_keys,
         )
 
     save_adls_gen2(
