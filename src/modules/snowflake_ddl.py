@@ -846,9 +846,6 @@ WHEN
 SYSTEM$STREAM_HAS_DATA('{stream_name}')
 AS
     CALL {stored_procedure}();
-
-USE ROLE {wid.snowflake_role};
-ALTER TASK {task_name} RESUME;
 """
 
     sqlstr += step
