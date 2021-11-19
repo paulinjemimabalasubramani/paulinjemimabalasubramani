@@ -1,0 +1,320 @@
+﻿file_type,file_type_desc,is_primary_key,column_name,data_type,max_size,is_null,description
+M,Advisor,Y,FIN_INST_ID,Num,4,N,Financial Institution Name Id
+M,Advisor,Y,ADVISOR_TAX_ID,Char,9,N,Advisor SSN
+M,Advisor,,UNUSED,N/A,2,Y,This field is no longer used
+M,Advisor,,NAME_PREFIX,Char,10,Y,"Name Prefix. Mr, Mrs etc"
+M,Advisor,,LAST_NAME,Char,20,Y,Last Name
+M,Advisor,,FIRST_NAME,Char,20,Y,First Name
+M,Advisor,,MIDDLE_NAME,Char,20,Y,Middle Name
+M,Advisor,,NAME_SUFFIX,Char,35,Y,Name Suffix
+M,Advisor,,ADV_ADDR_LINE1,Char,100,Y,Address Line 1
+M,Advisor,,ADV_ADDR_LINE2,Char,100,Y,Address Line 2
+M,Advisor,,CITY,Char,30,Y,City
+M,Advisor,,STATE,Char,2,Y,State
+M,Advisor,,ZIP_CODE,Char,10,Y,Zip Code
+M,Advisor,,COUNTRY,Char,20,Y,Country (currently not in use)
+M,Advisor,,UNUSED,N/A,9,Y,This field is no longer used
+M,Advisor,,BUSINESS_PHONE,Char,20,Y,Business Phone Num
+M,Advisor,,HOME_PHONE,Char,20,Y,Home Phone Num
+M,Advisor,,FAX,Char,20,Y,Fax Num
+M,Advisor,,OTHER_PHONE,Char,20,Y,Alternate Phone Num
+M,Advisor,,BUSINESS_NAME,Char,125,Y,Business Name
+M,Advisor,,UNUSED,N/A,9,Y,This field is no longer used
+M,Advisor,,ACCT_METHOD,Char,4,Y,"Cost Basis Method – FIFO, LIFO, AVG"
+M,Advisor,,ADVISOR_NAME,Char,85,Y,Advisor Name
+M,Advisor,,BIRTHDATE,Char,8,Y,Advisor Birth Date
+M,Advisor,,PROF_TITLE,Char,30,Y,Advisor Professional Title
+M,Advisor,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+N,Advisor Rep Nums,Y,ADVISOR_REP_NUM,Char,9,N,Advisor Rep Num
+N,Advisor Rep Nums,Y,FIN_INST_ID,Num,4,N,Financial Institution Name Id
+N,Advisor Rep Nums,Y,INT_TYPE,Num,3,N,Data Source Interface Type Code. See Appendix
+N,Advisor Rep Nums,Y,VA_CODE,Char,20,N,Alias attribute used for many VAs and Managed Asset accounts
+N,Advisor Rep Nums,Y,ADVISOR_TAX_ID,Char,9,N,Advisor SSN
+N,Advisor Rep Nums,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+F,Master Asset,Y,FUND_ID,Char,22,N,"Fund or Asset ID, CUSIP Number"
+F,Master Asset,,MGT_CODE,Char,20,Y,Management Code
+F,Master Asset,,FUND_NAME,Char,100,Y,Asset Name
+F,Master Asset,,TICKER,Char,30,Y,Asset Ticker Id
+F,Master Asset,,MGT_NAME,Char,45,Y,Management Name (MF=Fund Family/VA=Ins Co)
+F,Master Asset,,PRODUCT_CODE,Char,38,Y,CURRENTLY NOT RECOMMENDED FOR USE -Product Name
+F,Master Asset,,SEC_TYPE,Char,2,Y,Security Type – See Appendix for List
+F,Master Asset,,OBJECTIVE,Char,60,Y,Asset Objective (currently not in use)
+F,Master Asset,,FUND_TYPE,Char,60,Y,Asset Type (currently not in use)
+F,Master Asset,Y,FUND_CODE,Char,15,Y,DST Specific Fund_Code (this field is an extra option)
+F,Master Asset,,SHARE_CLASS,Char,2,Y,"Class of Shares (A, B, etc.) of fund (even if FUND_CODE is not being delivered the extra delimiter will be output and should be taken into account) Note: Share Class not provided by all Interfaces."
+F,Master Asset,,MATURITY,Char,8,Y,Used on bonds to identify when the bond will mature.
+F,Master Asset,,COUP_RATE,Number,"7,3",Y,Coupon rate of the bond
+F,Master Asset,,SEC_TYPE_DESC,Char,100,Y,Security Type Description
+F,Master Asset,,INT_FREQ,Char,50,Y,Coupon frequency description.
+F,Master Asset,,FIRST_COUPON,Char,8,Y,First Coupon date
+F,Master Asset,,ISSUE_DATE,Char,8,Y,Issue date.
+F,Master Asset,,FACE_VALUE,Num,"9,2",Y,Face value.
+F,Master Asset,,DAY_COUNT_METHOD,Char,2,Y,Code for Day Count Method 1=Actual/Actual 2=NASD 30/360 3=Actual/360 4=Actual/365 5=EURO 30/360
+F,Master Asset,,STATE_OF_ISSUANCE,Char,2,Y,State of issuance.
+F,Master Asset,,HOLD_BACK,Num,3,Y,Interest payment delay.
+F,Master Asset,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+P,Master Price,Y,FUND_ID,Char,22,N,"Fund or Asset ID, CUSIP Number"
+P,Master Price,Y,PRICE_DATE,Char,8,N,Price Date (YYYYMMDD)
+P,Master Price,,PRICE,Num,"22,8",N,Price as of Price Date
+T,Activity Transaction,Y,SSN_TIN,Char,23,N,Investor's SSN or Tax Identification Number
+T,Activity Transaction,Y,ACCT_NUMBER,Char,20,N,Account Number
+T,Activity Transaction,Y,TRANS_DATE,Char,8,N,Represents the Settlement Date of the transaction (YYYYMMDD) (1)
+T,Activity Transaction,Y,SEQNUM,Num,12,N,Statement One Transaction Sequence Number
+T,Activity Transaction,Y,FUND_ID,Char,22,N,"Fund or Asset ID, CUSIP Number"
+T,Activity Transaction,,TRANS_CODE,Char,20,N,Transaction Code (Include case for uniqueness). A „VOID‟ is sent if a transaction is deleted and will contain the sequence number of the transaction record deleted.
+T,Activity Transaction,,INT_TYPE,Num,3,N,Data Source Interface Type Code.
+T,Activity Transaction,,SETTLEMENT_DATE,Char,8,Y,Represents the Settlement Date of the transaction (YYYYMMDD) (2)
+T,Activity Transaction,,QUANTITY,Num,"17,6",N,Quantity
+T,Activity Transaction,,PRICE,Num,"22,8",N,Transaction Price
+T,Activity Transaction,,PROCEEDS,Num,"16,2",Y,Net Proceeds from the Transaction
+T,Activity Transaction,,FIN_INST_ID,Num,4,N,Financial Institution Id
+T,Activity Transaction,,FUND_CODE,Char,15,Y,DST Specific Fund_Code (this field is an extra option)
+T,Activity Transaction,,SRC_TRANS_CODE,Char,9,Y,The transaction code and transaction suffix is the transaction information used by the fund company to categorize their transactions. This is normalized to a DST record code.
+T,Activity Transaction,,SRC_TRD_SUF,Char,9,Y,Source Trade Transaction Suffix
+T,Activity Transaction,,SRC_REC_CODE,Char,9,Y,A value used to describe a set of transaction codes and suffixes that categories a type of transaction
+T,Activity Transaction,,DLR_COMM,Number,"15,2",Y,The amount of commission paid to the broker dealer.
+T,Activity Transaction,,DLR_COMM_CODE,Char,1,Y,"G=Gross, ""N""=Net, “S”=Sales Credit"
+T,Activity Transaction,,TRD_UND_COMM,Number,"15,2",Y,The amount of commission paid to the mutual fund company.
+T,Activity Transaction,,TRD_UND_COMM_CODE,Char,1,Y,"+=Credit or ""-""= Debit or Null (DST only)"
+T,Activity Transaction,,TRD_CML_DISC,Char,30,Y,ROA Reference number. Except int_type 3 which will be the amount.
+T,Activity Transaction,,TRD_LTR_INT,Char,30,Y,LOI Reference number. Except int_type 3 which will be the amount.
+T,Activity Transaction,,TRD_INCT,Char,1,Y,Trade Solicited & Unsolicited Indicator. Values „S‟ or „U‟.
+T,Activity Transaction,,TRD_PERC_CHRG,Number,"15,10",Y,Percent commission paid. This percentage should be representative of breakpoints applied.
+T,Activity Transaction,,TRD_REP_NUMBER,Char,9,Y,Representative Number placing trade.
+T,Activity Transaction,,TRD_REP_NAME,Char,30,Y,Representative Name placing trade.
+T,Activity Transaction,,TRD_ASOF_CODE,Char,3,Y,"When trades are backdated, the As-Of reason code gives an explanation as to why the transaction was backdated. Straight pass through."
+T,Activity Transaction,,TRD_NSCC,Number,2,Y,0=Non-networked broker account 1=Broker-controlled IRA/Margin account 2=Customer name brokerage account 3=Broker-controlled brokerage account 4=Fund-controlled brokerage account
+T,Activity Transaction,,TRD_SOC_CODE,Char,3,Y,Used to help determine the type of owner of an account. Appendix
+T,Activity Transaction,,SLOAD_PERC,Number,"15,10",Y,Sales Load %
+T,Activity Transaction,,UND_SEC,Char,22,Y,Underlying CUSIP for the security
+T,Activity Transaction,,EX_1035,Char,1,Y,If the trade was part of a 1035 exchange. „Y‟ or „N‟
+T,Activity Transaction,,TRD_TYPE_DESC,Number,2,Y,"Examples Syndicate, Agency Cross Trade (Uses Trade Blotter Codes)"
+T,Activity Transaction,,ORD_NUM,Char,9,Y,Order number on the trade.
+T,Activity Transaction,,TRD_TYPE_SRC,Number,2,Y,List source of trade. Straight pass through from source.
+T,Activity Transaction,,PRINCIPAL,Number,"25,8",Y,"The principal value of the trade before commission, fees, etc."
+T,Activity Transaction,,EXCHANGE,Num,2,Y,“1” = New York Stock Exchange (NYSE) “2” = American Stock Exchange (ASE) “3” = Philadelphia (PHLX) “4” = Over The Counter (OTC) “5” = Boston “6” = Chicago Exchange (CHX) “7” = Chicago Board Options Exchange (CBOE) “8” = Over the Counter/National Clearing Corp. (OTC/NCC) “9” = Pacific (PSE)
+T,Activity Transaction,,OPT_TRD_IND,Char,1,Y,Indicator that tells if the option trade is to open or close a position. „O‟ or „C‟
+T,Activity Transaction,,ORIG_CUR_CODE,Char,3,Y,The original currency used in the trade. Appendix
+T,Activity Transaction,,OTH_FEE,Number,"15,2",Y,All other fees associated directly with the trade.
+T,Activity Transaction,,COMM_WAIV,Number,"15,2",Y,Amount of commission Waived (including discount) in local currency.
+T,Activity Transaction,,TRADE_EXEC_TIME,Char,6,Y,Trade Execution time. (24 Hour Time)
+T,Activity Transaction,,DISCRETIONARY_TRD,Char,1,Y,"Discretionary trade. Y=Yes, N=No."
+T,Activity Transaction,,RECON_FLAG,Char,1,Y,"„Y‟ =Yes, „N‟ = No, „G‟ = Global Recon Accepted. Internal code used to differentiate between core trans and Albridge created recon trans"
+"S,R",Activity Position,Y,SSN_TIN,Char,23,N,Investor's SSN or Tax Identification Number
+"S,R",Activity Position,Y,ACCT_NUMBER,Char,20,N,Account Number
+"S,R",Activity Position,Y,FUND_ID,Char,22,N,"Fund or Asset ID, CUSIP Number"
+"S,R",Activity Position,Y,POSITION_DATE,Char,8,N,Position Date (YYYYMMDD).
+"S,R",Activity Position,,QUANTITY_ASD,Num,"17,6",N,Total Quantity of the Asset as of the Position Date.
+"S,R",Activity Position,Y,FUND_CODE,Char,15,Y,DST Specific Fund_Code (this field is an extra option)
+"S,R",Activity Position,,RECON_FLAG,Char,1,Y,"Recon flag Y=Yes, N=No, H=Hanging Position Recon"
+"S,R",Activity Position,,LAST_POS_DATE,Char,8,Y,Latest position date
+A,Account,Y,SSN_TIN,Char,23,N,Investor's SSN or Tax Identification Number
+A,Account,Y,ACCT_NUMBER,Char,20,N,Account Number
+A,Account,,FIN_INST_ID,Num,4,N,Financial Institution Name Id
+A,Account,,ACCT_TITLE,Char,280,Y,Account Registration
+A,Account,,ACCOUNT_TYPE,Char,60,Y,Account Type
+A,Account,,UNUSED,N/A,2,Y,This field is no longer used
+A,Account,,ACCT_NAME,Char,280,Y,Account Name
+A,Account,,ADVISOR_REP_NUM,Char,9,Y,Advisor's Rep Num
+A,Account,,INT_TYPE,Num,3,N,Data Source Interface Type Code.
+A,Account,,VA_CODE,Char,20,N,Alias attribute used for many VAs and Managed Asset accounts
+A,Account,,VIEWABLE,Char,1,N,"Viewable Flag. „Y‟- Viewable, „N‟- Not Viewable, „S‟- Suppressed – Manually applied at Rep or BD request."
+A,Account,,SRC_TYPE,Char,1,Y,"Account Source Type: „C‟ – Core from Data Source. Manual Accts: „A‟ – Advisor, „F‟ – FI, „I‟ – Investor"
+A,Account,,ACCT_METHOD,Char,4,Y,"Cost Basis Acct Method –FIFO (default), LIFO, AVG"
+A,Account,,TAX_STATUS,Num,1,Y,"Tax type of account: 1 – Non Qualified, 2 – Qualified, 3 – Undefined, 4 – Non-Qualified Retirement Account"
+A,Account,,SEGMENT_TYPE,Char,1,N,"Type of account: „C‟ – Core Data, „B‟ – Balance Only, ‟M‟ Manual, „A‟ Aggregated (screen scraped)"
+A,Account,,FEE_STATUS,Char,1,Y,"„Y‟ if this is a Fee Based account, otherwise „N‟ or ''"
+A,Account,,NORM_ACCT_TYPE,Char,60,Y,Normalized Account Type Description- This functionality is still in development
+A,Account,,SWP_OPT,Char,1,Y,Field used to indicate the account is setup for SWP transactions. „Y‟ or „N‟
+A,Account,,ROA_NUM_AMT,Char,30,Y,ROA Reference number and amount „#######I######‟ I = „D‟ or „S‟ for dollars or shares respectively.
+A,Account,,EST_DATE,Char,8,Y,The date an account was opened.
+A,Account,,NSCC_LEV,Number,2,Y,0=Non-networked broker account 1=Broker-controlled IRA/Margin account 2=Customer name brokerage account 3=Broker-controlled brokerage account 4=Fund-controlled brokerage account
+A,Account,,SOC_CODE,Char,3,Y,"Characterizes the owner of the account (such as male, female, joint tenant, trustee, charitable organization)female, joint tenant, trustee, charitable organization) from DST only Appendix"
+A,Account,,DLR_NUM,Char,9,Y,Dealer number from source.
+A,Account,,BRCH_NUM,Char,9,Y,Dealer/Branch number from source.
+A,Account,,NAV_CODE,Char,1,Y,Net Asset Value „Y‟ or „N‟
+A,Account,,CLSD,Char,1,Y,0=Closed 1= Open
+A,Account,,MAN_INDC,Char,1,Y,Managed Account indicator „Y‟ or „N‟
+A,Account,,SRC_DATE,Char,8,Y,Change date of account information from/on source system.
+A,Account,,DISCRT,Char,1,Y,Discretionary „Y‟ or „N‟
+A,Account,,DVP,Char,1,Y,Delivery vs. Payment „Y‟ or „N‟
+A,Account,,LOI_NUM_AMT,Char,30,Y,LOI Reference number and amount „#######I######‟ I = „D‟ or „S‟ for dollars or shares respectively.
+A,Account,,OPT_LEV,Num,2,Y,"Identifies the level of options trading authorized on the account. 1 = Covered equity call writing 2 = Level 1 privileges, plus purchase of equity and index calls and puts 3 = Levels 1 and 2 privileges, plus purchase of equity and index straddles or combinations, covered put writing, and equity spreads 4 = 1 - 3 privileges, plus uncovered writing of equity options, straddles, or combinations 5 = Levels 1 - 4 privileges, plus index spreads and uncovered writing of index options, straddles, or combinations"
+A,Account,,RESTRIC,Char,1,Y,Identifies a restriction on the account. „Y‟ or „N‟
+A,Account,,INCOM,Number,"20,2",Y,Income figure used in all income calculations representing the estimate based on the income range provided by the customer in the suitability information. Will be median of upper and lower boundary.
+A,Account,,INCOM_L,Number,"20,2",Y,Approximate annual income range of the household - lower boundary.
+A,Account,,INCOM_H,Number,"20,2",Y,Approximate annual income range of the household - Higher boundary.
+A,Account,,NETW,Number,"20,2",Y,Net worth figure used in all net worth calculations representing the estimate based on the net worth range provided by the customer in the suitability information. Will be the median of upper and lower boundary.
+A,Account,,NETW_L,Number,"20,2",Y,Approximate net worth range of the household - lower boundary.
+A,Account,,NETW_H,Number,"20,2",Y,Approximate net worth range of the household - upper boundary.
+A,Account,,OCCUP,Char,15,Y,Occupation of the account owner.
+A,Account,,TAX_BRCKT,Number,3,Y,Federal tax bracket.
+A,Account,,MAN_TYPE,Char,2,Y,Type of managed account. Appendix
+A,Account,,FEE_BAS_FLAG,Char,1,Y,Fee Based Flag „Y‟ or „N‟
+A,Account,,PROD_NAM_CODE,Char,20,Y,Code for advisory products provided by FI
+A,Account,,DSC_TYPE_CODE,Char,20,Y,Discretionary flag populated for Advisory products etc…
+A,Account,,EMPLOYEE_OWNED,Char,1,Y,Employee-owned account.
+A,Account,,MANAGEMENT_NAME,Char,150,Y,"This is only valid for direct business interfaces (eg DST, DAZL), it would not be valid for Brokerage interfaces. Account level information only, not asset-level."
+A,Account,,BILLING_FREQUENCY,Num,1,Y,DST stored value.
+A,Account,,BILLLING_AMOUNT,Num,"12,2",Y,DST stored value.
+A,Account,,ACCT_TYPE_CODE,Char,5,Y,internal Albridge code which corresponds to ACCOUNT_TYPE description provided in column 5 of this “Account File”
+A,Account,,ORG_ACCT_TYPE,Char,5,Y,Original Acct type code sent by the interface.
+A,Account,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+I,Investor,Y,SSN_TIN,Char,23,N,Investor's SSN or Tax Identification Number
+I,Investor,,UNUSED,N/A,2,Y,This field is no longer used
+I,Investor,,NAME_PREFIX,Char,10,Y,Name Prefix
+I,Investor,,LAST_NAME,Char,80,Y,Last Name
+I,Investor,,FIRST_NAME,Char,40,Y,First Name
+I,Investor,,MIDDLE_NAME,Char,20,Y,Middle Name
+I,Investor,,NAME_SUFFIX,Char,10,Y,Name Suffix
+I,Investor,,INV_ADDR_LINE1,Char,100,Y,Address Line 1
+I,Investor,,INV_ADDR_LINE2,Char,100,Y,Address Line 2
+I,Investor,,CITY,Char,30,Y,City
+I,Investor,,STATE,Char,2,Y,State
+I,Investor,,ZIP_CODE,Char,10,Y,Zip Code
+I,Investor,,COUNTRY,Char,60,Y,Country (currently unused – for future use)
+I,Investor,,BUSINESS_PHONE,Char,20,Y,Business Phone
+I,Investor,,HOME_PHONE,Char,20,Y,Home Phone
+I,Investor,,FAX,Char,20,Y,Fax
+I,Investor,,OTHER_PHONE,Char,20,Y,Other Phone Num
+I,Investor,,BIRTHDATE,Char,8,Y,Birth Date (YYYYMMDD)
+I,Investor,,TRUST_FLAG,Char,1,Y,FOR INTERNAL USE ONLY - Internal flag to denote if multiple advisors are privileged to see this SSN_TIN‟s accounts. The value will be a „Y‟ if this is the case.
+I,Investor,,EMAIL,Char,60,Y,Investor‟s Email Address
+I,Investor,,INV_ADDR_LINE3,Char,100,Y,Address Line 3
+I,Investor,,GENDER,Char,1,Y,Field used to identify account owner as Male or Female „M‟ or „F‟
+I,Investor,,CIT_SHIP,Char,3,Y,Citizenship of the account owner. Appendix
+I,Investor,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+C,Transaction Code,Y,TRANS_CODE,Char,20,N,Transaction Code (Include case for uniqueness)
+C,Transaction Code,Y,INT_TYPE,Num,3,N,Data Source Interface Type Code.
+C,Transaction Code,,DESCRIPTION,Char,60,Y,Description of Transaction Code
+C,Transaction Code,,T_CODE,Char,2,Y,T_Code – See Appendix
+C,Transaction Code,,NORM_TRANS_CODE,Char,20,Y,Normalized Transaction Code – See Appendix
+C,Transaction Code,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+G,Multi-Rep Account,Y,SSN_TIN,Char,23,N,Investor's SSN or Tax Identification Number
+G,Multi-Rep Account,Y,ACCT_NUMBER,Char,20,N,Account Number
+G,Multi-Rep Account,Y,ADVISOR_REP_NUM,Char,9,N,Advisor's Rep Num
+G,Multi-Rep Account,,TYPE,Char,1,Y,"„P‟ for Primary rep, „S‟ for secondary rep"
+G,Multi-Rep Account,,ACTION_FLAG,Char,1,Y,„D‟ Delete (If NULL then Insert)
+G,Multi-Rep Account,,SPLIT_PCT,Num,"5,2",Y,Not currently implemented. For future use.
+L,Multi-SSN Account,Y,SSN_TIN,Char,23,N,Investor's SSN or Tax Identification Number
+L,Multi-SSN Account,Y,ACCT_NUMBER,Char,20,N,Account Number
+L,Multi-SSN Account,Y,A_SSN_TIN,Char,23,N,Additional investor's SSN or Tax Identification Number
+L,Multi-SSN Account,,ACTION_FLAG,Char,1,Y,„D‟ Delete (If NULL then Insert)
+H,House Holding Portfolio,Y,PORTFOLIO_ID,Num,20,N,ID for Portfolio (Key Field)
+H,House Holding Portfolio,Y,SSN_TIN,Char,23,Y,Investor's SSN or Tax Identification Number
+H,House Holding Portfolio,Y,ACCT_NUMBER,Char,20,Y,Account Number
+H,House Holding Portfolio,,PORTFOLIO_NAME,Char,60,Y,Portfolio Name
+H,House Holding Portfolio,,FIN_INST_ID,Num,4,Y,Financial Institution ID
+H,House Holding Portfolio,,ADVISOR_TAX_ID,Char,9,Y,"Advisor SSN if Portfolio was created by Advisor, primary advisor SSN if portfolio was created by investor"
+H,House Holding Portfolio,,I_SSN_TIN,Char,23,Y,"If Portfolio was created by and Investor this will contain the Investor‟s SSN, null or 0 if portfolio was created by advisor"
+H,House Holding Portfolio,,SUPPRESSED,Char,1,Y,"Suppressed Flag. „N‟ - Not Suppressed, „Y‟ - Suppressed"
+H,House Holding Portfolio,,SRC_TYPE,Char,1,Y,"„I‟ = Loaded by FDN, NULL = Entered through front-end by Advisor or Investor"
+H,House Holding Portfolio,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+I1,Insurance Contract,,FIN_INST_ID,Num,4,N,Financial Institution ID Number
+I1,Insurance Contract,,SSN_TIN,Char,23,N,Investor's SSN or Tax Identification Number
+I1,Insurance Contract,,ACCT_NUMBER,Char,20,N,Investor‟s Account Number
+I1,Insurance Contract,,POLICY_ID,Char,22,N,Policy Identifier
+I1,Insurance Contract,Y,CONTRACT_ID,Num,16,N,Contract Identifier
+I1,Insurance Contract,,INT_TYPE,Num,3,N,Interface type
+I1,Insurance Contract,,FIRST_SRC_DT,Char,8,Y,First source effective date at given contract level
+I1,Insurance Contract,Y,INFO_ID,Num,20,N,Internal Albridge ID for contract product information
+I1,Insurance Contract,,EFF_DATE,Char,8,N,Effective date of the contract product information
+I1,Insurance Contract,,CON_STATUS,Char,2,N,Internal Albridge ID for contract status
+I1,Insurance Contract,,CON_STATUS_DESC,Char,60,N,Contract status description
+I1,Insurance Contract,,CON_FORCE,Char,1,N,"Contract In Force – (Y)es, (N)o, (U)nknown"
+I1,Insurance Contract,,PROD_TYPE,Char,3,N,Internal Albridge ID for product type
+I1,Insurance Contract,,PROD_TYPE_DESC,Char,60,N,Product Type description
+I1,Insurance Contract,,PROD_NAME,Char,100,Y,Product Name
+I1,Insurance Contract,,SRC_TYPE,Char,2,N,Source Type „S” - Source Delivered “D”– Source DELETE action “M1”- Manual entered prior to Source Delivery. “M2”- Manual entered after Source Delivery.
+I1,Insurance Contract,,CARR_NAME,Char,100,Y,Carrier Name
+I1,Insurance Contract,,COL_SRC_TP,Char,30,N,"4-value comma-delimited SRC_TYPE at column level. E.g. S,M1,S,M2 Columns: CON_STATUS, CON_FORCE, PROD_NAME, CARR_NAME"
+I1,Insurance Contract,,VIEWABLE,Char,1,N,"Viewable (Y=Yes, N=No)"
+I1,Insurance Contract,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+I2,Insurance Date,,CONTRACT_ID,Num,16,N,Contract Identifier
+I2,Insurance Date,Y,DATE_ID,Num,20,N,Unique Albridge ID for Date record
+I2,Insurance Date,,DATE_Q,Char,3,N,Internal Albridge ID for Date description
+I2,Insurance Date,,DESCRIPTION,Char,60,N,"Date Description (eg. Termination, Maturity, et al)"
+I2,Insurance Date,,DATE_SKEY,Num,18,N,Internal Albridge ID associating the contract_ID and Date_Q description values across effective dates.
+I2,Insurance Date,,EFF_DATE,Char,8,N,Effective Date of the record
+I2,Insurance Date,,DATE,Char,8,N,Date
+I2,Insurance Date,,SRC_TYPE,Char,2,N,Source Type „S” - Source Delivered “D”– Source DELETE action “M1”- Manual entered prior to Source Delivery. “M2”- Manual entered after Source Delivery.
+I2,Insurance Date,,COL_SRC_TP,Char,30,N,"2-value comma-delimited SRC_TYPE at column level. E.g. S,M1 Columns: DATE_Q, DATE"
+I2,Insurance Date,,VIEWABLE,Char,1,N,Front end edits only
+I2,Insurance Date,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+I3,Insurance Party,,CONTRACT_ID,Num,16,N,Contract Identifier
+I3,Insurance Party,Y,PARTY_ID,Num,20,N,Party Identifier
+I3,Insurance Party,,ID_Q,Char,2,Y,"Internal Albridge identifier for ID Description (eg – 34 = SSN, FI = TIN)"
+I3,Insurance Party,,ID_DESC,Char,60,Y,"Identifier Type (eg. SSN, TIN, et al)"
+I3,Insurance Party,,PARTY_SKEY,Num,18,N,Internal Albridge ID associating the Role Value and ID Value for a given contract
+I3,Insurance Party,,EFF_DATE,Char,8,N,Effective Date
+I3,Insurance Party,,LAST_NAME,Char,35,Y,Party Last Name
+I3,Insurance Party,,FIRST_NAME,Char,35,Y,Party First Name
+I3,Insurance Party,,MID_NAME,Char,35,Y,Party Middle Name
+I3,Insurance Party,,NAME_PREF,Char,10,Y,Party Name Prefix
+I3,Insurance Party,,NAME_SUFF,Char,10,Y,Party Name Suffix
+I3,Insurance Party,,ROLE_VALUE,Char,2,N,Internal Albridge identifier for Role description
+I3,Insurance Party,,ROLE_DESC,Char,60,N,Party Role description
+I3,Insurance Party,,ID_VALUE,Char,20,Y,Party Identifier (eg – actual SSN/TIN)
+I3,Insurance Party,,BIRTH_DATE,Char,8,Y,Party Birth Date
+I3,Insurance Party,,ADDR_LINE1,Char,35,Y,Party Address Line 1
+I3,Insurance Party,,ADDR_LINE2,Char,35,Y,Party Address Line 2
+I3,Insurance Party,,CITY,Char,30,Y,Party City
+I3,Insurance Party,,STATE,Char,2,Y,Party State
+I3,Insurance Party,,ADDR_LINE3,Char,35,Y,Party Address Line 3
+I3,Insurance Party,,ZIP_CODE,Char,15,Y,Party Zip Code
+I3,Insurance Party,,COUNTRY,Char,3,Y,Party Country Code
+I3,Insurance Party,,COL_SRC_NAME_TP,Char,30,N,"8-value comma-delimited SRC_TYPE at column level for Name fields. E.g. S,M1,M2,S,M1,M2,S,M1 Columns: LAST_NAME, FIRST_NAME, MID_NAME, NAME_PREFIX, NAME_SUFF, ROLE_VALUE, ID_VAL, ID_Q"
+I3,Insurance Party,,SRC_TYPE,Char,2,N,Source Type „S” - Source Delivered “D”– Source DELETE action “M1”- Manual entered prior to Source Delivery. “M2”- Manual entered after to Source Delivery.
+I3,Insurance Party,,COL_SRC_DOB_TP,Char,2,N,Source type for Date of Birth field
+I3,Insurance Party,,COL_SRC_ADDR_TP,Char,30,N,"7-value comma-delimited SRC_TYPE at column level for Address fields. E.g. S,M1,M2,S,M1,S,M1 Columns: ADDR_LINE1, ADDR_LINE2, CITY, STATE, ADDR_LINE3, ZIP_CODE, COUNTRY"
+I3,Insurance Party,,VIEWABLE,Char,1,N,"Viewable (Y=Yes, N=No)"
+I3,Insurance Party,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+I4,Insurance Rider,,CONTRACT_ID,Num,16,N,Contract Identifier
+I4,Insurance Rider,Y,RIDER_ID,Num,20,N,Rider Identifier
+I4,Insurance Rider,,FEATURE_ID,Char,3,N,Internal Albridge ID for Feature description
+I4,Insurance Rider,,FEATURE_DESC,Char,60,N,Feature description
+I4,Insurance Rider,,RIDER_SKEY,Num,18,N,Internal Albridge ID associating the contract_id and feature_ID values across effective dates.
+I4,Insurance Rider,,EFF_DATE,Char,8,N,Effective Date
+I4,Insurance Rider,,SRC_TYPE,Char,2,N,Source Type „S” - Source Delivered “D”– Source DELETE action “M1”- Manual entered prior to Source Delivery. “M2”- Manual entered after to Source Delivery.
+I4,Insurance Rider,,VIEWABLE,Char,1,N,"Viewable (Y=Yes, N=No)"
+I4,Insurance Rider,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+I5,Insurance Value,,CONTRACT_ID,Num,16,N,Contract Identifier
+I5,Insurance Value,Y,VALUE_ID,Num,20,N,Value qualifier
+I5,Insurance Value,,VALUE_Q,Char,3,N,Internal Albridge ID for Value description
+I5,Insurance Value,,VALUE_DESC,Char,60,N,Value Description
+I5,Insurance Value,,VALUE_SKEY,Num,18,N,Internal Albridge ID associating the contract_id and value_Q values across effective dates.
+I5,Insurance Value,,EFF_DATE,Char,8,N,Effective Date
+I5,Insurance Value,,CON_VALUE,Num,"16,2",N,Contract Value
+I5,Insurance Value,,SRC_TYPE,Char,2,N,Source Type
+I5,Insurance Value,,COL_SRC_TP,Char,30,N,"2-value comma-delimited SRC_TYPE at column level. E.g. S,M1 Columns: VALUE_Q, CON_VALUE"
+I5,Insurance Value,,VIEWABLE,Char,1,N,"Viewable (Y=Yes, N=No)"
+I5,Insurance Value,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+IP,Interface-Specific Pricing,Y,FUND_ID,Char,22,N,"Fund or Asset ID, CUSIP Number"
+IP,Interface-Specific Pricing,Y,PRICE_DATE,Char,8,N,Price Date (YYYYMMDD)
+IP,Interface-Specific Pricing,Y,PRICE,Num,"22,8",N,Price as of Price Date
+IP,Interface-Specific Pricing,,INT_TYPE,Char,variable,N,Delimited field containing all Data Source Interface Type Codes that sent that particular price. See Appendix
+IP,Interface-Specific Pricing,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+FI,Fixed Income Data,Y,FUND_ID,Char,22,N,"Fund or Asset ID, CUSIP Number."
+FI,Fixed Income Data,,UPDATE_DATE,Char,8,N,Date of update
+FI,Fixed Income Data,Y,REC_TYPE,Num,2,N,1 = Coupon Date/Rate 2 = Factor Date/Rate 3 = Put Date/Price 4 = Call Date/Price 5 = Default Flag 50 = Rating
+FI,Fixed Income Data,Y,REC_DATE,Char,8,Y,"Date associated with record, eg. Call Date, Put Date, et al"
+FI,Fixed Income Data,,REC_VALUE,Char,22,N,"Value associated with record, eg. Call Price, Put Price, Factor et al"
+AC,Asset Classification,Y,FUND_ID,Char,22,N,"Fund or Asset ID, CUSIP Number"
+AC,Asset Classification,Y,ACL_DEF,Num,9,N,1 = Asset Type 2 = Investment Objective
+AC,Asset Classification,Y,ACL_SOURCE,Char,60,N,Classification Source
+AC,Asset Classification,Y,CLASSIFICATION,Char,100,Y,Classification
+AC,Asset Classification,,WEIGHT,Num,"8,5",Y,Percentage weight of classification
+AC,Asset Classification,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+AB,Account Balance,Y,SSN_TIN,Char,23,N,Investor's SSN or Tax Identification Number
+AB,Account Balance,Y,ACCT_NUMBER,Char,20,N,Account Number
+AB,Account Balance,Y,REC_TYPE,Num,2,N,1 = Balance Equity Amount 2 = Balance Equity PCT 3 = Margin Market Value
+AB,Account Balance,Y,REC_DATE,Char,8,N,Record Date
+AB,Account Balance,,REC_VALUE,Num,"16,2",N,Value associated with record.
+AB,Account Balance,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+HEADER,Header Record,,RECORD_TYPE,Char,1,N,Identifies this record as a Header – “H”
+HEADER,Header Record,,FILE_DESC,Char,40,N,A plain English description of the file contents.
+HEADER,Header Record,,EFF_DATE,Char,8,N,Processed through date (YYYYMMDD)
+HEADER,Header Record,,RUN_DATE,Char,8,N,Date Export was run (YYYYMMDD)
+HEADER,Header Record,,RUN_TIME,Char,6,N,Time Export was run (HHMMSS)
+TRAILER,Trailer Record,,RECORD_TYPE,Char,1,N,Identifies this record as a Trailer – “T”
+TRAILER,Trailer Record,,REC_CNT,Char,20,N,Total number of records in the file
