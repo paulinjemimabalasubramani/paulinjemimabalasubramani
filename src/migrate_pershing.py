@@ -469,29 +469,19 @@ def process_pershing_file(file_meta, cloud_file_history):
     """
     Main Processing of single Pershing file
     """
-    file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
-
     logger.info(file_meta)
-
-    firm_crd_number = file_meta[FirmCRDNumber]
-    file_name = file_meta['file_name']
-
-    firm_path_folder = os.path.join(data_path_folder, firm_crd_number)
-    file_path = os.path.join(firm_path_folder, file_name)
-
-    file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, cloud_file_history=cloud_file_history)
-    table_name = file_meta['table_name']
+    firm_path_folder = os.path.join(data_path_folder, file_meta[FirmCRDNumber])
 
     table = create_table_from_fwt_file(
-        firm_path_folder = os.path.join(data_path_folder, firm_crd_number),
-        file_name = file_name,
+        firm_path_folder = firm_path_folder,
+        file_name = file_meta['file_name'],
         schema_file_name = file_meta['schema_file_name'],
-        table_name = table_name,
-        groupBy=groupBy,
-    )
+        table_name = file_meta['table_name'],
+        groupBy = groupBy,
+        )
     if not table: return
 
-    table = remove_column_spaces(table_to_remove = table)
+    table = remove_column_spaces(table=table)
     table = table.withColumn(date_column_name, lit(str(file_meta[date_column_name])))
     table = table.withColumn(FirmCRDNumber, lit(str(file_meta[FirmCRDNumber])))
 

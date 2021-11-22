@@ -24,7 +24,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import catch_error, data_settings, logger, mark_execution_end, config_path, is_pc
-from modules.spark_functions import create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column, \
+from modules.spark_functions import add_md5_key, create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column, \
     add_id_key, add_elt_columns
 from modules.azure_functions import read_tableinfo_rows, tableinfo_name, get_firms_with_crd
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
@@ -45,7 +45,7 @@ from pyspark.sql.functions import col, lit, to_date, to_timestamp
 
 # %% Parameters
 
-save_pershing_to_adls_flag = True
+save_albridge_to_adls_flag = True
 save_tableinfo_adls_flag = True
 
 tableinfo_source = 'ALBRIDGE'
@@ -58,6 +58,13 @@ date_start = datetime.strptime(data_settings.file_history_start_date[tableinfo_s
 
 schema_header_str = 'HEADER'
 schema_trailer_str = 'TRAILER'
+
+fin_inst_ids = {
+    '19': 'RAA',
+    '30': 'SPF',
+    '7' : 'FSC',
+    '63': 'WFS',
+    }
 
 date_column_name = 'run_datetime'
 key_column_names = get_key_column_names(date_column_name=date_column_name)
@@ -84,9 +91,7 @@ firms = get_firms_with_crd(spark=spark, tableinfo_source=firms_source)
 
 if is_pc: pprint(firms)
 
-# temporarily change firm crd number to firm name:
-for i in range(len(firms)):
-    firms[i]['crd_number'] = firms[i]['firm_name']
+crd_to_fid = {f['crd_number']: next((key for key, val in fin_inst_ids.items() if val.lower()==f['firm_name'].lower()), None) for f in firms}
 
 
 
@@ -138,8 +143,8 @@ def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
     """
     Extract Meta Data from Albridge file (reading 1st line (header metadata) from inside the file)
     """
-    convert_yyyymmdd = lambda s: f'{s[:4]}-{s[4:6]}-{s[6:]}'
-    convert_hhmmss = lambda s: f'{s[:2]}:{s[2:4]}:{s[4:]}'
+    convert_yyyymmdd = lambda s: f'{s[:4]}-{s[4:6]}-{s[6:8]}'
+    convert_hhmmss = lambda s: f'{s[:2]}:{s[2:4]}:{s[4:6]}'
     strftime = r'%Y-%m-%d %H:%M:%S' # http://strftime.org/
 
     file_name = os.path.basename(file_path)
@@ -150,43 +155,40 @@ def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
         logger.warning(f'Not a .txt file: {file_path}')
         return
 
-    if not 13<=len(file_name_noext)<=16 \
+    if not 12<=len(file_name_noext)<=16 \
         or not file_name_noext[0].isalpha() \
-        or not file_name_noext[2:].isdigit() \
-        or not (file_name_noext[:1] in albridge_file_types or file_name_noext[:2] in albridge_file_types):
+        or not file_name_noext[2:].isdigit():
         logger.warning(f'Not a valid Albirdge Replication/Export file name: {file_path}')
+        return
+
+    if not (file_name_noext[:1] in albridge_file_types or file_name_noext[:2] in albridge_file_types):
+        logger.warning(f'Unknown Albirdge Replication/Export file type: {file_path}')
         return
 
     sequence_number = file_name_noext[-2:]
     file_date = convert_yyyymmdd(file_name_noext[-10:-2])
     file_name_prefix = file_name_noext[:-10]
 
-    if len(file_name_prefix)==3:
-        if file_name_prefix[:1] in albridge_file_types and file_name_prefix[1:].isdigit():
-            file_type = file_name_prefix[:1]
-            fin_inst_id = file_name_prefix[1:]
-        elif file_name_prefix[:2] in albridge_file_types and file_name_prefix[2:].isdigit():
-            file_type = file_name_prefix[:2]
-            fin_inst_id = file_name_prefix[2:]
-        else:
-            logger.warning(f'Not a valid Albirdge Replication/Export file name prefix: {file_path}')
-            return
-    else:
-        if file_name_prefix[:2] in albridge_file_types and file_name_prefix[2:].isdigit():
-            file_type = file_name_prefix[:2]
-            fin_inst_id = file_name_prefix[2:]
-        elif file_name_prefix[:1] in albridge_file_types and file_name_prefix[1:].isdigit():
-            file_type = file_name_prefix[:1]
-            fin_inst_id = file_name_prefix[1:]
-        else:
-            logger.warning(f'Not a valid Albirdge Replication/Export file name prefix: {file_path}')
-            return
+    fin_inst_id = crd_to_fid.get(firm_crd_number, None)
+    if not fin_inst_id:
+        logger.warning(f'Unknown CRD Number / No equivalent Financial Institution ID found: {firm_crd_number}')
+        return
+
+    if len(file_name_prefix)<=len(fin_inst_id) or file_name_prefix[-len(fin_inst_id):].upper()!=fin_inst_id.upper():
+        logger.warning(f'Financial Institution ID is incorrect. Found {file_name_prefix[-len(fin_inst_id):]}  Expected: {fin_inst_id}')
+        return
+
+    file_type = file_name_prefix[:-len(fin_inst_id)].upper()
+    if file_type not in albridge_file_types:
+        logger.warning(f'Unknown Albridge file type: {file_type}')
+        return
 
     file_meta = {
         'file_name': file_name,
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
         FirmCRDNumber: firm_crd_number,
+        'firm_name': fin_inst_ids[fin_inst_id],
         'sequence_number': sequence_number,
         'file_date': file_date,
         'file_type': file_type,
@@ -204,6 +206,10 @@ def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
     HEADER = HEADER.split(sep='|')
     header_schema = [c['column_name'].lower() for c in schema['HEADER']]
 
+    if len(HEADER)<len(header_schema):
+        logger.warning(f'Invalid header length: {HEADER}')
+        return
+
     for i in range(1, len(header_schema)):
         file_meta[header_schema[i]] = HEADER[i]
 
@@ -212,55 +218,69 @@ def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
     file_meta['run_date'] = convert_yyyymmdd(file_meta['run_date'])
     file_meta['run_time'] = convert_hhmmss(file_meta['run_time'])
 
-    file_meta['is_full_load'] = None
+    file_meta['is_full_load'] = False # determine how to know if the Albridge file is full load or not.
     file_meta[date_column_name] = datetime.strptime(' '.join([file_meta['run_date'], file_meta['run_time']]), strftime)
     return file_meta
 
 
+#file_path = r'C:\packages\Shared\ALBRIDGE\WFS\D632021111001.TXT'
+#firm_crd_number = '421'
+#cloud_file_history = ''
+
+#file_meta = extract_albridge_file_meta(file_path, firm_crd_number, cloud_file_history)
+
+#file_schema = schema[file_meta['file_type']]
 
 
-file_path = r'C:\Users\smammadov\packages\Shared\ALBRIDGE\WFS\A632021111001.TXT'
-firm_crd_number = 'WFS'
-cloud_file_history = ''
 
-file_meta = extract_albridge_file_meta(file_path, firm_crd_number, cloud_file_history)
-
-
-
-# %% Main Processing of Pershing File
+# %% Create table from given Albridge file and its schema
 
 @catch_error(logger)
-def process_pershing_file(file_meta, cloud_file_history):
-    """
-    Main Processing of single Pershing file
-    """
-    file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
+def create_table_from_albridge_file(file_path:str, file_schema):
+    text_file = read_text(spark=spark, file_path=file_path)
 
+    text_file = (text_file
+        .where(col('value').substr(0, 2)==lit('D|'))
+        .withColumn('value', col('value').substr(lit(3), F.length(col('value'))))
+        .withColumn('value', F.split(col('value'), '[|]'))
+        .withColumnRenamed('value', 'elt_value')
+        )
+
+    key_column_names = []
+    for i, sch in enumerate(file_schema):
+        text_file = text_file.withColumn(sch['column_name'], col('elt_value').getItem(i))
+        if sch['is_primary_key']:
+            key_column_names.append(sch['column_name'])
+
+    text_file = text_file.drop(col('elt_value'))
+    text_file = add_id_key(text_file, key_column_names=key_column_names)
+
+    text_file.persist(StorageLevel.MEMORY_AND_DISK)
+    return text_file
+
+
+
+# %% Main Processing of an Albridge File
+
+@catch_error(logger)
+def process_albridge_file(file_meta, cloud_file_history):
+    """
+    Main Processing of single Albridge file
+    """
     logger.info(file_meta)
 
-    firm_crd_number = file_meta[FirmCRDNumber]
-    file_name = file_meta['file_name']
+    file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
+    file_schema = schema[file_meta['file_type']]
 
-    firm_path_folder = os.path.join(data_path_folder, firm_crd_number)
-    file_path = os.path.join(firm_path_folder, file_name)
-
-    file_meta = extract_pershing_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, cloud_file_history=cloud_file_history)
-    table_name = file_meta['table_name']
-
-    table = create_table_from_fwt_file(
-        firm_path_folder = os.path.join(data_path_folder, firm_crd_number),
-        file_name = file_name,
-        schema_file_name = file_meta['schema_file_name'],
-        table_name = table_name,
-        groupBy=groupBy,
-    )
+    table = create_table_from_albridge_file(
+        file_path = file_path,
+        file_schema = file_schema,
+        )
     if not table: return
 
-    table = remove_column_spaces(table_to_remove = table)
+    table = remove_column_spaces(table=table)
     table = table.withColumn(date_column_name, lit(str(file_meta[date_column_name])))
     table = table.withColumn(FirmCRDNumber, lit(str(file_meta[FirmCRDNumber])))
-
-    table = add_id_key(table, key_column_names=groupBy)
 
     table = add_elt_columns(
         table = table,
@@ -281,23 +301,27 @@ def process_pershing_file(file_meta, cloud_file_history):
 
 additional_ingest_columns = [
     to_timestamp(col(date_column_name)).alias(date_column_name, metadata={'sqltype': '[datetime] NULL'}),
-    to_date(col('date_of_data'), format='MM/dd/yyyy').alias('date_of_data', metadata={'sqltype': '[date] NULL'}),
-    col('remote_id').cast(StringType()).alias('remote_id', metadata={'maxlength': 50, 'sqltype': 'varchar(50)'}),
-    col('form_name').cast(StringType()).alias('form_name', metadata={'maxlength': 50, 'sqltype': 'varchar(50)'}),
+    to_date(col('file_date'), format='yyyy-MM-dd').alias('file_date', metadata={'sqltype': '[date] NULL'}),
+    to_date(col('eff_date'), format='yyyy-MM-dd').alias('eff_date', metadata={'sqltype': '[date] NULL'}),
+    col('file_type').cast(StringType()).alias('file_type', metadata={'maxlength': 10, 'sqltype': 'varchar(10)'}),
+    col('file_type_desc').cast(StringType()).alias('file_type_desc', metadata={'maxlength': 30, 'sqltype': 'varchar(30)'}),
+    col('sequence_number').cast(StringType()).alias('sequence_number', metadata={'maxlength': 10, 'sqltype': 'varchar(10)'}),
+    col('fin_inst_id').cast(StringType()).alias('fin_inst_id', metadata={'maxlength': 10, 'sqltype': 'varchar(10)'}),
     ]
 
 all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
     spark = spark,
     firms = firms,
     data_path_folder = data_path_folder,
-    fn_extract_file_meta = extract_pershing_file_meta,
+    fn_extract_file_meta = extract_albridge_file_meta,
     date_start = date_start,
     additional_ingest_columns = additional_ingest_columns,
-    fn_process_file = process_pershing_file,
+    fn_process_file = process_albridge_file,
     key_column_names = key_column_names,
     tableinfo_source = tableinfo_source,
-    save_data_to_adls_flag = save_pershing_to_adls_flag,
-    date_column_name = date_column_name
+    save_data_to_adls_flag = save_albridge_to_adls_flag,
+    date_column_name = date_column_name,
+    use_crd_number_as_folder_name = False,
 )
 
 
