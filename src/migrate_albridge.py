@@ -223,15 +223,6 @@ def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
     return file_meta
 
 
-#file_path = r'C:\packages\Shared\ALBRIDGE\WFS\D632021111001.TXT'
-#firm_crd_number = '421'
-#cloud_file_history = ''
-
-#file_meta = extract_albridge_file_meta(file_path, firm_crd_number, cloud_file_history)
-
-#file_schema = schema[file_meta['file_type']]
-
-
 
 # %% Create table from given Albridge file and its schema
 
