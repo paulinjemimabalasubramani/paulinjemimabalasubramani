@@ -58,6 +58,7 @@ date_start = datetime.strptime(data_settings.file_history_start_date[tableinfo_s
 
 schema_header_str = 'HEADER'
 schema_trailer_str = 'TRAILER'
+unused_column_name = 'unused'
 
 fin_inst_ids = {
     '19': 'RAA',
@@ -115,7 +116,7 @@ def get_albridge_schema():
 
             column_name = row['column_name'].strip().lower()
             if column_name in ['', 'n/a', 'none', '_', '__', 'na', 'null', '-', '.']:
-                column_name = 'unused'
+                column_name = unused_column_name
 
             file_type_desc = row['file_type_desc'].strip()
 
@@ -239,9 +240,10 @@ def create_table_from_albridge_file(file_path:str, file_schema):
 
     key_column_names = []
     for i, sch in enumerate(file_schema):
-        text_file = text_file.withColumn(sch['column_name'], col('elt_value').getItem(i))
-        if sch['is_primary_key']:
-            key_column_names.append(sch['column_name'])
+        if sch['column_name'].lower() != unused_column_name:
+            text_file = text_file.withColumn(sch['column_name'], col('elt_value').getItem(i))
+            if sch['is_primary_key']:
+                key_column_names.append(sch['column_name'])
 
     text_file = text_file.drop(col('elt_value'))
     text_file = add_id_key(text_file, key_column_names=key_column_names)
