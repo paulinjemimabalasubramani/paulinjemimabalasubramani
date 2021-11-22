@@ -213,7 +213,7 @@ def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
     for i in range(1, len(header_schema)):
         file_meta[header_schema[i]] = HEADER[i]
 
-    file_meta['table_name'] = file_meta['file_desc'][:-4]
+    file_meta['table_name'] = file_meta['file_desc'][:-4].lower()
     file_meta['eff_date'] = convert_yyyymmdd(file_meta['eff_date'])
     file_meta['run_date'] = convert_yyyymmdd(file_meta['run_date'])
     file_meta['run_time'] = convert_hhmmss(file_meta['run_time'])
