@@ -13,7 +13,7 @@ http://10.128.25.82:8282/
 
 # %% Import Libraries
 
-import os, sys, re, csv
+import os, sys, csv
 sys.parent_name = os.path.basename(__file__)
 sys.domain_name = 'customer_assets'
 sys.domain_abbr = 'ASSETS'
@@ -24,8 +24,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules.common_functions import catch_error, data_settings, logger, mark_execution_end, config_path, is_pc
-from modules.spark_functions import add_md5_key, create_spark, read_csv, read_text, column_regex, remove_column_spaces, collect_column, \
-    add_id_key, add_elt_columns
+from modules.spark_functions import create_spark, read_text, remove_column_spaces, add_id_key, add_elt_columns
 from modules.azure_functions import read_tableinfo_rows, tableinfo_name, get_firms_with_crd
 from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 from modules.migrate_files import save_tableinfo_dict_and_cloud_file_history, process_all_files_with_incrementals, FirmCRDNumber, \
@@ -37,7 +36,7 @@ from collections import defaultdict
 from datetime import datetime
 
 from pyspark.sql import functions as F
-from pyspark.sql.types import IntegerType, StringType
+from pyspark.sql.types import StringType
 from pyspark import StorageLevel
 from pyspark.sql.functions import col, lit, to_date, to_timestamp
 
