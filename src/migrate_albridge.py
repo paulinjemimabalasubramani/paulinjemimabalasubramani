@@ -196,7 +196,7 @@ def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
         'fin_inst_id': fin_inst_id,
     }
 
-    with open(file=file_path, mode='rt') as f:
+    with open(file=file_path, mode='rt', encoding='utf-8') as f:
         HEADER = f.readline()
 
     if HEADER[:2] != 'H|':
