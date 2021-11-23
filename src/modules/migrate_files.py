@@ -1193,6 +1193,7 @@ def process_all_files_with_incrementals(
     tableinfo_source:str,
     save_data_to_adls_flag:bool,
     date_column_name:str,
+    use_crd_number_as_folder_name:bool=True,
     ):
 
     """
@@ -1206,7 +1207,12 @@ def process_all_files_with_incrementals(
     cloud_file_history = get_ingestion_history_from_cloud(spark=spark, cloud_table_name=to_cloud_file_history_name(tableinfo_source=tableinfo_source))
 
     for firm in firms:
-        folder_path = os.path.join(data_path_folder, firm['crd_number'])
+        if use_crd_number_as_folder_name:
+            folder_name = firm['crd_number']
+        else:
+            folder_name = firm['firm_name']
+        folder_path = os.path.join(data_path_folder, folder_name)
+
         logger.info(f"Firm: {firm['firm_name']}, Firm CRD Number: {firm['crd_number']}")
 
         if not os.path.isdir(folder_path):

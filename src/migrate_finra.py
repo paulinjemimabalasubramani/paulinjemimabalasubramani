@@ -289,7 +289,7 @@ def process_columns_for_elt(table_list, file_meta):
 
     for table_name, table in table_list.items():
         table1 = table
-        table1 = remove_column_spaces(table_to_remove = table1)
+        table1 = remove_column_spaces(table=table1)
         table1 = table1.withColumn(date_column_name, lit(str(file_meta[date_column_name])))
         table1 = table1.withColumn(FirmCRDNumber, lit(str(file_meta[FirmCRDNumber])))
 

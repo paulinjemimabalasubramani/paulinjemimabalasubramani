@@ -153,12 +153,12 @@ def table_to_list_dict(table):
 # %% Remove Column Spaces
 
 @catch_error(logger)
-def remove_column_spaces(table_to_remove):
+def remove_column_spaces(table):
     """
     Removes spaces from column names
     """
-    new_table_to_remove = table_to_remove.select([col(f'`{c}`').alias(re.sub(column_regex, '_', c.strip())) for c in table_to_remove.columns])
-    return new_table_to_remove
+    table = table.select([col(f'`{c}`').alias(re.sub(column_regex, '_', c.strip())) for c in table.columns])
+    return table
 
 
 
@@ -338,7 +338,7 @@ def read_csv(spark, file_path:str):
         .load(file_path)
     )
 
-    csv_table = remove_column_spaces(table_to_remove=csv_table)
+    csv_table = remove_column_spaces(table=csv_table)
     csv_table = trim_string_columns(table=csv_table)
     csv_table.persist(StorageLevel.MEMORY_AND_DISK)
 
@@ -375,6 +375,10 @@ def add_id_key(table, key_column_names:list):
     """
     Add ID Key to the table
     """
+    if not key_column_names:
+        logger.warning('No Key Column Names found for creating ID Key')
+        return table
+ 
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
     table = table.withColumn(MD5KeyIndicator, concat_ws('_', *coalesce_list)) # TODO: Change this to IDKeyIndicator later when we can add schema change
     return table
