@@ -107,7 +107,7 @@ def get_albridge_schema():
     schema = defaultdict(list)
     albridge_file_types = dict()
 
-    with open(schema_file_path, newline='', encoding='utf-8-sig') as csvfile:
+    with open(schema_file_path, newline='', encoding='utf-8-sig', errors='ignore') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             file_types = row['file_type'].upper().split(',')
@@ -196,7 +196,7 @@ def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
         'fin_inst_id': fin_inst_id,
     }
 
-    with open(file=file_path, mode='rt', encoding='utf-8') as f:
+    with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as f:
         HEADER = f.readline()
 
     if HEADER[:2] != 'H|':
