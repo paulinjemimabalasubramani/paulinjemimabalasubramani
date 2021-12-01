@@ -514,7 +514,8 @@ def get_extraClassPath(drivers_path:str):
     Get list of all the JAR files for PySpark
     """
     drivers = []
-    join_drivers_by = ':' if not is_pc else ';'
+    is_windows = platform.system().lower() == 'windows'
+    join_drivers_by = ':' if not is_windows else ';'
 
     for file in os.listdir(drivers_path):
         if file.endswith('.jar'):

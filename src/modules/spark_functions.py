@@ -378,7 +378,7 @@ def add_id_key(table, key_column_names:list):
     if not key_column_names:
         logger.warning('No Key Column Names found for creating ID Key')
         return table
- 
+
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
     table = table.withColumn(MD5KeyIndicator, concat_ws('_', *coalesce_list).alias(MD5KeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'})) # TODO: Change this to IDKeyIndicator later when we can add schema change
     return table
