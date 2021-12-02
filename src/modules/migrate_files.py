@@ -11,7 +11,7 @@ from collections import defaultdict
 from datetime import datetime
 
 from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, data_settings, pymssql_execute_non_query, \
-    execution_date_start
+    execution_date_start, cloud_file_histdict, file_metadata_dict
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
     default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder, to_storage_account_name, \
@@ -39,19 +39,6 @@ schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINT
 tmpdirs = []
 
 FirmCRDNumber = 'firm_crd_number'
-
-cloud_file_histdict = {
-    'sql_server': data_settings.file_history_sql_server,
-    'sql_database': data_settings.file_history_sql_database,
-    'sql_schema': data_settings.file_history_sql_schema,
-    'sql_key_vault_account': data_settings.file_history_sql_key_vault_account,
-}
-
-_, cloud_file_histdict['sql_id'], cloud_file_histdict['sql_pass'] = get_secrets(cloud_file_histdict['sql_key_vault_account'].lower(), logger=logger)
-
-file_metadata_dict = cloud_file_histdict.copy()
-file_metadata_dict['sql_schema'] = 'metadata'
-file_metadata_dict['sql_table_name_primary_key'] = 'PrimaryKey'
 
 to_cloud_file_history_name = lambda tableinfo_source: tableinfo_source.lower() + '_file_history'
 to_cloud_row_history_name = lambda tableinfo_source: tableinfo_source.lower() + '_row_history'
