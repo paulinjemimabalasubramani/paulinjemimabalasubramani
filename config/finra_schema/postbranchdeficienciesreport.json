@@ -1,0 +1,32 @@
+{
+    "BrnchOfc": [{
+        "Addr": {
+            "_VALUE": null,
+            "_strt1": null,
+            "_strt2": null,
+            "_city": null,
+            "_state": null,
+            "_cntry": null,
+            "_postlCd": null
+        },
+        "OthrNms": {
+            "OthrNm": [{
+                "_VALUE": null,
+                "_Nm": null
+            }]
+        },
+        "Dfcnys": {
+            "Dfcny": [{
+                "_VALUE": null,
+                "_st": null,
+                "_dt": null,
+                "_dtlTxt": null
+            }]
+        },
+        "_brnchPK": null,
+        "_brnchCdNb": null,
+        "_bllngCd": null,
+        "_dstrtPK": null,
+        "_oprnlStCd": null
+    }]
+}
