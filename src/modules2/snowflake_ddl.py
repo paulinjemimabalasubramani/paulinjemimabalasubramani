@@ -10,7 +10,7 @@ from collections import defaultdict, OrderedDict
 
 from .common_functions import logger, catch_error, data_settings, execution_date, get_secrets, to_OrderedDict, EXECUTION_DATE_str
 from .spark_functions import elt_audit_columns
-from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
+from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, to_storage_account_abbr, \
     to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder
 
 from snowflake.connector import connect as snowflake_connect
@@ -35,7 +35,7 @@ class module_params_class:
 
     domain_name = sys.domain_name
     domain_abbr = sys.domain_abbr
-    environment = data_settings.environment
+    environment = sys.environment
     snowflake_raw_warehouse = data_settings.snowflake_warehouse
     snowflake_raw_database = f'{environment}_{domain_abbr}'.upper()
 
@@ -324,7 +324,6 @@ def create_ingest_data(source_system:str, schema_name:str, table_name:str, PARTI
     log_data = {
         **ingest_data,
         "STORAGE_ACCOUNT_ABBR": storage_account_abbr,
-        "STORAGE_ACCOUNT": to_storage_account_name(firm_name=storage_account_abbr),
         "PARTITION": PARTITION,
         }
 
@@ -887,7 +886,7 @@ ALTER TASK {task_name} RESUME;
 # %% Iterate Over Steps for all tables
 
 @catch_error(logger)
-def iterate_over_all_tables_snowflake(tableinfo, table_rows, PARTITION_list=None):
+def iterate_over_all_tables_snowflake(tableinfo, table_rows, firm_name:str, PARTITION_list=None):
     """
     Iterate Over All DDL creation Steps for all tables
     """
@@ -897,13 +896,13 @@ def iterate_over_all_tables_snowflake(tableinfo, table_rows, PARTITION_list=None
 
     n_tables = len(table_rows)
     ingest_data_list = defaultdict(list)
+    storage_account_abbr = to_storage_account_abbr(firm_name=firm_name)
 
     for i, table in enumerate(table_rows):
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
         storage_account_name = table['StorageAccount']
-        storage_account_abbr = table['StorageAccountAbbr']
         logger.info(f'Processing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
 
         PARTITION = get_partition(spark=wid.spark, domain_name=wid.domain_name, source_system=source_system, schema_name=schema_name, table_name=table_name, storage_account_name=storage_account_name, PARTITION_list=PARTITION_list)

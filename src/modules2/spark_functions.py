@@ -324,23 +324,32 @@ def read_csv(spark, file_path:str):
     Read CSV File using Spark
     """
     logger.info(f'Reading CSV file: {file_path}')
+
+    with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as f:
+        HEADER = f.readline()
+
+    delimiter = '|' if '|' in HEADER else ','
+
     csv_table = (spark.read # https://github.com/databricks/spark-csv
         .format('csv')
         .option('header', 'true')
         .option('multiLine', 'true')
-        .option('delimiter', ',') # same as sep
+        .option('delimiter', delimiter) # same as sep
         .option('escape', '"')
         .option('quote', '"')
         .option('charset', 'UTF-8')
         .option('comment', None)
         .option('mode', 'PERMISSIVE')
         .option('parserLib', 'commons')
+        .option('inferSchema','false')
         .load(file_path)
     )
 
     csv_table = remove_column_spaces(table=csv_table)
     csv_table = trim_string_columns(table=csv_table)
     csv_table.persist(StorageLevel.MEMORY_AND_DISK)
+
+    if is_pc: csv_table.show(5)
 
     logger.info('Finished reading CSV file')
     return csv_table
@@ -378,9 +387,9 @@ def add_id_key(table, key_column_names:list):
     if not key_column_names:
         logger.warning('No Key Column Names found for creating ID Key')
         return table
- 
+
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
-    table = table.withColumn(MD5KeyIndicator, concat_ws('_', *coalesce_list)) # TODO: Change this to IDKeyIndicator later when we can add schema change
+    table = table.withColumn(MD5KeyIndicator, concat_ws('_', *coalesce_list).alias(MD5KeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'})) # TODO: Change this to IDKeyIndicator later when we can add schema change
     return table
 
 
@@ -395,7 +404,7 @@ def add_md5_key(table, key_column_names:list=[]):
     if not key_column_names:
         key_column_names = table.columns
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
-    table = table.withColumn(MD5KeyIndicator, md5(concat_ws('_', *coalesce_list)).alias(MD5KeyIndicator, metadata={'maxlength': 300, 'sqltype': 'varchar(300)'}))
+    table = table.withColumn(MD5KeyIndicator, md5(concat_ws('_', *coalesce_list)).alias(MD5KeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}))
     return table
 
 

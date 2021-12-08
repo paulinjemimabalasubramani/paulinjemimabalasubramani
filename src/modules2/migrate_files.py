@@ -11,7 +11,7 @@ from collections import defaultdict
 from datetime import datetime
 
 from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, data_settings, pymssql_execute_non_query, \
-    execution_date_start
+    execution_date_start, cloud_file_histdict, file_metadata_dict
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
     default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder, to_storage_account_name, \
@@ -38,23 +38,8 @@ schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINT
 
 tmpdirs = []
 
-FirmCRDNumber = 'firm_crd_number'
-
-cloud_file_histdict = {
-    'sql_server': data_settings.file_history_sql_server,
-    'sql_database': data_settings.file_history_sql_database,
-    'sql_schema': data_settings.file_history_sql_schema,
-    'sql_key_vault_account': data_settings.file_history_sql_key_vault_account,
-}
-
-_, cloud_file_histdict['sql_id'], cloud_file_histdict['sql_pass'] = get_secrets(cloud_file_histdict['sql_key_vault_account'].lower(), logger=logger)
-
-file_metadata_dict = cloud_file_histdict.copy()
-file_metadata_dict['sql_schema'] = 'metadata'
-file_metadata_dict['sql_table_name_primary_key'] = 'PrimaryKey'
-
-to_cloud_file_history_name = lambda tableinfo_source: tableinfo_source.lower() + '_file_history'
-to_cloud_row_history_name = lambda tableinfo_source: tableinfo_source.lower() + '_row_history'
+to_cloud_file_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + tableinfo_source + '_file_history').lower()
+to_cloud_row_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + tableinfo_source + '_row_history').lower()
 
 
 
@@ -302,7 +287,6 @@ def rename_columns(columns, storage_account_name:str, created_datetime:str, modi
     columns = columns.withColumn('KeyIndicator', F.when(col('SourceColumnName')==col('KEY_COLUMN_NAME'), lit(1)).otherwise(lit(0)).cast(IntegerType()))
     columns = columns.withColumn('CleanType', col('SourceDataType'))
     columns = columns.withColumn('StorageAccount', lit(storage_account_name).cast(StringType()))
-    columns = columns.withColumn('StorageAccountAbbr', lit(storage_account_abbr).cast(StringType()))
     columns = columns.withColumn('TargetColumnName', F.regexp_replace(F.trim(col('SourceColumnName')), column_regex, '_'))
     columns = columns.withColumn('IsActive', lit(1).cast(IntegerType()))
     columns = columns.withColumn('CreatedDateTime', lit(created_datetime).cast(StringType()))
@@ -922,7 +906,7 @@ def get_key_column_names(date_column_name:str):
     Get Key Column Names for sorting the data files for uniqueness
     """
     key_column_names = dict() 
-    key_column_names['base'] = [FirmCRDNumber, 'table_name']
+    key_column_names['base'] = ['firm_name', 'table_name']
     key_column_names['with_load'] = key_column_names['base'] + ['is_full_load']
     key_column_names['with_load_n_date'] = key_column_names['with_load'] + [date_column_name]
     return key_column_names
@@ -945,15 +929,18 @@ def process_one_file(file_meta, fn_process_file, cloud_file_history):
         tmpdirs.append(tmpdir)
         logger.info(f'Extracting {file_path} to {tmpdir.name}')
         shutil.unpack_archive(filename=file_path, extract_dir=tmpdir.name)
+        table_list = {}
         for root1, dirs1, files1 in os.walk(tmpdir.name):
             for file1 in files1:
                 file_meta1 = copy.deepcopy(file_meta)
                 file_meta1['folder_path'] = root1
                 file_meta1['file_name'] = file1
                 file_meta1['file_path'] = os.path.join(root1, file1)
-                return fn_process_file(file_meta=file_meta1, cloud_file_history=cloud_file_history)
+                table_list = {**table_list, **process_one_file(file_meta=file_meta1, fn_process_file=fn_process_file, cloud_file_history=cloud_file_history)}
     else:
-        return fn_process_file(file_meta=file_meta, cloud_file_history=cloud_file_history)
+        table_list = fn_process_file(file_meta=file_meta, cloud_file_history=cloud_file_history)
+
+    return table_list
 
 
 
@@ -986,7 +973,7 @@ def get_selected_files(file_history, cloud_file_history, key_column_names, date_
 
     # Select and Order Files for ingestion
     new_files = all_files.where(col('ingestion_date').isNull()).withColumn('ingestion_date', to_timestamp(lit(execution_date)))
-    selected_files = new_files.where('is_ingested').orderBy(col(FirmCRDNumber).desc(), col('table_name').desc(), col('is_full_load').desc(), col(date_column_name).asc())
+    selected_files = new_files.where('is_ingested').orderBy(col('firm_name').desc(), col('table_name').desc(), col('is_full_load').desc(), col(date_column_name).asc())
 
     return new_files, selected_files
 
@@ -995,7 +982,7 @@ def get_selected_files(file_history, cloud_file_history, key_column_names, date_
 # %% Write list of tables to Azure
 
 @catch_error(logger)
-def write_table_list_to_azure(PARTITION_list:defaultdict, table_list:dict, tableinfo, tableinfo_source, firm_name:str, storage_account_name:str, storage_account_abbr:str, data_path_folder:str, save_data_to_adls_flag:bool):
+def write_table_list_to_azure(PARTITION_list:defaultdict, table_list:dict, tableinfo, tableinfo_source, firm_name:str, storage_account_name:str):
     """
     Write all tables in table_list to Azure
     """
@@ -1013,71 +1000,31 @@ def write_table_list_to_azure(PARTITION_list:defaultdict, table_list:dict, table
             table_name = table_name, 
             tableinfo_source = tableinfo_source, 
             storage_account_name = storage_account_name,
-            storage_account_abbr = storage_account_abbr,
             )
 
         container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source, firm_or_schema=firm_name)
 
-        if is_pc: # and manual_iteration:
-            local_path = os.path.join(data_path_folder, 'temp') + fr'\{storage_account_name}\{container_folder}\{table_name}'
-            pprint(fr'Save to local {local_path}')
-            table.coalesce(1).write.json(path = fr'{local_path}.json', mode='overwrite')
+        userMetadata = save_adls_gen2(
+            table = table,
+            storage_account_name = storage_account_name,
+            container_name = container_name,
+            container_folder = container_folder,
+            table_name = table_name,
+            partitionBy = partitionBy,
+            file_format = file_format
+        )
 
-        if save_data_to_adls_flag:
-            userMetadata = save_adls_gen2(
-                table = table,
-                storage_account_name = storage_account_name,
-                container_name = container_name,
-                container_folder = container_folder,
-                table_name = table_name,
-                partitionBy = partitionBy,
-                file_format = file_format
-            )
-
-            PARTITION_list[(sys.domain_name, tableinfo_source, firm_name, table_name, storage_account_name)] = userMetadata
+        PARTITION_list[(sys.domain_name.lower(), tableinfo_source.upper(), firm_name.lower(), table_name.lower(), storage_account_name.lower())] = userMetadata
 
     logger.info('Done writing to Azure')
     return PARTITION_list, tableinfo
 
 
 
-# %% Get Meta Data from file
-
-@catch_error(logger)
-def get_file_meta(file_path:str, firm_crd_number:str, fn_extract_file_meta, cloud_file_history):
-    """
-    Get Meta Data from file
-    Handles Zip files extraction as well
-    """
-    if file_path.lower().endswith('.zip'):
-        with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
-            shutil.unpack_archive(filename=file_path, extract_dir=tmpdir)
-            k = 0
-            for root1, dirs1, files1 in os.walk(tmpdir):
-                for file1 in files1:
-                    file_path1 = os.path.join(root1, file1)
-                    file_meta = fn_extract_file_meta(file_path=file_path1, firm_crd_number=firm_crd_number, cloud_file_history=cloud_file_history)
-                    k += 1
-                    break
-                if k>0: break
-
-    else:
-        file_meta = fn_extract_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, cloud_file_history=cloud_file_history)
-
-    if file_meta:
-        file_meta['file_name'] = os.path.basename(file_path)
-        file_meta['file_path'] = file_path
-        file_meta['folder_path'] = os.path.dirname(file_path)
-        file_meta['date_file_modified'] = datetime.fromtimestamp(os.path.getmtime(file_path))
-
-    return file_meta
-
-
-
 # %% Get all files meta data for a given folder_path
 
 @catch_error(logger)
-def get_all_files_meta(folder_path, date_start, firm_crd_number:str, fn_extract_file_meta, cloud_file_history, date_column_name):
+def get_all_files_meta(folder_path, date_start, fn_extract_file_meta, cloud_file_history, date_column_name):
     """
     Get all files meta data for a given folder_path.
     Filters files for dates after the given date_start
@@ -1087,7 +1034,8 @@ def get_all_files_meta(folder_path, date_start, firm_crd_number:str, fn_extract_
     for root, dirs, files in os.walk(folder_path):
         for file in files:
             file_path = os.path.join(root, file)
-            file_meta = get_file_meta(file_path=file_path, firm_crd_number=firm_crd_number, fn_extract_file_meta=fn_extract_file_meta, cloud_file_history=cloud_file_history)
+            file_meta = fn_extract_file_meta(file_path=file_path, cloud_file_history=cloud_file_history)
+            file_meta['date_file_modified'] = datetime.fromtimestamp(os.path.getmtime(file_path))
 
             if file_meta and (date_start<=file_meta[date_column_name]):
                 files_meta.append(file_meta)
@@ -1134,18 +1082,16 @@ def iterate_over_selected_files_per_firm(selected_files, fn_process_file, cloud_
 # %% Create Common File History Table from files_meta
 
 @catch_error(logger)
-def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_account_name:str, storage_account_abbr:str, tableinfo_source:str, cloud_file_history, key_column_names:dict, additional_ingest_columns:list):
+def files_history_from_files_meta(spark, files_meta, storage_account_name:str, tableinfo_source:str, cloud_file_history, key_column_names:dict, additional_ingest_columns:list):
     """
     Create Common File History Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
     """
     file_history = spark.createDataFrame(files_meta)
     file_history = file_history.select(
-        col(FirmCRDNumber).cast(StringType()).alias(FirmCRDNumber, metadata={'maxlength': 50, 'sqltype': 'varchar(50)'}),
+        col('firm_name').cast(StringType()).alias('firm_name', metadata={'maxlength': 50, 'sqltype': 'varchar(50)'}),
         col('table_name').cast(StringType()).alias('table_name', metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}),
         col('is_full_load').cast(BooleanType()).alias('is_full_load', metadata={'sqltype': '[bit] NULL'}),
-        lit(firm_name).cast(StringType()).alias('firm_name', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
         lit(storage_account_name).cast(StringType()).alias('storage_account_name', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
-        lit(storage_account_abbr).cast(StringType()).alias('storage_account_abbr', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
         lit(None).cast(StringType()).alias('remote_source', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
         col('folder_path').cast(StringType()).alias('folder_path', metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}),
         col('file_name').cast(StringType()).alias('file_name', metadata={'maxlength': 150, 'sqltype': 'varchar(150)'}),
@@ -1164,7 +1110,7 @@ def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_acco
 
         schema_json = json.loads(file_history._jdf.schema().json())
         column_list = '\n  ,'.join([f"[{s['name']}] {s['metadata']['sqltype']}" for s in schema_json['fields']])
-        sqlstr = f'CREATE TABLE [{data_settings.file_history_sql_schema}].[{cloud_file_history_name}] ({column_list});'
+        sqlstr = f"CREATE TABLE [{cloud_file_histdict['sql_schema']}].[{cloud_file_history_name}] ({column_list});"
 
         pymssql_execute_non_query(
             sqlstr_list = [sqlstr],
@@ -1178,12 +1124,12 @@ def files_history_from_files_meta(spark, files_meta, firm_name:str, storage_acco
 
 
 
-# %% Iterate over all the files in all the firms and process them.
+# %% Iterate over all the files and process them.
 
 @catch_error(logger)
 def process_all_files_with_incrementals(
     spark,
-    firms:list,
+    firm_name:str,
     data_path_folder:str,
     fn_extract_file_meta:object,
     date_start,
@@ -1191,88 +1137,68 @@ def process_all_files_with_incrementals(
     fn_process_file:object,
     key_column_names:dict,
     tableinfo_source:str,
-    save_data_to_adls_flag:bool,
     date_column_name:str,
-    use_crd_number_as_folder_name:bool=True,
     ):
 
     """
-    Iterate over all the files in all the firms and process them.
+    Iterate over all the files and process them.
     """
 
     PARTITION_list = defaultdict(str)
     tableinfo = defaultdict(list)
-    all_new_files = None
+    new_files = None
 
     cloud_file_history = get_ingestion_history_from_cloud(spark=spark, cloud_table_name=to_cloud_file_history_name(tableinfo_source=tableinfo_source))
 
-    for firm in firms:
-        if use_crd_number_as_folder_name:
-            folder_name = firm['crd_number']
-        else:
-            folder_name = firm['firm_name']
-        folder_path = os.path.join(data_path_folder, folder_name)
+    logger.info(f"Iterate over all the files")
 
-        logger.info(f"Firm: {firm['firm_name']}, Firm CRD Number: {firm['crd_number']}")
+    if not os.path.isdir(data_path_folder):
+        logger.warning(f'Path does not exist: {data_path_folder}   -> SKIPPING')
+        return new_files, PARTITION_list, tableinfo
 
-        if not os.path.isdir(folder_path):
-            logger.warning(f'Path does not exist: {folder_path}   -> SKIPPING')
-            continue
+    files_meta = get_all_files_meta(folder_path=data_path_folder, date_start=date_start, fn_extract_file_meta=fn_extract_file_meta, cloud_file_history=cloud_file_history, date_column_name=date_column_name)
+    if not files_meta:
+        return new_files, PARTITION_list, tableinfo
 
-        files_meta = get_all_files_meta(folder_path=folder_path, date_start=date_start, firm_crd_number=firm['crd_number'], fn_extract_file_meta=fn_extract_file_meta, cloud_file_history=cloud_file_history, date_column_name=date_column_name)
-        if not files_meta:
-            continue
+    storage_account_name = to_storage_account_name(firm_name=firm_name)
+    setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-        storage_account_name = to_storage_account_name(firm_name=firm['storage_account_abbr'])
-        setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-        logger.info('Getting New Files')
-        file_history, cloud_file_history = files_history_from_files_meta(
-            spark = spark,
-            files_meta = files_meta,
-            firm_name = firm['firm_name'],
-            storage_account_name = storage_account_name,
-            storage_account_abbr = firm['storage_account_abbr'],
-            tableinfo_source = tableinfo_source,
-            cloud_file_history = cloud_file_history,
-            key_column_names = key_column_names,
-            additional_ingest_columns = additional_ingest_columns,
-            )
-        new_files, selected_files = get_selected_files(file_history=file_history, cloud_file_history=cloud_file_history, key_column_names=key_column_names, date_column_name=date_column_name)
-
-        logger.info(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
-
-        if all_new_files:
-            union_columns = new_files.columns
-            all_new_files = all_new_files.select(union_columns).union(new_files.select(union_columns))
-        else:
-            all_new_files = new_files
-
-        table_list_union = iterate_over_selected_files_per_firm(selected_files=selected_files, fn_process_file=fn_process_file, cloud_file_history=cloud_file_history)
-
-        PARTITION_list, tableinfo = write_table_list_to_azure(
-            PARTITION_list = PARTITION_list,
-            table_list = table_list_union,
-            tableinfo = tableinfo,
-            tableinfo_source = tableinfo_source,
-            firm_name = firm['firm_name'],
-            storage_account_name = storage_account_name,
-            storage_account_abbr = firm['storage_account_abbr'],
-            data_path_folder = data_path_folder,
-            save_data_to_adls_flag = save_data_to_adls_flag,
+    logger.info('Getting New Files')
+    file_history, cloud_file_history = files_history_from_files_meta(
+        spark = spark,
+        files_meta = files_meta,
+        storage_account_name = storage_account_name,
+        tableinfo_source = tableinfo_source,
+        cloud_file_history = cloud_file_history,
+        key_column_names = key_column_names,
+        additional_ingest_columns = additional_ingest_columns,
         )
+    new_files, selected_files = get_selected_files(file_history=file_history, cloud_file_history=cloud_file_history, key_column_names=key_column_names, date_column_name=date_column_name)
 
-        cleanup_tmpdirs()
+    logger.info(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
+
+    table_list_union = iterate_over_selected_files_per_firm(selected_files=selected_files, fn_process_file=fn_process_file, cloud_file_history=cloud_file_history)
+
+    PARTITION_list, tableinfo = write_table_list_to_azure(
+        PARTITION_list = PARTITION_list,
+        table_list = table_list_union,
+        tableinfo = tableinfo,
+        tableinfo_source = tableinfo_source,
+        firm_name = firm_name,
+        storage_account_name = storage_account_name,
+    )
+
+    cleanup_tmpdirs()
 
     logger.info('Finished processing all Files and Firms')
-    return all_new_files, PARTITION_list, tableinfo
+    return new_files, PARTITION_list, tableinfo
 
 
 
 # %% Save Tableinfo metadata table into Azure and Save files history metadata to cloud
 
 @catch_error(logger)
-def save_tableinfo_dict_and_cloud_file_history(spark, tableinfo:defaultdict, tableinfo_source:str, all_new_files, save_tableinfo_adls_flag:bool=True):
+def save_tableinfo_dict_and_cloud_file_history(spark, tableinfo:defaultdict, tableinfo_source:str, all_new_files):
     """
     Save Tableinfo metadata table into Azure and Save files hitory metadata to cloud
     """
@@ -1292,19 +1218,8 @@ def save_tableinfo_dict_and_cloud_file_history(spark, tableinfo:defaultdict, tab
     storage_account_name = default_storage_account_name # keep default storage account name for tableinfo
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
-    if save_tableinfo_adls_flag:
-        save_adls_gen2(
-                table = meta_tableinfo,
-                storage_account_name = storage_account_name,
-                container_name = tableinfo_container_name,
-                container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
-                table_name = tableinfo_name,
-                partitionBy = partitionBy,
-                file_format = file_format,
-            )
-
-        if all_new_files: # Write file history metadata to cloud so that the old files are not re-ingested next time.
-            write_cloud_file_history(cloud_file_history=all_new_files, tableinfo_source=tableinfo_source, mode='append')
+    if all_new_files: # Write file history metadata to cloud so that the old files are not re-ingested next time.
+        write_cloud_file_history(cloud_file_history=all_new_files, tableinfo_source=tableinfo_source, mode='append')
 
     return meta_tableinfo
 
