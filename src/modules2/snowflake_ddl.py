@@ -10,8 +10,8 @@ from collections import defaultdict, OrderedDict
 
 from .common_functions import logger, catch_error, data_settings, execution_date, get_secrets, to_OrderedDict, EXECUTION_DATE_str
 from .spark_functions import elt_audit_columns
-from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, to_storage_account_abbr, \
-    to_storage_account_name, default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder
+from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
+    default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder
 
 from snowflake.connector import connect as snowflake_connect
 from pyspark.sql.types import StringType
@@ -896,7 +896,7 @@ def iterate_over_all_tables_snowflake(tableinfo, table_rows, firm_name:str, PART
 
     n_tables = len(table_rows)
     ingest_data_list = defaultdict(list)
-    storage_account_abbr = to_storage_account_abbr(firm_name=firm_name)
+    storage_account_abbr = data_settings.azure_storage_account_mid
 
     for i, table in enumerate(table_rows):
         table_name = table['TableName']

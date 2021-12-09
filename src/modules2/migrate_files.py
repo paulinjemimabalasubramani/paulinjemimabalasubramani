@@ -14,8 +14,8 @@ from .common_functions import logger, catch_error, is_pc, execution_date, get_se
     execution_date_start, cloud_file_histdict, file_metadata_dict
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
-    default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder, to_storage_account_name, \
-    add_table_to_tableinfo
+    default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder, add_table_to_tableinfo, \
+    storage_account_abbr_to_full_name
 from .spark_functions import collect_column, read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
     metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value, \
     get_sql_table_names, write_sql
@@ -1160,7 +1160,7 @@ def process_all_files_with_incrementals(
     if not files_meta:
         return new_files, PARTITION_list, tableinfo
 
-    storage_account_name = to_storage_account_name(firm_name=firm_name)
+    storage_account_name = storage_account_abbr_to_full_name(storage_account_abbr=data_settings.azure_storage_account_mid)
     setup_spark_adls_gen2_connection(spark, storage_account_name)
 
     logger.info('Getting New Files')

@@ -33,38 +33,10 @@ metadata_folder = 'metadata'
 data_folder = 'data'
 
 file_format = 'delta' # Default File Format
+
+storage_account_abbr_to_full_name = lambda storage_account_abbr:  f"{data_settings.azure_storage_accounts_prefix}{storage_account_abbr}{data_settings.azure_storage_accounts_suffix}".lower()
 default_storage_account_abbr = data_settings.azure_storage_accounts_default_mid.upper()
-
-
-
-def to_storage_account_abbr(firm_name:str=None):
-    """
-    Converts firm_name to storage_account_abbr
-    """
-    if not firm_name:
-        storage_account_abbr = default_storage_account_abbr # Default Aggregate Account
-    elif firm_name.upper() == 'SAA':
-        storage_account_abbr = 'SAI'
-    else:
-        storage_account_abbr = firm_name
-
-    return storage_account_abbr.upper()
-
-
-
-# %% firm_name to storage_account_name
-
-@catch_error(logger)
-def to_storage_account_name(firm_name:str=None):
-    """
-    Converts firm_name to storage_account_name
-    """
-    storage_account_abbr = to_storage_account_abbr(firm_name=firm_name)
-    return f"{data_settings.azure_storage_accounts_prefix}{storage_account_abbr}{data_settings.azure_storage_accounts_suffix}".lower()
-
-
-
-default_storage_account_name = to_storage_account_name() # Default Storage Account Name
+default_storage_account_name = storage_account_abbr_to_full_name(default_storage_account_abbr) # Default Storage Account Name
 
 
 
