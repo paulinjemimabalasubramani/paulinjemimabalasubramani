@@ -709,7 +709,7 @@ def get_pipeline_info(pipelinekey:str):
         LEFT JOIN metadata.DataSource ds ON p.DataSourceKey = ds.DataSourceKey
     WHERE p.IsActive = 1
         and p.PipelineKey = '{pipelinekey}'
-    ORDER BY p.UpdateTs DESC, p.PipelineId ASC
+    ORDER BY p.UpdateTs DESC, p.PipelineId DESC
     ;"""
 
     with pymssql.connect(
