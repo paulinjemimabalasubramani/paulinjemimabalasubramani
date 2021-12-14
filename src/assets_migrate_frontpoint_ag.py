@@ -1,5 +1,5 @@
 """
-Read all Albridge files and migrate to the ADLS Gen 2
+Read all ASSETS - FRONTPOINT files and migrate to the ADLS Gen 2
 
 Spark Web UI:
 http://10.128.25.82:8181/
@@ -11,32 +11,46 @@ http://10.128.25.82:8282/
 """
 
 
+# %% Parse Arguments
+
+if False: # Set to False for Debugging
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
+
+    parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
+    parser.add_argument('--spark_master', help='URL of the Spark Master to connect to', required=False)
+
+    args = parser.parse_args().__dict__
+
+else:
+    args = {
+        'pipelinekey': 'ASSETS_MIGRATE_FRONTPOINT_SAI',
+        'source_path': r'C:\packages\Shared\FRONTPOINT',
+        'schema_file_path': r'C:\packages\EDIP-Code\config\assets\frontpoint_schema\frontpoint_schema.csv'
+        }
+
+
+
 # %% Import Libraries
 
 import os, sys, csv
+sys.args = args
 sys.parent_name = os.path.basename(__file__)
-sys.domain_name = 'customer_assets'
-sys.domain_abbr = 'ASSETS'
-
 
 # Add 'modules' path to the system environment - adjust or remove this as necessary
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
-from modules.common_functions import catch_error, data_settings, logger, mark_execution_end, config_path, is_pc
-from modules.spark_functions import create_spark, read_text, remove_column_spaces, add_id_key, add_elt_columns
-from modules.azure_functions import read_tableinfo_rows, tableinfo_name, get_firms_with_crd
-from modules.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
-from modules.migrate_files import save_tableinfo_dict_and_cloud_file_history, process_all_files_with_incrementals, FirmCRDNumber, \
-    get_key_column_names
+from modules2.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, get_pipeline_info
+from modules2.spark_functions import IDKeyIndicator, add_md5_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
+from modules2.azure_functions import read_tableinfo_rows, tableinfo_name
+from modules2.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
+from modules2.migrate_files import save_tableinfo_dict_and_cloud_file_history, process_all_files_with_incrementals, get_key_column_names
 
-
-from pprint import pprint
-from collections import defaultdict
 from datetime import datetime
+from collections import defaultdict
 
-from pyspark.sql import functions as F
-from pyspark.sql.types import StringType
 from pyspark import StorageLevel
 from pyspark.sql.functions import col, lit, to_date, to_timestamp
 
@@ -44,37 +58,20 @@ from pyspark.sql.functions import col, lit, to_date, to_timestamp
 
 # %% Parameters
 
-save_albridge_to_adls_flag = True
-save_tableinfo_adls_flag = True
-
-tableinfo_source = 'ALBRIDGE'
-
-data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
-schema_folder_path = os.path.join(config_path, 'albridge_schema')
-schema_file_name = 'albridge_schema.csv'
-
-date_start = datetime.strptime(data_settings.file_history_start_date[tableinfo_source], r'%Y-%m-%d')
-
-schema_header_str = 'HEADER'
-schema_trailer_str = 'TRAILER'
-unused_column_name = 'unused'
-
-fin_inst_ids = {
-    '19': 'RAA',
-    '30': 'SPF',
-    '7' : 'FSC',
-    '63': 'WFS',
-    }
+tableinfo_source = data_settings.schema_name
+date_start = datetime.strptime(data_settings.file_history_start_date, r'%Y-%m-%d')
 
 date_column_name = 'run_datetime'
 key_column_names = get_key_column_names(date_column_name=date_column_name)
+unused_column_name = 'unused'
 
-firms_source = 'FINRA'
+pipeline_info = get_pipeline_info(pipelinekey=data_settings.pipelinekey)
+firm_name = '' # pipeline_info['firm'].upper() # No Single Firm Name is used
 
 logger.info({
-    'tableinfo_source': tableinfo_source,
-    'data_path_folder': data_path_folder,
-    'schema_folder_path': schema_folder_path,
+    'schema_name': data_settings.schema_name,
+    'source_path': data_settings.source_path,
+    **pipeline_info,
 })
 
 
@@ -85,85 +82,78 @@ spark = create_spark()
 snowflake_ddl_params.spark = spark
 
 
-# %% Get Firms that have CRD Number
-
-firms = get_firms_with_crd(spark=spark, tableinfo_source=firms_source)
-
-if is_pc: pprint(firms)
-
-crd_to_fid = {f['crd_number']: next((key for key, val in fin_inst_ids.items() if val.lower()==f['firm_name'].lower()), None) for f in firms}
-
-
-
 # %% get and pre-process schema
 
 @catch_error(logger)
-def get_albridge_schema():
+def get_frontpoint_schema():
     """
     Read and Pre-process the schema table to make it code-friendly
     """
-    schema_file_path = os.path.join(schema_folder_path, schema_file_name)
+    schema_file_path = data_settings.schema_file_path
 
-    schema = defaultdict(list)
-    albridge_file_types = dict()
+    file_schema = defaultdict(list)
+    server_names = {}
 
     with open(schema_file_path, newline='', encoding='utf-8-sig', errors='ignore') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            file_types = row['file_type'].upper().split(',')
+            table_name = row['table_name'].strip().lower()
             is_primary_key = row['is_primary_key'].strip().upper() == 'Y'
 
             column_name = row['column_name'].strip().lower()
             if column_name in ['', 'n/a', 'none', '_', '__', 'na', 'null', '-', '.']:
                 column_name = unused_column_name
 
-            file_type_desc = row['file_type_desc'].strip()
+            file_schema[table_name].append({
+                'is_primary_key': is_primary_key,
+                'column_name': column_name,
+                })
 
-            for file_type in file_types:
-                ftype = file_type.strip()
-                schema[ftype].append({
-                    'is_primary_key': is_primary_key,
-                    'column_name': column_name,
-                    })
-                if ftype not in ['HEADER', 'TRAILER']:
-                    albridge_file_types[ftype] = file_type_desc
+            server_names.add(table_name.split('_')[0].upper())
 
-    return schema, albridge_file_types
+    return file_schema
 
 
 
-schema, albridge_file_types = get_albridge_schema()
+file_schema = get_frontpoint_schema()
 
 
 
-# %% Extract Meta Data from Albridge file
+# %% Extract Meta Data from Frontpoint file
 
 @catch_error(logger)
-def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_history):
+def extract_frontpoint_file_meta(file_path:str, cloud_file_history):
     """
-    Extract Meta Data from Albridge file (reading 1st line (header metadata) from inside the file)
+    Extract Meta Data from Frontpoint file name
     """
-    convert_yyyymmdd = lambda s: f'{s[:4]}-{s[4:6]}-{s[6:8]}'
-    convert_hhmmss = lambda s: f'{s[:2]}:{s[2:4]}:{s[4:6]}'
     strftime = r'%Y-%m-%d %H:%M:%S' # http://strftime.org/
 
     file_name = os.path.basename(file_path)
     file_name_noext, file_ext = os.path.splitext(file_name)
-    file_name_noext = file_name_noext.upper()
+    file_name_noext = file_name_noext.lower()
+    file_name_list = file_name_noext.split('_')
 
-    if file_ext.lower() not in ['.txt']:
-        logger.warning(f'Not a .txt file: {file_path}')
+    if not len(file_name_list) in [5, 6]:
+        logger.warning(f'Cannot parse Frontpoint file name: {file_path}')
         return
 
-    if not 12<=len(file_name_noext)<=16 \
-        or not file_name_noext[0].isalpha() \
-        or not file_name_noext[2:].isdigit():
-        logger.warning(f'Not a valid Albirdge Replication/Export file name: {file_path}')
-        return
+    is_test = False
+    if len(file_name_list) == 6:
+        if file_name_list[2].lower() != 'test':
+            logger.warning(f'Not a test file: {file_path}')
+            return
+        is_test = True
+        file_name_list.pop(2)
 
-    if not (file_name_noext[:1] in albridge_file_types or file_name_noext[:2] in albridge_file_types):
-        logger.warning(f'Unknown Albirdge Replication/Export file type: {file_path}')
+    tba = file_name_list[0].upper()
+    if server_name not in server_names:
+        logger.warning(f'Server name should be one of {server_names} for file: {file_path}')
         return
+    
+
+
+
+
 
     sequence_number = file_name_noext[-2:]
     file_date = convert_yyyymmdd(file_name_noext[-10:-2])
@@ -214,14 +204,11 @@ def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
         file_meta[header_schema[i]] = HEADER[i]
 
     file_meta['table_name'] = file_meta['file_desc'][:-4].lower()
-    if file_meta['table_name'] == 'positionchanges':
-        file_meta['table_name'] = 'positions'
-
     file_meta['eff_date'] = convert_yyyymmdd(file_meta['eff_date'])
     file_meta['run_date'] = convert_yyyymmdd(file_meta['run_date'])
     file_meta['run_time'] = convert_hhmmss(file_meta['run_time'])
 
-    file_meta['is_full_load'] = file_type.upper() in ['R'] # Only Position files can be full load
+    file_meta['is_full_load'] = False # determine how to know if the Albridge file is full load or not.
     file_meta[date_column_name] = datetime.strptime(' '.join([file_meta['run_date'], file_meta['run_time']]), strftime)
     return file_meta
 

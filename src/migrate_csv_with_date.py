@@ -12,6 +12,7 @@ if True: # Set to False for Debugging
     parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
 
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
+    parser.add_argument('--spark_master', help='URL of the Spark Master to connect to', required=False)
 
     args = parser.parse_args().__dict__
 
@@ -83,9 +84,9 @@ def extract_csv_file_meta(file_path:str, cloud_file_history):
 
     file_name = os.path.basename(file_path)
     file_name_noext, file_ext = os.path.splitext(file_name)
-    file_name_noext = file_name_noext.upper()
+    file_name_noext = file_name_noext.lower()
 
-    if file_name_noext.count('_')>=2 and file_name_noext.startswith(pipeline_info['firm'].upper()+'_'):
+    if file_name_noext.count('_')>=2 and file_name_noext.upper().startswith(pipeline_info['firm'].upper()+'_'):
         file_name_noext = file_name_noext[file_name_noext.find('_')+1:]
 
     allowed_extensions = ['.txt', '.csv', '.zip']
@@ -117,7 +118,7 @@ def extract_csv_file_meta(file_path:str, cloud_file_history):
         'folder_path': os.path.dirname(file_path),
         'firm_name': firm_name,
         'file_date': file_date,
-        'table_name': table_name,
+        'table_name': table_name.lower(),
         'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
         date_column_name: date_column,
     }

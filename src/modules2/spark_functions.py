@@ -16,7 +16,7 @@ https://spark.apache.org/docs/latest/configuration
 import os, re, json
 from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str
+from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
@@ -96,6 +96,12 @@ def create_spark():
         .config('spark.sql.catalog.spark_catalog', 'org.apache.spark.sql.delta.catalog.DeltaCatalog')
         .config('spark.databricks.delta.vacuum.parallelDelete.enabled', 'true')
         )
+
+    if hasattr(data_settings, 'spark_master'):
+        logger.info(f'Using spark_master: {data_settings.spark_master}')
+        spark = spark.config('spark.master', data_settings.spark_master)
+    else:
+        logger.info(f'spark_master config is NOT given. Using system default spark_master.')
 
     if is_pc:
         spark = (spark

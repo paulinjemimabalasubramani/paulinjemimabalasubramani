@@ -1,0 +1,103 @@
+﻿table_name,column_name,is_primary_key,field_name,data_type,description
+LTS_ClientName,firm,Y,Firm,Char(3),Three letter indicator of firm
+LTS_ClientName,acct_number,Y,Acct number,Varchar(50),Account Number
+LTS_ClientName,product_name,Y,Product Name,Varchar(75),Product Name
+LTS_ClientName,data_source,,Data Source,Char(10),
+LTS_ClientName,oob_flag,,OOB Flag,Tiny int,Out of balance Flag (Tami Logue needs to get what the values mean)
+LTS_ClientName,mips_client_number,,MIPS Client Number,Int,The MIPS Client number is used to join to client data from the NBS system
+LTS_ClientName,record_id,Y,Record ID,Big int,"Unique key for LTS servers only, not included on SAI files – key field"
+LTS_ClientNameD,firm,Y,Firm,Char(3),Hard coded to xxx as we cannot determine the firm on delete
+LTS_ClientNameD,acctnum,Y,AcctNum,Bigint,Ties to Record ID – key field
+LTS_Position,firm,Y,Firm,Char(3),Three letter indicator of firm
+LTS_Position,account_number,Y,Account number,Varchar(50),Account Number
+LTS_Position,adp_number,,ADP number,Varchar(30),ADP product number
+LTS_Position,account_type,,Account type,Char(1),Tami will need to explain  this field
+LTS_Position,quantity,,Quantity,Float,Quantity in the position.
+LTS_Position,holding_type,,Holding type,Varchar(1),Tami will need to explain this field
+LTS_Position,quantity_date,,Quantity Date,Datetime,DateTime of the Quantity
+LTS_Position,mips_client_number,,MIPS client number,Int,The MIPS Client number is used to join to client data from the NBS system
+LTS_Position,record_id,Y,Record ID,Big int,Record ID for the record.  Must be combined with the source table indicator to identify a record. – key field
+LTS_Position,source_table,Y,Source Table,Varchar(8),Indicates if the record came from the position or Activity table.  Part of the unique key on this table. – key field
+LTS_PositionD,firm,Y,Firm,Char(3),Three letter indicator of firm
+LTS_PositionD,record_id,Y,Record ID,Big int,Record ID for the record.  Must be combined with the source table indicator to identify a record. – key field
+LTS_PositionD,source_table,Y,Source Table,Varchar(8),Indicates if the record came from the position or Activity table.  Part of the unique key on this table. – key field
+LTS_Security,firm,Y,Firm,Char(3),Set to XXX to indicate the security is from the LTS server
+LTS_Security,adp_number,Y,ADP Number,Varchar(30),ADP product number– key field
+LTS_Security,security_description,,Security Description,Varchar(122),Security name
+LTS_Security,symbol,,Symbol,Varchar(30),Security Symbol
+LTS_Security,price,,Price,Float,Security Price
+LTS_Security,price_date,,Price Date,Datetime,Datetime of the security price
+LTS_Security,trading_unit,,Trading Unit,Float,Tami will need to explain this
+LTS_Security,factor,,Factor,Float,Tami will need to explain this
+LTS_Security,asset_type,,Asset type,Char(4),Tami will need to explain this
+LTS_Security,asset_description,,Asset Description,Varchar(30),Description of the asset
+LTS_Security,security_type,,Security Type,Char(30),Tami will need to explain this
+LTS_Security,fdiccusip,,FDICCusip,Int,Tami will need to explain this
+LTS_Transactions,firm,Y,Firm,Char(3),Three letter indicator of firm
+LTS_Transactions,account_number,Y,Account number,Varchar(50),Account Number
+LTS_Transactions,account_sequence_number,Y,Account Sequence Number,"Numeric (15,0)",Sequence number of the transaction
+LTS_Transactions,type,,Type,Char(4),Tami will need to explain this
+LTS_Transactions,transaction_description,,Transaction description,Varchar(100),Transaction Description
+LTS_Transactions,adp_number,,ADP number,Varchar(30),ADP product number
+LTS_Transactions,price,,Price,Float,Price of the security
+LTS_Transactions,quantity,,Quantity,Float,Quantity of the transaction
+LTS_Transactions,net_amount,,Net Amount,Float,Net amount of the trade
+LTS_Transactions,trade_date,,Trade Date,Datetime,Trade date
+LTS_Transactions,settle_date,,Settle date,Datetime,Settle date of the trade
+LTS_Transactions,accrd_int,,Accrd Int,Float,Tami will need to explain this
+LTS_Transactions,commission,,Commission,Float,Commission amount
+LTS_Transactions,fees,,Fees,Float,Fee amount
+LTS_Transactions,description,,Description,Varchar(60),Activity description – Tami will need to explain this
+LTS_Transactions,create_date,,Create date,Datetime,Date created
+LTS_Transactions,mips_client_number,,MIPS client number,Int,The MIPS Client number is used to join to client data from the NBS system
+LTS_Transactions,record_id,Y,Record ID,Big int,Unique key for transactions– key field
+LTS_TransactionsD,firm,Y,Firm,Char(3),Three letter indicator of firm
+LTS_TransactionsD,record_id,Y,Record ID,Big int,Unique key for transactions– key field
+SAI_ClientName,firm,Y,Firm,Char(3),SAI
+SAI_ClientName,acct_number,Y,Acct number,Varchar(50),Account Number– key field
+SAI_ClientName,product_name,Y,Product Name,Varchar(75),Product Name
+SAI_ClientName,data_source,,Data Source,Char(10),
+SAI_ClientName,oob_flag,,OOB Flag,Tiny int,Out of balance Flag (Tami Logue needs to get what the values mean)
+SAI_ClientName,mips_client_number,,MIPS Client Number,Int,The MIPS Client number is used to join to client data from the NBS system
+SAI_ClientNameD,firm,Y,Firm,Char(3),SAI
+SAI_ClientNameD,acctnum,Y,AcctNum,Bigint,Account number– key field
+SAI_Position,firm,Y,Firm,Char(3),SAI
+SAI_Position,account_number,Y,Account number,Varchar(50),Account Number– key field
+SAI_Position,adp_number,Y,ADP number,Varchar(30),ADP product number– key field
+SAI_Position,account_type,Y,Account type,Char(1),Tami will need to explain  this field– key field
+SAI_Position,quantity,,Quantity,Float,Quantity in the position.
+SAI_Position,holding_type,,Holding type,Varchar(1),Tami will need to explain this field
+SAI_Position,quantity_date,,Quantity Date,Datetime,DateTime of the Quantity
+SAI_Position,mips_client_number,,MIPS client number,Int,The MIPS Client number is used to join to client data from the NBS system
+SAI_PositionD,account_number,Y,Account Number,Char(23),Account number– key field
+SAI_PositionD,adp_number,Y,ADP number,Varchar(30),ADP product number– key field
+SAI_PositionD,account_type,Y,Account type,Char(1),Tami will need to explain  this field– key field
+SAI_Security,firm,Y,Firm,Char(3),SAI
+SAI_Security,adp_number,Y,ADP Number,Varchar(30),ADP product number– key field
+SAI_Security,security_description,,Security Description,Varchar(122),Security name
+SAI_Security,symbol,,Symbol,Varchar(30),Security Symbol
+SAI_Security,price,,Price,Float,Security Price
+SAI_Security,price_date,,Price Date,Datetime,Datetime of the security price
+SAI_Security,trading_unit,,Trading Unit,Float,Tami will need to explain this
+SAI_Security,factor,,Factor,Float,Tami will need to explain this
+SAI_Security,asset_type,,Asset type,Char(4),Tami will need to explain this
+SAI_Security,asset_description,,Asset Description,Varchar(30),Description of the asset
+SAI_Security,security_type,,Security Type,Char(30),Tami will need to explain this
+SAI_Security,fdiccusip,,FDICCusip,Int,Tami will need to explain this
+SAI_Transactions,firm,Y,Firm,Char(3),SAI
+SAI_Transactions,account_number,Y,Account number,Varchar(50),Account Number– key field
+SAI_Transactions,account_sequence_number,Y,Account Sequence Number,"Numeric (15,0)",Sequence number of the transaction– key field
+SAI_Transactions,type,,Type,Char(4),Tami will need to explain this
+SAI_Transactions,transaction_description,,Transaction description,Varchar(100),Transaction Description
+SAI_Transactions,adp_number,,ADP number,Varchar(30),ADP product number
+SAI_Transactions,price,,Price,Float,Price of the security
+SAI_Transactions,quantity,,Quantity,Float,Quantity of the transaction
+SAI_Transactions,net_amount,,Net Amount,Float,Net amount of the trade
+SAI_Transactions,trade_date,Y,Trade Date,Datetime,Trade date– key field
+SAI_Transactions,settle_date,,Settle date,Datetime,Settle date of the trade
+SAI_Transactions,accrd_int,,Accrd Int,Float,Tami will need to explain this
+SAI_Transactions,commission,,Commission,Float,Commission amount
+SAI_Transactions,fees,,Fees,Float,Fee amount
+SAI_Transactions,description,,Description,Varchar(60),Activity description – Tami will need to explain this
+SAI_Transactions,create_date,,Create date,Datetime,Date created
+SAI_Transactions,mips_client_number,,MIPS client number,Int,The MIPS Client number is used to join to client data from the NBS system
