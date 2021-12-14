@@ -13,6 +13,7 @@ if True: # Set to False for Debugging
 
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
     parser.add_argument('--spark_master', help='URL of the Spark Master to connect to', required=False)
+    parser.add_argument('--spark_executor_instances', help='Number of Spark Executors to use', required=False)
 
     args = parser.parse_args().__dict__
 

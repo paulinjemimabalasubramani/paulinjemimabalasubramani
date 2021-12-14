@@ -12,6 +12,9 @@ from airflow.utils.dates import days_ago
 
 # %% Parameters
 spark_master = "spark://spark:7077"
+spark_executor_instances = 3
+
+
 spark_app_name = "Migrate Metrics Assets Tables"
 airflow_app_name = "migrate_metrics_assets"
 description_DAG = 'Migrate Metrics Assets Tables'
@@ -49,7 +52,7 @@ with DAG(
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
-         num_executors = 3,
+         num_executors = spark_executor_instances,
          executor_cores = 4,
          executor_memory = "16G",
          verbose = 1,
@@ -57,6 +60,7 @@ with DAG(
          application_args = [
              '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_RAA',
              '--spark_master', spark_master,
+             '--spark_executor_instances', str(spark_executor_instances),
              ],
          dag = dag
          )
@@ -67,7 +71,7 @@ with DAG(
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
-         num_executors = 3,
+         num_executors = spark_executor_instances,
          executor_cores = 4,
          executor_memory = "16G",
          verbose = 1,
@@ -75,6 +79,7 @@ with DAG(
          application_args = [
              '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_WFS',
              '--spark_master', spark_master,
+             '--spark_executor_instances', str(spark_executor_instances),
          ],
          dag = dag
          )
