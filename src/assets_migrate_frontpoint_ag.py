@@ -20,6 +20,7 @@ if False: # Set to False for Debugging
 
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
     parser.add_argument('--spark_master', help='URL of the Spark Master to connect to', required=False)
+    parser.add_argument('--spark_executor_instances', help='Number of Spark Executors to use', required=False)
 
     args = parser.parse_args().__dict__
 
@@ -92,7 +93,6 @@ def get_frontpoint_schema():
     schema_file_path = data_settings.schema_file_path
 
     file_schema = defaultdict(list)
-    server_names = {}
 
     with open(schema_file_path, newline='', encoding='utf-8-sig', errors='ignore') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -108,8 +108,6 @@ def get_frontpoint_schema():
                 'is_primary_key': is_primary_key,
                 'column_name': column_name,
                 })
-
-            server_names.add(table_name.split('_')[0].upper())
 
     return file_schema
 
@@ -145,13 +143,29 @@ def extract_frontpoint_file_meta(file_path:str, cloud_file_history):
         is_test = True
         file_name_list.pop(2)
 
-    tba = file_name_list[0].upper()
-    if server_name not in server_names:
-        logger.warning(f'Server name should be one of {server_names} for file: {file_path}')
+    table_name = "_".join([file_name_list[0], file_name_list[1]]).lower()
+    if table_name not in file_schema:
+        logger.warning(f'Table name should be one of {list(file_schema)} for file: {file_path}')
         return
-    
 
+    month = file_name_list[2]
+    day = file_name_list[3]
+    if not month.isdigit() or len(month)!=2 or not day.isdigit() or len(day)!=2:
+        logger.warning(f'Invalid Month/Day for file: {file_path}')
+        return
+    now = datetime.now()
+    file_date_last_yr = datetime.strptime('-'.join([str(now.year-1), month, day]), r'%Y-%m-%d')
+    file_date_curr_yr = datetime.strptime('-'.join([str(now.year), month, day]), r'%Y-%m-%d')
+    file_date_next_yr = datetime.strptime('-'.join([str(now.year+1), month, day]), r'%Y-%m-%d')
 
+    if (file_date_next_yr - now).days < 5:
+        file_date = file_date_next_yr
+    elif abs((file_date_curr_yr - now).days) > abs((file_date_last_yr - now).days):
+        file_date = file_date_last_yr
+    else:
+        file_date = file_date_curr_yr
+
+    is_full_load = file_name_list[3].lower() == 'full'
 
 
 

@@ -84,6 +84,15 @@ def create_spark():
     """
     Initiate a new spark session
     """
+    def add_from_data_settings(spark, data_settings_name, spark_config_name):
+        if hasattr(data_settings, data_settings_name):
+            data_settings_value = str(getattr(data_settings, data_settings_name))
+            logger.info(f'Using {data_settings_name}: {data_settings_value}')
+            spark = spark.config(spark_config_name, data_settings_value)
+        else:
+            logger.info(f'{data_settings_name} config is NOT given. Using system default {data_settings_name}.')
+        return spark
+
     app_name = os.path.basename(__file__)
 
     spark = (
@@ -97,11 +106,12 @@ def create_spark():
         .config('spark.databricks.delta.vacuum.parallelDelete.enabled', 'true')
         )
 
-    if hasattr(data_settings, 'spark_master'):
-        logger.info(f'Using spark_master: {data_settings.spark_master}')
-        spark = spark.config('spark.master', data_settings.spark_master)
-    else:
-        logger.info(f'spark_master config is NOT given. Using system default spark_master.')
+    spark_data_settings = {
+        'spark_master': 'spark.master',
+        'spark_executor_instances': 'spark.executor.instances',
+    }
+    for data_settings_name, spark_config_name in spark_data_settings.items():
+        spark = add_from_data_settings(spark=spark, data_settings_name=data_settings_name, spark_config_name=spark_config_name)
 
     if is_pc:
         spark = (spark
