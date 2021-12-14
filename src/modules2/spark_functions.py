@@ -109,7 +109,9 @@ def create_spark():
     spark_data_settings = {
         'spark_master': 'spark.master',
         'spark_executor_instances': 'spark.executor.instances',
-    }
+        'spark_master_ip': 'spark.executor.host',
+        }
+
     for data_settings_name, spark_config_name in spark_data_settings.items():
         spark = add_from_data_settings(spark=spark, data_settings_name=data_settings_name, spark_config_name=spark_config_name)
 
