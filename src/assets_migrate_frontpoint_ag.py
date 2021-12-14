@@ -44,7 +44,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules2.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, get_pipeline_info
-from modules2.spark_functions import IDKeyIndicator, add_md5_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
+from modules2.spark_functions import IDKeyIndicator, create_spark, read_text, remove_column_spaces, add_elt_columns
 from modules2.azure_functions import read_tableinfo_rows, tableinfo_name
 from modules2.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 from modules2.migrate_files import save_tableinfo_dict_and_cloud_file_history, process_all_files_with_incrementals, get_key_column_names
@@ -54,6 +54,7 @@ from collections import defaultdict
 
 from pyspark import StorageLevel
 from pyspark.sql.functions import col, lit, to_date, to_timestamp
+import pyspark.sql.functions as F
 
 
 
@@ -62,7 +63,7 @@ from pyspark.sql.functions import col, lit, to_date, to_timestamp
 tableinfo_source = data_settings.schema_name
 date_start = datetime.strptime(data_settings.file_history_start_date, r'%Y-%m-%d')
 
-date_column_name = 'run_datetime'
+date_column_name = 'file_date'
 key_column_names = get_key_column_names(date_column_name=date_column_name)
 unused_column_name = 'unused'
 
@@ -150,9 +151,10 @@ def extract_frontpoint_file_meta(file_path:str, cloud_file_history):
 
     month = file_name_list[2]
     day = file_name_list[3]
-    if not month.isdigit() or len(month)!=2 or not day.isdigit() or len(day)!=2:
+    if not month.isdigit() or len(month)!=2 or int(month)>12 or not day.isdigit() or len(day)!=2 or int(day)>31:
         logger.warning(f'Invalid Month/Day for file: {file_path}')
         return
+
     now = datetime.now()
     file_date_last_yr = datetime.strptime('-'.join([str(now.year-1), month, day]), r'%Y-%m-%d')
     file_date_curr_yr = datetime.strptime('-'.join([str(now.year), month, day]), r'%Y-%m-%d')
@@ -165,79 +167,32 @@ def extract_frontpoint_file_meta(file_path:str, cloud_file_history):
     else:
         file_date = file_date_curr_yr
 
-    is_full_load = file_name_list[3].lower() == 'full'
-
-
-
-    sequence_number = file_name_noext[-2:]
-    file_date = convert_yyyymmdd(file_name_noext[-10:-2])
-    file_name_prefix = file_name_noext[:-10]
-
-    fin_inst_id = crd_to_fid.get(firm_crd_number, None)
-    if not fin_inst_id:
-        logger.warning(f'Unknown CRD Number / No equivalent Financial Institution ID found: {firm_crd_number}')
-        return
-
-    if len(file_name_prefix)<=len(fin_inst_id) or file_name_prefix[-len(fin_inst_id):].upper()!=fin_inst_id.upper():
-        logger.warning(f'Financial Institution ID is incorrect. Found {file_name_prefix[-len(fin_inst_id):]}  Expected: {fin_inst_id}')
-        return
-
-    file_type = file_name_prefix[:-len(fin_inst_id)].upper()
-    if file_type not in albridge_file_types:
-        logger.warning(f'Unknown Albridge file type: {file_type}')
-        return
+    sequence_number = file_name_list[3].lower()
+    is_full_load = sequence_number == 'full'
 
     file_meta = {
         'file_name': file_name,
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
-        FirmCRDNumber: firm_crd_number,
-        'firm_name': fin_inst_ids[fin_inst_id],
+        'table_name' : table_name,
         'sequence_number': sequence_number,
-        'file_date': file_date,
-        'file_type': file_type,
-        'file_type_desc': albridge_file_types[file_type],
-        'fin_inst_id': fin_inst_id,
+        date_column_name: file_date,
+        'is_full_load': is_full_load,
+        'firm_name' : firm_name,
     }
 
-    with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as f:
-        HEADER = f.readline()
-
-    if HEADER[:2] != 'H|':
-        logger.warning(f'Header is not found in 1st line inside the file: {file_path}')
-        return
-
-    HEADER = HEADER.split(sep='|')
-    header_schema = [c['column_name'].lower() for c in schema['HEADER']]
-
-    if len(HEADER)<len(header_schema):
-        logger.warning(f'Invalid header length: {HEADER}')
-        return
-
-    for i in range(1, len(header_schema)):
-        file_meta[header_schema[i]] = HEADER[i]
-
-    file_meta['table_name'] = file_meta['file_desc'][:-4].lower()
-    file_meta['eff_date'] = convert_yyyymmdd(file_meta['eff_date'])
-    file_meta['run_date'] = convert_yyyymmdd(file_meta['run_date'])
-    file_meta['run_time'] = convert_hhmmss(file_meta['run_time'])
-
-    file_meta['is_full_load'] = False # determine how to know if the Albridge file is full load or not.
-    file_meta[date_column_name] = datetime.strptime(' '.join([file_meta['run_date'], file_meta['run_time']]), strftime)
     return file_meta
 
 
 
-# %% Create table from given Albridge file and its schema
+# %% Create table from given Frontpoint file and its schema
 
 @catch_error(logger)
-def create_table_from_albridge_file(file_path:str, file_schema):
+def create_table_from_frontpoint_file(file_path:str, file_schema):
     text_file = read_text(spark=spark, file_path=file_path)
 
     text_file = (text_file
-        .where(col('value').substr(0, 2)==lit('D|'))
-        .withColumn('value', col('value').substr(lit(3), F.length(col('value'))))
-        .withColumn('value', F.split(col('value'), '[|]'))
+        .withColumn('value', F.split(col('value'), '#!#!'))
         .withColumnRenamed('value', 'elt_value')
         )
 
@@ -256,27 +211,25 @@ def create_table_from_albridge_file(file_path:str, file_schema):
 
 
 
-# %% Main Processing of an Albridge File
+# %% Main Processing of an Frontpoint File
 
 @catch_error(logger)
-def process_albridge_file(file_meta, cloud_file_history):
+def process_frontpoint_file(file_meta, cloud_file_history):
     """
-    Main Processing of single Albridge file
+    Main Processing of single Frontpoint file
     """
     logger.info(file_meta)
 
     file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
-    file_schema = schema[file_meta['file_type']]
 
-    table = create_table_from_albridge_file(
+    table = create_table_from_frontpoint_file(
         file_path = file_path,
-        file_schema = file_schema,
+        file_schema = file_schema[file_meta['table_name']],
         )
     if not table: return
 
     table = remove_column_spaces(table=table)
     table = table.withColumn(date_column_name, lit(str(file_meta[date_column_name])))
-    table = table.withColumn(FirmCRDNumber, lit(str(file_meta[FirmCRDNumber])))
 
     table = add_elt_columns(
         table = table,

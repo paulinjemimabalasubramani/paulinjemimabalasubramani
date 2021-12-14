@@ -13,7 +13,7 @@ from airflow.utils.dates import days_ago
 # %% Parameters
 spark_master = "spark://spark:7077"
 spark_executor_instances = 3
-
+spark_master_ip = '10.128.25.82'
 
 spark_app_name = "Migrate Metrics Assets Tables"
 airflow_app_name = "migrate_metrics_assets"
@@ -61,6 +61,7 @@ with DAG(
              '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_RAA',
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
+             '--spark_master_ip', spark_master_ip,
              ],
          dag = dag
          )
@@ -80,6 +81,7 @@ with DAG(
              '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_WFS',
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
+             '--spark_master_ip', spark_master_ip,
          ],
          dag = dag
          )
