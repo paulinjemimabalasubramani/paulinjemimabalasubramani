@@ -214,11 +214,14 @@ def extract_albridge_file_meta(file_path:str, firm_crd_number:str, cloud_file_hi
         file_meta[header_schema[i]] = HEADER[i]
 
     file_meta['table_name'] = file_meta['file_desc'][:-4].lower()
+    if file_meta['table_name'] == 'positionchanges':
+        file_meta['table_name'] = 'positions'
+
     file_meta['eff_date'] = convert_yyyymmdd(file_meta['eff_date'])
     file_meta['run_date'] = convert_yyyymmdd(file_meta['run_date'])
     file_meta['run_time'] = convert_hhmmss(file_meta['run_time'])
 
-    file_meta['is_full_load'] = False # determine how to know if the Albridge file is full load or not.
+    file_meta['is_full_load'] = file_type.upper() in ['R'] # Only Position files can be full load
     file_meta[date_column_name] = datetime.strptime(' '.join([file_meta['run_date'], file_meta['run_time']]), strftime)
     return file_meta
 

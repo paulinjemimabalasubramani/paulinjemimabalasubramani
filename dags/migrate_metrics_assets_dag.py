@@ -53,8 +53,11 @@ with DAG(
          executor_cores = 4,
          executor_memory = "16G",
          verbose = 1,
-         conf = {"spark.master":spark_master},
-         application_args = ['--pipelinekey', 'METRICS_DATASTORE_MIGRATE_RAA'],
+         conf = {"spark.master": spark_master},
+         application_args = [
+             '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_RAA',
+             '--spark_master', spark_master,
+             ],
          dag = dag
          )
 
@@ -68,8 +71,11 @@ with DAG(
          executor_cores = 4,
          executor_memory = "16G",
          verbose = 1,
-         conf = {"spark.master":spark_master},
-         application_args = ['--pipelinekey', 'METRICS_DATASTORE_MIGRATE_WFS'],
+         conf = {"spark.master": spark_master},
+         application_args = [
+             '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_WFS',
+             '--spark_master', spark_master,
+         ],
          dag = dag
          )
 
