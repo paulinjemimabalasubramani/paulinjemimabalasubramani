@@ -13,7 +13,7 @@ http://10.128.25.82:8282/
 
 # %% Parse Arguments
 
-if False: # Set to False for Debugging
+if True: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
@@ -21,12 +21,13 @@ if False: # Set to False for Debugging
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
     parser.add_argument('--spark_master', help='URL of the Spark Master to connect to', required=False)
     parser.add_argument('--spark_executor_instances', help='Number of Spark Executors to use', required=False)
+    parser.add_argument('--spark_master_ip', help='Spark Master IP address', required=False)
 
     args = parser.parse_args().__dict__
 
 else:
     args = {
-        'pipelinekey': 'ASSETS_MIGRATE_FRONTPOINT_SAI',
+        'pipelinekey': 'ASSETS_MIGRATE_FRONTPOINT_AG',
         'source_path': r'C:\packages\Shared\FRONTPOINT',
         'schema_file_path': r'C:\packages\EDIP-Code\config\assets\frontpoint_schema\frontpoint_schema.csv'
         }
@@ -44,7 +45,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 from modules2.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, get_pipeline_info
-from modules2.spark_functions import IDKeyIndicator, create_spark, read_text, remove_column_spaces, add_elt_columns
+from modules2.spark_functions import IDKeyIndicator, create_spark, read_text, remove_column_spaces, add_elt_columns, add_id_key
 from modules2.azure_functions import read_tableinfo_rows, tableinfo_name
 from modules2.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
 from modules2.migrate_files import save_tableinfo_dict_and_cloud_file_history, process_all_files_with_incrementals, get_key_column_names
@@ -53,8 +54,9 @@ from datetime import datetime
 from collections import defaultdict
 
 from pyspark import StorageLevel
-from pyspark.sql.functions import col, lit, to_date, to_timestamp
+from pyspark.sql.functions import col, lit, to_timestamp
 import pyspark.sql.functions as F
+from pyspark.sql.types import StringType
 
 
 
@@ -132,42 +134,25 @@ def extract_frontpoint_file_meta(file_path:str, cloud_file_history):
     file_name_noext = file_name_noext.lower()
     file_name_list = file_name_noext.split('_')
 
-    if not len(file_name_list) in [5, 6]:
+    if not len(file_name_list) == 6:
         logger.warning(f'Cannot parse Frontpoint file name: {file_path}')
         return
-
-    is_test = False
-    if len(file_name_list) == 6:
-        if file_name_list[2].lower() != 'test':
-            logger.warning(f'Not a test file: {file_path}')
-            return
-        is_test = True
-        file_name_list.pop(2)
 
     table_name = "_".join([file_name_list[0], file_name_list[1]]).lower()
     if table_name not in file_schema:
         logger.warning(f'Table name should be one of {list(file_schema)} for file: {file_path}')
         return
 
-    month = file_name_list[2]
-    day = file_name_list[3]
-    if not month.isdigit() or len(month)!=2 or int(month)>12 or not day.isdigit() or len(day)!=2 or int(day)>31:
+    year = file_name_list[2]
+    month = file_name_list[3]
+    day = file_name_list[4]
+    if not year.isdigit() or len(year)!=4 or not month.isdigit() or len(month)!=2 or int(month)>12 or not day.isdigit() or len(day)!=2 or int(day)>31:
         logger.warning(f'Invalid Month/Day for file: {file_path}')
         return
 
-    now = datetime.now()
-    file_date_last_yr = datetime.strptime('-'.join([str(now.year-1), month, day]), r'%Y-%m-%d')
-    file_date_curr_yr = datetime.strptime('-'.join([str(now.year), month, day]), r'%Y-%m-%d')
-    file_date_next_yr = datetime.strptime('-'.join([str(now.year+1), month, day]), r'%Y-%m-%d')
+    file_date = datetime.strptime('-'.join([year, month, day]), r'%Y-%m-%d')
 
-    if (file_date_next_yr - now).days < 5:
-        file_date = file_date_next_yr
-    elif abs((file_date_curr_yr - now).days) > abs((file_date_last_yr - now).days):
-        file_date = file_date_last_yr
-    else:
-        file_date = file_date_curr_yr
-
-    sequence_number = file_name_list[3].lower()
+    sequence_number = file_name_list[5].lower()
     is_full_load = sequence_number == 'full'
 
     file_meta = {
@@ -206,7 +191,7 @@ def create_table_from_frontpoint_file(file_path:str, file_schema):
     text_file = text_file.drop(col('elt_value'))
     text_file = add_id_key(text_file, key_column_names=key_column_names)
 
-    text_file.persist(StorageLevel.MEMORY_AND_DISK)
+    #text_file.persist(StorageLevel.MEMORY_AND_DISK)
     return text_file
 
 
@@ -250,28 +235,21 @@ def process_frontpoint_file(file_meta, cloud_file_history):
 
 additional_ingest_columns = [
     to_timestamp(col(date_column_name)).alias(date_column_name, metadata={'sqltype': '[datetime] NULL'}),
-    to_date(col('file_date'), format='yyyy-MM-dd').alias('file_date', metadata={'sqltype': '[date] NULL'}),
-    to_date(col('eff_date'), format='yyyy-MM-dd').alias('eff_date', metadata={'sqltype': '[date] NULL'}),
-    col('file_type').cast(StringType()).alias('file_type', metadata={'maxlength': 10, 'sqltype': 'varchar(10)'}),
-    col('file_type_desc').cast(StringType()).alias('file_type_desc', metadata={'maxlength': 30, 'sqltype': 'varchar(30)'}),
     col('sequence_number').cast(StringType()).alias('sequence_number', metadata={'maxlength': 10, 'sqltype': 'varchar(10)'}),
-    col('fin_inst_id').cast(StringType()).alias('fin_inst_id', metadata={'maxlength': 10, 'sqltype': 'varchar(10)'}),
     ]
 
 all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
     spark = spark,
-    firms = firms,
-    data_path_folder = data_path_folder,
-    fn_extract_file_meta = extract_albridge_file_meta,
+    firm_name = firm_name,
+    data_path_folder = data_settings.source_path,
+    fn_extract_file_meta = extract_frontpoint_file_meta,
     date_start = date_start,
     additional_ingest_columns = additional_ingest_columns,
-    fn_process_file = process_albridge_file,
+    fn_process_file = process_frontpoint_file,
     key_column_names = key_column_names,
     tableinfo_source = tableinfo_source,
-    save_data_to_adls_flag = save_albridge_to_adls_flag,
     date_column_name = date_column_name,
-    use_crd_number_as_folder_name = False,
-)
+    )
 
 
 
@@ -282,7 +260,6 @@ tableinfo = save_tableinfo_dict_and_cloud_file_history(
     tableinfo = tableinfo,
     tableinfo_source = tableinfo_source,
     all_new_files = all_new_files,
-    save_tableinfo_adls_flag = save_tableinfo_adls_flag,
     )
 
 
@@ -300,7 +277,12 @@ snowflake_ddl_params.snowflake_connection = snowflake_connection
 
 # %% Iterate Over Steps for all tables
 
-ingest_data_list = iterate_over_all_tables_snowflake(tableinfo=tableinfo, table_rows=table_rows, PARTITION_list=PARTITION_list)
+ingest_data_list = iterate_over_all_tables_snowflake(
+    tableinfo = tableinfo,
+    table_rows = table_rows,
+    firm_name = firm_name,
+    PARTITION_list = PARTITION_list,
+    )
 
 
 # %% Create Source Level Tables

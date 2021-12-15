@@ -157,7 +157,11 @@ def base_sqlstr(schema_name, table_name, source_system, layer:str):
     """
     LAYER = f'_{layer}' if layer else ''
     SCHEMA_NAME = f'{source_system}{LAYER}'.upper()
-    TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+
+    if schema_name:
+        TABLE_NAME = f'{schema_name}_{table_name}'.upper()
+    else:
+        TABLE_NAME = table_name.upper()
 
     sqlstr = f"""{use_role_warehouse_raw_database()}
 USE SCHEMA {SCHEMA_NAME};
@@ -294,7 +298,8 @@ def create_copy_into_sql(source_system:str, schema_name:str, table_name:str, PAR
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
 
-    INGEST_STAGE_NAME = f'@{wid.elt_stage_schema}.{storage_account_abbr}_{wid.domain_abbr}_DATALAKE/{source_system}/{schema_name}/{table_name}/{PARTITION}/'
+    sl = lambda x: '/'+x if x else ''
+    INGEST_STAGE_NAME = f'@{wid.elt_stage_schema}.{storage_account_abbr}_{wid.domain_abbr}_DATALAKE/{source_system}{sl(schema_name)}/{table_name}/{PARTITION}/'
 
     copy_into_sqlstr = f"""COPY INTO {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} FROM '{INGEST_STAGE_NAME}' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"""
 

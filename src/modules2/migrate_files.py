@@ -1035,9 +1035,8 @@ def get_all_files_meta(folder_path, date_start, fn_extract_file_meta, cloud_file
         for file in files:
             file_path = os.path.join(root, file)
             file_meta = fn_extract_file_meta(file_path=file_path, cloud_file_history=cloud_file_history)
-            file_meta['date_file_modified'] = datetime.fromtimestamp(os.path.getmtime(file_path))
-
             if file_meta and (date_start<=file_meta[date_column_name]):
+                file_meta['date_file_modified'] = datetime.fromtimestamp(os.path.getmtime(file_path))
                 files_meta.append(file_meta)
 
     logger.info(f'Finished getting list of files. Total Files = {len(files_meta)}')
