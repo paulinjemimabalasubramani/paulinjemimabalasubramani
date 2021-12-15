@@ -13,7 +13,7 @@ http://10.128.25.82:8282/
 
 # %% Parse Arguments
 
-if False: # Set to False for Debugging
+if True: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
