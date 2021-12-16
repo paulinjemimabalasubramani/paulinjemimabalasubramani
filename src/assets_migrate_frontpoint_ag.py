@@ -16,7 +16,7 @@ http://10.128.25.82:8282/
 if True: # Set to False for Debugging
     import argparse
 
-    parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
+    parser = argparse.ArgumentParser(description='Migrate ASSETS - FRONTPOINT files')
 
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
     parser.add_argument('--spark_master', help='URL of the Spark Master to connect to', required=False)
