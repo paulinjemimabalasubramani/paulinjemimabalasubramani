@@ -431,11 +431,11 @@ def create_or_replace_func(object_name:str):
 @action_step(1)
 def step1(source_system:str, schema_name:str, table_name:str):
     """
-    Snowflake DDL: Create Variant Table - Raw data from External Stage table will be copied here.
+    Snowflake DDL: Create Transient Variant Table - Raw data from External Stage table will be copied here.
     """
     layer = 'RAW'
     SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
-    
+
     cicd_source_system = (SCHEMA_NAME, 'V0.0.1__Create_Tables')
     if not wid.cicd_str_per_step[cicd_source_system]:
         wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
@@ -443,7 +443,7 @@ def step1(source_system:str, schema_name:str, table_name:str):
     wid.cicd_file = sqlstr
 
     step = f"""
-{create_or_replace_func('TABLE')} {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
+{create_or_replace_func('TRANSIENT TABLE')} {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}
 (
   {wid.variant_alias} VARIANT
 );
@@ -918,7 +918,7 @@ def iterate_over_all_tables_snowflake(tableinfo, table_rows, firm_name:str, PART
             step1(source_system=source_system, schema_name=schema_name, table_name=table_name)
             step2(source_system=source_system, schema_name=schema_name, table_name=table_name)
             #step3(source_system=source_system, schema_name=schema_name, table_name=table_name, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
-            step4(source_system=source_system, schema_name=schema_name, table_name=table_name, src_column_dict=src_column_dict)
+            #step4(source_system=source_system, schema_name=schema_name, table_name=table_name, src_column_dict=src_column_dict)
             step5(source_system=source_system, schema_name=schema_name, table_name=table_name, src_column_dict=src_column_dict)
             step6(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, pk_column_names=pk_column_names)
             step7(source_system=source_system, schema_name=schema_name, table_name=table_name, data_types_dict=data_types_dict)
