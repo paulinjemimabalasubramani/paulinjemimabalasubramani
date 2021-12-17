@@ -32,7 +32,7 @@ drivers_path = fileshare + '/EDIP-Code/drivers'
 config_path = fileshare + '/EDIP-Code/config'
 
 if is_pc:
-    os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.1-bin-hadoop3.2'
+    os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.2-bin-hadoop3.2'
     os.environ["HADOOP_HOME"] = r'C:\Spark\Hadoop'
     os.environ["JAVA_HOME"]   = r'C:\Program Files\Java\jre1.8.0_311'
     #os.environ["PYSPARK_PYTHON"] = r'C:\Users\smammadov\AppData\Local\Programs\Python\Python38\python.exe' # add this line as necessary

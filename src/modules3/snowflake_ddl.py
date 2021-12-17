@@ -8,10 +8,12 @@ import json, os, sys
 from functools import wraps
 from collections import defaultdict, OrderedDict
 
+from modules.azure_functions import azure_data_path_create
+
 from .common_functions import logger, catch_error, data_settings, execution_date, get_secrets, to_OrderedDict, EXECUTION_DATE_str
 from .spark_functions import elt_audit_columns
-from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, get_partition, container_name, \
-    default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder
+from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, container_name, \
+    default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder, get_partition
 
 from snowflake.connector import connect as snowflake_connect
 from pyspark.sql.types import StringType
@@ -25,7 +27,6 @@ class module_params_class:
     """
     Data Class to pass parameters across modules and the main code
     """
-    save_to_adls = False # Default False
     execute_at_snowflake = False # Default False
     create_or_replace = True # Default False - Use True for Schema Change Update
     create_cicd_file = data_settings.create_cicd_file
@@ -33,11 +34,10 @@ class module_params_class:
     snowflake_account = data_settings.snowflake_account
     sf_key_vault_account = data_settings.snowflake_key_vault_account
 
-    domain_name = sys.domain_name
-    domain_abbr = sys.domain_abbr
-    environment = sys.environment
+    domain_name = data_settings.domain_name
+    environment = data_settings.environment
     snowflake_raw_warehouse = data_settings.snowflake_warehouse
-    snowflake_raw_database = f'{environment}_{domain_abbr}'.upper()
+    snowflake_raw_database = f'{environment}_{domain_name}'.upper()
 
     common_elt_stage_name = default_storage_account_abbr
     common_storage_account = default_storage_account_name
@@ -885,6 +885,8 @@ ALTER TASK {task_name} RESUME;
     wid.cicd_file += step
     wid.cicd_str_per_step[cicd_source_system] += step + '\n'*1
     return sqlstr
+
+
 
 
 

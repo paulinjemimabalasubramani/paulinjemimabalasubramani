@@ -5,20 +5,20 @@ Common Library for translating data types from source database to target databas
 
 # %% Import Libraries
 
-import os, sys, re, tempfile, shutil, copy, json
+import os, sys, re, tempfile, shutil, copy, json, pymssql
 from pprint import pprint
 from collections import defaultdict
 from datetime import datetime
 
-from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, data_settings, pymssql_execute_non_query, \
-    execution_date_start, cloud_file_histdict, file_metadata_dict
+from .common_functions import logger, catch_error, is_pc, execution_date, data_settings, pymssql_execute_non_query, \
+    execution_date_start, cloud_file_histdict, file_metadata_dict, EXECUTION_DATE_str, cloud_file_hist_conf
 from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
     default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
     default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder, add_table_to_tableinfo, \
     storage_account_abbr_to_full_name
 from .spark_functions import collect_column, read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
     metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value, \
-    get_sql_table_names, write_sql
+    get_sql_table_names, write_sql, elt_process_id, ELT_PROCESS_ID_str
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit, row_number, when, to_timestamp
@@ -38,8 +38,27 @@ schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINT
 
 tmpdirs = []
 
-to_cloud_file_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + tableinfo_source + '_file_history').lower()
-to_cloud_row_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + tableinfo_source + '_row_history').lower()
+to_cloud_file_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + tableinfo_source + '_file_history3').lower()
+to_cloud_row_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + tableinfo_source + '_row_history3').lower()
+
+
+
+# %% Get Key Column Names
+
+@catch_error(logger)
+def get_key_column_names():
+    """
+    Get Key Column Names for sorting the data files for uniqueness
+    """
+    key_column_names = dict() 
+    key_column_names['base'] = ['table_name']
+    key_column_names['with_load'] = key_column_names['base'] + ['is_full_load']
+    key_column_names['with_load_n_date'] = key_column_names['with_load'] + ['key_datetime']
+    return key_column_names
+
+
+
+key_column_names = get_key_column_names()
 
 
 
@@ -709,7 +728,7 @@ def filter_by_timestamp(sql_table, cloud_row_history, row_history_meta:list, tab
             'rows_ingested': sql_table.count(),
             'max_timestamp': max_timestamp,
             'max_timestamp_column_name': max_timestamp_column_name,
-            'ingestion_date': execution_date_start,
+            EXECUTION_DATE_str.lower(): execution_date_start,
             }
         row_history_meta.append(row_hist)
 
@@ -738,7 +757,7 @@ def append_cloud_row_history(spark, cloud_row_history, cloud_row_history_name:st
                 ,[rows_ingested] [int] NOT NULL
                 ,[max_timestamp] varchar(300) NULL
                 ,[max_timestamp_column_name] varchar(300) NULL
-                ,[ingestion_date] [datetime] NOT NULL,
+                ,[{EXECUTION_DATE_str.lower()}] [datetime] NOT NULL,
             );
             """
 
@@ -838,28 +857,40 @@ def get_ingestion_history_from_cloud(spark, cloud_table_name:str):
     """
     Get history of the files ingested in SQL Server
     """
-    table_names, sql_tables = get_sql_table_names(
+    cloud_file_history = None
+
+    sqlstr = f"""SELECT COUNT(*) AS CNT
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE UPPER(TABLE_SCHEMA) = '{cloud_file_hist_conf['sql_schema'].upper()}'
+        AND TABLE_TYPE = 'BASE TABLE'
+        AND UPPER(TABLE_NAME) = '{cloud_table_name.upper()}'
+    ;"""
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            cursor.execute(sqlstr)
+            row = cursor.fetchone()
+            cloud_file_history_exists = int(row['CNT']) > 0
+
+    if not cloud_file_history_exists:
+        return cloud_file_history
+
+    cloud_file_history = read_sql(
         spark = spark,
-        schema = cloud_file_histdict['sql_schema'],
-        database = cloud_file_histdict['sql_database'],
-        server = cloud_file_histdict['sql_server'],
         user = cloud_file_histdict['sql_id'],
         password = cloud_file_histdict['sql_pass'],
+        schema = cloud_file_histdict['sql_schema'],
+        table_name = cloud_table_name,
+        database = cloud_file_histdict['sql_database'],
+        server = cloud_file_histdict['sql_server'],
         )
-
-    cloud_file_history_exists = cloud_table_name in table_names
-
-    cloud_file_history = None
-    if cloud_file_history_exists:
-        cloud_file_history = read_sql(
-            spark = spark,
-            user = cloud_file_histdict['sql_id'],
-            password = cloud_file_histdict['sql_pass'],
-            schema = cloud_file_histdict['sql_schema'],
-            table_name = cloud_table_name,
-            database = cloud_file_histdict['sql_database'],
-            server = cloud_file_histdict['sql_server'],
-            )
 
     return cloud_file_history
 
@@ -895,21 +926,6 @@ def cleanup_tmpdirs():
     global tmpdirs
     while len(tmpdirs)>0:
         tmpdirs.pop(0).cleanup()
-
-
-
-# %% Get Key Column Names
-
-@catch_error(logger)
-def get_key_column_names(date_column_name:str):
-    """
-    Get Key Column Names for sorting the data files for uniqueness
-    """
-    key_column_names = dict() 
-    key_column_names['base'] = ['firm_name', 'table_name']
-    key_column_names['with_load'] = key_column_names['base'] + ['is_full_load']
-    key_column_names['with_load_n_date'] = key_column_names['with_load'] + [date_column_name]
-    return key_column_names
 
 
 
@@ -968,11 +984,11 @@ def get_selected_files(file_history, cloud_file_history, key_column_names, date_
         .withColumn('full_load_date', when(col('full_load_date').isNull(), col('max_date')).otherwise(col('full_load_date'))).drop('max_date')
 
     all_files = all_files.withColumn('is_ingested', 
-            when(col('ingestion_date').isNull() & col('full_load_date').isNotNull() & (col(date_column_name)<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
+            when(col(EXECUTION_DATE_str).isNull() & col('full_load_date').isNotNull() & (col(date_column_name)<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
         )
 
     # Select and Order Files for ingestion
-    new_files = all_files.where(col('ingestion_date').isNull()).withColumn('ingestion_date', to_timestamp(lit(execution_date)))
+    new_files = all_files.where(col(EXECUTION_DATE_str).isNull()).withColumn(EXECUTION_DATE_str, to_timestamp(lit(execution_date)))
     selected_files = new_files.where('is_ingested').orderBy(col('firm_name').desc(), col('table_name').desc(), col('is_full_load').desc(), col(date_column_name).asc())
 
     return new_files, selected_files
@@ -1036,7 +1052,6 @@ def get_all_files_meta(folder_path, date_start, fn_extract_file_meta, cloud_file
             file_path = os.path.join(root, file)
             file_meta = fn_extract_file_meta(file_path=file_path, cloud_file_history=cloud_file_history)
             if file_meta and (date_start<=file_meta[date_column_name]):
-                file_meta['date_file_modified'] = datetime.fromtimestamp(os.path.getmtime(file_path))
                 files_meta.append(file_meta)
 
     logger.info(f'Finished getting list of files. Total Files = {len(files_meta)}')
@@ -1091,13 +1106,13 @@ def files_history_from_files_meta(spark, files_meta, storage_account_name:str, t
         col('table_name').cast(StringType()).alias('table_name', metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}),
         col('is_full_load').cast(BooleanType()).alias('is_full_load', metadata={'sqltype': '[bit] NULL'}),
         lit(storage_account_name).cast(StringType()).alias('storage_account_name', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
-        lit(None).cast(StringType()).alias('remote_source', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
         col('folder_path').cast(StringType()).alias('folder_path', metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}),
         col('file_name').cast(StringType()).alias('file_name', metadata={'maxlength': 150, 'sqltype': 'varchar(150)'}),
-        to_timestamp(lit(None)).alias('ingestion_date', metadata={'sqltype': '[datetime] NULL'}), # execution_date
+        to_timestamp(lit(None)).alias(EXECUTION_DATE_str.lower(), metadata={'sqltype': '[datetime] NULL'}),
+        lit(elt_process_id).cast(StringType()).alias(ELT_PROCESS_ID_str.lower(), metadata={'maxlength': 300, 'sqltype': 'varchar(300)'}),
         lit(True).cast(BooleanType()).alias('is_ingested', metadata={'sqltype': '[bit] NOT NULL'}),
         to_timestamp(lit(None)).alias('full_load_date', metadata={'sqltype': '[datetime] NULL'}),
-        to_timestamp(col('date_file_modified')).alias('date_file_modified', metadata={'sqltype': '[datetime] NULL'}),
+        to_timestamp(col('key_datetime')).alias('key_datetime', metadata={'sqltype': '[datetime] NULL'}),
         *additional_ingest_columns,
     )
 

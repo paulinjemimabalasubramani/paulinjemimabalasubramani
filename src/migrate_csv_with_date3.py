@@ -20,7 +20,7 @@ if False: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'METRICS_DATASTORE_MIGRATE_RAA',
+        'pipelinekey': 'METRICS_MIGRATE_ASSETS_RAA',
         'source_path': r'C:\packages\Shared\METRICS_ASSETS\RAA'
         }
 
@@ -33,46 +33,32 @@ import os, sys
 sys.args = args
 sys.parent_name = os.path.basename(__file__)
 
-# Add 'modules' path to the system environment - adjust or remove this as necessary
-sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
-sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
-from modules2.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, get_pipeline_info
-from modules2.spark_functions import IDKeyIndicator, add_md5_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
-from modules2.azure_functions import read_tableinfo_rows, tableinfo_name
-from modules2.snowflake_ddl import connect_to_snowflake, iterate_over_all_tables_snowflake, create_source_level_tables, snowflake_ddl_params
-from modules2.migrate_files import save_tableinfo_dict_and_cloud_file_history, process_all_files_with_incrementals, get_key_column_names
+from modules3.common_functions import ELT_PROCESS_ID_str, catch_error, data_settings, logger, mark_execution_end, is_pc
+from modules3.spark_functions import add_md5_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
+from modules3.snowflake_ddl import connect_to_snowflake, snowflake_ddl_params
+from modules3.migrate_files3 import migrate_all_files
+
 
 from datetime import datetime
 
-from pyspark import StorageLevel
-from pyspark.sql.functions import col, lit, to_date, to_timestamp
+from pyspark.sql.functions import col, to_date
 
 
 
 # %% Parameters
 
-tableinfo_source = data_settings.schema_name
-date_start = datetime.strptime(data_settings.file_history_start_date, r'%Y-%m-%d')
-
-date_column_name = 'run_datetime'
-key_column_names = get_key_column_names(date_column_name=date_column_name)
-
-pipeline_info = get_pipeline_info(pipelinekey=data_settings.pipelinekey)
-firm_name = pipeline_info['firm'].upper()
-
-logger.info({
-    'schema_name': data_settings.schema_name,
-    'source_path': data_settings.source_path,
-    **pipeline_info,
-})
 
 
 
-# %% Create Spark Session
+# %% Create Connections
 
 spark = create_spark()
 snowflake_ddl_params.spark = spark
+
+snowflake_connection = connect_to_snowflake()
+snowflake_ddl_params.snowflake_connection = snowflake_connection
+
 
 
 # %% Extract Meta Data from csv file
@@ -88,7 +74,7 @@ def extract_csv_file_meta(file_path:str, cloud_file_history):
     file_name_noext, file_ext = os.path.splitext(file_name)
     file_name_noext = file_name_noext.lower()
 
-    if file_name_noext.count('_')>=2 and file_name_noext.upper().startswith(pipeline_info['firm'].upper()+'_'):
+    if file_name_noext.count('_')>=2 and file_name_noext.upper().startswith(data_settings.pipeline_firm.upper()+'_'):
         file_name_noext = file_name_noext[file_name_noext.find('_')+1:]
 
     allowed_extensions = ['.txt', '.csv', '.zip']
@@ -108,8 +94,8 @@ def extract_csv_file_meta(file_path:str, cloud_file_history):
         table_name = file_name_noext[:date_loc-1]
 
     try:
-        date_column = datetime.strptime(file_date_str, date_format)
-        file_date = date_column.strftime(r'%Y-%m-%d')
+        key_datetime = datetime.strptime(file_date_str, date_format)
+        file_date = key_datetime.strftime(r'%Y-%m-%d')
     except:
         logger.warning(f'Invalid date format in file name: {file_path}')
         return
@@ -118,11 +104,13 @@ def extract_csv_file_meta(file_path:str, cloud_file_history):
         'file_name': file_name,
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
-        'firm_name': firm_name,
+        'firm_name': data_settings.pipeline_firm,
         'file_date': file_date,
         'table_name': table_name.lower(),
         'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
-        date_column_name: date_column,
+        'key_datetime': key_datetime,
+        'pipelinekey': data_settings.pipelinekey,
+        ELT_PROCESS_ID_str.lower(): data_settings.elt_process_id,
     }
 
     return file_meta
@@ -142,7 +130,7 @@ def process_csv_file(file_meta, cloud_file_history):
     file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
     file_name_noext, file_ext = os.path.splitext(file_meta['file_name'])
 
-    if file_name_noext.count('_')>=2 and file_name_noext.upper().startswith(pipeline_info['firm'].upper()+'_'):
+    if file_name_noext.count('_')>=2 and file_name_noext.upper().startswith(data_settings.pipeline_firm.upper()+'_'):
         file_name_noext = file_name_noext[file_name_noext.find('_')+1:]
 
     if file_ext.lower() not in ['.txt', '.csv']:
@@ -156,7 +144,7 @@ def process_csv_file(file_meta, cloud_file_history):
     file_date_str = file_name_noext[date_loc:]
 
     try:
-        date_column = datetime.strptime(file_date_str, date_format)
+        key_datetime = datetime.strptime(file_date_str, date_format)
     except:
         logger.warning(f'Invalid date format in file name: {file_path}')
         return
@@ -166,22 +154,16 @@ def process_csv_file(file_meta, cloud_file_history):
     table = read_csv(spark=spark, file_path=file_path)
     if not table: return
 
-    if not IDKeyIndicator.upper() in [c.upper() for c in table.columns]:
-        table = add_md5_key(table=table)
-
     table = remove_column_spaces(table=table)
-    table = table.withColumn(date_column_name, lit(str(date_column)))
-    table = table.withColumn('firm_name', lit(str(firm_name)))
+
+    table = add_md5_key(table=table)
 
     table = add_elt_columns(
         table = table,
-        reception_date = date_column,
-        source = tableinfo_source,
+        key_datetime = key_datetime,
         is_full_load = file_meta['is_full_load'],
         dml_type = 'I' if file_meta['is_full_load'] else 'U',
         )
-
-    table.persist(StorageLevel.MEMORY_AND_DISK)
 
     if is_pc: table.show(5)
     if is_pc: print(f'Number of rows: {table.count()}')
@@ -193,9 +175,38 @@ def process_csv_file(file_meta, cloud_file_history):
 # %% Iterate over all the files in all the firms and process them.
 
 additional_ingest_columns = [
-    to_timestamp(col(date_column_name)).alias(date_column_name, metadata={'sqltype': '[datetime] NULL'}),
     to_date(col('file_date'), format='yyyy-MM-dd').alias('file_date', metadata={'sqltype': '[date] NULL'}),
     ]
+
+migrate_all_files(
+    spark = spark,
+    snowflake_connection = snowflake_connection,
+    fn_extract_file_meta = extract_csv_file_meta,
+    additional_ingest_columns = additional_ingest_columns,
+    fn_process_file = process_csv_file,
+    )
+
+
+
+# %% Close Connections
+
+snowflake_connection.close()
+
+mark_execution_end()
+
+
+
+# %% Debugging
+
+
+
+
+
+
+
+
+# %% Iterate over all the files in all the firms and process them.
+"""
 
 all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
     spark = spark,
@@ -209,6 +220,8 @@ all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
     tableinfo_source = tableinfo_source,
     date_column_name = date_column_name,
     )
+
+
 
 
 
@@ -228,11 +241,6 @@ tableinfo = save_tableinfo_dict_and_cloud_file_history(
 table_rows = read_tableinfo_rows(tableinfo_name=tableinfo_name, tableinfo_source=tableinfo_source, tableinfo=tableinfo)
 
 
-# %% Connect to SnowFlake
-
-snowflake_connection = connect_to_snowflake()
-snowflake_ddl_params.snowflake_connection = snowflake_connection
-
 
 # %% Iterate Over Steps for all tables
 
@@ -249,15 +257,4 @@ ingest_data_list = iterate_over_all_tables_snowflake(
 create_source_level_tables(ingest_data_list=ingest_data_list)
 
 
-# %% Close Showflake connection
-
-snowflake_connection.close()
-
-
-# %% Mark Execution End
-
-mark_execution_end()
-
-
-# %%
-
+"""

@@ -16,13 +16,13 @@ https://spark.apache.org/docs/latest/configuration
 import os, re, json
 from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings
+from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, \
+    ELT_PROCESS_ID_str
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
 from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim, explode
 from pyspark.sql.types import IntegerType
-from pyspark import StorageLevel
 
 
 
@@ -30,38 +30,36 @@ from pyspark import StorageLevel
 
 column_regex = r'[\W]+'
 
-metadata_DataTypeTranslation = 'DataTypeTranslation'
-metadata_MasterIngestList = 'MasterIngestList'
-metadata_FirmSourceMap = 'FirmSourceMap'
+IDKeyIndicator = 'ELT_PRIMARY_KEY'
 
-MD5KeyIndicator = 'MD5_KEY'
-IDKeyIndicator = 'ID'
-
-RECEPTION_DATE_str = 'RECEPTION_DATE'
 ELT_SOURCE_str = 'ELT_SOURCE'
 ELT_LOAD_TYPE_str = 'ELT_LOAD_TYPE'
 ELT_DELETE_IND_str = 'ELT_DELETE_IND'
-DML_TYPE_str = 'DML_TYPE'
+DML_TYPE_str = 'ELT_DML_TYPE'
+KEY_DATETIME_str = 'ELT_KEY_DATETIME'
+ELT_FIRM_str = 'ELT_FIRM'
 
-partitionBy = 'PARTITION_DATE'
+partitionBy = 'ELT_PARTITION_DATE'
 partitionBy_value = re.sub(column_regex, '_', execution_date)
 
-elt_audit_columns = [RECEPTION_DATE_str, EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str]
+elt_audit_columns = [EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str, KEY_DATETIME_str, ELT_PROCESS_ID_str, ELT_FIRM_str]
 
 
 
 # %% Add ELT Audit Columns
 
 @catch_error(logger)
-def add_elt_columns(table, reception_date:str, source:str, is_full_load:bool, dml_type:str=None):
+def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str=None):
     """
     Add ELT Audit Columns to the table
     """
-    table = table.withColumn(RECEPTION_DATE_str, lit(str(reception_date)))
+    table = table.withColumn(KEY_DATETIME_str, lit(str(key_datetime)))
     table = table.withColumn(EXECUTION_DATE_str, lit(str(execution_date)))
-    table = table.withColumn(ELT_SOURCE_str, lit(str(source)))
+    table = table.withColumn(ELT_SOURCE_str, lit(str(data_settings.pipeline_datasourcekey)))
     table = table.withColumn(ELT_LOAD_TYPE_str, lit(str("FULL" if is_full_load else "INCREMENTAL")))
     table = table.withColumn(ELT_DELETE_IND_str, lit(0).cast(IntegerType()))
+    table = table.withColumn(ELT_PROCESS_ID_str, lit(data_settings.elt_process_id))
+    table = table.withColumn(ELT_FIRM_str, lit(data_settings.pipeline_firm))
 
     if is_full_load:
         DML_TYPE = 'I'
@@ -144,7 +142,7 @@ def create_spark():
 # %% Utility function to collect data from specific PySpark Table column
 
 @catch_error(logger)
-def collect_column(table, column_name:str, distinct:bool=True):
+def collect_column1(table, column_name:str, distinct:bool=True):
     """
     Utility function to collect data from specific PySpark Table column
     """
@@ -160,7 +158,7 @@ def collect_column(table, column_name:str, distinct:bool=True):
 # %% Utility function to convert PySpark table to list of dictionaries
 
 @catch_error(logger)
-def table_to_list_dict(table):
+def table_to_list_dict1(table):
     """
     Utility function to convert PySpark table to list of dictionaries
     """
@@ -222,8 +220,6 @@ def read_sql(spark, schema:str, table_name:str, database:str, server:str, user:s
             .load()
         )
 
-    sql_table.persist(StorageLevel.MEMORY_AND_DISK)
-
     return sql_table
 
 
@@ -283,7 +279,6 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
         .options(**sf_options) \
         .option(dbtable, table_name) \
         .load()
-    table.persist(StorageLevel.MEMORY_AND_DISK)
 
     logger.info('Finished Reading from Snowflake')
     return table
@@ -311,7 +306,6 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
         xml_table = xml_table.schema(schema=schema)
 
     xml_table_load = xml_table.load(file_path)
-    xml_table_load.persist(StorageLevel.MEMORY_AND_DISK)
 
     if is_pc: xml_table_load.show(5)
 
@@ -365,7 +359,6 @@ def read_csv(spark, file_path:str):
 
     csv_table = remove_column_spaces(table=csv_table)
     csv_table = trim_string_columns(table=csv_table)
-    csv_table.persist(StorageLevel.MEMORY_AND_DISK)
 
     if is_pc: csv_table.show(5)
 
@@ -388,8 +381,6 @@ def read_text(spark, file_path:str):
         .load(file_path)
     )
 
-    text_file.persist(StorageLevel.MEMORY_AND_DISK)
-
     logger.info('Finished reading text file')
     return text_file
 
@@ -407,7 +398,7 @@ def add_id_key(table, key_column_names:list):
         return table
 
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
-    table = table.withColumn(MD5KeyIndicator, concat_ws('_', *coalesce_list).alias(MD5KeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'})) # TODO: Change this to IDKeyIndicator later when we can add schema change
+    table = table.withColumn(IDKeyIndicator, concat_ws('_', *coalesce_list).alias(IDKeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'})) # TODO: Change this to IDKeyIndicator later when we can add schema change
     return table
 
 
@@ -422,31 +413,10 @@ def add_md5_key(table, key_column_names:list=[]):
     if not key_column_names:
         key_column_names = table.columns
     coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
-    table = table.withColumn(MD5KeyIndicator, md5(concat_ws('_', *coalesce_list)).alias(MD5KeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}))
+
+    if not IDKeyIndicator.upper() in [c.upper() for c in table.columns]:
+        table = table.withColumn(IDKeyIndicator, md5(concat_ws('_', *coalesce_list)).alias(IDKeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}))
     return table
-
-
-
-# %% Get SQL Table Names
-
-@catch_error(logger)
-def get_sql_table_names(spark, schema:str, database:str, server:str, user:str, password:str):
-    """
-    Get SQL Table Names
-    """
-    sql_tables = read_sql(
-        spark = spark, 
-        user = user, 
-        password = password, 
-        schema = 'INFORMATION_SCHEMA', 
-        table_name = 'TABLES', 
-        database = database, 
-        server = server,
-        )
-
-    sql_tables = sql_tables.filter((col('TABLE_SCHEMA') == lit(schema)) & (col('TABLE_TYPE')==lit('BASE TABLE')))
-    table_names = collect_column(table=sql_tables, column_name='TABLE_NAME', distinct=True)
-    return table_names, sql_tables
 
 
 
@@ -542,7 +512,7 @@ def flatten_n_divide_table(table, table_name:str):
 # %% Get List of Columns from "Columns" table order by OrdinalPosition
 
 @catch_error(logger)
-def get_columns_list_from_columns_table(columns, column_names:list, OrdinalPosition:str=None):
+def get_columns_list_from_columns_table1(columns, column_names:list, OrdinalPosition:str=None):
     select_columns = column_names.copy()
     if OrdinalPosition:
         select_columns += [OrdinalPosition]

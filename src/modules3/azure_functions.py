@@ -9,12 +9,10 @@ import re, sys
 from collections import defaultdict
 
 from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, post_log_data, data_settings
-from .spark_functions import IDKeyIndicator, MD5KeyIndicator, partitionBy, metadata_FirmSourceMap, elt_audit_columns, \
-    column_regex, partitionBy_value, table_to_list_dict
+from .spark_functions import IDKeyIndicator, partitionBy, elt_audit_columns, column_regex, partitionBy_value
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
-from pyspark import StorageLevel
 
 
 from azure.storage.filedatalake import DataLakeServiceClient
@@ -26,9 +24,7 @@ from azure.identity import ClientSecretCredential
 
 azure_filesystem_uri = 'dfs.core.windows.net'
 
-tableinfo_container_name = "tables"
 container_name = "ingress" # Default Container Name
-tableinfo_name = 'TableInfo'
 metadata_folder = 'metadata'
 data_folder = 'data'
 
@@ -262,7 +258,6 @@ def read_adls_gen2(spark,
 
     if is_pc: table.show(5)
 
-    table.persist(StorageLevel.MEMORY_AND_DISK)
     return table
 
 
@@ -270,7 +265,7 @@ def read_adls_gen2(spark,
 # %% Read metadata.TableInfo
 
 catch_error(logger)
-def read_tableinfo_rows(tableinfo_name:str, tableinfo_source:str, tableinfo):
+def read_tableinfo_rows1(tableinfo_name:str, tableinfo_source:str, tableinfo):
     """
     Convert tableinfo table metadata to list
     """
@@ -279,7 +274,6 @@ def read_tableinfo_rows(tableinfo_name:str, tableinfo_source:str, tableinfo):
         return
 
     tableinfo = tableinfo.filter(col('IsActive')==lit(1)).distinct()
-    tableinfo.persist(StorageLevel.MEMORY_AND_DISK)
 
     # Create unique list of tables
     table_list = tableinfo.select(
@@ -299,44 +293,6 @@ def read_tableinfo_rows(tableinfo_name:str, tableinfo_source:str, tableinfo):
     assert nopk.rdd.isEmpty(), f'Found tables with no primary keys: {nopk.collect()}'
 
     return table_rows
-
-
-
-# %% Get Firms with CRD Number
-
-@catch_error(logger)
-def get_firms_with_crd(spark, tableinfo_source):
-    """
-    Get Firms with CRD Number from Azure
-    """
-    storage_account_name = default_storage_account_name
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-    firms_table = read_adls_gen2(
-        spark = spark,
-        storage_account_name = storage_account_name,
-        container_name = tableinfo_container_name,
-        container_folder = metadata_folder,
-        table_name = metadata_FirmSourceMap,
-        file_format = file_format
-    )
-
-    firms_table = firms_table.filter(
-        (col('Source') == lit(tableinfo_source.upper()).cast("string")) & 
-        (col('IsActive') == lit(1))
-    )
-
-    firms_table = firms_table.select('Firm', 'SourceKey', 'StorageAccount') \
-        .withColumnRenamed('Firm', 'firm_name') \
-        .withColumnRenamed('SourceKey', 'crd_number') \
-        .withColumnRenamed('StorageAccount', 'storage_account_abbr')
-
-    firms_table = firms_table.withColumn('firm_name', F.lower(col('firm_name')))
-
-    firms = table_to_list_dict(firms_table)
-
-    assert firms, 'No Firms Found!'
-    return firms
 
 
 
@@ -367,8 +323,8 @@ def add_table_to_tableinfo(tableinfo:defaultdict, table, schema_name:str, table_
         tableinfo['StorageAccount'].append(storage_account_name)
         tableinfo['TargetColumnName'].append(re.sub(column_regex, '_', col_name.strip()))
         tableinfo['TargetDataType'].append(var_col_type)
-        tableinfo['IsNullable'].append(0 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 1)
-        tableinfo['KeyIndicator'].append(1 if col_name.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()] else 0)
+        tableinfo['IsNullable'].append(0 if col_name.upper() == IDKeyIndicator.upper() else 1)
+        tableinfo['KeyIndicator'].append(1 if col_name.upper() == IDKeyIndicator.upper() else 0)
         tableinfo['IsActive'].append(1)
         tableinfo['CreatedDateTime'].append(execution_date)
         tableinfo['ModifiedDateTime'].append(execution_date)
