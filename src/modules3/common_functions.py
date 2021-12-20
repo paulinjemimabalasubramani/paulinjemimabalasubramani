@@ -21,7 +21,7 @@ from azure.keyvault.secrets import SecretClient
 # %% Parameters
 
 execution_date_start = datetime.now()
-strftime = r"%Y-%m-%d %H:%M:%S"  # http://strftime.org/
+strftime = r'%Y-%m-%d %H:%M:%S'  # http://strftime.org/
 execution_date = execution_date_start.strftime(strftime)
 EXECUTION_DATE_str = 'EXECUTION_DATE'
 
@@ -34,10 +34,10 @@ drivers_path = os.path.join(code_repo_path, 'drivers')
 config_path = os.path.join(code_repo_path, 'config')
 
 if is_pc:
-    os.environ["SPARK_HOME"]  = r'C:\Spark\spark-3.1.2-bin-hadoop3.2'
-    os.environ["HADOOP_HOME"] = r'C:\Spark\Hadoop'
-    os.environ["JAVA_HOME"]   = r'C:\Program Files\Java\jre1.8.0_311'
-    #os.environ["PYSPARK_PYTHON"] = r'C:\Users\smammadov\AppData\Local\Programs\Python\Python38\python.exe' # add this line as necessary
+    os.environ['SPARK_HOME']  = r'C:\Spark\spark-3.1.2-bin-hadoop3.2'
+    os.environ['HADOOP_HOME'] = r'C:\Spark\Hadoop'
+    os.environ['JAVA_HOME']   = r'C:\Program Files\Java\jre1.8.0_311'
+    #os.environ['PYSPARK_PYTHON'] = r'~\.venv\Scripts\python.exe' # add this line as necessary
 
     sys.path.insert(0, '%SPARK_HOME%\bin')
     sys.path.insert(0, '%HADOOP_HOME%\bin')
@@ -288,12 +288,11 @@ def get_data_settings(logger=None):
                     setattr(data_settings, key, value)
 
     if hasattr(data_settings, 'db_name'):  data_settings.domain_name = data_settings.db_name.lower()
+    if hasattr(data_settings, 'schema_name'): data_settings.schema_name = data_settings.schema_name.upper()
+    if hasattr(data_settings, 'pipeline_datasourcekey'): data_settings.elt_process_id = '_'.join([str(data_settings.pipeline_datasourcekey), str(execution_date)])
 
-    if hasattr(data_settings, 'schema_name'):
-        data_settings.schema_name = data_settings.schema_name.upper()
-
-    if hasattr(data_settings, 'pipeline_datasourcekey'):
-        data_settings.elt_process_id = '_'.join([str(data_settings.pipeline_datasourcekey), str(execution_date)])
+    key_datetime = data_settings.file_history_start_date if hasattr(data_settings, 'file_history_start_date') else '2000-01-01'
+    data_settings.key_datetime = datetime.strptime(key_datetime, r'%Y-%m-%d')
 
     if is_pc: # Read Data Settings from file
         data_path = os.path.realpath(python_dirname + '/../../../Shared')

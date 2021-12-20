@@ -1,7 +1,5 @@
 # %% Import Libraries
 
-from datetime import datetime
-
 from airflow import DAG
 
 from airflow.operators.bash_operator import BashOperator
@@ -38,8 +36,6 @@ with DAG(
     schedule_interval = '0 13 * * *',
     start_date = days_ago(1),
 ) as dag:
-    current_datetime = datetime.now()
-    info = "CAT"
 
     startpipe = BashOperator(
         task_id = 'Start_Pipe',

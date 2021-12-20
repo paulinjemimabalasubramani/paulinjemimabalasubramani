@@ -389,33 +389,19 @@ def read_text(spark, file_path:str):
 # %% Add ID Key
 
 @catch_error(logger)
-def add_id_key(table, key_column_names:list):
+def add_id_key(table, key_column_names:list=[], always_use_md5:bool=False):
     """
     Add ID Key to the table
     """
-    if not key_column_names:
-        logger.warning('No Key Column Names found for creating ID Key')
-        return table
-
-    coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
-    table = table.withColumn(IDKeyIndicator, concat_ws('_', *coalesce_list).alias(IDKeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'})) # TODO: Change this to IDKeyIndicator later when we can add schema change
-    return table
-
-
-
-# %% Add MD5 Key
-
-@catch_error(logger)
-def add_md5_key(table, key_column_names:list=[]):
-    """
-    Add MD5 Key to the table
-    """
+    use_md5 = always_use_md5
     if not key_column_names:
         key_column_names = table.columns
-    coalesce_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
+        use_md5 = True
 
-    if not IDKeyIndicator.upper() in [c.upper() for c in table.columns]:
-        table = table.withColumn(IDKeyIndicator, md5(concat_ws('_', *coalesce_list)).alias(IDKeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}))
+    id_key = concat_ws('_', [coalesce(col(c).cast('string'), lit('')) for c in key_column_names])
+    if use_md5: id_key = md5(id_key)
+
+    table = table.withColumn(IDKeyIndicator, id_key.alias(IDKeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}))
     return table
 
 
