@@ -90,10 +90,12 @@ def recursive_migrate_all_files(spark, source_path:str, snowflake_connection, fn
 
             logger.info(f'Extract File Meta: {file_path}')
             file_meta = fn_extract_file_meta(file_path=file_path, zip_file_path=zip_file_path)
+            if not file_meta or (data_settings.key_datetime > file_meta['key_datetime']): continue
 
-            if file_meta and (data_settings.key_datetime <= file_meta['key_datetime']):
-                logger.info(file_meta)
-                table_list = fn_process_file(file_meta=file_meta)
+
+
+            logger.info(file_meta)
+            table_list = fn_process_file(file_meta=file_meta)
 
 
 
@@ -117,6 +119,8 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_ingest_columns, fn
         additional_ingest_columns = additional_ingest_columns,
         fn_process_file = fn_process_file
         )
+
+    snowflake_ddl_params.snowflake_connection.close()
 
 
 

@@ -33,7 +33,7 @@ with DAG(
     airflow_app_name,
     default_args = default_args,
     description = description_DAG,
-    schedule_interval = '30 0,12 * * *', # https://crontab.guru/#30_0,12_*_*_*
+    schedule_interval = '30 12 * * *', # https://crontab.guru/#30_12_*_*_*
     start_date = days_ago(1),
 ) as dag:
 
