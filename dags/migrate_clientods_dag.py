@@ -44,7 +44,7 @@ with DAG(
 
     migratedata = SparkSubmitOperator(
          task_id = "migrate_clientods",
-         application = "/usr/local/spark/app/migrate_clientods.py", # mapped to ..\EDIP-Code\src
+         application = "/usr/local/spark/app/migrate_clientods.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
