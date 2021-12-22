@@ -291,6 +291,10 @@ def get_data_settings(logger=None):
     if hasattr(data_settings, 'schema_name'): data_settings.schema_name = data_settings.schema_name.upper()
     if hasattr(data_settings, 'pipeline_datasourcekey'): data_settings.elt_process_id = '_'.join([str(data_settings.pipeline_datasourcekey), str(execution_date)])
 
+    to_storage_account = lambda storage_account_mid:  f"{data_settings.azure_storage_accounts_prefix}{storage_account_mid}{data_settings.azure_storage_accounts_suffix}".lower()
+    data_settings.default_storage_account_name = to_storage_account(storage_account_mid=data_settings.azure_storage_accounts_default_mid)
+    if hasattr(data_settings, 'azure_storage_account_mid'): data_settings.storage_account_name = to_storage_account(storage_account_mid=data_settings.azure_storage_account_mid)
+
     key_datetime = data_settings.file_history_start_date if hasattr(data_settings, 'file_history_start_date') else '2000-01-01'
     data_settings.key_datetime = datetime.strptime(key_datetime, r'%Y-%m-%d')
 

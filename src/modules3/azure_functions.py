@@ -24,15 +24,7 @@ from azure.identity import ClientSecretCredential
 
 azure_filesystem_uri = 'dfs.core.windows.net'
 
-container_name = "ingress" # Default Container Name
-metadata_folder = 'metadata'
-data_folder = 'data'
-
 file_format = 'delta' # Default File Format
-
-storage_account_abbr_to_full_name = lambda storage_account_abbr:  f"{data_settings.azure_storage_accounts_prefix}{storage_account_abbr}{data_settings.azure_storage_accounts_suffix}".lower()
-default_storage_account_abbr = data_settings.azure_storage_accounts_default_mid.upper()
-default_storage_account_name = storage_account_abbr_to_full_name(default_storage_account_abbr) # Default Storage Account Name
 
 
 
@@ -203,8 +195,8 @@ def get_partition(spark, domain_name:str, source_system:str, schema_name:str, ta
     """
     Get partition string for a Delta Table. The partition string should be same as partition by folder name for Delta Tables
     """
-    container_folder = azure_container_folder_path(data_type=data_folder, domain_name=domain_name, source_or_database=source_system, firm_or_schema=schema_name)
-    data_path = azure_data_path_create(container_name=container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
+    container_folder = azure_container_folder_path(data_type=data_settings.azure_data_folder, domain_name=domain_name, source_or_database=source_system, firm_or_schema=schema_name)
+    data_path = azure_data_path_create(container_name=data_settings.azure_container_name, storage_account_name=storage_account_name, container_folder=container_folder, table_name=table_name)
     logger.info(f'Reading partition data for {data_path}')
 
     if PARTITION_list:

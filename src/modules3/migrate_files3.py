@@ -33,8 +33,30 @@ from pyspark.sql.window import Window
 
 # %% Parameters
 
-to_cloud_file_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + tableinfo_source + '_file_history3').lower()
-to_cloud_row_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + tableinfo_source + '_row_history3').lower()
+cloud_file_history_name = ('_'.join([data_settings.domain_name, data_settings.schema_name, 'file_history3'])).lower()
+cloud_row_history_name = ('_'.join([data_settings.domain_name, data_settings.schema_name, 'row_history3'])).lower()
+
+
+cloud_file_history_columns = [
+    ('database_name', 'varchar(300) NOT NULL'), # data_settings.domain_name
+    ('schema_name', 'varchar(300) NOT NULL'), # data_settings.schema_name
+    ('table_name', 'varchar(500) NOT NULL'),
+
+    ('file_name', 'varchar(300) NULL'),
+    ('file_path', 'varchar(1000) NULL'),
+    ('folder_path', 'varchar(1000) NULL'),
+    ('zip_file_path', 'varchar(1000) NULL'),
+
+    ('firm_name', 'varchar(300) NULL'), # data_settings.pipeline_firm
+    ('is_full_load', 'bit NULL'),
+    ('key_datetime', 'datetime NULL'),
+
+    (EXECUTION_DATE_str.lower(), 'datetime NULL'), # execution_date
+    (ELT_PROCESS_ID_str.lower(), 'varchar(500) NULL'), # data_settings.elt_process_id
+    ('pipelinekey', 'varchar(500) NULL'), # data_settings.pipelinekey
+    ]
+
+
 
 
 
@@ -42,7 +64,7 @@ to_cloud_row_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + ta
 
 @catch_error(logger)
 def get_key_column_names(
-        base:list = ['table_name'],
+        base:list = ['databse_name', 'schema_name', 'table_name'],
         with_load:list = ['is_full_load'],
         with_load_n_date:list = ['key_datetime'],
         ):
@@ -58,6 +80,57 @@ def get_key_column_names(
 
 
 data_settings.key_column_names = get_key_column_names()
+
+
+
+# %% Check if file_meta exists in SQL server File History
+
+@catch_error(logger)
+def file_meta_exists_in_history(file_meta):
+    """
+    Check if file_meta exists in SQL server File History
+    """
+    sqlstr = f"""SELECT COUNT(*) AS CNT
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE UPPER(TABLE_SCHEMA) = '{cloud_file_hist_conf['sql_schema'].upper()}'
+        AND TABLE_TYPE = 'BASE TABLE'
+        AND UPPER(TABLE_NAME) = '{cloud_file_history_name.upper()}'
+    ;"""
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            cursor.execute(sqlstr)
+            row = cursor.fetchone()
+            if int(row['CNT']) == 0:
+                full_table_name = f"{cloud_file_hist_conf['sql_schema'.lower()]}.{cloud_file_history_name.lower()}"
+                logger.info(f'{full_table_name} table does not exist in SQL server. Creating new table.')
+
+
+
+
+
+                create_table_sqlstr = f"""
+            CREATE TABLE [{full_table_name}] (
+                 [table_name] varchar(300) NOT NULL
+                ,[schema_name] varchar(200) NOT NULL
+                ,[database_name] varchar(200) NOT NULL
+                ,[rows_ingested] [int] NOT NULL
+                ,[max_timestamp] varchar(300) NULL
+                ,[max_timestamp_column_name] varchar(300) NULL
+                ,[{EXECUTION_DATE_str.lower()}] [datetime] NOT NULL,
+            );
+                """
+                conn._conn.execute_non_query(create_table_sqlstr)
+                return False
+
+
 
 
 
