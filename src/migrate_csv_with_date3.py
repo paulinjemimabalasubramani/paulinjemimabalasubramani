@@ -86,23 +86,18 @@ def extract_csv_file_meta(file_path:str, zip_file_path:str=None):
 
     try:
         key_datetime = datetime.strptime(file_date_str, date_format)
-        file_date = key_datetime.strftime(r'%Y-%m-%d')
     except:
         logger.warning(f'Invalid date format in file name: {file_path}')
         return
 
     file_meta = {
+        'table_name': table_name.lower(),
         'file_name': file_name,
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
-        'firm_name': data_settings.pipeline_firm,
-        'file_date': file_date,
-        'table_name': table_name.lower(),
+        'zip_file_path': zip_file_path,
         'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
         'key_datetime': key_datetime,
-        'pipelinekey': data_settings.pipelinekey,
-        'zip_file_path': zip_file_path,
-        ELT_PROCESS_ID_str.lower(): data_settings.elt_process_id,
     }
 
     return file_meta
@@ -138,7 +133,7 @@ def process_csv_file(file_meta):
 # %% Iterate over all the files in all the firms and process them.
 
 additional_ingest_columns = [
-    to_date(col('file_date'), format='yyyy-MM-dd').alias('file_date', metadata={'sqltype': '[date] NULL'}),
+    ('file_date', 'date NULL'),
     ]
 
 migrate_all_files(
