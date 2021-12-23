@@ -57,7 +57,7 @@ with DAG(
              '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_RAA',
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
-             '--spark_master_ip', spark_master_ip,
+             #'--spark_master_ip', spark_master_ip,
              ],
          dag = dag
          )
@@ -77,13 +77,36 @@ with DAG(
              '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_WFS',
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
-             '--spark_master_ip', spark_master_ip,
+             #'--spark_master_ip', spark_master_ip,
+         ],
+         dag = dag
+         )
+
+    METRICS_DATASTORE_MIGRATE_SPF = SparkSubmitOperator(
+         task_id = "METRICS_DATASTORE_MIGRATE_SPF",
+         application = "/usr/local/spark/app/migrate_csv_with_date.py",
+         name = spark_app_name,
+         jars = jars,
+         conn_id = "spark_default",
+         num_executors = spark_executor_instances,
+         executor_cores = 4,
+         executor_memory = "16G",
+         verbose = 1,
+         conf = {"spark.master": spark_master},
+         application_args = [
+             '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_SPF',
+             '--spark_master', spark_master,
+             '--spark_executor_instances', str(spark_executor_instances),
+             #'--spark_master_ip', spark_master_ip,
          ],
          dag = dag
          )
 
     startpipe >> METRICS_DATASTORE_MIGRATE_RAA
     startpipe >> METRICS_DATASTORE_MIGRATE_WFS
+    startpipe >> METRICS_DATASTORE_MIGRATE_SPF
+
+
 
 
 # %%
