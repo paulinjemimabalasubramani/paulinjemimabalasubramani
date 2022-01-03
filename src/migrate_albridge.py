@@ -250,7 +250,7 @@ def create_table_from_albridge_file(file_path:str, file_schema):
     text_file = text_file.drop(col('elt_value'))
     text_file = add_id_key(text_file, key_column_names=key_column_names)
 
-    text_file.persist(StorageLevel.MEMORY_AND_DISK)
+    #text_file.persist(StorageLevel.MEMORY_AND_DISK)
     return text_file
 
 

@@ -262,7 +262,7 @@ def read_adls_gen2(spark,
 
     if is_pc: table.show(5)
 
-    table.persist(StorageLevel.MEMORY_AND_DISK)
+    #table.persist(StorageLevel.MEMORY_AND_DISK)
     return table
 
 
@@ -279,7 +279,7 @@ def read_tableinfo_rows(tableinfo_name:str, tableinfo_source:str, tableinfo):
         return
 
     tableinfo = tableinfo.filter(col('IsActive')==lit(1)).distinct()
-    tableinfo.persist(StorageLevel.MEMORY_AND_DISK)
+    #tableinfo.persist(StorageLevel.MEMORY_AND_DISK)
 
     # Create unique list of tables
     table_list = tableinfo.select(

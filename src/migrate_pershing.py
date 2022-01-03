@@ -121,7 +121,7 @@ def get_pershing_schema(spark, schema_file_name:str):
     schema = schema.withColumn('position_end', F.split(col('position'), pattern='-').getItem(1).cast(IntegerType()))
     schema = schema.withColumn('length', col('position_end') - col('position_start') + lit(1))
 
-    schema.persist(StorageLevel.MEMORY_AND_DISK)
+    #schema.persist(StorageLevel.MEMORY_AND_DISK)
     return schema
 
 
@@ -351,7 +351,7 @@ def join_all_tables(tables, groupBy:list):
     for column_name in header_map:
         joined_tables = joined_tables.withColumn(column_name, lit(header[column_name]))
 
-    joined_tables.persist(StorageLevel.MEMORY_AND_DISK)
+    #joined_tables.persist(StorageLevel.MEMORY_AND_DISK)
     return joined_tables
 
 

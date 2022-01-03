@@ -204,7 +204,7 @@ def read_sql(spark, schema:str, table_name:str, database:str, server:str, user:s
             .load()
         )
 
-    sql_table.persist(StorageLevel.MEMORY_AND_DISK)
+    #sql_table.persist(StorageLevel.MEMORY_AND_DISK)
 
     return sql_table
 
@@ -265,7 +265,7 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
         .options(**sf_options) \
         .option(dbtable, table_name) \
         .load()
-    table.persist(StorageLevel.MEMORY_AND_DISK)
+    #table.persist(StorageLevel.MEMORY_AND_DISK)
 
     logger.info('Finished Reading from Snowflake')
     return table
@@ -293,7 +293,7 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
         xml_table = xml_table.schema(schema=schema)
 
     xml_table_load = xml_table.load(file_path)
-    xml_table_load.persist(StorageLevel.MEMORY_AND_DISK)
+    #xml_table_load.persist(StorageLevel.MEMORY_AND_DISK)
 
     if is_pc: xml_table_load.show(5)
 
@@ -340,7 +340,7 @@ def read_csv(spark, file_path:str):
 
     csv_table = remove_column_spaces(table=csv_table)
     csv_table = trim_string_columns(table=csv_table)
-    csv_table.persist(StorageLevel.MEMORY_AND_DISK)
+    #csv_table.persist(StorageLevel.MEMORY_AND_DISK)
 
     logger.info('Finished reading CSV file')
     return csv_table
@@ -361,7 +361,7 @@ def read_text(spark, file_path:str):
         .load(file_path)
     )
 
-    text_file.persist(StorageLevel.MEMORY_AND_DISK)
+    #text_file.persist(StorageLevel.MEMORY_AND_DISK)
 
     logger.info('Finished reading text file')
     return text_file
