@@ -133,7 +133,7 @@ def process_csv_file(file_meta):
 # %% Iterate over all the files in all the firms and process them.
 
 additional_ingest_columns = [
-    ('file_date', 'date NULL'),
+    #('file_date', 'date NULL'),
     ]
 
 migrate_all_files(
