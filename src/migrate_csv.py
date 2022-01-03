@@ -147,7 +147,7 @@ def process_csv_file(file_meta, cloud_file_history):
         dml_type = 'I' if file_meta['is_full_load'] else 'U',
         )
 
-    table.persist(StorageLevel.MEMORY_AND_DISK)
+    #table.persist(StorageLevel.MEMORY_AND_DISK)
 
     if is_pc: table.show(5)
     if is_pc: print(f'Number of rows: {table.count()}')

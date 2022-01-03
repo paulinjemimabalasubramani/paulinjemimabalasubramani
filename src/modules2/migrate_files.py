@@ -527,7 +527,7 @@ def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, 
     logger.info('Select Relevant columns only')
     tableinfo = select_tableinfo_columns(tableinfo=columns)
 
-    tableinfo.persist(StorageLevel.MEMORY_AND_DISK)
+    #tableinfo.persist(StorageLevel.MEMORY_AND_DISK)
     return tableinfo
 
 
