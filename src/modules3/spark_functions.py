@@ -41,6 +41,7 @@ ELT_FIRM_str = 'ELT_FIRM'
 
 partitionBy = 'ELT_PARTITION_DATE'
 partitionBy_value = re.sub(column_regex, '_', execution_date)
+PARTITION = f'{partitionBy}={partitionBy_value}'
 
 elt_audit_columns = [EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str, KEY_DATETIME_str, ELT_PROCESS_ID_str, ELT_FIRM_str]
 

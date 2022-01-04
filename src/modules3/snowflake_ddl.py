@@ -4,16 +4,14 @@ Common Library for creating and executing (if required) Snowflake DDL Steps and 
 """
 
 # %% Import Libraries
-import json, os, sys
+import json, os
 from functools import wraps
 from collections import defaultdict, OrderedDict
 
-from modules.azure_functions import azure_data_path_create
-
 from .common_functions import logger, catch_error, data_settings, execution_date, get_secrets, to_OrderedDict, EXECUTION_DATE_str
-from .spark_functions import elt_audit_columns
+from .spark_functions import elt_audit_columns, PARTITION
 from .azure_functions import azure_container_folder_path, setup_spark_adls_gen2_connection, save_adls_gen2, container_name, \
-    default_storage_account_abbr, default_storage_account_name, post_log_data, metadata_folder, get_partition
+    post_log_data, metadata_folder
 
 from snowflake.connector import connect as snowflake_connect
 from pyspark.sql.types import StringType
@@ -31,18 +29,18 @@ class module_params_class:
     create_or_replace = True # Default False - Use True for Schema Change Update
     create_cicd_file = data_settings.create_cicd_file
 
-    snowflake_account = data_settings.snowflake_account
-    sf_key_vault_account = data_settings.snowflake_key_vault_account
+    #snowflake_account = data_settings.snowflake_account
+    #sf_key_vault_account = data_settings.snowflake_key_vault_account
 
-    domain_name = data_settings.domain_name
-    environment = data_settings.environment
-    snowflake_raw_warehouse = data_settings.snowflake_warehouse
-    snowflake_raw_database = f'{environment}_{domain_name}'.upper()
+    #domain_name = data_settings.domain_name
+    #environment = data_settings.environment
+    #snowflake_raw_warehouse = data_settings.snowflake_warehouse
+    snowflake_database = f'{data_settings.environment}_{data_settings.domain_name}'.upper()
 
-    common_elt_stage_name = default_storage_account_abbr
-    common_storage_account = default_storage_account_name
+    #common_elt_stage_name = default_storage_account_abbr
+    #common_storage_account = default_storage_account_name
 
-    snowflake_role = data_settings.snowflake_role
+    #snowflake_role = data_settings.snowflake_role
 
     ddl_folder = 'DDL'
 
@@ -84,25 +82,19 @@ if wid.create_cicd_file:
 # %% Connect to SnowFlake
 
 @catch_error(logger)
-def connect_to_snowflake(
-        snowflake_account:str=wid.snowflake_account,
-        key_vault_account:str=wid.sf_key_vault_account,
-        snowflake_database:str=None, 
-        snowflake_warehouse:str=wid.snowflake_raw_warehouse,
-        snowflake_role:str=wid.snowflake_role,
-        ):
+def connect_to_snowflake():
     """
     Connect to SnowFlake account
     """
-    _, snowflake_user, snowflake_pass = get_secrets(key_vault_account)
+    _, snowflake_user, snowflake_pass = get_secrets(data_settings.snowflake_key_vault_account)
 
     snowflake_connection = snowflake_connect(
         user = snowflake_user,
         password = snowflake_pass,
-        account = snowflake_account,
-        database = snowflake_database,
-        warehouse = snowflake_warehouse,
-        role = snowflake_role,
+        account = data_settings.snowflake_account,
+        database = wid.snowflake_database,
+        warehouse = data_settings.snowflake_warehouse,
+        role = data_settings.snowflake_role,
         autocommit = True,
     )
 
@@ -137,13 +129,13 @@ def get_column_names(tableinfo, source_system, schema_name, table_name):
 
 
 
-# %% Base SQL Statement for USE ROLE, USE WAREHOUSE, USE RAW DATABASE
+# %% Base SQL Statement for USE ROLE, USE WAREHOUSE, USE DATABASE
 
 @catch_error(logger)
-def use_role_warehouse_raw_database():
-    sqlstr = f"""USE ROLE {wid.snowflake_role};
-USE WAREHOUSE {wid.snowflake_raw_warehouse};
-USE DATABASE {wid.snowflake_raw_database};"""
+def use_role_warehouse_database():
+    sqlstr = f"""USE ROLE {data_settings.snowflake_role};
+USE WAREHOUSE {data_settings.snowflake_warehouse};
+USE DATABASE {wid.snowflake_database};"""
     return sqlstr
 
 
@@ -163,7 +155,7 @@ def base_sqlstr(schema_name, table_name, source_system, layer:str):
     else:
         TABLE_NAME = table_name.upper()
 
-    sqlstr = f"""{use_role_warehouse_raw_database()}
+    sqlstr = f"""{use_role_warehouse_database()}
 USE SCHEMA {SCHEMA_NAME};
 """
     return SCHEMA_NAME, TABLE_NAME, sqlstr
@@ -183,7 +175,7 @@ def action_step(step:int):
             sqlstr = step_fn(*args, **kwargs)
 
             if wid.save_to_adls:
-                storage_account_name = default_storage_account_name
+                storage_account_name = data_settings.default_storage_account_name
                 setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
 
                 save_adls_gen2(
@@ -366,7 +358,7 @@ def trigger_snowpipe(source_system:str):
     """
     Trigger snowpipe to read INGEST_REQUEST files
     """
-    sqlstr = f"""{use_role_warehouse_raw_database()}
+    sqlstr = f"""{use_role_warehouse_database()}
 
 ALTER PIPE {wid.elt_stage_schema}.{wid.common_elt_stage_name}_{wid.domain_abbr}_{source_system}_INGEST_REQUEST_PIPE REFRESH;
 """
@@ -396,7 +388,7 @@ def create_source_level_tables(ingest_data_list:defaultdict):
 
     logger.info(f'Create Source Level Tables')
     for source_system, ingest_data_per_source_system in ingest_data_list.items():
-        storage_account_name = default_storage_account_name
+        storage_account_name = data_settings.default_storage_account_name
         setup_spark_adls_gen2_connection(wid.spark, storage_account_name)
         container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=wid.domain_name, source_or_database=source_system)
 
@@ -487,119 +479,7 @@ ON TABLE {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label} APPEND_ONLY = TRUE;
 
 @catch_error(logger)
 @action_step(3)
-def step3(source_system:str, schema_name:str, table_name:str, PARTITION:str, storage_account_abbr:str):
-    """
-    Snowflake DDL: Add results of last job run on the Variant Table to the ELT_COPY_EXCEPTION table
-    Validates the files loaded in a past execution of the COPY INTO <table> command and returns all the errors encountered during the load
-    """
-    SCHEMA_NAME, TABLE_NAME, INGEST_STAGE_NAME, copy_into_sqlstr, sqlstr = create_copy_into_sql(source_system=source_system, schema_name=schema_name, table_name=table_name, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
-
-    step = f"""
-{copy_into_sqlstr}
-
-SET SOURCE_SYSTEM = '{SCHEMA_NAME}';
-SET TARGET_TABLE = '{SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}';
-SET EXCEPTION_DATE_TIME = CURRENT_TIMESTAMP();
-SET EXECEPTION_CREATED_BY_USER = CURRENT_USER();
-SET EXECEPTION_CREATED_BY_ROLE = CURRENT_ROLE();
-SET EXCEPTION_SESSION = CURRENT_SESSION();
-
-SELECT $SOURCE_SYSTEM;
-SELECT $TARGET_TABLE;
-SELECT $EXCEPTION_DATE_TIME;
-SELECT $EXECEPTION_CREATED_BY_USER;
-SELECT $EXECEPTION_CREATED_BY_ROLE;
-SELECT $EXCEPTION_SESSION;
-
-INSERT INTO {wid.elt_stage_schema}.ELT_COPY_EXCEPTION
-(
-   SOURCE_SYSTEM
-  ,TARGET_TABLE
-  ,EXCEPTION_DATE_TIME
-  ,EXECEPTION_CREATED_BY_USER
-  ,EXECEPTION_CREATED_BY_ROLE
-  ,EXCEPTION_SESSION
-  ,ERROR
-  ,FILE
-  ,LINE
-  ,CHARACTER
-  ,BYTE_OFFSET
-  ,CATEGORY
-  ,CODE
-  ,SQL_STATE
-  ,COLUMN_NAME
-  ,ROW_NUMBER
-  ,ROW_START_LINE
-  ,REJECTED_RECORD
-)
-SELECT
-   $SOURCE_SYSTEM
-  ,$TARGET_TABLE
-  ,$EXCEPTION_DATE_TIME
-  ,$EXECEPTION_CREATED_BY_USER
-  ,$EXECEPTION_CREATED_BY_ROLE
-  ,$EXCEPTION_SESSION
-  ,ERROR
-  ,FILE
-  ,LINE
-  ,CHARACTER
-  ,BYTE_OFFSET
-  ,CATEGORY
-  ,CODE
-  ,SQL_STATE
-  ,COLUMN_NAME
-  ,ROW_NUMBER
-  ,ROW_START_LINE
-  ,REJECTED_RECORD
-FROM TABLE(validate({SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}, job_id => '_last'));
-"""
-
-    sqlstr += step
-    wid.cicd_file += step
-    return sqlstr
-
-
-
-# %% Create Step 4
-
-@catch_error(logger)
-@action_step(4)
-def step4(source_system:str, schema_name:str, table_name:str, src_column_dict:OrderedDict):
-    """
-    Snowflake DDL: Create View on the Variant Table
-    """
-    layer = 'RAW'
-    SCHEMA_NAME, TABLE_NAME, sqlstr = base_sqlstr(schema_name=schema_name, table_name=table_name, source_system=source_system, layer=layer)
-
-    cicd_source_system = (SCHEMA_NAME, 'V0.0.3__Create_Views')
-    if not wid.cicd_str_per_step[cicd_source_system]:
-        wid.cicd_str_per_step[cicd_source_system] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
-
-    column_list_src = '\n  ,'.join(
-        [f'SRC:"{source_column_name}"::string AS {target_column_name}' for target_column_name, source_column_name in src_column_dict.items()] +
-        [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
-        )
-
-    step = f"""
-CREATE OR REPLACE VIEW {SCHEMA_NAME}.{wid.view_prefix}{TABLE_NAME}{wid.variant_label}
-AS
-SELECT
-   {column_list_src}
-FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label};
-"""
-
-    sqlstr += step
-    wid.cicd_file += step
-    wid.cicd_str_per_step[cicd_source_system] += step + wid.nlines
-    return sqlstr
-
-
-
-# %% Create Step 5
-
-@catch_error(logger)
-@action_step(5)
-def step5(source_system:str, schema_name:str, table_name:str, src_column_dict:OrderedDict):
+def step3(source_system:str, schema_name:str, table_name:str, src_column_dict:OrderedDict):
     """
     Snowflake DDL: Create View on the Stream of the Variant Table
     """
@@ -631,11 +511,11 @@ FROM {SCHEMA_NAME}.{TABLE_NAME}{wid.variant_label}{wid.stream_suffix};
 
 
 
-# %% Create Step 6
+# %% Create Step 4
 
 @catch_error(logger)
-@action_step(6)
-def step6(source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
+@action_step(4)
+def step4(source_system:str, schema_name:str, table_name:str, column_names:list, pk_column_names:list):
     """
     Snowflake DDL: Create View with Integration ID and Hash Column on the Stream of the Variant Table
     """
@@ -686,11 +566,11 @@ WHERE top_slice = 1;
 
 
 
-# %% Create Step 7
+# %% Create Step 5
 
 @catch_error(logger)
-@action_step(7)
-def step7(source_system:str, schema_name:str, table_name:str, data_types_dict:OrderedDict):
+@action_step(5)
+def step5(source_system:str, schema_name:str, table_name:str, data_types_dict:OrderedDict):
     """
     Snowflake DDL: Create final destination raw Table
     """
@@ -724,11 +604,11 @@ def step7(source_system:str, schema_name:str, table_name:str, data_types_dict:Or
 
 
 
-# %% Create Step 8
+# %% Create Step 6
 
 @catch_error(logger)
-@action_step(8)
-def step8(source_system:str, schema_name:str, table_name:str, data_types_dict:OrderedDict):
+@action_step(6)
+def step6(source_system:str, schema_name:str, table_name:str, data_types_dict:OrderedDict):
     """
     Snowflake DDL: Create Procedure to UPSERT raw data from variant data stream/view to destination raw table
     """
@@ -822,11 +702,11 @@ $$;
 
 
 
-# %% Create Step 9
+# %% Create Step 7
 
 @catch_error(logger)
-@action_step(9)
-def step9(source_system:str, schema_name:str, table_name:str):
+@action_step(7)
+def step7(source_system:str, schema_name:str, table_name:str):
     """
     Snowflake DDL: Create task to run the stored procedure for UPSERT every x minute
     """
@@ -859,11 +739,11 @@ AS
 
 
 
-# %% Create Step 10
+# %% Create Step 8
 
 @catch_error(logger)
-@action_step(10)
-def step10(source_system:str, schema_name:str, table_name:str):
+@action_step(8)
+def step8(source_system:str, schema_name:str, table_name:str):
     """
     Snowflake DDL: Resume Tasks
     """
@@ -888,8 +768,6 @@ ALTER TASK {task_name} RESUME;
 
 
 
-
-
 # %% Iterate Over Steps for all tables
 
 @catch_error(logger)
@@ -909,24 +787,18 @@ def iterate_over_all_tables_snowflake(tableinfo, table_rows, firm_name:str, PART
         table_name = table['TableName']
         schema_name = table['SourceSchema']
         source_system = table['SourceDatabase']
-        storage_account_name = table['StorageAccount']
         logger.info(f'Processing table {i+1} of {n_tables}: {source_system}/{schema_name}/{table_name}')
-
-        PARTITION = get_partition(spark=wid.spark, domain_name=wid.domain_name, source_system=source_system, schema_name=schema_name, table_name=table_name, storage_account_name=storage_account_name, PARTITION_list=PARTITION_list)
-        if not PARTITION: continue
 
         if wid.create_cicd_file:
             column_names, pk_column_names, src_column_dict, data_types_dict = get_column_names(tableinfo=tableinfo, source_system=source_system, schema_name=schema_name, table_name=table_name)
             step1(source_system=source_system, schema_name=schema_name, table_name=table_name)
             step2(source_system=source_system, schema_name=schema_name, table_name=table_name)
-            #step3(source_system=source_system, schema_name=schema_name, table_name=table_name, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
-            #step4(source_system=source_system, schema_name=schema_name, table_name=table_name, src_column_dict=src_column_dict)
-            step5(source_system=source_system, schema_name=schema_name, table_name=table_name, src_column_dict=src_column_dict)
-            step6(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, pk_column_names=pk_column_names)
-            step7(source_system=source_system, schema_name=schema_name, table_name=table_name, data_types_dict=data_types_dict)
-            step8(source_system=source_system, schema_name=schema_name, table_name=table_name, data_types_dict=data_types_dict)
-            step9(source_system=source_system, schema_name=schema_name, table_name=table_name)
-            step10(source_system=source_system, schema_name=schema_name, table_name=table_name)
+            step3(source_system=source_system, schema_name=schema_name, table_name=table_name, src_column_dict=src_column_dict)
+            step4(source_system=source_system, schema_name=schema_name, table_name=table_name, column_names=column_names, pk_column_names=pk_column_names)
+            step5(source_system=source_system, schema_name=schema_name, table_name=table_name, data_types_dict=data_types_dict)
+            step6(source_system=source_system, schema_name=schema_name, table_name=table_name, data_types_dict=data_types_dict)
+            step7(source_system=source_system, schema_name=schema_name, table_name=table_name)
+            step8(source_system=source_system, schema_name=schema_name, table_name=table_name)
             write_CICD_file_per_table(source_system=source_system, schema_name=schema_name, table_name=table_name)
 
         ingest_data = create_ingest_data(source_system=source_system, schema_name=schema_name, table_name=table_name, PARTITION=PARTITION, storage_account_abbr=storage_account_abbr)
@@ -935,6 +807,17 @@ def iterate_over_all_tables_snowflake(tableinfo, table_rows, firm_name:str, PART
     write_CICD_file_per_step()
     logger.info('Finished Iterating over all tables')
     return ingest_data_list
+
+
+
+
+# %% Create Snowflake DDL
+
+@catch_error(logger)
+def create_snowflake_ddl(table, table_name:str):
+    pass
+
+
 
 
 

@@ -36,7 +36,7 @@ sys.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import ELT_PROCESS_ID_str, catch_error, data_settings, logger, mark_execution_end, is_pc
 from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
-from modules3.migrate_files3 import migrate_all_files
+from modules3.migrate_files3 import migrate_all_files, get_key_column_names
 
 
 from datetime import datetime
@@ -115,7 +115,9 @@ def process_csv_file(file_meta):
     if not table: return
 
     table = remove_column_spaces(table=table)
-    table = add_id_key(table=table)
+
+    key_column_names = get_key_column_names(table_name=file_meta['table_name'])
+    table = add_id_key(table=table, key_column_names=key_column_names)
 
     table = add_elt_columns(
         table = table,
@@ -132,14 +134,14 @@ def process_csv_file(file_meta):
 
 # %% Iterate over all the files in all the firms and process them.
 
-additional_ingest_columns = [
+additional_file_meta_columns = [
     #('file_date', 'date NULL'),
     ]
 
 migrate_all_files(
     spark = spark,
     fn_extract_file_meta = extract_csv_file_meta,
-    additional_ingest_columns = additional_ingest_columns,
+    additional_file_meta_columns = additional_file_meta_columns,
     fn_process_file = process_csv_file,
     )
 
@@ -150,66 +152,6 @@ migrate_all_files(
 mark_execution_end()
 
 
-
-# %% Debugging
-
+# %%
 
 
-
-
-
-
-
-# %% Iterate over all the files in all the firms and process them.
-"""
-
-all_new_files, PARTITION_list, tableinfo = process_all_files_with_incrementals(
-    spark = spark,
-    firm_name = firm_name,
-    data_path_folder = data_settings.source_path,
-    fn_extract_file_meta = extract_csv_file_meta,
-    date_start = date_start,
-    additional_ingest_columns = additional_ingest_columns,
-    fn_process_file = process_csv_file,
-    key_column_names = key_column_names,
-    tableinfo_source = tableinfo_source,
-    date_column_name = date_column_name,
-    )
-
-
-
-
-
-# %% Save Tableinfo metadata table into Azure and Save Ingest files metadata to SQL Server.
-
-tableinfo = save_tableinfo_dict_and_cloud_file_history(
-    spark = spark,
-    tableinfo = tableinfo,
-    tableinfo_source = tableinfo_source,
-    all_new_files = all_new_files,
-    )
-
-
-
-# %% Read metadata.TableInfo
-
-table_rows = read_tableinfo_rows(tableinfo_name=tableinfo_name, tableinfo_source=tableinfo_source, tableinfo=tableinfo)
-
-
-
-# %% Iterate Over Steps for all tables
-
-ingest_data_list = iterate_over_all_tables_snowflake(
-    tableinfo = tableinfo,
-    table_rows = table_rows,
-    firm_name = firm_name,
-    PARTITION_list = PARTITION_list,
-    )
-
-
-# %% Create Source Level Tables
-
-create_source_level_tables(ingest_data_list=ingest_data_list)
-
-
-"""

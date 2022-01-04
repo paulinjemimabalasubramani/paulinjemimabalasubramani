@@ -23,6 +23,7 @@ from azure.keyvault.secrets import SecretClient
 execution_date_start = datetime.now()
 strftime = r'%Y-%m-%d %H:%M:%S'  # http://strftime.org/
 execution_date = execution_date_start.strftime(strftime)
+execution_date_start = datetime.strptime(execution_date, strftime) # to ensure identity with the string form of execution date
 EXECUTION_DATE_str = 'EXECUTION_DATE'
 
 ELT_PROCESS_ID_str = 'ELT_PROCESS_ID'
