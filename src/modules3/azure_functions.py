@@ -40,7 +40,7 @@ def setup_spark_adls_gen2_connection(spark, storage_account_name):
     spark.conf.set(f"fs.azure.account.oauth2.client.id.{storage_account_name}.{azure_filesystem_uri}", sp_id)
     spark.conf.set(f"fs.azure.account.oauth2.client.secret.{storage_account_name}.{azure_filesystem_uri}", sp_pass)
     spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_account_name}.{azure_filesystem_uri}", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token")
-    spark.conf.set("fs.azure.createRemoteFileSystemDuringInitialization", "true")
+    spark.conf.set(f"fs.azure.createRemoteFileSystemDuringInitialization", "true")
 
 
 
@@ -100,6 +100,9 @@ def save_adls_gen2(
     file_format = file_format.lower()
     data_path = azure_data_path(table_name=table_name, is_metadata=is_metadata)
     logger.info(f"Write {file_format} -> {data_path}")
+
+    for c in table.columns:
+        table = table.withColumnRenamed(c, c.lower())
 
     if file_format == 'text':
         table.coalesce(1).write.save(path=data_path, format=file_format, mode='overwrite', header='false')

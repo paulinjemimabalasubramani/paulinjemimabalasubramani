@@ -91,7 +91,7 @@ def extract_csv_file_meta(file_path:str, zip_file_path:str=None):
         return
 
     file_meta = {
-        'table_name': table_name.lower(),
+        'table_name': table_name.lower(), # table name should always be lower
         'file_name': file_name,
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),

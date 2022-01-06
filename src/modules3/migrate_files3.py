@@ -12,7 +12,7 @@ from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTI
     pipeline_metadata_conf
 from .azure_functions import save_adls_gen2
 from .spark_functions import ELT_PROCESS_ID_str
-from .snowflake_ddl import connect_to_snowflake, snowflake_ddl_params, create_snowflake_ddl
+from .snowflake_ddl import connect_to_snowflake, snowflake_ddl_params, create_snowflake_ddl, write_DDL_file_per_step
 
 
 
@@ -96,11 +96,10 @@ def get_key_column_names(table_name:str):
 
 
 
-
 # %% Create file_meta table in SQL Server if not exists
 
 @catch_error(logger)
-def create_file_meta_table_if_not_exists(additional_file_meta_columns):
+def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
     """
     Create file_meta table in SQL Server if not exists
     """
@@ -126,7 +125,7 @@ def create_file_meta_table_if_not_exists(additional_file_meta_columns):
             row = cursor.fetchone()
             if int(row['CNT']) == 0:
                 logger.info(f'{full_table_name} table does not exist in SQL server. Creating new table.')
-                file_meta_columns = ', '.join([f'{c[0]} {c[1]}' for c in cloud_file_history_columns + additional_file_meta_columns])
+                file_meta_columns = 'Id int Identity' + ''.join([f', {c[0]} {c[1]}' for c in cloud_file_history_columns + additional_file_meta_columns])
                 create_table_sqlstr = f'CREATE TABLE [{full_table_name}] ({file_meta_columns});'
                 conn._conn.execute_non_query(create_table_sqlstr)
 
@@ -135,7 +134,7 @@ def create_file_meta_table_if_not_exists(additional_file_meta_columns):
 # %% Check if file_meta exists in SQL server File History
 
 @catch_error(logger)
-def file_meta_exists_in_history(file_meta):
+def file_meta_exists_in_history(file_meta:dict):
     """
     Check if file_meta exists in SQL server File History
     """
@@ -144,10 +143,7 @@ def file_meta_exists_in_history(file_meta):
     key_columns = []
     for c in data_settings.metadata_key_column_names['with_load_n_date']:
         cval = file_meta[c]
-        if isinstance(cval, datetime):
-            cval = cval.strftime(strftime)
-        else:
-            cval = str(cval)
+        cval = cval.strftime(strftime) if isinstance(cval, datetime) else str(cval)
         key_columns.append(f"{c}='{cval}'")
     key_columns = ' AND '.join(key_columns)
     sqlstr_meta_exists = f'SELECT COUNT(*) AS CNT FROM {full_table_name} WHERE {key_columns};'
@@ -167,11 +163,51 @@ def file_meta_exists_in_history(file_meta):
 
 
 
+# %% Write file_meta to SQL server File History
+
+@catch_error(logger)
+def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list):
+    """
+    Write file_meta to SQL server File History
+    """
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+    all_columns = [c[0] for c in cloud_file_history_columns + additional_file_meta_columns]
+    all_columns_str = ', '.join(all_columns)
+
+    column_values = []
+    for c in all_columns:
+        cval = file_meta[c]
+        cval = cval.strftime(strftime) if isinstance(cval, datetime) else str(cval)
+        column_values.append(f"'{cval}'")
+    column_values_str = ', '.join(column_values)
+
+    sqlstr = f'INSERT INTO {full_table_name} ({all_columns_str}) VALUES ({column_values_str});'
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.parent_name,
+        autocommit = True,
+        ) as conn:
+        conn._conn.execute_non_query(sqlstr)
+
+
+
 # %% Migrate Single File
 
 @catch_error(logger)
-def migrate_single_file(file_meta, fn_process_file, additional_file_meta_columns):
-    logger.info(f"Processing: {file_meta['file_path']}")
+def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, fn_process_file, additional_file_meta_columns:list):
+    logger.info(f'Extract File Meta: {file_path}')
+    file_meta = fn_extract_file_meta(file_path=file_path, zip_file_path=zip_file_path)
+    if not file_meta or (data_settings.key_datetime > file_meta['key_datetime']): return
+
+    if file_meta_exists_in_history(file_meta=file_meta):
+        logger.info(f'File already exists, skipping: {file_path}')
+        return
+
+    logger.info(f"Processing: {file_path}")
     logger.info(file_meta)
 
     table_list = fn_process_file(file_meta=file_meta)
@@ -182,21 +218,14 @@ def migrate_single_file(file_meta, fn_process_file, additional_file_meta_columns
     for table_name, table in table_list.items():
         if save_adls_gen2(table=table, table_name=table_name, is_metadata=False):
             create_snowflake_ddl(table=table, table_name=table_name)
-
-    # Snowflake DDL + Trigger
-    # Update create_source_level_tables(ingest_data_list=ingest_data_list)
-    # Write File Meta to SQL Server
-
-
-
-
+            write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
 
 
 
 # %% Mirgate all files recursively unzipping any files
 
 @catch_error(logger)
-def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns, fn_process_file, zip_file_path:str=None):
+def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, zip_file_path:str=None):
     """
     Mirgate all files recursively unzipping any files
     """
@@ -219,15 +248,13 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
                         )
                     continue
 
-            logger.info(f'Extract File Meta: {file_path}')
-            file_meta = fn_extract_file_meta(file_path=file_path, zip_file_path=zip_file_path)
-            if not file_meta or (data_settings.key_datetime > file_meta['key_datetime']): continue
-
-            if file_meta_exists_in_history(file_meta=file_meta):
-                logger.info(f'File already exists, skipping: {file_path}')
-                continue
-
-            migrate_single_file(file_meta=file_meta, fn_process_file=fn_process_file, additional_file_meta_columns=additional_file_meta_columns)
+            migrate_single_file(
+                file_path = file_path,
+                zip_file_path = zip_file_path,
+                fn_extract_file_meta = fn_extract_file_meta,
+                fn_process_file = fn_process_file,
+                additional_file_meta_columns = additional_file_meta_columns,
+                )
 
 
 
@@ -249,6 +276,7 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns,
         fn_process_file = fn_process_file
         )
 
+    write_DDL_file_per_step()
     snowflake_ddl_params.snowflake_connection.close()
 
 

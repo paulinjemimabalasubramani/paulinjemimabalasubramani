@@ -16,12 +16,11 @@ https://spark.apache.org/docs/latest/configuration
 import os, re, json
 from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, \
-    ELT_PROCESS_ID_str
+from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import col, lit, md5, concat_ws, coalesce, trim, explode
+from pyspark.sql.functions import col, lit, sha1, concat_ws, coalesce, trim, explode
 from pyspark.sql.types import IntegerType
 
 
@@ -30,20 +29,22 @@ from pyspark.sql.types import IntegerType
 
 column_regex = r'[\W]+'
 
-IDKeyIndicator = 'ELT_PRIMARY_KEY'
+IDKeyIndicator = 'elt_primary_key'
 
-ELT_SOURCE_str = 'ELT_SOURCE'
-ELT_LOAD_TYPE_str = 'ELT_LOAD_TYPE'
-ELT_DELETE_IND_str = 'ELT_DELETE_IND'
-DML_TYPE_str = 'ELT_DML_TYPE'
-KEY_DATETIME_str = 'ELT_KEY_DATETIME'
-ELT_FIRM_str = 'ELT_FIRM'
+ELT_SOURCE_str = 'elt_source'
+ELT_LOAD_TYPE_str = 'elt_load_type'
+ELT_DELETE_IND_str = 'elt_delete_ind'
+DML_TYPE_str = 'elt_dml_type'
+KEY_DATETIME_str = 'elt_reception_date'
+ELT_FIRM_str = 'elt_firm'
+ELT_PROCESS_ID_str = 'elt_process_id'
 
-partitionBy = 'ELT_PARTITION_DATE'
+partitionBy = 'elt_partition_date'
 partitionBy_value = re.sub(column_regex, '_', execution_date)
 PARTITION = f'{partitionBy}={partitionBy_value}'
 
 elt_audit_columns = [EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str, KEY_DATETIME_str, ELT_PROCESS_ID_str, ELT_FIRM_str]
+elt_audit_columns = [c.lower() for c in elt_audit_columns]
 
 
 
@@ -390,17 +391,17 @@ def read_text(spark, file_path:str):
 # %% Add ID Key
 
 @catch_error(logger)
-def add_id_key(table, key_column_names:list=[], always_use_md5:bool=False):
+def add_id_key(table, key_column_names:list=[], always_use_hash:bool=False):
     """
     Add ID Key to the table
     """
-    use_md5 = always_use_md5
+    use_hash = always_use_hash
     if not key_column_names:
         key_column_names = table.columns
-        use_md5 = True
+        use_hash = True
 
     id_key = concat_ws('_', [coalesce(col(c).cast('string'), lit('')) for c in key_column_names])
-    if use_md5: id_key = md5(id_key)
+    if use_hash: id_key = sha1(id_key)
 
     table = table.withColumn(IDKeyIndicator, id_key.alias(IDKeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}))
     return table

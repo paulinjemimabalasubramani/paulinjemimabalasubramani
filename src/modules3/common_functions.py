@@ -24,9 +24,7 @@ execution_date_start = datetime.now()
 strftime = r'%Y-%m-%d %H:%M:%S'  # http://strftime.org/
 execution_date = execution_date_start.strftime(strftime)
 execution_date_start = datetime.strptime(execution_date, strftime) # to ensure identity with the string form of execution date
-EXECUTION_DATE_str = 'EXECUTION_DATE'
-
-ELT_PROCESS_ID_str = 'ELT_PROCESS_ID'
+EXECUTION_DATE_str = 'elt_execution_date'
 
 is_pc = platform.system().lower() == 'windows'
 
@@ -302,7 +300,7 @@ def get_data_settings(logger=None):
     if is_pc: # Read Data Settings from file
         data_path = os.path.realpath(python_dirname + '/../../../Shared')
         data_settings.temporary_file_path = os.path.join(data_path, 'TEMP')
-        data_settings.output_cicd_path = os.path.join(data_path, 'CICD')
+        data_settings.output_ddl_path = os.path.join(data_path, 'DDL')
         data_settings.output_log_path = os.path.join(data_path, 'logs')
 
     os.makedirs(data_settings.temporary_file_path, exist_ok=True)
