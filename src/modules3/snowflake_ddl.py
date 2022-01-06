@@ -24,20 +24,8 @@ class module_params_class:
     """
     execute_at_snowflake = False # Default False
     create_or_replace = True # Default False - Use True for Schema Change Update
-    #create_ddl_files = data_settings.create_ddl_files
 
-    #snowflake_account = data_settings.snowflake_account
-    #sf_key_vault_account = data_settings.snowflake_key_vault_account
-
-    #domain_name = data_settings.domain_name
-    #environment = data_settings.environment
-    #snowflake_raw_warehouse = data_settings.snowflake_warehouse
     snowflake_database = f'{data_settings.environment}_{data_settings.domain_name}'.upper()
-
-    #common_elt_stage_name = default_storage_account_abbr
-    #common_storage_account = default_storage_account_name
-
-    #snowflake_role = data_settings.snowflake_role
 
     ddl_folder = 'DDL'
 
@@ -63,8 +51,6 @@ class module_params_class:
     snowflake_connection = None
     ddl_file = None
     ddl_str_per_step = defaultdict(str)
-
-    #ddl_folder_path = data_settings.output_ddl_path
 
 
 

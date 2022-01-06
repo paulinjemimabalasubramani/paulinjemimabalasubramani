@@ -141,30 +141,19 @@ def create_spark():
 
 
 
-# %% Utility function to collect data from specific PySpark Table column
+# %% Convert timestamp's or other types to string
 
 @catch_error(logger)
-def collect_column1(table, column_name:str, distinct:bool=True):
+def to_string(table_to_convert_columns, col_types=['timestamp']):
     """
-    Utility function to collect data from specific PySpark Table column
+    Convert timestamp's or other types to string - as it cause errors otherwise.
     """
-    table = table.select(column_name)
-    if distinct:
-        table = table.distinct()
-    values = table.collect()
-    values = [x[column_name] for x in values]
-    return values
+    string_type = 'string'
+    for col_name, col_type in table_to_convert_columns.dtypes:
+        if (not col_types or col_type.lower() in col_types) and (col_type.lower() != string_type.lower()):
+            table_to_convert_columns = table_to_convert_columns.withColumn(col_name, col(col_name).cast(string_type))
 
-
-
-# %% Utility function to convert PySpark table to list of dictionaries
-
-@catch_error(logger)
-def table_to_list_dict1(table):
-    """
-    Utility function to convert PySpark table to list of dictionaries
-    """
-    return table.toJSON().map(lambda j: json.loads(j)).collect()
+    return table_to_convert_columns
 
 
 
@@ -176,24 +165,8 @@ def remove_column_spaces(table):
     Removes spaces from column names
     """
     table = table.select([col(f'`{c}`').alias(re.sub(column_regex, '_', c.strip())) for c in table.columns])
+    table = to_string(table, col_types = ['timestamp'])
     return table
-
-
-
-# %% Convert timestamp's or other types to string
-
-@catch_error(logger)
-def to_string(table_to_convert_columns, col_types=['timestamp']):
-    """
-    Convert timestamp's or other types to string - as it cause errors otherwise.
-    """
-    string_type = 'string'
-    for col_name, col_type in table_to_convert_columns.dtypes:
-        if (not col_types or col_type in col_types) and (col_type != string_type):
-            logger.info(f"Converting {col_name} from '{col_type}' to 'string' type")
-            table_to_convert_columns = table_to_convert_columns.withColumn(col_name, col(col_name).cast(string_type))
-    
-    return table_to_convert_columns
 
 
 
@@ -494,28 +467,6 @@ def flatten_n_divide_table(table, table_name:str):
         table_list={**table_list, **flatten_n_divide_table(table=table_select, table_name=table_name+'_'+array_col)}
 
     return table_list
-
-
-
-# %% Get List of Columns from "Columns" table order by OrdinalPosition
-
-@catch_error(logger)
-def get_columns_list_from_columns_table1(columns, column_names:list, OrdinalPosition:str=None):
-    select_columns = column_names.copy()
-    if OrdinalPosition:
-        select_columns += [OrdinalPosition]
-    select_columns = list(set(select_columns))
-    column_list = columns.select(select_columns).distinct().collect()
-
-    if OrdinalPosition:
-        column_list = [({x:c[x] for x in column_names}, c[OrdinalPosition]) for c in column_list]
-    else:
-        column_list = [({x:c[x] for x in column_names}, (c[x] for x in column_names)) for c in column_list]
-
-    column_list = sorted(column_list, key=lambda x: x[1])
-    column_list = [x[0] for x in column_list]
-
-    return column_list
 
 
 
