@@ -34,14 +34,13 @@ sys.args = args
 sys.parent_name = os.path.basename(__file__)
 
 
-from modules3.common_functions import ELT_PROCESS_ID_str, catch_error, data_settings, logger, mark_execution_end, is_pc
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
 from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
-from modules3.migrate_files3 import migrate_all_files, get_key_column_names
+from modules3.migrate_files import migrate_all_files, get_key_column_names
 
 
 from datetime import datetime
 
-from pyspark.sql.functions import col, to_date
 
 
 
