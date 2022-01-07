@@ -1,869 +1,115 @@
 """
-Common Library for translating data types from source database to target database, and creating metadata.TableInfo table in Azure
+Common Library for migrating any type of data from any source to Azure ADLS Gen 2 and Snowflake.
 
 """
 
 # %% Import Libraries
 
-import os, sys, re, tempfile, shutil, copy, json, pymssql
-from pprint import pprint
-from collections import defaultdict
+import os, sys, tempfile, shutil, pymssql
 from datetime import datetime
 
-from .common_functions import logger, catch_error, is_pc, execution_date, data_settings, pymssql_execute_non_query, \
-    execution_date_start, cloud_file_histdict, file_metadata_dict, EXECUTION_DATE_str, cloud_file_hist_conf
-from .azure_functions import select_tableinfo_columns, tableinfo_container_name, tableinfo_name, read_adls_gen2, \
-    default_storage_account_name, file_format, save_adls_gen2, setup_spark_adls_gen2_connection, container_name, \
-    default_storage_account_abbr, metadata_folder, azure_container_folder_path, data_folder, add_table_to_tableinfo, \
-    storage_account_abbr_to_full_name
-from .spark_functions import collect_column, read_csv, IDKeyIndicator, MD5KeyIndicator, add_md5_key, read_sql, column_regex, partitionBy, \
-    metadata_DataTypeTranslation, metadata_MasterIngestList, to_string, remove_column_spaces, add_elt_columns, partitionBy_value, \
-    get_sql_table_names, write_sql, elt_process_id, ELT_PROCESS_ID_str
-
-from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit, row_number, when, to_timestamp
-from pyspark.sql.types import IntegerType, StringType, BooleanType
-from pyspark.sql.window import Window
-from pyspark import StorageLevel
+from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, strftime, \
+    pipeline_metadata_conf, execution_date
+from .azure_functions import save_adls_gen2, setup_spark_adls_gen2_connection
+from .spark_functions import ELT_PROCESS_ID_str
+from .snowflake_ddl import connect_to_snowflake, snowflake_ddl_params, create_snowflake_ddl, write_DDL_file_per_step
 
 
 
 # %% Parameters
 
-created_datetime = execution_date
-modified_datetime = execution_date
+cloud_file_history_name = ('_'.join([data_settings.domain_name, data_settings.schema_name, 'file_history3'])).lower()
+cloud_row_history_name = ('_'.join([data_settings.domain_name, data_settings.schema_name, 'row_history3'])).lower()
 
-INFORMATION_SCHEMA = 'INFORMATION_SCHEMA'.upper()
-schema_table_names = ['TABLES', 'COLUMNS', 'KEY_COLUMN_USAGE', 'TABLE_CONSTRAINTS']
 
-tmpdirs = []
+cloud_file_history_columns = [
+    ('database_name', 'varchar(300) NOT NULL'), # data_settings.domain_name
+    ('schema_name', 'varchar(300) NOT NULL'), # data_settings.schema_name
+    ('table_name', 'varchar(500) NOT NULL'),
 
-to_cloud_file_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + tableinfo_source + '_file_history3').lower()
-to_cloud_row_history_name = lambda tableinfo_source: (sys.domain_abbr + '_' + tableinfo_source + '_row_history3').lower()
+    ('file_name', 'varchar(300) NULL'),
+    ('file_path', 'varchar(1000) NULL'),
+    ('folder_path', 'varchar(1000) NULL'),
+    ('zip_file_path', 'varchar(1000) NULL'),
+
+    ('firm_name', 'varchar(300) NULL'), # data_settings.pipeline_firm
+    ('is_full_load', 'bit NULL'),
+    ('key_datetime', 'datetime NULL'),
+
+    (EXECUTION_DATE_str.lower(), 'datetime NULL'), # data_settings.execution_date
+    (ELT_PROCESS_ID_str.lower(), 'varchar(500) NULL'), # data_settings.elt_process_id
+    ('pipelinekey', 'varchar(500) NULL'), # data_settings.pipelinekey
+    ]
 
 
 
 # %% Get Key Column Names
 
 @catch_error(logger)
-def get_key_column_names():
+def get_metadata_key_column_names(
+        base:list = ['database_name', 'schema_name', 'table_name'],
+        with_load:list = ['is_full_load'],
+        with_load_n_date:list = ['key_datetime'],
+        ):
     """
     Get Key Column Names for sorting the data files for uniqueness
     """
     key_column_names = dict() 
-    key_column_names['base'] = ['table_name']
-    key_column_names['with_load'] = key_column_names['base'] + ['is_full_load']
-    key_column_names['with_load_n_date'] = key_column_names['with_load'] + ['key_datetime']
+    key_column_names['base'] = base
+    key_column_names['with_load'] = key_column_names['base'] + with_load
+    key_column_names['with_load_n_date'] = key_column_names['with_load'] + with_load_n_date
     return key_column_names
 
 
 
-key_column_names = get_key_column_names()
+data_settings.metadata_key_column_names = get_metadata_key_column_names()
 
 
 
-# %% Get DataTypeTranslation table
-
-@catch_error(logger)
-def get_DataTypeTranslation_table(spark, data_type_translation_id:str):
-    """
-    Get DataTypeTranslation table from Azure
-    """
-    storage_account_name = default_storage_account_name
-
-    translation = read_adls_gen2(
-        spark = spark,
-        storage_account_name = storage_account_name,
-        container_name = tableinfo_container_name,
-        container_folder = metadata_folder,
-        table_name = metadata_DataTypeTranslation,
-        file_format = file_format
-    )
-
-    translation = translation.filter(
-        (col('DataTypeTranslationID') == lit(data_type_translation_id).cast("string")) & 
-        (col('IsActive') == lit(1))
-    )
-
-    if is_pc: translation.show(5)
-    return translation
-
-
-
-# %% Get Master Ingest List
+# %% Get Primary Keys from SQL Server
 
 @catch_error(logger)
-def get_master_ingest_list(spark, tableinfo_source:str):
+def get_key_column_names(table_name:str):
     """
-    Get Master Ingest List from Azure - this is the list of table names to be ingested.
+    Get Primary Keys from SQL Server
     """
-    storage_account_name = default_storage_account_name
+    sqlstr_table_exists = f"""SELECT LOWER(SystemPrimaryKey) AS PK FROM {pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_primary_key']}
+        where SystemPrimaryKey IS NOT NULL
+            AND UPPER(DomainName) = '{data_settings.domain_name.upper()}'
+            AND UPPER(DataSource) = '{data_settings.schema_name.upper()}'
+            AND UPPER(AssetUniqueKey) = '{table_name.upper()}'
+    """
 
-    master_ingest_list = read_adls_gen2(
-        spark = spark,
-        storage_account_name = storage_account_name,
-        container_name = tableinfo_container_name,
-        container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
-        table_name = metadata_MasterIngestList,
-        file_format = file_format
-    )
+    with pymssql.connect(
+        server = pipeline_metadata_conf['sql_server'],
+        user = pipeline_metadata_conf['sql_id'],
+        password = pipeline_metadata_conf['sql_pass'],
+        database = pipeline_metadata_conf['sql_database'],
+        appname = sys.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            cursor.execute(sqlstr_table_exists)
+            key_column_names = [row['PK'].strip().lower() for row in cursor]
 
-    master_ingest_list = master_ingest_list.filter(
-        col('IsActive')==lit(1)
-    )
-
-    if is_pc: master_ingest_list.show(5)
-    return master_ingest_list
+    return sorted(key_column_names)
 
 
 
-# %% Join master_ingest_list with sql tables
+# %% Create file_meta table in SQL Server if not exists
 
 @catch_error(logger)
-def join_master_ingest_list_sql_tables(master_ingest_list, sql_tables):
+def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
     """
-    Join master_ingest_list with sql tables
+    Create file_meta table in SQL Server if not exists
     """
-    sql_tables = sql_tables.where(col('TABLE_TYPE')==lit('BASE TABLE'))
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
 
-    tables = master_ingest_list.alias('master_ingest_list').join(
-        sql_tables.alias('sql_tables'),
-        (F.upper(col('master_ingest_list.TABLE_NAME')) == F.upper(col('sql_tables.TABLE_NAME'))) &
-        (F.upper(col('master_ingest_list.TABLE_SCHEMA')) == F.upper(col('sql_tables.TABLE_SCHEMA'))),
-        how = 'left'
-        ).select(
-            col('master_ingest_list.TABLE_NAME'), 
-            col('master_ingest_list.TABLE_SCHEMA'),
-            col('sql_tables.TABLE_NAME').alias('SQL_TABLE_NAME'),
-            col('sql_tables.TABLE_TYPE'),
-            col('sql_tables.TABLE_CATALOG'),
-        )
-
-    if is_pc: tables.show(5)
-
-    # Check if there is a table in the master_ingest_list that is not in the sql_tables
-    null_rows = tables.filter(col('SQL_TABLE_NAME').isNull()).select(col('TABLE_NAME'))
-    if not null_rows.rdd.isEmpty():
-        null_rows = null_rows.collect()
-        logger.warning(f"There are some tables in master_ingest_list that are not in sql_tables: {[x[0] for x in null_rows]}")
-
-    tables = tables.where(col('SQL_TABLE_NAME').isNotNull())
-    return tables
-
-
-
-# %% Add columns if not exists
-
-@catch_error(logger)
-def add_columns_if_not_exists(table, table_name:str, columns:dict):
-    """
-    Add columns with default values to the table if column does not exit.
-    """
-    COLUMNS = [c.upper() for c in table.columns]
-    for column_name, column_value in columns.items():
-        if column_name.upper() not in COLUMNS:
-            logger.warning(f'{column_name} is not found in {table_name}, adding the column with value = {column_value}')
-            table = table.withColumn(column_name, column_value)
-    return table
-
-
-
-# %% filter columns by selected tables
-
-@catch_error(logger)
-def filter_columns_by_tables(sql_columns, tables):
-    """
-    Filter COLUMNS table by selected tables in the TABLES table
-    """
-    columns = tables.join(
-        sql_columns.alias('sql_columns'),
-        (F.upper(tables.TABLE_NAME) == F.upper(sql_columns.TABLE_NAME)) &
-        (F.upper(tables.TABLE_SCHEMA) == F.upper(sql_columns.TABLE_SCHEMA)) &
-        (F.upper(tables.TABLE_CATALOG) == F.upper(sql_columns.TABLE_CATALOG)),
-        how = 'left'
-    ).select('sql_columns.*').where(col('TABLE_NAME').isNotNull())
-
-    return columns
-
-
-
-# %% Join with table constraints and column usage
-
-@catch_error(logger)
-def join_tables_with_constraints(columns, sql_table_constraints, sql_key_column_usage, metadata_primary_keys):
-    """
-    Join COLUMNS table with table constraints and column usage
-    """
-    if (sql_table_constraints and sql_key_column_usage and
-        ('TABLE_NAME' in sql_table_constraints.columns) and
-        ('TABLE_SCHEMA' in sql_table_constraints.columns) and
-        ('TABLE_CATALOG' in sql_table_constraints.columns) and
-        ('CONSTRAINT_TYPE' in sql_table_constraints.columns) and
-        ('CONSTRAINT_NAME' in sql_table_constraints.columns) and
-        ('TABLE_NAME' in sql_key_column_usage.columns) and
-        ('TABLE_SCHEMA' in sql_key_column_usage.columns) and
-        ('TABLE_CATALOG' in sql_key_column_usage.columns) and
-        ('COLUMN_NAME' in sql_key_column_usage.columns) and
-        ('CONSTRAINT_NAME' in sql_key_column_usage.columns)
-        ):
-
-        constraints = (sql_table_constraints
-            .where(F.upper(col('CONSTRAINT_TYPE'))==lit('PRIMARY KEY'))
-            .alias('constraints')
-            .join(sql_key_column_usage.alias('usage'),
-                (F.upper(col('constraints.TABLE_NAME')) == F.upper(col('usage.TABLE_NAME'))) &
-                (F.upper(col('constraints.TABLE_SCHEMA')) == F.upper(col('usage.TABLE_SCHEMA'))) &
-                (F.upper(col('constraints.TABLE_CATALOG')) == F.upper(col('usage.TABLE_CATALOG'))) &
-                (F.upper(col('constraints.CONSTRAINT_NAME')) == F.upper(col('usage.CONSTRAINT_NAME'))),
-                how = 'inner')
-            .select('constraints.*', 'usage.COLUMN_NAME')
-            .distinct()
-            )
-
-        columns = (columns
-            .alias('columns')
-            .join(constraints.alias('constraints'),
-                (F.upper(columns.TABLE_NAME) == F.upper(constraints.TABLE_NAME)) &
-                (F.upper(columns.TABLE_SCHEMA) == F.upper(constraints.TABLE_SCHEMA)) &
-                (F.upper(columns.TABLE_CATALOG) == F.upper(constraints.TABLE_CATALOG)) &
-                (F.upper(columns.COLUMN_NAME) == F.upper(constraints.COLUMN_NAME)),
-                how = 'left'
-                )
-            .select(
-                'columns.*', 
-                col('constraints.COLUMN_NAME').alias('KEY_COLUMN_NAME')
-                )
-            )
-
-    else:
-        columns = (columns
-            .alias('columns')
-            .join(metadata_primary_keys.alias('pk'),
-                (F.upper(columns.TABLE_NAME) == F.upper(metadata_primary_keys.TABLE_NAME)) &
-                (F.upper(columns.TABLE_SCHEMA) == F.upper(metadata_primary_keys.TABLE_SCHEMA)) &
-                (F.upper(columns.COLUMN_NAME) == F.upper(metadata_primary_keys.COLUMN_NAME)),
-                how = 'left'
-                )
-            .select(
-                'columns.*', 
-                col('pk.COLUMN_NAME').alias('KEY_COLUMN_NAME')
-                )
-            )
-
-        columns = columns.withColumn('KEY_COLUMN_NAME', F.when((F.upper(col('COLUMN_NAME'))==lit(IDKeyIndicator.upper())) | (col('KEY_COLUMN_NAME').isNotNull()), col('COLUMN_NAME')).otherwise(lit(None)).cast(StringType()))
-
-        columnsnopk = (columns
-            .groupBy(['TABLE_NAME', 'TABLE_SCHEMA', 'TABLE_CATALOG'])
-            .agg(
-                F.count('COLUMN_NAME').alias('column_count'),
-                F.sum(F.when(col('KEY_COLUMN_NAME').isNotNull(), lit(1)).otherwise(lit(0))).alias('key_column_count'),
-                )
-            .where(col('key_column_count')==lit(0))
-            .withColumn('COLUMN_NAME', lit(MD5KeyIndicator))
-            .withColumn('KEY_COLUMN_NAME', lit(MD5KeyIndicator))
-            )
-
-        columns_dict = {
-            'DATA_TYPE': lit('char'),
-            'CHARACTER_MAXIMUM_LENGTH': lit(0),
-            'NUMERIC_PRECISION': lit(0),
-            'NUMERIC_SCALE': lit(0),
-            'ORDINAL_POSITION': (col('column_count') + lit(1)),
-            'IS_NULLABLE': lit('YES'),
-            }
-
-        columnsnopk = add_columns_if_not_exists(table=columnsnopk, table_name=INFORMATION_SCHEMA+'.TABLE_CONSTRAINTS', columns=columns_dict)
-
-        columns = columns.select(columns.columns).union(columnsnopk.select(columns.columns)).distinct()
-
-    return columns
-
-
-
-# %% Rename Columns
-
-@catch_error(logger)
-def rename_columns(columns, storage_account_name:str, created_datetime:str, modified_datetime:str, storage_account_abbr:str):
-    """
-    Rename / Add columns to COLUMNS table
-    """
-    column_map = {
-        'TABLE_CATALOG': 'SourceDatabase',
-        'TABLE_SCHEMA' : 'SourceSchema',
-        'TABLE_NAME'   : 'TableName',
-        'COLUMN_NAME'  : 'SourceColumnName',
-        'DATA_TYPE'    : 'SourceDataType',
-        'CHARACTER_MAXIMUM_LENGTH': 'SourceDataLength',
-        'NUMERIC_PRECISION': 'SourceDataPrecision',
-        'NUMERIC_SCALE': 'SourceDataScale',
-        'ORDINAL_POSITION': 'OrdinalPosition',
-    }
-
-    for key, val in column_map.items():
-        columns = columns.withColumnRenamed(key, val)
-
-    columns = columns.withColumn('IsNullable', F.when(F.upper(col('IS_NULLABLE'))=='YES', lit(1)).otherwise(lit(0)).cast(IntegerType()))
-    columns = columns.withColumn('KeyIndicator', F.when(col('SourceColumnName')==col('KEY_COLUMN_NAME'), lit(1)).otherwise(lit(0)).cast(IntegerType()))
-    columns = columns.withColumn('CleanType', col('SourceDataType'))
-    columns = columns.withColumn('StorageAccount', lit(storage_account_name).cast(StringType()))
-    columns = columns.withColumn('TargetColumnName', F.regexp_replace(F.trim(col('SourceColumnName')), column_regex, '_'))
-    columns = columns.withColumn('IsActive', lit(1).cast(IntegerType()))
-    columns = columns.withColumn('CreatedDateTime', lit(created_datetime).cast(StringType()))
-    columns = columns.withColumn('ModifiedDateTime', lit(modified_datetime).cast(StringType()))
-    columns = columns.withColumn(partitionBy, lit(partitionBy_value).cast(StringType()))
-
-    columns = columns.withColumn('SourceColumnName', F.regexp_replace(F.trim(col('SourceColumnName')), column_regex, '_'))
-
-    return columns
-
-
-
-# %% Add TargetDataType
-
-@catch_error(logger)
-def add_TargetDataType(columns, translation):
-    """
-    Add TargetDataType to COLUMNS table from TRANSLATION table
-    """
-    columns = columns.alias('columns').join(
-        translation,
-        F.upper(columns.CleanType) == F.upper(translation.DataTypeFrom),
-        how = 'left'
-        ).select(
-            'columns.*', 
-            translation.DataTypeTo.alias('TargetDataType')
-        )
-
-    return columns
-
-
-
-# %% Add Precision
-
-@catch_error(logger)
-def add_precision(columns, truncate_max_varchar:int=0, ignore_varchar:bool=False):
-    """
-    Add precition information to COLUMNS table
-    """
-    if not ignore_varchar:
-        columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['varchar'])) & (col('SourceDataLength')>0) & (col('SourceDataLength')<=1000), F.concat(lit('varchar('), col('SourceDataLength'), lit(')'))).otherwise(col('TargetDataType')))
-
-        if truncate_max_varchar>0:
-            columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['varchar'])), F.concat(lit(f'varchar({truncate_max_varchar})'))).otherwise(col('TargetDataType')))
-
-    columns = columns.withColumn('TargetDataType', F.when((col('TargetDataType').isin(['decimal', 'numeric'])) & (col('SourceDataPrecision')>0), F.concat(lit('decimal('), col('SourceDataPrecision'), lit(','), col('SourceDataScale'), lit(')'))).otherwise(col('TargetDataType')))
-
-    return columns
-
-
-
-# %% Get Files Meta
-
-@catch_error(logger)
-def get_csv_files_meta(data_path_folder:str, default_schema:str='dbo'):
-    """
-    Get Files Metadata from given data path
-    """
-    files_meta = []
-    for root, dirs, files in os.walk(data_path_folder):
-        for file in files:
-            file_name, file_ext = os.path.splitext(file)
-            if (file_ext.lower() in ['.txt', '.csv']):
-                file_meta = {
-                    'file': file,
-                    'root': root,
-                    'path': os.path.join(root, file)
-                }
-
-                if file_name.upper().startswith(INFORMATION_SCHEMA + '_'):
-                    schema = INFORMATION_SCHEMA
-                    table = file_name[len(INFORMATION_SCHEMA)+1:].upper()
-                elif '_' in file_name:
-                    _loc = file_name.find("_")
-                    schema = file_name[:_loc].lower()
-                    table = file_name[_loc+1:].lower()
-                else:
-                    schema = default_schema.lower()
-                    table = file_name.lower()
-
-                file_meta = {
-                    **file_meta,
-                    'schema': re.sub(column_regex, '_', schema.strip()),
-                    'table': re.sub(column_regex, '_', table.strip()),
-                }
-
-                if file_meta['schema'] !='' and file_meta['table'] !='':
-                    files_meta.append(file_meta)
-
-    if is_pc: pprint(files_meta)
-    return files_meta
-
-
-
-# %% Create Master Ingest List
-
-@catch_error(logger)
-def create_master_ingest_list(spark, files_meta):
-    """
-    Create Master Ingest List table for the files from their metadata
-    """
-    files_meta_for_master_ingest_list =[{
-        'TABLE_SCHEMA': file_meta['schema'],
-        'TABLE_NAME': file_meta['table'],
-        } for file_meta in files_meta if file_meta['schema'].upper()!=INFORMATION_SCHEMA]
-
-    if not files_meta_for_master_ingest_list:
-        logger.warning('No tables found, exiting program.')
-        exit()
-
-    master_ingest_list = spark.createDataFrame(files_meta_for_master_ingest_list)
-
-    logger.info(f'Total of {master_ingest_list.count()} tables to ingest')
-    return master_ingest_list
-
-
-
-# %% create INFORMATION_SCHEMA.TABLES if not exists
-
-@catch_error(logger)
-def create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables, master_ingest_list, tableinfo_source:str):
-    """
-    Create INFORMATION_SCHEMA.TABLES if not exists
-    """
-    if not (sql_tables and ('TABLE_NAME' in sql_tables.columns) and ('TABLE_SCHEMA' in sql_tables.columns)):
-        logger.warning(f'{INFORMATION_SCHEMA}.TABLES is not found, ingesting all tables by default')
-        sql_tables = master_ingest_list.select(['TABLE_NAME', 'TABLE_SCHEMA'])
-
-    columns = {
-        'TABLE_TYPE': lit('BASE TABLE'),
-        'TABLE_CATALOG': lit(tableinfo_source),
-        }
-
-    sql_tables = add_columns_if_not_exists(table=sql_tables, table_name=INFORMATION_SCHEMA+'.TABLES', columns=columns)
-
-    return sql_tables
-
-
-
-# %% create INFORMATION_SCHEMA.COLUMNS if not exists
-
-@catch_error(logger)
-def create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark, sql_columns, tableinfo_source:str, files_meta):
-    """
-    Create INFORMATION_SCHEMA.COLUMNS if not exists
-    """
-    if not (sql_columns and 
-        ('TABLE_NAME' in sql_columns.columns) and 
-        ('TABLE_SCHEMA' in sql_columns.columns) and
-        ('COLUMN_NAME' in sql_columns.columns)
-        ):
-        logger.warning(f'{INFORMATION_SCHEMA}.TABLES is not found, ingesting all tables by default')
-        columns_list = []
-        for file_meta in files_meta:
-            if file_meta['schema'].upper()!=INFORMATION_SCHEMA:
-                csv_table = read_csv(spark=spark, file_path=file_meta['path'])
-                for column_name in csv_table.columns:
-                    columns_list.append({
-                        'TABLE_NAME': file_meta['table'],
-                        'TABLE_SCHEMA': file_meta['schema'],
-                        'COLUMN_NAME': column_name,
-                    })
-        sql_columns = spark.createDataFrame(columns_list)
-
-    columns = {
-        'TABLE_CATALOG': lit(tableinfo_source),
-        'DATA_TYPE': lit('char'),
-        'CHARACTER_MAXIMUM_LENGTH': lit(0),
-        'NUMERIC_PRECISION': lit(0),
-        'NUMERIC_SCALE': lit(0),
-        'ORDINAL_POSITION': row_number().over(Window.partitionBy(['TABLE_NAME', 'TABLE_SCHEMA']).orderBy(col('COLUMN_NAME').asc())),
-        'IS_NULLABLE': lit('YES'),
-        }
-
-    sql_columns = add_columns_if_not_exists(table=sql_columns, table_name=INFORMATION_SCHEMA+'.COLUMNS', columns=columns)
-
-    return sql_columns
-
-
-
-# %% Get Table and Column Metadata from information_schema
-
-@catch_error(logger)
-def get_sql_schema_tables_from_files(spark, files_meta, tableinfo_source:str, master_ingest_list):
-    """
-    Get Table and Column Metadata from information_schema table
-    """
-    schema_tables = defaultdict()
-
-    if False:
-        schemas_meta = [file_meta for file_meta in files_meta if file_meta['schema'].upper()==INFORMATION_SCHEMA]
-        sql_meta = {schema_table_name: [schema_meta for schema_meta in schemas_meta if schema_meta['table'].upper()==schema_table_name.upper()] for schema_table_name in schema_table_names}
-
-        for schema_table_name in schema_table_names:
-            schema_meta = sql_meta[schema_table_name]
-            if schema_meta:
-                schema_table = read_csv(spark=spark, file_path=schema_meta[0]['path'])
-            else:
-                schema_table = None
-            schema_tables[schema_table_name] = schema_table
-
-    else: # Ignore file information schema provided in files folder
-        for schema_table_name in schema_table_names:
-            schema_tables[schema_table_name] = None
-
-    schema_tables['TABLES'] = create_INFORMATION_SCHEMA_TABLES_if_not_exists(sql_tables=schema_tables['TABLES'], master_ingest_list=master_ingest_list, tableinfo_source=tableinfo_source)
-    schema_tables['COLUMNS'] = create_INFORMATION_SCHEMA_COLUMNS_if_not_exists(spark=spark, sql_columns=schema_tables['COLUMNS'], tableinfo_source=tableinfo_source, files_meta=files_meta)
-    return schema_tables
-
-
-
-# %% Prepare TableInfo
-
-@catch_error(logger)
-def prepare_tableinfo(master_ingest_list, translation, sql_tables, sql_columns, sql_table_constraints, sql_key_column_usage, storage_account_name:str, storage_account_abbr:str, metadata_primary_keys):
-    """
-    Prepare TableInfo table from given master_ingest_list and schema tables
-    """
-
-    logger.info('Join master_ingest_list with sql tables')
-    tables = join_master_ingest_list_sql_tables(master_ingest_list=master_ingest_list, sql_tables=sql_tables)
-
-    logger.info('Filter columns by selected tables')
-    columns = filter_columns_by_tables(sql_columns=sql_columns, tables=tables)
-
-    logger.info('Join with table constraints and column usage')
-    columns = join_tables_with_constraints(columns=columns, sql_table_constraints=sql_table_constraints, sql_key_column_usage=sql_key_column_usage, metadata_primary_keys=metadata_primary_keys)
-
-    logger.info('Rename Columns')
-    columns = rename_columns(columns=columns, storage_account_name=storage_account_name, created_datetime=created_datetime, modified_datetime=modified_datetime, storage_account_abbr=storage_account_abbr)
-
-    logger.info('Add TargetDataType')
-    columns = add_TargetDataType(columns=columns, translation=translation)
-
-    logger.info('Add Precision')
-    columns = add_precision(columns=columns, ignore_varchar=True)
-
-    logger.info('Select Relevant columns only')
-    tableinfo = select_tableinfo_columns(tableinfo=columns)
-
-    #tableinfo.persist(StorageLevel.MEMORY_AND_DISK)
-    return tableinfo
-
-
-
-# %% Get Table and Column Metadata from information_schema
-
-@catch_error(logger)
-def get_sql_schema_tables(spark, sql_id:str, sql_pass:str, sql_server:str, sql_database:str):
-    """
-    Get Table and Column Metadata from information_schema
-    """
-    schema_tables = defaultdict()
-    for schema_table_name in schema_table_names:
-        schema_tables[schema_table_name] = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=INFORMATION_SCHEMA, table_name=schema_table_name, database=sql_database, server=sql_server)
-
-    return schema_tables
-
-
-
-# %% get_metadata_primary_keys_from_sql_server
-
-@catch_error(logger)
-def get_metadata_primary_keys_from_sql_server(spark, tableinfo_source:str):
-    metadata_primary_keys = read_sql(
-        spark = spark, 
-        user = file_metadata_dict['sql_id'],
-        password = file_metadata_dict['sql_pass'],
-        schema = file_metadata_dict['sql_schema'],
-        table_name = file_metadata_dict['sql_table_name_primary_key'],
-        database = file_metadata_dict['sql_database'],
-        server = file_metadata_dict['sql_server'],
-        )
-
-    colpk = 'SystemPrimaryKey'
-    othercols = {
-        'AssetSchema': 'TABLE_SCHEMA',
-        'AssetName': 'TABLE_NAME',
-        }
-
-    metadata_primary_keys = (metadata_primary_keys
-        .where(
-            (F.upper(col('DataSource'))==lit(tableinfo_source.upper())) &
-            (col(colpk).isNotNull()) &
-            (F.trim(col(colpk))!=lit(''))
-            )
-        .withColumn(colpk, F.split(col(colpk), pattern=',')) \
-        .select([*[F.upper(c).alias(c) for c in othercols], F.explode(col(colpk)).alias(colpk)]) \
-        .withColumn(colpk, F.upper(F.trim(col(colpk)))) \
-        .withColumnRenamed(colpk, 'COLUMN_NAME')
-        .distinct()
-        )
-
-    for key, val in othercols.items():
-        metadata_primary_keys = metadata_primary_keys.withColumnRenamed(key, val)
-
-    return metadata_primary_keys
-
-
-
-
-# %% Make TableInfo
-
-@catch_error(logger)
-def make_tableinfo(spark, ingest_from_files_flag:bool, data_path_folder:str, default_schema:str, tableinfo_source:str, \
-    data_type_translation_id:str, sql_id:str, sql_pass:str, sql_server:str, sql_database:str):
-    """
-    Make TableInfo and save it to Azure
-    """
-    storage_account_name = default_storage_account_name
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-    translation = get_DataTypeTranslation_table(spark=spark, data_type_translation_id=data_type_translation_id)
-    metadata_primary_keys = get_metadata_primary_keys_from_sql_server(spark=spark, tableinfo_source=tableinfo_source)
-
-    if ingest_from_files_flag:
-        files_meta = get_csv_files_meta(data_path_folder=data_path_folder, default_schema=default_schema)
-        if not files_meta:
-            logger.warning('No files found, exiting program.')
-            exit()
-        master_ingest_list = create_master_ingest_list(spark=spark, files_meta=files_meta)
-        schema_tables = get_sql_schema_tables_from_files(spark=spark, files_meta=files_meta, tableinfo_source=tableinfo_source, master_ingest_list=master_ingest_list)
-    else:
-        files_meta = []
-        master_ingest_list = get_master_ingest_list(spark=spark, tableinfo_source=tableinfo_source)
-        schema_tables = get_sql_schema_tables(spark=spark, sql_id=sql_id, sql_pass=sql_pass, sql_server=sql_server, sql_database=sql_database)
-
-    tableinfo = prepare_tableinfo(
-        master_ingest_list = master_ingest_list,
-        translation = translation,
-        sql_tables = schema_tables['TABLES'],
-        sql_columns = schema_tables['COLUMNS'],
-        sql_table_constraints = schema_tables['TABLE_CONSTRAINTS'],
-        sql_key_column_usage = schema_tables['KEY_COLUMN_USAGE'],
-        storage_account_name = storage_account_name,
-        storage_account_abbr = default_storage_account_abbr,
-        metadata_primary_keys = metadata_primary_keys,
-        )
-
-    save_adls_gen2(
-            table = tableinfo,
-            storage_account_name = storage_account_name,
-            container_name = tableinfo_container_name,
-            container_folder = azure_container_folder_path(data_type=metadata_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source),
-            table_name = tableinfo_name,
-            partitionBy = partitionBy,
-            file_format = file_format,
-        )
-
-    return files_meta, tableinfo
-
-
-
-# %% Keep same column case sensitivity between tableinfo and actual table columns
-
-@catch_error(logger)
-def keep_same_case_sensitive_column_names(tableinfo, database:str, schema:str, table_name:str, sql_table):
-    """
-    Keep same column case sensitivity between tableinfo and actual table columns
-    """
-    tableinfo_filtered = tableinfo.where(
-        (col('SourceDatabase')==lit(database)) &
-        (col('SourceSchema')==lit(schema)) &
-        (col('TableName')==lit(table_name))
-        )
-
-    tableinfo_SourceColumnName = collect_column(table=tableinfo_filtered, column_name='SourceColumnName', distinct=True)
-
-    sql_table_columns_lower = {c.lower():c for c in sql_table.columns}
-    column_map = {tc:sql_table_columns_lower[tc.lower()] for tc in tableinfo_SourceColumnName}
-
-    for new_name, existing_name in column_map.items():
-        sql_table = sql_table.withColumnRenamed(existing_name, new_name)
-
-    return sql_table
-
-
-
-# %% filter sql_table from last max_timestamp
-
-@catch_error(logger)
-def filter_by_timestamp(sql_table, cloud_row_history, row_history_meta:list, table_name:str, schema:str, database:str):
-    """
-    filter sql_table from last max_timestamp
-    """
-    if cloud_row_history:
-        max_timestamp_row = (cloud_row_history
-            .where(
-                (col('table_name')==lit(table_name)) &
-                (col('schema_name')==lit(schema)) &
-                (col('database_name')==lit(database))
-                )
-            .orderBy(col('max_timestamp').desc())
-            .limit(1)
-            .select(['max_timestamp', 'max_timestamp_column_name'])
-            .collect()
-            )
-        if max_timestamp_row:
-            prev_max_timestamp = max_timestamp_row[0]['max_timestamp']
-            max_timestamp_column_name = max_timestamp_row[0]['max_timestamp_column_name']
-            if prev_max_timestamp and max_timestamp_column_name:
-                sql_table = sql_table.where(col(max_timestamp_column_name)>lit(prev_max_timestamp))
-
-    max_timestamp = None
-    max_timestamp_column_names = ['UpdateTS']
-
-    lower_column_names = [c.lower() for c in sql_table.columns]
-    for max_timestamp_column_name in max_timestamp_column_names:
-        if max_timestamp_column_name.lower() in lower_column_names:
-            max_timestamp = sql_table.select(F.max(col(max_timestamp_column_name))).collect()
-            if max_timestamp:
-                max_timestamp = max_timestamp[0][0]
-            break
-
-    if max_timestamp:
-        row_hist = {
-            'table_name': table_name,
-            'schema_name': schema,
-            'database_name': database,
-            'rows_ingested': sql_table.count(),
-            'max_timestamp': max_timestamp,
-            'max_timestamp_column_name': max_timestamp_column_name,
-            EXECUTION_DATE_str.lower(): execution_date_start,
-            }
-        row_history_meta.append(row_hist)
-
-    return sql_table, row_history_meta
-
-
-
-# %% Append Cloud Row History
-
-@catch_error(logger)
-def append_cloud_row_history(spark, cloud_row_history, cloud_row_history_name:str, row_history_meta:list):
-    """
-    Append Cloud Row History
-    """
-    if not row_history_meta:
-        return
-
-    row_history = spark.createDataFrame(row_history_meta)
-
-    if not cloud_row_history:
-        sqlstr = f"""
-            CREATE TABLE [{cloud_file_histdict['sql_schema']}].[{cloud_row_history_name}] (
-                 [table_name] varchar(300) NOT NULL
-                ,[schema_name] varchar(200) NOT NULL
-                ,[database_name] varchar(200) NOT NULL
-                ,[rows_ingested] [int] NOT NULL
-                ,[max_timestamp] varchar(300) NULL
-                ,[max_timestamp_column_name] varchar(300) NULL
-                ,[{EXECUTION_DATE_str.lower()}] [datetime] NOT NULL,
-            );
-            """
-
-        pymssql_execute_non_query(
-            sqlstr_list = [sqlstr],
-            sql_server = cloud_file_histdict['sql_server'],
-            sql_id = cloud_file_histdict['sql_id'],
-            sql_pass = cloud_file_histdict['sql_pass'],
-            sql_database = cloud_file_histdict['sql_database'],
-            )
-
-    write_sql(
-        table = row_history,
-        table_name = cloud_row_history_name,
-        schema = cloud_file_histdict['sql_schema'],
-        database = cloud_file_histdict['sql_database'],
-        server = cloud_file_histdict['sql_server'],
-        user = cloud_file_histdict['sql_id'],
-        password = cloud_file_histdict['sql_pass'],
-        mode = 'append',
-        )
-
-
-
-# %% Loop over all tables
-
-@catch_error(logger)
-def iterate_over_all_tables_migration(spark, tableinfo, table_rows, files_meta:list, ingest_from_files_flag:bool, sql_id:str,
-                                    sql_pass:str, sql_server:str, storage_account_name:str, tableinfo_source:str):
-    """
-    Loop over all tables to migrate them to Azure
-    """
-    PARTITION_list = defaultdict(str)
-    table_count = len(table_rows)
-    row_history_meta = []
-    cloud_row_history_name = to_cloud_row_history_name(tableinfo_source=tableinfo_source)
-    cloud_row_history = get_ingestion_history_from_cloud(spark=spark, cloud_table_name=cloud_row_history_name)
-
-    for i, r in enumerate(table_rows):
-        database = r['SourceDatabase']
-        schema = r['SourceSchema']
-        table_name = r['TableName']
-        logger.info(f"Table {i+1} of {table_count}: {schema}.{table_name}")
-
-        container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=database, firm_or_schema=schema)
-
-        if ingest_from_files_flag:
-            file_path = [file_meta for file_meta in files_meta if file_meta['table'].lower()==table_name.lower() and file_meta['schema'].lower()==schema.lower()][0]['path']
-            sql_table = read_csv(spark=spark, file_path=file_path)
-            sql_table = add_md5_key(sql_table)
-        else:
-            sql_table = read_sql(spark=spark, user=sql_id, password=sql_pass, schema=schema, table_name=table_name, database=database, server=sql_server)
-
-        sql_table = remove_column_spaces(sql_table)
-        sql_table = to_string(sql_table, col_types = ['timestamp']) # Convert timestamp's to string - as it cause errors otherwise.
-        sql_table = keep_same_case_sensitive_column_names(tableinfo=tableinfo, database=database, schema=schema, table_name=table_name, sql_table=sql_table)
-        sql_table = add_elt_columns(
-            table = sql_table,
-            reception_date = execution_date,
-            source = tableinfo_source,
-            is_full_load = True,
-            dml_type = 'I',
-            )
-
-        sql_table, row_history_meta = filter_by_timestamp(
-            sql_table = sql_table,
-            cloud_row_history = cloud_row_history,
-            row_history_meta = row_history_meta,
-            table_name = table_name,
-            schema = schema,
-            database = database,
-            )
-
-        userMetadata = save_adls_gen2(
-            table = sql_table,
-            storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = container_folder,
-            table_name = table_name,
-            partitionBy = partitionBy,
-            file_format = file_format,
-            )
-
-        PARTITION_list[(sys.domain_name, database, schema, table_name, storage_account_name)] = userMetadata
-
-    append_cloud_row_history(spark=spark, cloud_row_history=cloud_row_history, cloud_row_history_name=cloud_row_history_name, row_history_meta=row_history_meta)
-
-    logger.info('Finished Migrating All Tables')
-    return PARTITION_list
-
-
-
-# %% Get history of the files ingested in SQL Server
-
-@catch_error(logger)
-def get_ingestion_history_from_cloud(spark, cloud_table_name:str):
-    """
-    Get history of the files ingested in SQL Server
-    """
-    cloud_file_history = None
-
-    sqlstr = f"""SELECT COUNT(*) AS CNT
+    sqlstr_table_exists = f"""SELECT COUNT(*) AS CNT
     FROM INFORMATION_SCHEMA.TABLES
     WHERE UPPER(TABLE_SCHEMA) = '{cloud_file_hist_conf['sql_schema'].upper()}'
-        AND TABLE_TYPE = 'BASE TABLE'
-        AND UPPER(TABLE_NAME) = '{cloud_table_name.upper()}'
+        AND UPPER(TABLE_TYPE) = 'BASE TABLE'
+        AND UPPER(TABLE_NAME) = '{cloud_file_history_name.upper()}'
     ;"""
 
     with pymssql.connect(
@@ -875,370 +121,186 @@ def get_ingestion_history_from_cloud(spark, cloud_table_name:str):
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
-            cursor.execute(sqlstr)
+            cursor.execute(sqlstr_table_exists)
             row = cursor.fetchone()
-            cloud_file_history_exists = int(row['CNT']) > 0
-
-    if not cloud_file_history_exists:
-        return cloud_file_history
-
-    cloud_file_history = read_sql(
-        spark = spark,
-        user = cloud_file_histdict['sql_id'],
-        password = cloud_file_histdict['sql_pass'],
-        schema = cloud_file_histdict['sql_schema'],
-        table_name = cloud_table_name,
-        database = cloud_file_histdict['sql_database'],
-        server = cloud_file_histdict['sql_server'],
-        )
-
-    return cloud_file_history
+            if int(row['CNT']) == 0:
+                logger.info(f'{full_table_name} table does not exist in SQL server. Creating new table.')
+                file_meta_columns = 'id int identity' + ''.join([f', {c[0]} {c[1]}' for c in cloud_file_history_columns + additional_file_meta_columns])
+                create_table_sqlstr = f'CREATE TABLE {full_table_name} ({file_meta_columns});'
+                conn._conn.execute_non_query(create_table_sqlstr)
 
 
 
-# %% Write history of the files ingested
+# %% Check if file_meta exists in SQL server File History
 
 @catch_error(logger)
-def write_cloud_file_history(cloud_file_history, tableinfo_source, mode:str='append'):
+def file_meta_exists_in_history(file_meta:dict):
     """
-    Write history of the files ingested
+    Check if file_meta exists in SQL server File History
     """
-    write_sql(
-        table = cloud_file_history,
-        table_name = to_cloud_file_history_name(tableinfo_source=tableinfo_source),
-        schema = cloud_file_histdict['sql_schema'],
-        database = cloud_file_histdict['sql_database'],
-        server = cloud_file_histdict['sql_server'],
-        user = cloud_file_histdict['sql_id'],
-        password = cloud_file_histdict['sql_pass'],
-        mode = mode,
-    )
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+
+    key_columns = []
+    for c in data_settings.metadata_key_column_names['with_load_n_date']:
+        cval = file_meta[c]
+        cval = cval.strftime(strftime) if isinstance(cval, datetime) else str(cval)
+        key_columns.append(f"{c}='{cval}'")
+    key_columns = ' AND '.join(key_columns)
+    sqlstr_meta_exists = f'SELECT COUNT(*) AS CNT FROM {full_table_name} WHERE {key_columns};'
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            cursor.execute(sqlstr_meta_exists)
+            row = cursor.fetchone()
+            return int(row['CNT']) > 0
 
 
 
-# %% Remove temporary folders
+# %% Write file_meta to SQL server File History
 
 @catch_error(logger)
-def cleanup_tmpdirs():
+def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list):
     """
-    Remove temporary folders created by unzip process
+    Write file_meta to SQL server File History
     """
-    global tmpdirs
-    while len(tmpdirs)>0:
-        tmpdirs.pop(0).cleanup()
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+    all_columns = [c[0] for c in cloud_file_history_columns + additional_file_meta_columns]
+    all_columns_str = ', '.join(all_columns)
+
+    column_values = []
+    for c in all_columns:
+        cval = file_meta[c]
+        cval = cval.strftime(strftime) if isinstance(cval, datetime) else str(cval)
+        column_values.append(f"'{cval}'")
+    column_values_str = ', '.join(column_values)
+
+    sqlstr = f'INSERT INTO {full_table_name} ({all_columns_str}) VALUES ({column_values_str});'
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.parent_name,
+        autocommit = True,
+        ) as conn:
+        conn._conn.execute_non_query(sqlstr)
 
 
 
-# %% Process Single File
+# %% Migrate Single File
 
 @catch_error(logger)
-def process_one_file(file_meta, fn_process_file, cloud_file_history):
-    """
-    Process Single File - Unzipped or ZIP file
-    """
-    global tmpdirs
-    file_path = os.path.join(file_meta['folder_path'], file_meta['file_name'])
-    logger.info(f'Processing {file_path}')
-
-    if file_path.lower().endswith('.zip'):
-        tmpdir = tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path)
-        tmpdirs.append(tmpdir)
-        logger.info(f'Extracting {file_path} to {tmpdir.name}')
-        shutil.unpack_archive(filename=file_path, extract_dir=tmpdir.name)
-        table_list = {}
-        for root1, dirs1, files1 in os.walk(tmpdir.name):
-            for file1 in files1:
-                file_meta1 = copy.deepcopy(file_meta)
-                file_meta1['folder_path'] = root1
-                file_meta1['file_name'] = file1
-                file_meta1['file_path'] = os.path.join(root1, file1)
-                table_list = {**table_list, **process_one_file(file_meta=file_meta1, fn_process_file=fn_process_file, cloud_file_history=cloud_file_history)}
-    else:
-        table_list = fn_process_file(file_meta=file_meta, cloud_file_history=cloud_file_history)
-
-    return table_list
-
-
-
-# %% Get Selected Files
-
-@catch_error(logger)
-def get_selected_files(file_history, cloud_file_history, key_column_names, date_column_name:str):
-    """
-    Select only the files that need to be ingested this time.
-    """
-    # Union all files
-    new_files = file_history.alias('t'
-        ).join(cloud_file_history, file_history[MD5KeyIndicator]==cloud_file_history[MD5KeyIndicator], how='left_anti'
-        ).select('t.*')
-
-    union_columns = new_files.columns
-    all_files = new_files.select(union_columns).union(cloud_file_history.select(union_columns)).sort(key_column_names['with_load_n_date'])
-
-    # Filter out old files
-    full_files = all_files.where('is_full_load').withColumn('row_number', 
-            row_number().over(Window.partitionBy(key_column_names['with_load']).orderBy(col(date_column_name).desc(), col(MD5KeyIndicator).desc()))
-        ).where(col('row_number')==lit(1))
-
-    all_files = all_files.alias('a').join(full_files.alias('f'), key_column_names['base'], how='left').select('a.*', col(f'f.{date_column_name}').alias('max_date')) \
-        .withColumn('full_load_date', when(col('full_load_date').isNull(), col('max_date')).otherwise(col('full_load_date'))).drop('max_date')
-
-    all_files = all_files.withColumn('is_ingested', 
-            when(col(EXECUTION_DATE_str).isNull() & col('full_load_date').isNotNull() & (col(date_column_name)<col('full_load_date')), lit(False)).otherwise(col('is_ingested'))
-        )
-
-    # Select and Order Files for ingestion
-    new_files = all_files.where(col(EXECUTION_DATE_str).isNull()).withColumn(EXECUTION_DATE_str, to_timestamp(lit(execution_date)))
-    selected_files = new_files.where('is_ingested').orderBy(col('firm_name').desc(), col('table_name').desc(), col('is_full_load').desc(), col(date_column_name).asc())
-
-    return new_files, selected_files
-
-
-
-# %% Write list of tables to Azure
-
-@catch_error(logger)
-def write_table_list_to_azure(PARTITION_list:defaultdict, table_list:dict, tableinfo, tableinfo_source, firm_name:str, storage_account_name:str):
-    """
-    Write all tables in table_list to Azure
-    """
-    if not table_list:
-        logger.warning(f"No data to write")
-        return PARTITION_list, tableinfo
-
-    for table_name, table in table_list.items():
-        logger.info(f'Writing {table_name} to Azure...')
-
-        add_table_to_tableinfo(
-            tableinfo = tableinfo, 
-            table = table, 
-            schema_name = firm_name, 
-            table_name = table_name, 
-            tableinfo_source = tableinfo_source, 
-            storage_account_name = storage_account_name,
-            )
-
-        container_folder = azure_container_folder_path(data_type=data_folder, domain_name=sys.domain_name, source_or_database=tableinfo_source, firm_or_schema=firm_name)
-
-        userMetadata = save_adls_gen2(
-            table = table,
-            storage_account_name = storage_account_name,
-            container_name = container_name,
-            container_folder = container_folder,
-            table_name = table_name,
-            partitionBy = partitionBy,
-            file_format = file_format
-        )
-
-        PARTITION_list[(sys.domain_name.lower(), tableinfo_source.upper(), firm_name.lower(), table_name.lower(), storage_account_name.lower())] = userMetadata
-
-    logger.info('Done writing to Azure')
-    return PARTITION_list, tableinfo
-
-
-
-# %% Get all files meta data for a given folder_path
-
-@catch_error(logger)
-def get_all_files_meta(folder_path, date_start, fn_extract_file_meta, cloud_file_history, date_column_name):
-    """
-    Get all files meta data for a given folder_path.
-    Filters files for dates after the given date_start
-    """
-    logger.info(f'Getting list of candidate files from {folder_path}')
-    files_meta = []
-    for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            file_meta = fn_extract_file_meta(file_path=file_path, cloud_file_history=cloud_file_history)
-            if file_meta and (date_start<=file_meta[date_column_name]):
-                files_meta.append(file_meta)
-
-    logger.info(f'Finished getting list of files. Total Files = {len(files_meta)}')
-    return files_meta
-
-
-
-# %% Iterate over selected files for a given Firm and Union List of Tables by table name
-
-@catch_error(logger)
-def iterate_over_selected_files_per_firm(selected_files, fn_process_file, cloud_file_history):
-    """
-    Iterate over selected files for a given Firm and Union List of Tables by table name
-    """
-    logger.info("Iterating over Selected Files")
-    table_list_union = {}
-    for ingest_row in selected_files.rdd.toLocalIterator():
-        file_meta = ingest_row.asDict()
-
-        table_list = process_one_file(file_meta=file_meta, fn_process_file=fn_process_file, cloud_file_history=cloud_file_history)
-
-        if table_list:
-            for table_name, table in table_list.items():
-                if table_name in table_list_union.keys():
-                    table_prev = table_list_union[table_name]
-                    primary_key_columns = [c for c in table_prev.columns if c.upper() in [MD5KeyIndicator.upper(), IDKeyIndicator.upper()]]
-                    if not primary_key_columns:
-                        raise ValueError(f'No Primary Key Found for {table_name}')
-                    table_prev = table_prev.alias('tp'
-                        ).join(table, primary_key_columns, how='left_anti'
-                        ).select('tp.*')
-                    union_columns = table_prev.columns
-                    table_prev = table_prev.select(union_columns).union(table.select(union_columns))
-                    table_list_union[table_name] = table_prev.distinct()
-                else:
-                    table_list_union[table_name] = table.distinct()
-
-    return table_list_union
-
-
-
-# %% Create Common File History Table from files_meta
-
-@catch_error(logger)
-def files_history_from_files_meta(spark, files_meta, storage_account_name:str, tableinfo_source:str, cloud_file_history, key_column_names:dict, additional_ingest_columns:list):
-    """
-    Create Common File History Table from files metadata. This will ensure not to ingest the same file 2nd time in future.
-    """
-    file_history = spark.createDataFrame(files_meta)
-    file_history = file_history.select(
-        col('firm_name').cast(StringType()).alias('firm_name', metadata={'maxlength': 50, 'sqltype': 'varchar(50)'}),
-        col('table_name').cast(StringType()).alias('table_name', metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}),
-        col('is_full_load').cast(BooleanType()).alias('is_full_load', metadata={'sqltype': '[bit] NULL'}),
-        lit(storage_account_name).cast(StringType()).alias('storage_account_name', metadata={'maxlength': 255, 'sqltype': 'varchar(255)'}),
-        col('folder_path').cast(StringType()).alias('folder_path', metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}),
-        col('file_name').cast(StringType()).alias('file_name', metadata={'maxlength': 150, 'sqltype': 'varchar(150)'}),
-        to_timestamp(lit(None)).alias(EXECUTION_DATE_str.lower(), metadata={'sqltype': '[datetime] NULL'}),
-        lit(elt_process_id).cast(StringType()).alias(ELT_PROCESS_ID_str.lower(), metadata={'maxlength': 300, 'sqltype': 'varchar(300)'}),
-        lit(True).cast(BooleanType()).alias('is_ingested', metadata={'sqltype': '[bit] NOT NULL'}),
-        to_timestamp(lit(None)).alias('full_load_date', metadata={'sqltype': '[datetime] NULL'}),
-        to_timestamp(col('key_datetime')).alias('key_datetime', metadata={'sqltype': '[datetime] NULL'}),
-        *additional_ingest_columns,
-    )
-
-    file_history = add_md5_key(file_history, key_column_names=key_column_names['with_load_n_date'])
-
-    if not cloud_file_history:
-        cloud_file_history = spark.createDataFrame(spark.sparkContext.emptyRDD(), file_history.schema)
-        cloud_file_history_name = to_cloud_file_history_name(tableinfo_source=tableinfo_source)
-
-        schema_json = json.loads(file_history._jdf.schema().json())
-        column_list = '\n  ,'.join([f"[{s['name']}] {s['metadata']['sqltype']}" for s in schema_json['fields']])
-        sqlstr = f"CREATE TABLE [{cloud_file_histdict['sql_schema']}].[{cloud_file_history_name}] ({column_list});"
-
-        pymssql_execute_non_query(
-            sqlstr_list = [sqlstr],
-            sql_server = cloud_file_histdict['sql_server'],
-            sql_id = cloud_file_histdict['sql_id'],
-            sql_pass = cloud_file_histdict['sql_pass'],
-            sql_database = cloud_file_histdict['sql_database'],
-            )
-
-    return file_history, cloud_file_history
-
-
-
-# %% Iterate over all the files and process them.
-
-@catch_error(logger)
-def process_all_files_with_incrementals(
-    spark,
-    firm_name:str,
-    data_path_folder:str,
-    fn_extract_file_meta:object,
-    date_start,
-    additional_ingest_columns:list,
-    fn_process_file:object,
-    key_column_names:dict,
-    tableinfo_source:str,
-    date_column_name:str,
-    ):
-
-    """
-    Iterate over all the files and process them.
-    """
-
-    PARTITION_list = defaultdict(str)
-    tableinfo = defaultdict(list)
-    new_files = None
-
-    cloud_file_history = get_ingestion_history_from_cloud(spark=spark, cloud_table_name=to_cloud_file_history_name(tableinfo_source=tableinfo_source))
-
-    logger.info(f"Iterate over all the files")
-
-    if not os.path.isdir(data_path_folder):
-        logger.warning(f'Path does not exist: {data_path_folder}   -> SKIPPING')
-        return new_files, PARTITION_list, tableinfo
-
-    files_meta = get_all_files_meta(folder_path=data_path_folder, date_start=date_start, fn_extract_file_meta=fn_extract_file_meta, cloud_file_history=cloud_file_history, date_column_name=date_column_name)
-    if not files_meta:
-        return new_files, PARTITION_list, tableinfo
-
-    storage_account_name = storage_account_abbr_to_full_name(storage_account_abbr=data_settings.azure_storage_account_mid)
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
-
-    logger.info('Getting New Files')
-    file_history, cloud_file_history = files_history_from_files_meta(
-        spark = spark,
-        files_meta = files_meta,
-        storage_account_name = storage_account_name,
-        tableinfo_source = tableinfo_source,
-        cloud_file_history = cloud_file_history,
-        key_column_names = key_column_names,
-        additional_ingest_columns = additional_ingest_columns,
-        )
-    new_files, selected_files = get_selected_files(file_history=file_history, cloud_file_history=cloud_file_history, key_column_names=key_column_names, date_column_name=date_column_name)
-
-    logger.info(f'Total of {new_files.count()} new file(s). {selected_files.count()} eligible for data migration.')
-
-    table_list_union = iterate_over_selected_files_per_firm(selected_files=selected_files, fn_process_file=fn_process_file, cloud_file_history=cloud_file_history)
-
-    PARTITION_list, tableinfo = write_table_list_to_azure(
-        PARTITION_list = PARTITION_list,
-        table_list = table_list_union,
-        tableinfo = tableinfo,
-        tableinfo_source = tableinfo_source,
-        firm_name = firm_name,
-        storage_account_name = storage_account_name,
-    )
-
-    cleanup_tmpdirs()
-
-    logger.info('Finished processing all Files and Firms')
-    return new_files, PARTITION_list, tableinfo
-
-
-
-# %% Save Tableinfo metadata table into Azure and Save files history metadata to cloud
-
-@catch_error(logger)
-def save_tableinfo_dict_and_cloud_file_history(spark, tableinfo:defaultdict, tableinfo_source:str, all_new_files):
-    """
-    Save Tableinfo metadata table into Azure and Save files hitory metadata to cloud
-    """
-    if not tableinfo:
-        logger.warning('No data in TableInfo --> Skipping write to Azure')
+def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, fn_process_file, additional_file_meta_columns:list):
+    logger.info(f'Extract File Meta: {file_path}')
+    file_meta = fn_extract_file_meta(file_path=file_path, zip_file_path=zip_file_path)
+    if not file_meta or (data_settings.key_datetime > file_meta['key_datetime']): return
+
+    file_meta = {
+        **file_meta,
+        'database_name': data_settings.domain_name,
+        'schema_name': data_settings.schema_name,
+        'firm_name': data_settings.pipeline_firm,
+        EXECUTION_DATE_str.lower(): execution_date,
+        ELT_PROCESS_ID_str.lower(): data_settings.elt_process_id,
+        'pipelinekey': data_settings.pipelinekey,
+    }
+
+    if file_meta_exists_in_history(file_meta=file_meta):
+        logger.info(f'File already exists, skipping: {file_path}')
         return
 
-    tableinfo_values = list(tableinfo.values())
+    logger.info(f"Processing: {file_path}")
+    logger.info(file_meta)
 
-    list_of_dict = []
-    for vi in range(len(tableinfo_values[0])):
-        list_of_dict.append({k:v[vi] for k, v in tableinfo.items()})
+    table_list = fn_process_file(file_meta=file_meta)
+    if not table_list:
+        logger.warning(f"No table_list to write")
+        return
 
-    meta_tableinfo = spark.createDataFrame(list_of_dict)
-    meta_tableinfo = select_tableinfo_columns(tableinfo=meta_tableinfo)
+    for table_name, table in table_list.items():
+        setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.storage_account_name) # for data
+        if not save_adls_gen2(table=table, table_name=table_name, is_metadata=False): continue
 
-    storage_account_name = default_storage_account_name # keep default storage account name for tableinfo
-    setup_spark_adls_gen2_connection(spark, storage_account_name)
+        setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.default_storage_account_name) # for metadata
+        create_snowflake_ddl(table=table, table_name=table_name)
 
-    if all_new_files: # Write file history metadata to cloud so that the old files are not re-ingested next time.
-        write_cloud_file_history(cloud_file_history=all_new_files, tableinfo_source=tableinfo_source, mode='append')
+        write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
 
-    return meta_tableinfo
+
+
+# %% Mirgate all files recursively unzipping any files
+
+@catch_error(logger)
+def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, zip_file_path:str=None):
+    """
+    Mirgate all files recursively unzipping any files
+    """
+    if not os.path.isdir(source_path):
+        logger.info(f'Path does not exist: {source_path}')
+        return
+
+    for root, dirs, files in os.walk(source_path):
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+
+            file_name_noext, file_ext = os.path.splitext(file_name)
+            if file_ext.lower() == '.zip':
+                with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
+                    extract_dir = tmpdir
+                    logger.info(f'Extracting {file_path} to {extract_dir}')
+                    shutil.unpack_archive(filename=file_path, extract_dir=extract_dir)
+                    recursive_migrate_all_files(
+                        source_path = extract_dir,
+                        fn_extract_file_meta = fn_extract_file_meta,
+                        additional_file_meta_columns = additional_file_meta_columns,
+                        fn_process_file = fn_process_file,
+                        zip_file_path = zip_file_path if zip_file_path else file_path, # to keep original zip file path, rather than the last zip file path
+                        )
+                    continue
+
+            migrate_single_file(
+                file_path = file_path,
+                zip_file_path = zip_file_path,
+                fn_extract_file_meta = fn_extract_file_meta,
+                fn_process_file = fn_process_file,
+                additional_file_meta_columns = additional_file_meta_columns,
+                )
+
+
+
+# %% Migrate All Files
+
+@catch_error(logger)
+def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file):
+    """
+    Migrate All Files
+    """
+    snowflake_ddl_params.spark = spark
+    snowflake_ddl_params.snowflake_connection = connect_to_snowflake()
+
+    create_file_meta_table_if_not_exists(additional_file_meta_columns)
+
+    recursive_migrate_all_files(
+        source_path = data_settings.source_path,
+        fn_extract_file_meta = fn_extract_file_meta,
+        additional_file_meta_columns = additional_file_meta_columns,
+        fn_process_file = fn_process_file
+        )
+
+    write_DDL_file_per_step()
+    snowflake_ddl_params.snowflake_connection.close()
 
 
 
 # %%
+
 
 

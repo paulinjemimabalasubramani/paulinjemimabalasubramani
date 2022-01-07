@@ -14,7 +14,7 @@ spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
 spark_app_name = "Migrate Metrics Assets Tables"
-airflow_app_name = "migrate_metrics_assets"
+airflow_app_name = "metrics_migrate_assets"
 description_DAG = 'Migrate Metrics Assets Tables'
 
 
@@ -42,8 +42,8 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    METRICS_DATASTORE_MIGRATE_RAA = SparkSubmitOperator(
-         task_id = "METRICS_DATASTORE_MIGRATE_RAA",
+    METRICS_MIGRATE_ASSETS_RAA = SparkSubmitOperator(
+         task_id = "METRICS_MIGRATE_ASSETS_RAA",
          application = "/usr/local/spark/app/migrate_csv_with_date.py",
          name = spark_app_name,
          jars = jars,
@@ -54,7 +54,7 @@ with DAG(
          verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
-             '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_RAA',
+             '--pipelinekey', 'METRICS_MIGRATE_ASSETS_RAA',
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
              #'--spark_master_ip', spark_master_ip,
@@ -62,8 +62,8 @@ with DAG(
          dag = dag
          )
 
-    METRICS_DATASTORE_MIGRATE_WFS = SparkSubmitOperator(
-         task_id = "METRICS_DATASTORE_MIGRATE_WFS",
+    METRICS_MIGRATE_ASSETS_WFS = SparkSubmitOperator(
+         task_id = "METRICS_MIGRATE_ASSETS_WFS",
          application = "/usr/local/spark/app/migrate_csv_with_date.py",
          name = spark_app_name,
          jars = jars,
@@ -74,7 +74,7 @@ with DAG(
          verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
-             '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_WFS',
+             '--pipelinekey', 'METRICS_MIGRATE_ASSETS_WFS',
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
              #'--spark_master_ip', spark_master_ip,
@@ -82,8 +82,8 @@ with DAG(
          dag = dag
          )
 
-    METRICS_DATASTORE_MIGRATE_SPF = SparkSubmitOperator(
-         task_id = "METRICS_DATASTORE_MIGRATE_SPF",
+    METRICS_MIGRATE_ASSETS_SPF = SparkSubmitOperator(
+         task_id = "METRICS_MIGRATE_ASSETS_SPF",
          application = "/usr/local/spark/app/migrate_csv_with_date.py",
          name = spark_app_name,
          jars = jars,
@@ -94,7 +94,7 @@ with DAG(
          verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
-             '--pipelinekey', 'METRICS_DATASTORE_MIGRATE_SPF',
+             '--pipelinekey', 'METRICS_MIGRATE_ASSETS_SPF',
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
              #'--spark_master_ip', spark_master_ip,
@@ -102,9 +102,9 @@ with DAG(
          dag = dag
          )
 
-    startpipe >> METRICS_DATASTORE_MIGRATE_RAA
-    startpipe >> METRICS_DATASTORE_MIGRATE_WFS
-    startpipe >> METRICS_DATASTORE_MIGRATE_SPF
+    startpipe >> METRICS_MIGRATE_ASSETS_RAA
+    startpipe >> METRICS_MIGRATE_ASSETS_WFS
+    startpipe >> METRICS_MIGRATE_ASSETS_SPF
 
 
 
