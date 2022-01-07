@@ -228,7 +228,7 @@ def trigger_snowpipe(table_name:str):
     json_string = json.dumps(ingest_data)
     save_adls_gen2(
         table = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
-        table_name = 'ingest_data',
+        table_name = f'{data_settings.pipelinekey.upper()}_INGEST_PIPE',
         is_metadata = True,
         file_format = 'parquet'
     )
