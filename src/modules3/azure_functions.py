@@ -79,10 +79,11 @@ def azure_data_path(table_name:str, is_metadata:bool=False):
     Construct path for Azure Tables
     """
     container_name = 'ingress'
+    table_name = table_name if is_metadata else table_name.lower()
     container_folder = azure_container_folder_path(is_metadata=is_metadata)
     storage_account_name = data_settings.default_storage_account_name if is_metadata else data_settings.storage_account_name
 
-    return f"abfs://{container_name}@{storage_account_name}.{azure_filesystem_uri}/{container_folder}/{table_name.lower()}"
+    return f"abfs://{container_name}@{storage_account_name}.{azure_filesystem_uri}/{container_folder}/{table_name}"
 
 
 
