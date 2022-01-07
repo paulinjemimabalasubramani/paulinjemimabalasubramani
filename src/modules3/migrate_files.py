@@ -9,8 +9,8 @@ import os, sys, tempfile, shutil, pymssql
 from datetime import datetime
 
 from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, strftime, \
-    pipeline_metadata_conf
-from .azure_functions import save_adls_gen2
+    pipeline_metadata_conf, execution_date
+from .azure_functions import save_adls_gen2, setup_spark_adls_gen2_connection
 from .spark_functions import ELT_PROCESS_ID_str
 from .snowflake_ddl import connect_to_snowflake, snowflake_ddl_params, create_snowflake_ddl, write_DDL_file_per_step
 
@@ -36,7 +36,7 @@ cloud_file_history_columns = [
     ('is_full_load', 'bit NULL'),
     ('key_datetime', 'datetime NULL'),
 
-    (EXECUTION_DATE_str.lower(), 'datetime NULL'), # execution_date
+    (EXECUTION_DATE_str.lower(), 'datetime NULL'), # data_settings.execution_date
     (ELT_PROCESS_ID_str.lower(), 'varchar(500) NULL'), # data_settings.elt_process_id
     ('pipelinekey', 'varchar(500) NULL'), # data_settings.pipelinekey
     ]
@@ -47,7 +47,7 @@ cloud_file_history_columns = [
 
 @catch_error(logger)
 def get_metadata_key_column_names(
-        base:list = ['databse_name', 'schema_name', 'table_name'],
+        base:list = ['database_name', 'schema_name', 'table_name'],
         with_load:list = ['is_full_load'],
         with_load_n_date:list = ['key_datetime'],
         ):
@@ -125,8 +125,8 @@ def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
             row = cursor.fetchone()
             if int(row['CNT']) == 0:
                 logger.info(f'{full_table_name} table does not exist in SQL server. Creating new table.')
-                file_meta_columns = 'Id int Identity' + ''.join([f', {c[0]} {c[1]}' for c in cloud_file_history_columns + additional_file_meta_columns])
-                create_table_sqlstr = f'CREATE TABLE [{full_table_name}] ({file_meta_columns});'
+                file_meta_columns = 'id int identity' + ''.join([f', {c[0]} {c[1]}' for c in cloud_file_history_columns + additional_file_meta_columns])
+                create_table_sqlstr = f'CREATE TABLE {full_table_name} ({file_meta_columns});'
                 conn._conn.execute_non_query(create_table_sqlstr)
 
 
@@ -203,6 +203,16 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
     file_meta = fn_extract_file_meta(file_path=file_path, zip_file_path=zip_file_path)
     if not file_meta or (data_settings.key_datetime > file_meta['key_datetime']): return
 
+    file_meta = {
+        **file_meta,
+        'database_name': data_settings.domain_name,
+        'schema_name': data_settings.schema_name,
+        'firm_name': data_settings.pipeline_firm,
+        EXECUTION_DATE_str.lower(): execution_date,
+        ELT_PROCESS_ID_str.lower(): data_settings.elt_process_id,
+        'pipelinekey': data_settings.pipelinekey,
+    }
+
     if file_meta_exists_in_history(file_meta=file_meta):
         logger.info(f'File already exists, skipping: {file_path}')
         return
@@ -216,9 +226,13 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         return
 
     for table_name, table in table_list.items():
-        if save_adls_gen2(table=table, table_name=table_name, is_metadata=False):
-            create_snowflake_ddl(table=table, table_name=table_name)
-            write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
+        setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.storage_account_name) # for data
+        if not save_adls_gen2(table=table, table_name=table_name, is_metadata=False): continue
+
+        setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.default_storage_account_name) # for metadata
+        create_snowflake_ddl(table=table, table_name=table_name)
+
+        write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
 
 
 
@@ -229,6 +243,10 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
     """
     Mirgate all files recursively unzipping any files
     """
+    if not os.path.isdir(source_path):
+        logger.info(f'Path does not exist: {source_path}')
+        return
+
     for root, dirs, files in os.walk(source_path):
         for file_name in files:
             file_path = os.path.join(root, file_name)
@@ -236,7 +254,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
             file_name_noext, file_ext = os.path.splitext(file_name)
             if file_ext.lower() == '.zip':
                 with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
-                    extract_dir = tmpdir.name
+                    extract_dir = tmpdir
                     logger.info(f'Extracting {file_path} to {extract_dir}')
                     shutil.unpack_archive(filename=file_path, extract_dir=extract_dir)
                     recursive_migrate_all_files(
@@ -261,7 +279,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
 # %% Migrate All Files
 
 @catch_error(logger)
-def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns, fn_process_file):
+def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file):
     """
     Migrate All Files
     """
@@ -273,6 +291,7 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns,
     recursive_migrate_all_files(
         source_path = data_settings.source_path,
         fn_extract_file_meta = fn_extract_file_meta,
+        additional_file_meta_columns = additional_file_meta_columns,
         fn_process_file = fn_process_file
         )
 

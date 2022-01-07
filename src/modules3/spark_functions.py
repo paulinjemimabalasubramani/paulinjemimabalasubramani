@@ -373,7 +373,7 @@ def add_id_key(table, key_column_names:list=[], always_use_hash:bool=False):
         key_column_names = table.columns
         use_hash = True
 
-    id_key = concat_ws('_', [coalesce(col(c).cast('string'), lit('')) for c in key_column_names])
+    id_key = concat_ws('_', *[coalesce(col(c).cast('string'), lit('')) for c in key_column_names])
     if use_hash: id_key = sha1(id_key)
 
     table = table.withColumn(IDKeyIndicator, id_key.alias(IDKeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}))

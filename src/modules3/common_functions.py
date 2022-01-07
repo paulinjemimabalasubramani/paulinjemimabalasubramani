@@ -288,7 +288,7 @@ def get_data_settings(logger=None):
 
     if hasattr(data_settings, 'db_name'):  data_settings.domain_name = data_settings.db_name.lower()
     if hasattr(data_settings, 'schema_name'): data_settings.schema_name = data_settings.schema_name.upper()
-    if hasattr(data_settings, 'pipeline_datasourcekey'): data_settings.elt_process_id = '_'.join([str(data_settings.pipeline_datasourcekey), str(execution_date)])
+    data_settings.elt_process_id = ' '.join([str(data_settings.pipelinekey), str(execution_date)])
 
     to_storage_account = lambda storage_account_mid:  f"{data_settings.azure_storage_accounts_prefix}{storage_account_mid}{data_settings.azure_storage_accounts_suffix}".lower()
     data_settings.default_storage_account_name = to_storage_account(storage_account_mid=data_settings.azure_storage_accounts_default_mid)

@@ -101,8 +101,9 @@ def save_adls_gen2(
     data_path = azure_data_path(table_name=table_name, is_metadata=is_metadata)
     logger.info(f"Write {file_format} -> {data_path}")
 
-    for c in table.columns:
-        table = table.withColumnRenamed(c, c.lower())
+    if not is_metadata:
+        for c in table.columns:
+            table = table.withColumnRenamed(c, c.lower())
 
     if file_format == 'text':
         table.coalesce(1).write.save(path=data_path, format=file_format, mode='overwrite', header='false')
@@ -118,7 +119,7 @@ def save_adls_gen2(
             userMetadata = execution_date # any string metadata to save alongside with the Delta Table
             table.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
     else:
-        table.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true")
+        table.write.save(path=data_path, format=file_format, mode='overwrite', overwriteSchema="true")
 
     log_data = {
         "data_path": data_path,

@@ -24,6 +24,7 @@ class module_params_class:
     """
     execute_at_snowflake = False # Default False
     create_or_replace = True # Default False - Use True for Schema Change Update
+    create_ddl_files = True # Default True
 
     snowflake_database = f'{data_settings.environment}_{data_settings.domain_name}'.upper()
 
@@ -44,13 +45,12 @@ class module_params_class:
     integration_id = 'elt_integration_id'
     stream_alias = 'src_strm'
     view_prefix = 'VW_'
-    elt_stream_action_alias = 'ELT_STREAM_ACTION'
+    elt_stream_action_alias = 'elt_stream_action'
     nlines = '\n' * 3
 
     spark = None
     snowflake_connection = None
-    ddl_file = None
-    ddl_str_per_step = defaultdict(str)
+    ddl_file_per_step = defaultdict(str)
 
 
 
@@ -167,7 +167,7 @@ def write_DDL_file_per_step():
     for ddl_file_per_step_key, sqlstr in wid.ddl_file_per_step.items():
         SCHEMA_NAME, file_name = ddl_file_per_step_key
 
-        file_folder_path = os.path.join(data_settings.output_ddl_path, 'per_step', data_settings.domain_name.lower(), SCHEMA_NAME.upper())
+        file_folder_path = os.path.join(data_settings.output_ddl_path, 'per_pipeline', data_settings.pipelinekey.upper(), SCHEMA_NAME.upper())
         os.makedirs(name=file_folder_path, exist_ok=True)
 
         file_path = os.path.join(file_folder_path, f'{file_name}.sql')
@@ -235,13 +235,13 @@ def trigger_snowpipe(table_name:str):
 
     logger.info(f'Triggering Snowpipe: {sqlstr}')
     sqlstr = f"""{use_role_warehouse_database()}
-        ALTER PIPE {wid.elt_stage_schema}.{data_settings.pipelinekey}_INGEST_PIPE REFRESH;
+        ALTER PIPE {wid.elt_stage_schema}.{data_settings.pipelinekey.upper()}_INGEST_PIPE REFRESH;
     """
     exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
 
     log_data = {
         'sqlstr': sqlstr,
-        'table_name': ingest_data['FULL_OBJECT_NAME'],
+        'table_name': f"{ingest_data['INGEST_SCHEMA']}.{ingest_data['FULL_OBJECT_NAME']}",
     }
 
     logger.info(log_data)
@@ -275,7 +275,7 @@ def step1(table_name:str):
     layer = 'RAW'
     SCHEMA_NAME, sqlstr = base_sqlstr(layer=layer)
 
-    ddl_file_per_step_key = (SCHEMA_NAME, 'V0.0.1__Create_Tables')
+    ddl_file_per_step_key = (SCHEMA_NAME, f'V0.0.1__Create_{SCHEMA_NAME}_Seed')
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
@@ -306,7 +306,7 @@ def step2(table_name:str):
     layer = 'RAW'
     SCHEMA_NAME, sqlstr = base_sqlstr(layer=layer)
 
-    ddl_file_per_step_key = (SCHEMA_NAME, 'V0.0.2__Create_Streams')
+    ddl_file_per_step_key = (SCHEMA_NAME, f'V0.0.1__Create_{SCHEMA_NAME}_Seed')
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
@@ -333,7 +333,7 @@ def step3(table_name:str, table_columns:OrderedDict):
     layer = 'RAW'
     SCHEMA_NAME, sqlstr = base_sqlstr(layer=layer)
 
-    ddl_file_per_step_key = (SCHEMA_NAME, 'V0.0.3__Create_Views')
+    ddl_file_per_step_key = (SCHEMA_NAME, f'V0.0.1__Create_{SCHEMA_NAME}_Seed')
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
@@ -369,7 +369,7 @@ def step4(table_name:str, table_columns:OrderedDict):
     layer = 'RAW'
     SCHEMA_NAME, sqlstr = base_sqlstr(layer=layer)
 
-    ddl_file_per_step_key = (SCHEMA_NAME, 'V0.0.3__Create_Views')
+    ddl_file_per_step_key = (SCHEMA_NAME, f'V0.0.1__Create_{SCHEMA_NAME}_Seed')
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
@@ -425,7 +425,7 @@ def step5(table_name:str, table_columns:OrderedDict):
     layer = ''
     SCHEMA_NAME, sqlstr = base_sqlstr(layer=layer)
 
-    ddl_file_per_step_key = (SCHEMA_NAME, 'V0.0.1__Create_Tables')
+    ddl_file_per_step_key = (SCHEMA_NAME, f'V0.0.1__Create_{SCHEMA_NAME}_Seed')
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
@@ -462,7 +462,7 @@ def step6(table_name:str, table_columns:OrderedDict):
     layer = ''
     SCHEMA_NAME, sqlstr = base_sqlstr(layer=layer)
 
-    ddl_file_per_step_key = (SCHEMA_NAME, 'V0.0.2__Create_Stored_Procedures')
+    ddl_file_per_step_key = (SCHEMA_NAME, f'V0.0.1__Create_{SCHEMA_NAME}_Seed')
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
@@ -560,7 +560,7 @@ def step7(table_name:str):
     layer = ''
     SCHEMA_NAME, sqlstr = base_sqlstr(layer=layer)
 
-    ddl_file_per_step_key = (SCHEMA_NAME, 'V0.0.3__Create_Tasks')
+    ddl_file_per_step_key = (SCHEMA_NAME, f'V0.0.1__Create_{SCHEMA_NAME}_Seed')
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
@@ -571,7 +571,7 @@ def step7(table_name:str):
 
     step = f"""
 {create_or_replace_func('TASK')} {task_name}
-WAREHOUSE = {wid.snowflake_raw_warehouse}
+WAREHOUSE = {data_settings.snowflake_warehouse}
 SCHEDULE = '1 minute'
 WHEN
 SYSTEM$STREAM_HAS_DATA('{stream_name}')
@@ -597,7 +597,7 @@ def step8(table_name:str):
     layer = ''
     SCHEMA_NAME, sqlstr = base_sqlstr(layer=layer)
 
-    ddl_file_per_step_key = (SCHEMA_NAME, 'V0.0.4__Resume_Tasks')
+    ddl_file_per_step_key = (SCHEMA_NAME, 'V0.0.2__Resume_Tasks')
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
