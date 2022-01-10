@@ -29,18 +29,14 @@ else:
 # %% Import Libraries
 
 import os, sys, pymssql
+from datetime import datetime
 
 sys.args = args
 sys.parent_name = os.path.basename(__file__)
 
-
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, cloud_file_hist_conf
 from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
-from modules3.migrate_files import migrate_all_files, get_key_column_names, cloud_file_history_name, to_sql_value
-
-
-from datetime import datetime
-
+from modules3.migrate_files import migrate_all_files, get_key_column_names, cloud_file_history_name, to_sql_value, default_table_dtypes
 
 
 
@@ -177,6 +173,15 @@ def process_csv_file(file_meta):
 
 
 
+# %% Translate Column Types
+
+@catch_error(logger)
+def get_dtypes(table, table_name:str):
+    dtypes = default_table_dtypes(table=table, use_varchar=True)
+    return dtypes
+
+
+
 # %% Iterate over all the files in all the firms and process them.
 
 additional_file_meta_columns = [
@@ -189,6 +194,7 @@ migrate_all_files(
     additional_file_meta_columns = additional_file_meta_columns,
     fn_process_file = process_csv_file,
     fn_select_files = select_files,
+    fn_get_dtypes = get_dtypes,
     )
 
 
