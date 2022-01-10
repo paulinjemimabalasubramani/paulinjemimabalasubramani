@@ -181,6 +181,13 @@ def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list
     for c in all_columns:
         cval = file_meta[c]
         cval = cval.strftime(strftime) if isinstance(cval, datetime) else str(cval)
+
+        if isinstance(cval, datetime):
+            cval = cval.strftime(strftime)
+        else:
+            cval = str(cval)
+            cval = cval.replace("'", "''")
+
         column_values.append(f"'{cval}'")
     column_values_str = ', '.join(column_values)
 
