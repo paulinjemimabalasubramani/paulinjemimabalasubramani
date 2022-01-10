@@ -224,6 +224,7 @@ def trigger_snowpipe(table_name:str):
     ingest_data = create_ingest_data(table_name=table_name)
     sqlstr = ingest_data['COPY_COMMAND']
 
+    '''
     logger.info(f'Save Ingest Data: {sqlstr}')
     json_string = json.dumps(ingest_data)
     save_adls_gen2(
@@ -239,9 +240,17 @@ def trigger_snowpipe(table_name:str):
     """
     exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
 
+    '''
+
+    cur = wid.snowflake_connection.cursor()
+    cur.execute_async(sqlstr)
+    query_id = cur.sfqid
+    cur.close()
+
     log_data = {
         'sqlstr': sqlstr,
         'table_name': f"{ingest_data['INGEST_SCHEMA']}.{ingest_data['FULL_OBJECT_NAME']}",
+        'query_id': query_id,
     }
 
     logger.info(log_data)
@@ -620,7 +629,8 @@ ALTER TASK {task_name} RESUME;
 @catch_error(logger)
 def create_snowflake_ddl(table, table_name:str):
     logger.info(f'Start Creating Snowflake DDL for table {table_name}')
-    table_columns = OrderedDict(sorted([(c.lower(), 'variant' if ':' in col_type else 'varchar') for (c, col_type) in table.dtypes], key=lambda k: k[0]))
+    table_columns = [(c.lower(), 'variant' if ':' in col_type else 'varchar') for (c, col_type) in table.dtypes if c.lower() not in elt_audit_columns]
+    table_columns = OrderedDict(sorted(table_columns, key=lambda k: k[0]))
 
     step1(table_name=table_name)
     step2(table_name=table_name)
