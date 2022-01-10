@@ -223,6 +223,7 @@ def trigger_snowpipe(table_name:str):
     """
     ingest_data = create_ingest_data(table_name=table_name)
     copy_command = ingest_data['COPY_COMMAND']
+    variant_table_name = f"{ingest_data['INGEST_SCHEMA']}.{ingest_data['FULL_OBJECT_NAME']}{wid.variant_label}"
 
     '''
     logger.info(f'Save Ingest Data: {copy_command}')
@@ -243,13 +244,14 @@ def trigger_snowpipe(table_name:str):
     '''
 
     cur = wid.snowflake_connection.cursor()
+    cur.execute(f'TRUNCATE TABLE {variant_table_name};')
     cur.execute_async(copy_command)
     query_id = cur.sfqid
     cur.close()
 
     log_data = {
         'copy_command': copy_command,
-        'table_name': f"{ingest_data['INGEST_SCHEMA']}.{ingest_data['FULL_OBJECT_NAME']}",
+        'table_name': variant_table_name,
         'query_id': query_id,
     }
 

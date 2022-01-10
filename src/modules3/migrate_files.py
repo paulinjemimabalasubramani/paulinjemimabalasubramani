@@ -134,6 +134,22 @@ def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
 
 
 
+# %% Utility function to convert Python values to SQL equivalent values
+
+@catch_error(logger)
+def to_sql_value(cval):
+    """
+    Utility function to convert Python values to SQL equivalent values
+    """
+    if isinstance(cval, datetime):
+        cval = cval.strftime(strftime)
+    else:
+        cval = str(cval)
+        cval = cval.replace("'", "''")
+    return cval
+
+
+
 # %% Check if file_meta exists in SQL server File History
 
 @catch_error(logger)
@@ -145,8 +161,7 @@ def file_meta_exists_in_history(file_meta:dict):
 
     key_columns = []
     for c in data_settings.metadata_key_column_names['with_load_n_date']:
-        cval = file_meta[c]
-        cval = cval.strftime(strftime) if isinstance(cval, datetime) else str(cval)
+        cval = to_sql_value(file_meta[c])
         key_columns.append(f"{c}='{cval}'")
     key_columns = ' AND '.join(key_columns)
     sqlstr_meta_exists = f'SELECT COUNT(*) AS CNT FROM {full_table_name} WHERE {key_columns};'
@@ -179,15 +194,7 @@ def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list
 
     column_values = []
     for c in all_columns:
-        cval = file_meta[c]
-        cval = cval.strftime(strftime) if isinstance(cval, datetime) else str(cval)
-
-        if isinstance(cval, datetime):
-            cval = cval.strftime(strftime)
-        else:
-            cval = str(cval)
-            cval = cval.replace("'", "''")
-
+        cval = to_sql_value(file_meta[c])
         column_values.append(f"'{cval}'")
     column_values_str = ', '.join(column_values)
 
@@ -228,7 +235,7 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         logger.info(f'File already exists, skipping: {file_path}')
         return
 
-    logger.info(f"Processing: {file_path}")
+    logger.info(f'Read File: {file_path}')
     logger.info(file_meta)
 
     table_list = fn_process_file(file_meta=file_meta)
@@ -238,6 +245,7 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
 
     copy_commands = []
     for table_name, table in table_list.items():
+        logger.info(f'Write Table "{table_name}" in File: {file_path}')
         setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.storage_account_name) # for data
         if not save_adls_gen2(table=table, table_name=table_name, is_metadata=False): continue
 
@@ -254,63 +262,81 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
 # %% Mirgate all files recursively unzipping any files
 
 @catch_error(logger)
-def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, zip_file_path:str=None):
+def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, zip_file_path:str=None, selected_file_paths:list=[]):
     """
     Mirgate all files recursively unzipping any files
     """
-    if not os.path.isdir(source_path):
-        logger.info(f'Path does not exist: {source_path}')
-        return
+    if not selected_file_paths:
+        if not os.path.isdir(source_path):
+            logger.info(f'Path does not exist: {source_path}')
+            return
 
-    for root, dirs, files in os.walk(source_path):
-        for file_name in files:
-            file_path = os.path.join(root, file_name)
+        selected_file_paths = []
+        for root, dirs, files in os.walk(source_path):
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                selected_file_paths.append(file_path)
 
-            file_name_noext, file_ext = os.path.splitext(file_name)
-            if file_ext.lower() == '.zip':
-                with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
-                    extract_dir = tmpdir
-                    logger.info(f'Extracting {file_path} to {extract_dir}')
-                    shutil.unpack_archive(filename=file_path, extract_dir=extract_dir)
-                    recursive_migrate_all_files(
-                        source_path = extract_dir,
-                        fn_extract_file_meta = fn_extract_file_meta,
-                        additional_file_meta_columns = additional_file_meta_columns,
-                        fn_process_file = fn_process_file,
-                        zip_file_path = zip_file_path if zip_file_path else file_path, # to keep original zip file path, rather than the last zip file path
-                        )
-                    continue
+    selected_file_paths = sorted(selected_file_paths)
 
-            migrate_single_file(
-                file_path = file_path,
-                zip_file_path = zip_file_path,
-                fn_extract_file_meta = fn_extract_file_meta,
-                fn_process_file = fn_process_file,
-                additional_file_meta_columns = additional_file_meta_columns,
-                )
+    for file_path in selected_file_paths:
+        file_name = os.path.basename(file_path)
+        file_name_noext, file_ext = os.path.splitext(file_name)
+
+        if file_ext.lower() == '.zip':
+            with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
+                extract_dir = tmpdir
+                logger.info(f'Extracting {file_path} to {extract_dir}')
+                shutil.unpack_archive(filename=file_path, extract_dir=extract_dir)
+                recursive_migrate_all_files(
+                    source_path = extract_dir,
+                    fn_extract_file_meta = fn_extract_file_meta,
+                    additional_file_meta_columns = additional_file_meta_columns,
+                    fn_process_file = fn_process_file,
+                    zip_file_path = zip_file_path if zip_file_path else file_path, # to keep original zip file path, rather than the last zip file path
+                    selected_file_paths = [],
+                    )
+                continue
+
+        migrate_single_file(
+            file_path = file_path,
+            zip_file_path = zip_file_path,
+            fn_extract_file_meta = fn_extract_file_meta,
+            fn_process_file = fn_process_file,
+            additional_file_meta_columns = additional_file_meta_columns,
+            )
 
 
 
 # %% Migrate All Files
 
 @catch_error(logger)
-def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file):
+def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, fn_select_files:list):
     """
     Migrate All Files
     """
+    create_file_meta_table_if_not_exists(additional_file_meta_columns)
+
+    selected_file_paths = fn_select_files()
+    if not selected_file_paths:
+        logger.info('No Selected Files to Migrate')
+        return
+
+    logger.info(f'Total of {len(selected_file_paths)} file(s) selected for potential migration job.')
+
     snowflake_ddl_params.spark = spark
     snowflake_ddl_params.snowflake_connection = connect_to_snowflake()
-
-    create_file_meta_table_if_not_exists(additional_file_meta_columns)
 
     recursive_migrate_all_files(
         source_path = data_settings.source_path,
         fn_extract_file_meta = fn_extract_file_meta,
         additional_file_meta_columns = additional_file_meta_columns,
-        fn_process_file = fn_process_file
+        fn_process_file = fn_process_file,
+        selected_file_paths = selected_file_paths,
         )
 
     write_DDL_file_per_step()
+
     snowflake_ddl_params.snowflake_connection.close()
 
 

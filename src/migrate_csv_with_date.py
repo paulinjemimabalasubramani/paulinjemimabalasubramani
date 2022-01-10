@@ -28,15 +28,15 @@ else:
 
 # %% Import Libraries
 
-import os, sys
+import os, sys, pymssql
 
 sys.args = args
 sys.parent_name = os.path.basename(__file__)
 
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, cloud_file_hist_conf
 from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
-from modules3.migrate_files import migrate_all_files, get_key_column_names
+from modules3.migrate_files import migrate_all_files, get_key_column_names, cloud_file_history_name, to_sql_value
 
 
 from datetime import datetime
@@ -53,6 +53,55 @@ allowed_file_extensions = ['.txt', '.csv']
 # %% Create Connections
 
 spark = create_spark()
+
+
+
+# %% Select Files
+
+@catch_error(logger)
+def select_files():
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+    date_format = data_settings.date_format
+
+    source_path = data_settings.source_path
+    selected_file_paths = []
+
+    for root, dirs, files in os.walk(source_path):
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+            file_name_noext, file_ext = os.path.splitext(file_name)
+
+            if file_ext.lower() not in allowed_file_extensions + ['.zip']: continue
+
+            try:
+                if file_ext == '.zip':
+                    file_date_str = file_name_noext
+                else:
+                    date_loc = -file_name_noext[::-1].find('_')
+                    file_date_str = file_name_noext[date_loc:]
+
+                key_datetime = datetime.strptime(file_date_str, date_format)
+                if key_datetime < data_settings.key_datetime: continue
+            except:
+                continue
+
+            sqlstr_meta_exists = f"SELECT COUNT(*) AS CNT FROM {full_table_name} WHERE '{to_sql_value(file_path)}' in (file_path, zip_file_path);"
+            with pymssql.connect(
+                server = cloud_file_hist_conf['sql_server'],
+                user = cloud_file_hist_conf['sql_id'],
+                password = cloud_file_hist_conf['sql_pass'],
+                database = cloud_file_hist_conf['sql_database'],
+                appname = sys.parent_name,
+                autocommit = True,
+                ) as conn:
+                with conn.cursor(as_dict=True) as cursor:
+                    cursor.execute(sqlstr_meta_exists)
+                    row = cursor.fetchone()
+                    if int(row['CNT']) > 0: continue
+
+            selected_file_paths.append(file_path)
+
+    return selected_file_paths
 
 
 
@@ -139,6 +188,7 @@ migrate_all_files(
     fn_extract_file_meta = extract_csv_file_meta,
     additional_file_meta_columns = additional_file_meta_columns,
     fn_process_file = process_csv_file,
+    fn_select_files = select_files,
     )
 
 
