@@ -39,6 +39,8 @@ cloud_file_history_columns = [
     (EXECUTION_DATE_str.lower(), 'datetime NULL'), # data_settings.execution_date
     (ELT_PROCESS_ID_str.lower(), 'varchar(500) NULL'), # data_settings.elt_process_id
     ('pipelinekey', 'varchar(500) NULL'), # data_settings.pipelinekey
+    ('total_seconds', 'int NULL'), # file_meta['total_seconds']
+    ('file_size_kb', 'numeric(38, 3) NULL'), # os.path.getsize(file_meta['file_path'])/1024
     ]
 
 
@@ -200,6 +202,7 @@ def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list
 @catch_error(logger)
 def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, fn_process_file, additional_file_meta_columns:list):
     logger.info(f'Extract File Meta: {file_path}')
+    start_total_seconds = datetime.now()
     file_meta = fn_extract_file_meta(file_path=file_path, zip_file_path=zip_file_path)
     if not file_meta or (data_settings.key_datetime > file_meta['key_datetime']): return
 
@@ -232,7 +235,9 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.default_storage_account_name) # for metadata
         create_snowflake_ddl(table=table, table_name=table_name)
 
-        write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
+    file_meta['total_seconds'] = (datetime.now() - start_total_seconds).seconds
+    file_meta['file_size_kb'] = os.path.getsize(file_meta['file_path'])/1024
+    write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
 
 
 
