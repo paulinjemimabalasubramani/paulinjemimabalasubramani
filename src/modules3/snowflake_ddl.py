@@ -222,10 +222,10 @@ def trigger_snowpipe(table_name:str):
     Trigger snowpipe to read INGEST_REQUEST files
     """
     ingest_data = create_ingest_data(table_name=table_name)
-    sqlstr = ingest_data['COPY_COMMAND']
+    copy_command = ingest_data['COPY_COMMAND']
 
     '''
-    logger.info(f'Save Ingest Data: {sqlstr}')
+    logger.info(f'Save Ingest Data: {copy_command}')
     json_string = json.dumps(ingest_data)
     save_adls_gen2(
         table = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
@@ -243,18 +243,19 @@ def trigger_snowpipe(table_name:str):
     '''
 
     cur = wid.snowflake_connection.cursor()
-    cur.execute_async(sqlstr)
+    cur.execute_async(copy_command)
     query_id = cur.sfqid
     cur.close()
 
     log_data = {
-        'sqlstr': sqlstr,
+        'copy_command': copy_command,
         'table_name': f"{ingest_data['INGEST_SCHEMA']}.{ingest_data['FULL_OBJECT_NAME']}",
         'query_id': query_id,
     }
 
     logger.info(log_data)
     post_log_data(log_data=log_data, log_type='AirflowSnowflakeRequests', logger=logger)
+    return copy_command
 
 
 
@@ -642,8 +643,9 @@ def create_snowflake_ddl(table, table_name:str):
     step8(table_name=table_name)
 
     write_DDL_file_per_table(table_name=table_name)
-    trigger_snowpipe(table_name=table_name)
+    copy_command = trigger_snowpipe(table_name=table_name)
     logger.info(f'Finished Creating Snowflake DDL for table {table_name}')
+    return copy_command
 
 
 

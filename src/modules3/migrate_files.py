@@ -41,6 +41,7 @@ cloud_file_history_columns = [
     ('pipelinekey', 'varchar(500) NULL'), # data_settings.pipelinekey
     ('total_seconds', 'int NULL'), # file_meta['total_seconds']
     ('file_size_kb', 'numeric(38, 3) NULL'), # os.path.getsize(file_meta['file_path'])/1024
+    ('copy_command', 'varchar(2500) NULL'), # ' '.join(copy_commands)
     ]
 
 
@@ -228,15 +229,17 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         logger.warning(f"No table_list to write")
         return
 
+    copy_commands = []
     for table_name, table in table_list.items():
         setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.storage_account_name) # for data
         if not save_adls_gen2(table=table, table_name=table_name, is_metadata=False): continue
 
         setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.default_storage_account_name) # for metadata
-        create_snowflake_ddl(table=table, table_name=table_name)
+        copy_commands.append(create_snowflake_ddl(table=table, table_name=table_name))
 
     file_meta['total_seconds'] = (datetime.now() - start_total_seconds).seconds
     file_meta['file_size_kb'] = os.path.getsize(file_meta['file_path'])/1024
+    file_meta['copy_command'] = ' '.join(copy_commands)
     write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
 
 
