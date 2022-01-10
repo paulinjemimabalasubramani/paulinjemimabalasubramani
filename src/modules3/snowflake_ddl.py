@@ -4,7 +4,7 @@ Common Library for creating and executing (if required) Snowflake DDL Steps and 
 """
 
 # %% Import Libraries
-import os, json
+import os
 from functools import wraps
 from collections import defaultdict, OrderedDict
 
@@ -338,7 +338,7 @@ ON TABLE {SCHEMA_NAME}.{table_name.upper()}{wid.variant_label} APPEND_ONLY = TRU
 
 @catch_error(logger)
 @action_step(3)
-def step3(table_name:str, table_columns:OrderedDict):
+def step3(table_name:str, dtypes:OrderedDict):
     """
     Snowflake DDL: Create View on the Stream of the Variant Table
     """
@@ -350,7 +350,7 @@ def step3(table_name:str, table_columns:OrderedDict):
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     column_list_src = '\n  ,'.join(
-        [f'SRC:"{column_name}"::string AS {column_name}' for column_name in table_columns] +
+        [f'SRC:"{column_name}"::string AS {column_name}' for column_name in dtypes] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
@@ -374,7 +374,7 @@ FROM {SCHEMA_NAME}.{table_name.upper()}{wid.variant_label}{wid.stream_suffix};
 
 @catch_error(logger)
 @action_step(4)
-def step4(table_name:str, table_columns:OrderedDict):
+def step4(table_name:str, dtypes:OrderedDict):
     """
     Snowflake DDL: Create View with Integration ID and Hash Column on the Stream of the Variant Table
     """
@@ -385,11 +385,11 @@ def step4(table_name:str, table_columns:OrderedDict):
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
-    column_list = '\n  ,'.join([x for x in table_columns]+elt_audit_columns)
-    column_list_with_alias = '\n  ,'.join([f'{wid.src_alias}.{c}' for c in [x for x in table_columns]+elt_audit_columns])
+    column_list = '\n  ,'.join([x for x in dtypes]+elt_audit_columns)
+    column_list_with_alias = '\n  ,'.join([f'{wid.src_alias}.{c}' for c in [x for x in dtypes]+elt_audit_columns])
 
     pk_column_names = [IDKeyIndicator.lower()]
-    table_columns_ex_pk = [c for c in table_columns if c.lower() not in pk_column_names]
+    table_columns_ex_pk = [c for c in dtypes if c.lower() not in pk_column_names]
     if table_columns_ex_pk:
         hash_columns = "SHA1(CONCAT(\n       " + "\n      ,".join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in table_columns_ex_pk]) + "\n      ))"
     else:
@@ -430,7 +430,7 @@ WHERE top_slice = 1;
 
 @catch_error(logger)
 @action_step(5)
-def step5(table_name:str, table_columns:OrderedDict):
+def step5(table_name:str, dtypes:OrderedDict):
     """
     Snowflake DDL: Create final destination raw Table
     """
@@ -442,7 +442,7 @@ def step5(table_name:str, table_columns:OrderedDict):
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     column_list_types = '\n  ,'.join(
-        [f'{column_name} {data_type}' for column_name, data_type in table_columns.items()] +
+        [f'{column_name} {data_type}' for column_name, data_type in dtypes.items()] +
         [f'{c} VARCHAR' for c in elt_audit_columns]
         )
 
@@ -467,7 +467,7 @@ def step5(table_name:str, table_columns:OrderedDict):
 
 @catch_error(logger)
 @action_step(6)
-def step6(table_name:str, table_columns:OrderedDict):
+def step6(table_name:str, dtypes:OrderedDict):
     """
     Snowflake DDL: Create Procedure to UPSERT raw data from variant data stream/view to destination raw table
     """
@@ -480,7 +480,7 @@ def step6(table_name:str, table_columns:OrderedDict):
 
     stored_procedure = f'{SCHEMA_NAME}.USP_{table_name.upper()}_MERGE'
 
-    column_list = '\n    ,'.join([x for x in table_columns] + elt_audit_columns)
+    column_list = '\n    ,'.join([x for x in dtypes] + elt_audit_columns)
 
     def fval(column_name:str, data_type:str):
         if data_type.upper().startswith('variant'.upper()):
@@ -490,11 +490,11 @@ def step6(table_name:str, table_columns:OrderedDict):
         else:
             return column_name
 
-    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', data_type) for c, data_type in table_columns.items()])
+    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', data_type) for c, data_type in dtypes.items()])
     merge_update_elt_columns = '\n    ,'.join([f'{wid.tgt_alias}.{c} = {wid.src_alias}.{c}' for c in elt_audit_columns])
     merge_update_columns    += '\n    ,' + merge_update_elt_columns
 
-    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{c}', data_type) for c, data_type in table_columns.items()])
+    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{c}', data_type) for c, data_type in dtypes.items()])
     column_list_with_alias_elt = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in elt_audit_columns])
     column_list_with_alias    += '\n    ,' + column_list_with_alias_elt
 
@@ -630,17 +630,16 @@ ALTER TASK {task_name} RESUME;
 # %% Create Snowflake DDL
 
 @catch_error(logger)
-def create_snowflake_ddl(table, table_name:str):
+def create_snowflake_ddl(table, table_name:str, fn_get_dtypes):
     logger.info(f'Start Creating Snowflake DDL for table {table_name}')
-    table_columns = [(c.lower(), 'variant' if ':' in col_type else 'varchar') for (c, col_type) in table.dtypes if c.lower() not in elt_audit_columns]
-    table_columns = OrderedDict(sorted(table_columns, key=lambda k: k[0]))
+    dtypes = fn_get_dtypes(table=table, table_name=table_name)
 
     step1(table_name=table_name)
     step2(table_name=table_name)
-    step3(table_name=table_name, table_columns=table_columns)
-    step4(table_name=table_name, table_columns=table_columns)
-    step5(table_name=table_name, table_columns=table_columns)
-    step6(table_name=table_name, table_columns=table_columns)
+    step3(table_name=table_name, dtypes=dtypes)
+    step4(table_name=table_name, dtypes=dtypes)
+    step5(table_name=table_name, dtypes=dtypes)
+    step6(table_name=table_name, dtypes=dtypes)
     step7(table_name=table_name)
     step8(table_name=table_name)
 

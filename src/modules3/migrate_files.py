@@ -7,11 +7,12 @@ Common Library for migrating any type of data from any source to Azure ADLS Gen 
 
 import os, sys, tempfile, shutil, pymssql
 from datetime import datetime
+from collections import OrderedDict
 
 from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, strftime, \
     pipeline_metadata_conf, execution_date
 from .azure_functions import save_adls_gen2, setup_spark_adls_gen2_connection
-from .spark_functions import ELT_PROCESS_ID_str
+from .spark_functions import ELT_PROCESS_ID_str, partitionBy, elt_audit_columns
 from .snowflake_ddl import connect_to_snowflake, snowflake_ddl_params, create_snowflake_ddl, write_DDL_file_per_step
 
 
@@ -134,6 +135,31 @@ def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
 
 
 
+# %% Default table type conversion
+
+@catch_error(logger)
+def default_table_dtypes(table, use_varchar:bool=True):
+    """
+    Default table type conversion
+    """
+    dtypes = []
+    filter_columns = [c.lower() for c in elt_audit_columns] + [partitionBy.lower()]
+
+    for (c, col_type) in table.dtypes:
+        if c.lower() not in filter_columns:
+            if ':' in col_type or col_type.lower() in ['variant']:
+                dtype = 'variant'
+            elif use_varchar:
+                dtype = 'varchar'
+            else:
+                dtype = col_type.lower()
+            dtypes.append((c.lower(), dtype))
+
+    dtypes = OrderedDict(sorted(dtypes, key=lambda k: k[0]))
+    return dtypes
+
+
+
 # %% Utility function to convert Python values to SQL equivalent values
 
 @catch_error(logger)
@@ -215,7 +241,7 @@ def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list
 # %% Migrate Single File
 
 @catch_error(logger)
-def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, fn_process_file, additional_file_meta_columns:list):
+def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, fn_process_file, fn_get_dtypes, additional_file_meta_columns:list):
     logger.info(f'Extract File Meta: {file_path}')
     start_total_seconds = datetime.now()
     file_meta = fn_extract_file_meta(file_path=file_path, zip_file_path=zip_file_path)
@@ -250,7 +276,7 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         if not save_adls_gen2(table=table, table_name=table_name, is_metadata=False): continue
 
         setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.default_storage_account_name) # for metadata
-        copy_commands.append(create_snowflake_ddl(table=table, table_name=table_name))
+        copy_commands.append(create_snowflake_ddl(table=table, table_name=table_name, fn_get_dtypes=fn_get_dtypes))
 
     file_meta['total_seconds'] = (datetime.now() - start_total_seconds).seconds
     file_meta['file_size_kb'] = os.path.getsize(file_meta['file_path'])/1024
@@ -262,7 +288,7 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
 # %% Mirgate all files recursively unzipping any files
 
 @catch_error(logger)
-def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, zip_file_path:str=None, selected_file_paths:list=[]):
+def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, fn_get_dtypes, zip_file_path:str=None, selected_file_paths:list=[]):
     """
     Mirgate all files recursively unzipping any files
     """
@@ -293,6 +319,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
                     fn_extract_file_meta = fn_extract_file_meta,
                     additional_file_meta_columns = additional_file_meta_columns,
                     fn_process_file = fn_process_file,
+                    fn_get_dtypes = fn_get_dtypes,
                     zip_file_path = zip_file_path if zip_file_path else file_path, # to keep original zip file path, rather than the last zip file path
                     selected_file_paths = [],
                     )
@@ -303,6 +330,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
             zip_file_path = zip_file_path,
             fn_extract_file_meta = fn_extract_file_meta,
             fn_process_file = fn_process_file,
+            fn_get_dtypes = fn_get_dtypes,
             additional_file_meta_columns = additional_file_meta_columns,
             )
 
@@ -311,7 +339,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
 # %% Migrate All Files
 
 @catch_error(logger)
-def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, fn_select_files:list):
+def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, fn_select_files, fn_get_dtypes):
     """
     Migrate All Files
     """
@@ -332,6 +360,7 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:
         fn_extract_file_meta = fn_extract_file_meta,
         additional_file_meta_columns = additional_file_meta_columns,
         fn_process_file = fn_process_file,
+        fn_get_dtypes = fn_get_dtypes,
         selected_file_paths = selected_file_paths,
         )
 
