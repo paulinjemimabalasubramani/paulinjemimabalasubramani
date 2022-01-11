@@ -43,6 +43,7 @@ cloud_file_history_columns = [
     ('total_seconds', 'int NULL'), # file_meta['total_seconds']
     ('file_size_kb', 'numeric(38, 3) NULL'), # os.path.getsize(file_meta['file_path'])/1024
     ('copy_command', 'varchar(2500) NULL'), # ' '.join(copy_commands)
+    ('zip_file_fully_ingested', 'bit NULL'), # False if zip_file_path else True
     ]
 
 
@@ -281,7 +282,32 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
     file_meta['total_seconds'] = (datetime.now() - start_total_seconds).seconds
     file_meta['file_size_kb'] = os.path.getsize(file_meta['file_path'])/1024
     file_meta['copy_command'] = ' '.join(copy_commands)
+    file_meta['zip_file_fully_ingested'] = False if zip_file_path else True
+
     write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
+
+
+
+# %% Update SQL Zip File Path - Fully Ingested to True
+
+def update_sql_zip_file_path(zip_file_path:str):
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+
+    sqlstr_update = f"""UPDATE {full_table_name}
+        SET zip_file_fully_ingested = 1
+        WHERE zip_file_path = '{to_sql_value(zip_file_path)}'
+    ;"""
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            conn._conn.execute_non_query(sqlstr_update)
 
 
 
@@ -314,15 +340,17 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
                 extract_dir = tmpdir
                 logger.info(f'Extracting {file_path} to {extract_dir}')
                 shutil.unpack_archive(filename=file_path, extract_dir=extract_dir)
+                zip_file_path = zip_file_path if zip_file_path else file_path # to keep original zip file path, rather than the last zip file path
                 recursive_migrate_all_files(
                     source_path = extract_dir,
                     fn_extract_file_meta = fn_extract_file_meta,
                     additional_file_meta_columns = additional_file_meta_columns,
                     fn_process_file = fn_process_file,
                     fn_get_dtypes = fn_get_dtypes,
-                    zip_file_path = zip_file_path if zip_file_path else file_path, # to keep original zip file path, rather than the last zip file path
+                    zip_file_path = zip_file_path,
                     selected_file_paths = [],
                     )
+                update_sql_zip_file_path(zip_file_path=zip_file_path)
                 continue
 
         migrate_single_file(

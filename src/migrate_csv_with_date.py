@@ -81,7 +81,10 @@ def select_files():
             except:
                 continue
 
-            sqlstr_meta_exists = f"SELECT COUNT(*) AS CNT FROM {full_table_name} WHERE '{to_sql_value(file_path)}' in (file_path, zip_file_path);"
+            sqlstr_meta_exists = f"""SELECT COUNT(*) AS CNT FROM {full_table_name}
+                WHERE '{to_sql_value(file_path)}' = file_path
+                    OR ('{to_sql_value(file_path)}' = zip_file_path AND zip_file_fully_ingested = 1)
+                ;"""
             with pymssql.connect(
                 server = cloud_file_hist_conf['sql_server'],
                 user = cloud_file_hist_conf['sql_id'],
