@@ -329,7 +329,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
                 file_path = os.path.join(root, file_name)
                 selected_file_paths.append(file_path)
 
-    selected_file_paths = sorted(selected_file_paths)
+        selected_file_paths = sorted(selected_file_paths)
 
     for file_path in selected_file_paths:
         file_name = os.path.basename(file_path)

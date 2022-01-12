@@ -13,7 +13,7 @@ https://spark.apache.org/docs/latest/configuration
 """
 
 # %% libraries
-import os, re, json
+import os, re
 from pprint import pprint
 
 from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings

@@ -67,6 +67,7 @@ def select_files():
 
             selected_file_paths.append(file_path)
 
+    selected_file_paths = sorted(selected_file_paths)
     return selected_file_paths
 
 
