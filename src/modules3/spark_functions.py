@@ -51,7 +51,7 @@ elt_audit_columns = [c.lower() for c in elt_audit_columns]
 # %% Add ELT Audit Columns
 
 @catch_error(logger)
-def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str=None):
+def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str):
     """
     Add ELT Audit Columns to the table
     """
@@ -63,15 +63,11 @@ def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str=Non
     table = table.withColumn(ELT_PROCESS_ID_str, lit(data_settings.elt_process_id))
     table = table.withColumn(ELT_FIRM_str, lit(data_settings.pipeline_firm))
 
-    if is_full_load:
-        DML_TYPE = 'I'
-    else:
-        DML_TYPE = dml_type.upper()
+    dml_type = dml_type.upper()
+    if dml_type not in ['U', 'I', 'D']:
+        raise ValueError(f'{DML_TYPE_str} = {dml_type}')
 
-    if DML_TYPE not in ['U', 'I', 'D']:
-        raise ValueError(f'{DML_TYPE_str} = {DML_TYPE}')
-
-    table = table.withColumn(DML_TYPE_str, lit(str(DML_TYPE)))
+    table = table.withColumn(DML_TYPE_str, lit(str(dml_type)))
     table = table.withColumn(partitionBy, lit(str(partitionBy_value)))
     return table
 
