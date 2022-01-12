@@ -360,7 +360,7 @@ def read_text(spark, file_path:str):
 # %% Add ID Key
 
 @catch_error(logger)
-def add_id_key(table, key_column_names:list=[], always_use_hash:bool=False):
+def add_id_key(table, key_column_names:list=[], always_use_hash:bool=True):
     """
     Add ID Key to the table
     """
@@ -368,6 +368,8 @@ def add_id_key(table, key_column_names:list=[], always_use_hash:bool=False):
     if not key_column_names:
         key_column_names = table.columns
         use_hash = True
+
+    key_column_names.append(data_settings.pipeline_datasourcekey)
 
     id_key = concat_ws('_', *[coalesce(col(c).cast('string'), lit('')) for c in key_column_names])
     if use_hash: id_key = sha1(id_key)
