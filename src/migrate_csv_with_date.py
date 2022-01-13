@@ -28,7 +28,7 @@ else:
 
 # %% Import Libraries
 
-import os, sys, pymssql
+import os, sys
 from datetime import datetime
 
 class app: pass
@@ -36,9 +36,10 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, cloud_file_hist_conf
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
 from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
-from modules3.migrate_files import migrate_all_files, get_key_column_names, cloud_file_history_name, to_sql_value, default_table_dtypes
+from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes, \
+    file_meta_exists_for_select_files
 
 
 
@@ -58,7 +59,6 @@ spark = create_spark()
 
 @catch_error(logger)
 def select_files():
-    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
     date_format = data_settings.date_format
 
     source_path = data_settings.source_path
@@ -83,26 +83,12 @@ def select_files():
             except:
                 continue
 
-            sqlstr_meta_exists = f"""SELECT COUNT(*) AS CNT FROM {full_table_name}
-                WHERE reingest_file = 0 AND
-                    ('{to_sql_value(file_path)}' = file_path OR ('{to_sql_value(file_path)}' = zip_file_path AND zip_file_fully_ingested = 1))
-                ;"""
-            with pymssql.connect(
-                server = cloud_file_hist_conf['sql_server'],
-                user = cloud_file_hist_conf['sql_id'],
-                password = cloud_file_hist_conf['sql_pass'],
-                database = cloud_file_hist_conf['sql_database'],
-                appname = sys.parent_name,
-                autocommit = True,
-                ) as conn:
-                with conn.cursor(as_dict=True) as cursor:
-                    cursor.execute(sqlstr_meta_exists)
-                    row = cursor.fetchone()
-                    if int(row['CNT']) > 0: continue
+            if file_meta_exists_for_select_files(file_path=file_path): continue
 
-            selected_file_paths.append(file_path)
+            selected_file_paths.append((file_path, key_datetime))
 
-    selected_file_paths = sorted(selected_file_paths)
+    selected_file_paths = sorted(selected_file_paths, key=lambda c: (c[1], c[0]))
+    selected_file_paths = [c[0] for c in selected_file_paths]
     return selected_file_paths
 
 

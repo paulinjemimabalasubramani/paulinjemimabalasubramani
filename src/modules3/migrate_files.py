@@ -9,8 +9,8 @@ import os, sys, tempfile, shutil, pymssql
 from datetime import datetime
 from collections import OrderedDict
 
-from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, strftime, \
-    pipeline_metadata_conf, execution_date, execution_date_start
+from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, \
+    pipeline_metadata_conf, execution_date, execution_date_start, to_sql_value
 from .azure_functions import save_adls_gen2, setup_spark_adls_gen2_connection
 from .spark_functions import ELT_PROCESS_ID_str, partitionBy, elt_audit_columns
 from .snowflake_ddl import connect_to_snowflake, snowflake_ddl_params, create_snowflake_ddl, write_DDL_file_per_step
@@ -163,22 +163,6 @@ def default_table_dtypes(table, use_varchar:bool=True):
 
 
 
-# %% Utility function to convert Python values to SQL equivalent values
-
-@catch_error(logger)
-def to_sql_value(cval):
-    """
-    Utility function to convert Python values to SQL equivalent values
-    """
-    if isinstance(cval, datetime):
-        cval = cval.strftime(strftime)
-    else:
-        cval = str(cval)
-        cval = cval.replace("'", "''")
-    return cval
-
-
-
 # %% Check if file_meta exists in SQL server File History
 
 @catch_error(logger)
@@ -207,6 +191,44 @@ def file_meta_exists_in_history(file_meta:dict):
             cursor.execute(sqlstr_meta_exists)
             row = cursor.fetchone()
             return int(row['CNT']) > 0
+
+
+
+# %% Check if file_meta exists in SQL server File History for initial File Selection
+
+@catch_error(logger)
+def file_meta_exists_for_select_files(file_path:str):
+    """
+    Check if file_meta exists in SQL server File History for initial File Selection
+    """
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+
+    sqlstr_meta_exists = f"""SELECT COUNT(*) AS CNT FROM {full_table_name}
+        WHERE reingest_file = 0 AND
+            ('{to_sql_value(file_path)}' = file_path OR ('{to_sql_value(file_path)}' = zip_file_path AND zip_file_fully_ingested = 1))
+        ;"""
+
+    sqlstr_reingest_file_exists = f"""SELECT COUNT(*) AS CNT FROM {full_table_name}
+        WHERE reingest_file = 1 AND
+            ('{to_sql_value(file_path)}' = file_path OR '{to_sql_value(file_path)}' = zip_file_path)
+        ;"""
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.app.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            cursor.execute(sqlstr_meta_exists)
+            row = cursor.fetchone()
+            if int(row['CNT']) == 0: return False
+
+            cursor.execute(sqlstr_reingest_file_exists)
+            row = cursor.fetchone()
+            return int(row['CNT']) == 0
 
 
 
@@ -264,12 +286,14 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
     file_meta = fn_extract_file_meta(file_path=file_path, zip_file_path=zip_file_path)
     if not file_meta or (data_settings.key_datetime > file_meta['key_datetime']): return
 
+    sys.app.error_file = file_meta['file_path']
+
     file_meta = {
         **file_meta,
         'database_name': data_settings.domain_name,
         'schema_name': data_settings.schema_name,
         'firm_name': data_settings.pipeline_firm,
-        EXECUTION_DATE_str.lower(): execution_date,
+        EXECUTION_DATE_str.lower(): execution_date_start,
         ELT_PROCESS_ID_str.lower(): data_settings.elt_process_id,
         'pipelinekey': data_settings.pipelinekey,
         'datasourcekey': data_settings.pipeline_datasourcekey,
@@ -303,6 +327,10 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
     file_meta['total_seconds'] = (datetime.now() - start_total_seconds).seconds
 
     write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
+
+    sys.app.table_count += len(table_list)
+    sys.app.aggregate_file_size_kb += file_meta['file_size_kb']
+    sys.app.error_file = None
 
 
 
@@ -384,53 +412,6 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
 
 
 
-# %% Create Pipeline Instance table if not exists
-
-def create_pipeline_instance_table_if_not_exists():
-    """
-    Create Pipeline Instance table if not exists
-    """
-    schema_name = pipeline_metadata_conf['sql_schema']
-    table_name = pipeline_metadata_conf['sql_table_name_pipe_instance']
-    full_table_name = f"{schema_name}.{table_name}".lower()
-
-    sqlstr_table_exists = f"""SELECT COUNT(*) AS CNT
-    FROM INFORMATION_SCHEMA.TABLES
-    WHERE UPPER(TABLE_SCHEMA) = '{schema_name.upper()}'
-        AND UPPER(TABLE_TYPE) = 'BASE TABLE'
-        AND UPPER(TABLE_NAME) = '{table_name.upper()}'
-    ;"""
-
-    sqlstr_table_create = f"""CREATE TABLE {full_table_name} (
-        PipelineInstanceId int Identity,
-        PipelineKey varchar(500) NOT NULL,
-        {ELT_PROCESS_ID_str.lower()} varchar(500) NOT NULL,
-        {EXECUTION_DATE_str.lower()} datetime NULL,
-        total_minutes numeric(38, 3) NULL,
-        table_count int NULL,
-        aggregate_file_size_kb numeric(38, 3) NULL,
-        run_status varchar(100) NULL,
-        error_message varchar(1500) NULL,
-        error_table varchar(500)
-        ;"""
-
-    with pymssql.connect(
-        server = cloud_file_hist_conf['sql_server'],
-        user = cloud_file_hist_conf['sql_id'],
-        password = cloud_file_hist_conf['sql_pass'],
-        database = cloud_file_hist_conf['sql_database'],
-        appname = sys.app.parent_name,
-        autocommit = True,
-        ) as conn:
-        with conn.cursor(as_dict=True) as cursor:
-            cursor.execute(sqlstr_table_exists)
-            row = cursor.fetchone()
-            if int(row['CNT']) == 0:
-                logger.info(f'{full_table_name} table does not exist in SQL server. Creating new table.')
-                conn._conn.execute_non_query(sqlstr_table_create)
-
-
-
 # %% Migrate All Files
 
 @catch_error(logger)
@@ -438,7 +419,6 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:
     """
     Migrate All Files
     """
-    create_pipeline_instance_table_if_not_exists()
     create_file_meta_table_if_not_exists(additional_file_meta_columns)
 
     selected_file_paths = fn_select_files()

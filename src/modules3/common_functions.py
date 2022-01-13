@@ -25,6 +25,7 @@ strftime = r'%Y-%m-%d %H:%M:%S'  # http://strftime.org/
 execution_date = execution_date_start.strftime(strftime)
 execution_date_start = datetime.strptime(execution_date, strftime) # to ensure identity with the string form of execution date
 EXECUTION_DATE_str = 'elt_execution_date'
+ELT_PROCESS_ID_str = 'elt_process_id'
 
 is_pc = platform.system().lower() == 'windows'
 
@@ -67,6 +68,12 @@ def catch_error(logger=None, raise_error:bool=True):
                     exception_message  = f"Exception occurred inside '{fn.__name__}'"
                     exception_message += f"\nException Message: {e}"
                     pprint(exception_message)
+
+                    if hasattr(sys.app, 'finalize_new_pipeline_instance'):
+                        try:
+                            sys.app.finalize_new_pipeline_instance(error_message=str(e))
+                        except:
+                            pass
 
                     if logger: logger.error(exception_message)
                     if raise_error: raise e
@@ -604,30 +611,6 @@ extraClassPath = get_extraClassPath(drivers_path=drivers_path)
 
 
 
-# %% Mark Execution End
-
-@catch_error(logger)
-def mark_execution_end():
-    """
-    Log Execution End date and Execution duration of the entire code
-    """
-    execution_date_end = datetime.now()
-    timedelta1 = execution_date_end - execution_date_start
-
-    h = timedelta1.seconds // 3600
-    m = (timedelta1.seconds - h * 3600) // 60
-    s = timedelta1.seconds - h * 3600 - m * 60
-    total_time = f'{timedelta1.days} day(s), {h} hour(s), {m} minute(s), {s} second(s)'
-
-    logger.info({
-        f'{EXECUTION_DATE_str}_start': execution_date,
-        f'{EXECUTION_DATE_str}_end': execution_date_end.strftime(strftime),
-        'total_seconds': timedelta1.seconds,
-        'total_time': total_time,
-    })
-
-
-
 # %% Utility function to convert dict to OrderedDict
 
 @catch_error(logger)
@@ -679,6 +662,167 @@ def pymssql_execute_non_query(sqlstr_list:list, sql_server:str, sql_id:str, sql_
         logger.info({'execute': sqlstr})
         conn._conn.execute_non_query(sqlstr)
     conn.close()
+
+
+
+# %% Utility function to convert Python values to SQL equivalent values
+
+@catch_error(logger)
+def to_sql_value(cval):
+    """
+    Utility function to convert Python values to SQL equivalent values
+    """
+    strftime = r'%Y-%m-%d %H:%M:%S'  # http://strftime.org/
+
+    if isinstance(cval, datetime):
+        cval = cval.strftime(strftime)
+    else:
+        cval = str(cval)
+        cval = cval.replace("'", "''")
+
+    return cval
+
+
+
+# %% Add new pipeline instance. Create Pipeline Instance table if not exists
+
+@catch_error(logger)
+def add_new_pipeline_instance():
+    """
+    Add new pipeline instance. Create Pipeline Instance table if not exists
+    """
+    logger.info(f'Creating new Pipeline Instance: {data_settings.elt_process_id}')
+    sys.app.table_count = 0
+    sys.app.aggregate_file_size_kb = 0.0
+    sys.app.error_file = None
+
+    schema_name = pipeline_metadata_conf['sql_schema']
+    table_name = pipeline_metadata_conf['sql_table_name_pipe_instance']
+    full_table_name = f"{schema_name}.{table_name}"
+
+    sqlstr_table_exists = f"""SELECT COUNT(*) AS CNT
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE UPPER(TABLE_SCHEMA) = '{schema_name.upper()}'
+        AND UPPER(TABLE_TYPE) = 'BASE TABLE'
+        AND UPPER(TABLE_NAME) = '{table_name.upper()}'
+    ;"""
+
+    sqlstr_table_create = f"""CREATE TABLE {full_table_name} (
+        PipelineInstanceId int Identity,
+        PipelineKey varchar(500) NOT NULL,
+        {ELT_PROCESS_ID_str.lower()} varchar(500) NOT NULL,
+        {EXECUTION_DATE_str.lower()} datetime NULL,
+        total_minutes numeric(38, 3) NULL,
+        table_count int NULL,
+        aggregate_file_size_kb numeric(38, 3) NULL,
+        run_status varchar(100) NULL,
+        error_message varchar(1500) NULL,
+        error_file varchar(1000)
+        );"""
+
+    sqlstr_new_instance = f"""INSERT INTO {full_table_name} (
+        PipelineKey,
+        {ELT_PROCESS_ID_str.lower()},
+        {EXECUTION_DATE_str.lower()},
+        run_status
+    ) VALUES (
+        '{data_settings.pipelinekey}',
+        '{data_settings.elt_process_id}',
+        '{to_sql_value(execution_date_start)}',
+        'Running'
+    );"""
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.app.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            cursor.execute(sqlstr_table_exists)
+            row = cursor.fetchone()
+            if int(row['CNT']) == 0:
+                logger.info(f'{full_table_name} table does not exist in SQL server. Creating new table.')
+                conn._conn.execute_non_query(sqlstr_table_create)
+
+            conn._conn.execute_non_query(sqlstr_new_instance)
+
+
+
+add_new_pipeline_instance()
+
+
+
+# %% Update the Pipeline Instance with the final data
+
+@catch_error(logger)
+def finalize_new_pipeline_instance(error_message:str=None):
+    """
+    Update the Pipeline Instance with the final data
+    """
+    schema_name = pipeline_metadata_conf['sql_schema']
+    table_name = pipeline_metadata_conf['sql_table_name_pipe_instance']
+    full_table_name = f"{schema_name}.{table_name}"
+    total_minutes = (datetime.now() - execution_date_start).seconds / 60
+    run_status = 'Failed' if error_message else 'Succeeded'
+
+    sqlstr_error = f"""
+        error_message = '{to_sql_value(error_message)}',
+        error_file = '{to_sql_value(sys.app.error_file)}',
+        """ if error_message else ''
+
+    sqlstr_update = f"""UPDATE {full_table_name} SET
+        total_minutes = {total_minutes},
+        table_count = {sys.app.table_count},
+        aggregate_file_size_kb = {sys.app.aggregate_file_size_kb},
+        {sqlstr_error}
+        run_status = '{run_status}'
+    WHERE
+        {ELT_PROCESS_ID_str.lower()} = '{data_settings.elt_process_id}'
+    """
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.app.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            conn._conn.execute_non_query(sqlstr_update)
+
+
+
+sys.app.finalize_new_pipeline_instance = finalize_new_pipeline_instance
+
+
+
+# %% Mark Execution End
+
+@catch_error(logger)
+def mark_execution_end():
+    """
+    Log Execution End date and Execution duration of the entire code
+    """
+    execution_date_end = datetime.now()
+    timedelta1 = execution_date_end - execution_date_start
+
+    h = timedelta1.seconds // 3600
+    m = (timedelta1.seconds - h * 3600) // 60
+    s = timedelta1.seconds - h * 3600 - m * 60
+    total_time = f'{timedelta1.days} day(s), {h} hour(s), {m} minute(s), {s} second(s)'
+
+    logger.info({
+        f'{EXECUTION_DATE_str}_start': execution_date,
+        f'{EXECUTION_DATE_str}_end': execution_date_end.strftime(strftime),
+        'total_seconds': timedelta1.seconds,
+        'total_time': total_time,
+    })
+
+    finalize_new_pipeline_instance()
 
 
 

@@ -16,7 +16,8 @@ https://spark.apache.org/docs/latest/configuration
 import os, re
 from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings
+from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, \
+    ELT_PROCESS_ID_str
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
@@ -37,13 +38,13 @@ ELT_DELETE_IND_str = 'elt_delete_ind'
 DML_TYPE_str = 'elt_dml_type'
 KEY_DATETIME_str = 'elt_reception_date'
 ELT_FIRM_str = 'elt_firm'
-ELT_PROCESS_ID_str = 'elt_process_id'
+ELT_PipelineKey_str = 'elt_pipelinekey'
 
 partitionBy = 'elt_partition_date'
 partitionBy_value = re.sub(column_regex, '_', execution_date)
 PARTITION = f'{partitionBy}={partitionBy_value}'
 
-elt_audit_columns = [EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str, KEY_DATETIME_str, ELT_PROCESS_ID_str, ELT_FIRM_str]
+elt_audit_columns = [EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str, KEY_DATETIME_str, ELT_PROCESS_ID_str, ELT_FIRM_str, ELT_PipelineKey_str]
 elt_audit_columns = [c.lower() for c in elt_audit_columns]
 
 
@@ -58,6 +59,7 @@ def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str):
     table = table.withColumn(KEY_DATETIME_str, lit(str(key_datetime)))
     table = table.withColumn(EXECUTION_DATE_str, lit(str(execution_date)))
     table = table.withColumn(ELT_SOURCE_str, lit(str(data_settings.pipeline_datasourcekey)))
+    table = table.withColumn(ELT_SOURCE_str, lit(str(data_settings.pipelinekey)))
     table = table.withColumn(ELT_LOAD_TYPE_str, lit(str("FULL" if is_full_load else "INCREMENTAL")))
     table = table.withColumn(ELT_DELETE_IND_str, lit(0).cast(IntegerType()))
     table = table.withColumn(ELT_PROCESS_ID_str, lit(data_settings.elt_process_id))
@@ -369,9 +371,10 @@ def add_id_key(table, key_column_names:list=[], always_use_hash:bool=True):
         key_column_names = table.columns
         use_hash = True
 
-    key_column_names.append(data_settings.pipeline_datasourcekey)
+    id_key_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
+    id_key_list.append(lit(data_settings.pipeline_datasourcekey))
 
-    id_key = concat_ws('_', *[coalesce(col(c).cast('string'), lit('')) for c in key_column_names])
+    id_key = concat_ws('_', *id_key_list)
     if use_hash: id_key = sha1(id_key)
 
     table = table.withColumn(IDKeyIndicator, id_key.alias(IDKeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}))
