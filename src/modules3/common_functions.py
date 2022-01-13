@@ -62,12 +62,14 @@ def catch_error(logger=None, raise_error:bool=True):
             try:
                 response = fn(*args, **kwargs)
             except (BaseException, AssertionError) as e:
-                exception_message  = f"Exception occurred inside '{fn.__name__}'"
-                exception_message += f"\nException Message: {e}"
-                pprint(exception_message)
+                if not hasattr(sys.app, 'is_error'):
+                    sys.app.is_error = True
+                    exception_message  = f"Exception occurred inside '{fn.__name__}'"
+                    exception_message += f"\nException Message: {e}"
+                    pprint(exception_message)
 
-                if logger: logger.error(exception_message)
-                if raise_error: raise e
+                    if logger: logger.error(exception_message)
+                    if raise_error: raise e
             return response
         return inner
     return outer
@@ -91,7 +93,7 @@ def get_env(variable_name:str, default:str=None, logger=None, raise_error_if_no_
         elif value.lower() in ['true', 'false']:
             value = value.lower()=='true'
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -102,7 +104,7 @@ def get_env(variable_name:str, default:str=None, logger=None, raise_error_if_no_
 
 
 
-sys.environment = get_env(variable_name='ENVIRONMENT').upper()
+sys.app.environment = get_env(variable_name='ENVIRONMENT').upper()
 
 
 
@@ -122,7 +124,7 @@ def get_azure_key_vault(logger=None):
         credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
         client = SecretClient(vault_endpoint, credential, logging_enable=True)
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -143,7 +145,7 @@ def get_secrets(account_name:str, logger=None, additional_secrets:list=[]):
     sp_additional_secrets = []
 
     try:
-        environment = sys.environment.lower()
+        environment = sys.app.environment.lower()
         account_name = account_name.lower()
         azure_tenant_id, client = get_azure_key_vault()
 
@@ -153,7 +155,7 @@ def get_secrets(account_name:str, logger=None, additional_secrets:list=[]):
         for additional_secret in additional_secrets:
             sp_additional_secrets.append(client.get_secret(f'{environment}-{account_name}-{additional_secret}').value)
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -192,7 +194,7 @@ class Config:
                 try:
                     with open(file_path, 'r') as f:
                         contents = yaml.load(f, Loader=yaml.SafeLoader)
-                except Exception as e:
+                except (BaseException, AssertionError) as e:
                     except_str = f'Error File was not read: {file_path}'
                     if logger:
                         logger.error(except_str)
@@ -203,7 +205,7 @@ class Config:
                 for name, value in contents.items():
                     setattr(self, name, value) # Overwrite defaults from file
 
-        except Exception as e:
+        except (BaseException, AssertionError) as e:
             if logger:
                 logger.error(str(e))
             else:
@@ -233,8 +235,8 @@ def get_data_settings(logger=None):
     generic_pipelinekey = 'GENERIC'
     defaults = {
         'pipelinekey': generic_pipelinekey,
-        'environment': sys.environment,
-        'parent_program': sys.parent_name,
+        'environment': sys.app.environment,
+        'parent_program': sys.app.parent_name,
     }
 
     data_settings = Config(defaults=defaults)
@@ -248,8 +250,8 @@ def get_data_settings(logger=None):
     for envv in env_data_settings_names: # Read all the environmental variables
         setattr(data_settings, envv, get_env(variable_name=envv.upper()))
 
-    if hasattr(sys, 'args'): # CLI Arguments takes precedence over environment variables
-        for arg_key, arg_val in sys.args.items():
+    if hasattr(sys.app, 'args'): # CLI Arguments takes precedence over environment variables
+        for arg_key, arg_val in sys.app.args.items():
             setattr(data_settings, arg_key, arg_val)
 
     cloud_file_hist_conf = {
@@ -265,6 +267,7 @@ def get_data_settings(logger=None):
     pipeline_metadata_conf['sql_schema'] = 'metadata'
     pipeline_metadata_conf['sql_table_name_primary_key'] = 'PrimaryKey'
     pipeline_metadata_conf['sql_table_name_pipe_config'] = 'PipelineConfiguration'
+    pipeline_metadata_conf['sql_table_name_pipe_instance'] = 'PipelineInstance'
 
     sqlstr = f"""SELECT *
     FROM {pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_pipe_config']}
@@ -276,7 +279,7 @@ def get_data_settings(logger=None):
         user = pipeline_metadata_conf['sql_id'],
         password = pipeline_metadata_conf['sql_pass'],
         database = pipeline_metadata_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
@@ -327,7 +330,7 @@ def build_log_signature(customer_id:str, shared_key:str, rfc1123date:str, conten
         encoded_hash = base64.b64encode(hmac.new(decoded_key, bytes_to_hash, digestmod=hashlib.sha256).digest()).decode()
         authorization = f'SharedKey {customer_id}:{encoded_hash}'
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -349,7 +352,7 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
     try:
         log_data = {
             'TimeGenerated': datetime.now(),
-            'MainScript': sys.parent_name if hasattr(sys, 'parent_name') else '',
+            'MainScript': sys.app.parent_name if hasattr(sys.app, 'parent_name') else '',
             **log_data}
         body = json.dumps(log_data, sort_keys=True, default=str)
 
@@ -390,7 +393,7 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
             else:
                 pprint(f'Log Response code: {response.status_code}')
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -420,7 +423,7 @@ def system_info(logger=None):
             **data_settings.__dict__,
         }
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -444,7 +447,7 @@ class CreateLogger:
         Initiate the class. Set Logging Policy.
         """
         self.print_log_type = 'AirflowPrintedLogs'
-        self.log_name = sys.parent_name.split('.')[0] if hasattr(sys, 'parent_name') else 'logs'
+        self.log_name = sys.app.parent_name.split('.')[0] if hasattr(sys.app, 'parent_name') else 'logs'
         self.logger = logging.getLogger(self.log_name)
         self.logger.setLevel(logging_level)
 
@@ -559,12 +562,14 @@ ORDER BY p.UpdateTs DESC, p.PipelineId DESC
         user = pipeline_metadata_conf['sql_id'],
         password = pipeline_metadata_conf['sql_pass'],
         database = pipeline_metadata_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
             cursor.execute(sqlstr)
             row = cursor.fetchone()
+
+    if not row: raise ValueError(f'Pipeline "{pipelinekey}" is not defined in metadata.Pipeline')
 
     for key, value in row.items():
         setattr(data_settings, 'pipeline_' + key.strip().lower(), value.strip() if isinstance(value, str) else value)
@@ -666,7 +671,7 @@ def pymssql_execute_non_query(sqlstr_list:list, sql_server:str, sql_id:str, sql_
         user = sql_id,
         password = sql_pass,
         database = sql_database,
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         )
     conn._conn.set_msghandler(pymssql_msg_handler)

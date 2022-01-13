@@ -92,7 +92,7 @@ def get_key_column_names(table_name:str):
         user = pipeline_metadata_conf['sql_id'],
         password = pipeline_metadata_conf['sql_pass'],
         database = pipeline_metadata_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
@@ -124,7 +124,7 @@ def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
         user = cloud_file_hist_conf['sql_id'],
         password = cloud_file_hist_conf['sql_pass'],
         database = cloud_file_hist_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
@@ -200,7 +200,7 @@ def file_meta_exists_in_history(file_meta:dict):
         user = cloud_file_hist_conf['sql_id'],
         password = cloud_file_hist_conf['sql_pass'],
         database = cloud_file_hist_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
@@ -247,7 +247,7 @@ def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list
         user = cloud_file_hist_conf['sql_id'],
         password = cloud_file_hist_conf['sql_pass'],
         database = cloud_file_hist_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         conn._conn.execute_non_query(sqlstr_insert)
@@ -323,7 +323,7 @@ def update_sql_zip_file_path(zip_file_path:str):
         user = cloud_file_hist_conf['sql_id'],
         password = cloud_file_hist_conf['sql_pass'],
         database = cloud_file_hist_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
@@ -384,6 +384,53 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
 
 
 
+# %% Create Pipeline Instance table if not exists
+
+def create_pipeline_instance_table_if_not_exists():
+    """
+    Create Pipeline Instance table if not exists
+    """
+    schema_name = pipeline_metadata_conf['sql_schema']
+    table_name = pipeline_metadata_conf['sql_table_name_pipe_instance']
+    full_table_name = f"{schema_name}.{table_name}".lower()
+
+    sqlstr_table_exists = f"""SELECT COUNT(*) AS CNT
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE UPPER(TABLE_SCHEMA) = '{schema_name.upper()}'
+        AND UPPER(TABLE_TYPE) = 'BASE TABLE'
+        AND UPPER(TABLE_NAME) = '{table_name.upper()}'
+    ;"""
+
+    sqlstr_table_create = f"""CREATE TABLE {full_table_name} (
+        PipelineInstanceId int Identity,
+        PipelineKey varchar(500) NOT NULL,
+        {ELT_PROCESS_ID_str.lower()} varchar(500) NOT NULL,
+        {EXECUTION_DATE_str.lower()} datetime NULL,
+        total_minutes numeric(38, 3) NULL,
+        table_count int NULL,
+        aggregate_file_size_kb numeric(38, 3) NULL,
+        run_status varchar(100) NULL,
+        error_message varchar(1500) NULL,
+        error_table varchar(500)
+        ;"""
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.app.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            cursor.execute(sqlstr_table_exists)
+            row = cursor.fetchone()
+            if int(row['CNT']) == 0:
+                logger.info(f'{full_table_name} table does not exist in SQL server. Creating new table.')
+                conn._conn.execute_non_query(sqlstr_table_create)
+
+
+
 # %% Migrate All Files
 
 @catch_error(logger)
@@ -391,6 +438,7 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:
     """
     Migrate All Files
     """
+    create_pipeline_instance_table_if_not_exists()
     create_file_meta_table_if_not_exists(additional_file_meta_columns)
 
     selected_file_paths = fn_select_files()

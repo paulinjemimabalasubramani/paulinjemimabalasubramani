@@ -31,8 +31,10 @@ else:
 import os, sys, pymssql
 from datetime import datetime
 
-sys.args = args
-sys.parent_name = os.path.basename(__file__)
+class app: pass
+sys.app = app
+sys.app.args = args
+sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, cloud_file_hist_conf
 from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
