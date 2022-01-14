@@ -10,7 +10,7 @@ from collections import defaultdict, OrderedDict
 
 from .common_functions import logger, catch_error, data_settings, execution_date, get_secrets, EXECUTION_DATE_str
 from .spark_functions import elt_audit_columns, PARTITION, IDKeyIndicator
-from .azure_functions import post_log_data, save_adls_gen2
+from .azure_functions import post_log_data
 
 from snowflake.connector import connect as snowflake_connect
 

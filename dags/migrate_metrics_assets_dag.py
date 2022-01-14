@@ -17,6 +17,7 @@ spark_app_name = "Migrate Metrics Assets Tables"
 airflow_app_name = "metrics_migrate_assets"
 description_DAG = 'Migrate Metrics Assets Tables'
 
+tags = ['DB:Metrics', 'SC:Assets']
 
 default_args = {
     'owner': 'Seymur',
@@ -35,6 +36,7 @@ with DAG(
     description = description_DAG,
     schedule_interval = '0 13 * * *',
     start_date = days_ago(1),
+    tags = tags,
 ) as dag:
 
     startpipe = BashOperator(

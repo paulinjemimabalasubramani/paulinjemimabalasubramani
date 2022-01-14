@@ -13,10 +13,11 @@ https://spark.apache.org/docs/latest/configuration
 """
 
 # %% libraries
-import os, re, json
+import os, re
 from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings
+from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, \
+    ELT_PROCESS_ID_str
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
@@ -37,13 +38,13 @@ ELT_DELETE_IND_str = 'elt_delete_ind'
 DML_TYPE_str = 'elt_dml_type'
 KEY_DATETIME_str = 'elt_reception_date'
 ELT_FIRM_str = 'elt_firm'
-ELT_PROCESS_ID_str = 'elt_process_id'
+ELT_PipelineKey_str = 'elt_pipelinekey'
 
 partitionBy = 'elt_partition_date'
 partitionBy_value = re.sub(column_regex, '_', execution_date)
 PARTITION = f'{partitionBy}={partitionBy_value}'
 
-elt_audit_columns = [EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str, KEY_DATETIME_str, ELT_PROCESS_ID_str, ELT_FIRM_str]
+elt_audit_columns = [EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str, KEY_DATETIME_str, ELT_PROCESS_ID_str, ELT_FIRM_str, ELT_PipelineKey_str]
 elt_audit_columns = [c.lower() for c in elt_audit_columns]
 
 
@@ -51,27 +52,24 @@ elt_audit_columns = [c.lower() for c in elt_audit_columns]
 # %% Add ELT Audit Columns
 
 @catch_error(logger)
-def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str=None):
+def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str):
     """
     Add ELT Audit Columns to the table
     """
     table = table.withColumn(KEY_DATETIME_str, lit(str(key_datetime)))
     table = table.withColumn(EXECUTION_DATE_str, lit(str(execution_date)))
     table = table.withColumn(ELT_SOURCE_str, lit(str(data_settings.pipeline_datasourcekey)))
+    table = table.withColumn(ELT_SOURCE_str, lit(str(data_settings.pipelinekey)))
     table = table.withColumn(ELT_LOAD_TYPE_str, lit(str("FULL" if is_full_load else "INCREMENTAL")))
     table = table.withColumn(ELT_DELETE_IND_str, lit(0).cast(IntegerType()))
     table = table.withColumn(ELT_PROCESS_ID_str, lit(data_settings.elt_process_id))
     table = table.withColumn(ELT_FIRM_str, lit(data_settings.pipeline_firm))
 
-    if is_full_load:
-        DML_TYPE = 'I'
-    else:
-        DML_TYPE = dml_type.upper()
+    dml_type = dml_type.upper()
+    if dml_type not in ['U', 'I', 'D']:
+        raise ValueError(f'{DML_TYPE_str} = {dml_type}')
 
-    if DML_TYPE not in ['U', 'I', 'D']:
-        raise ValueError(f'{DML_TYPE_str} = {DML_TYPE}')
-
-    table = table.withColumn(DML_TYPE_str, lit(str(DML_TYPE)))
+    table = table.withColumn(DML_TYPE_str, lit(str(dml_type)))
     table = table.withColumn(partitionBy, lit(str(partitionBy_value)))
     return table
 
@@ -364,7 +362,7 @@ def read_text(spark, file_path:str):
 # %% Add ID Key
 
 @catch_error(logger)
-def add_id_key(table, key_column_names:list=[], always_use_hash:bool=False):
+def add_id_key(table, key_column_names:list=[], always_use_hash:bool=True):
     """
     Add ID Key to the table
     """
@@ -373,7 +371,10 @@ def add_id_key(table, key_column_names:list=[], always_use_hash:bool=False):
         key_column_names = table.columns
         use_hash = True
 
-    id_key = concat_ws('_', *[coalesce(col(c).cast('string'), lit('')) for c in key_column_names])
+    id_key_list = [coalesce(col(c).cast('string'), lit('')) for c in key_column_names]
+    id_key_list.append(lit(data_settings.pipeline_datasourcekey))
+
+    id_key = concat_ws('_', *id_key_list)
     if use_hash: id_key = sha1(id_key)
 
     table = table.withColumn(IDKeyIndicator, id_key.alias(IDKeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}))

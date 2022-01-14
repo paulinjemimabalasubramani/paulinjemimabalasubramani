@@ -9,8 +9,8 @@ import os, sys, tempfile, shutil, pymssql
 from datetime import datetime
 from collections import OrderedDict
 
-from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, strftime, \
-    pipeline_metadata_conf, execution_date
+from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, \
+    pipeline_metadata_conf, execution_date, execution_date_start, to_sql_value
 from .azure_functions import save_adls_gen2, setup_spark_adls_gen2_connection
 from .spark_functions import ELT_PROCESS_ID_str, partitionBy, elt_audit_columns
 from .snowflake_ddl import connect_to_snowflake, snowflake_ddl_params, create_snowflake_ddl, write_DDL_file_per_step
@@ -40,10 +40,12 @@ cloud_file_history_columns = [
     (EXECUTION_DATE_str.lower(), 'datetime NULL'), # data_settings.execution_date
     (ELT_PROCESS_ID_str.lower(), 'varchar(500) NULL'), # data_settings.elt_process_id
     ('pipelinekey', 'varchar(500) NULL'), # data_settings.pipelinekey
+    ('datasourcekey', 'varchar(500) NULL'), # data_settings.pipeline_datasourcekey
     ('total_seconds', 'int NULL'), # file_meta['total_seconds']
     ('file_size_kb', 'numeric(38, 3) NULL'), # os.path.getsize(file_meta['file_path'])/1024
     ('copy_command', 'varchar(2500) NULL'), # ' '.join(copy_commands)
     ('zip_file_fully_ingested', 'bit NULL'), # False if zip_file_path else True
+    ('reingest_file', 'bit NULL'), # False
     ]
 
 
@@ -90,7 +92,7 @@ def get_key_column_names(table_name:str):
         user = pipeline_metadata_conf['sql_id'],
         password = pipeline_metadata_conf['sql_pass'],
         database = pipeline_metadata_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
@@ -122,7 +124,7 @@ def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
         user = cloud_file_hist_conf['sql_id'],
         password = cloud_file_hist_conf['sql_pass'],
         database = cloud_file_hist_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
@@ -161,22 +163,6 @@ def default_table_dtypes(table, use_varchar:bool=True):
 
 
 
-# %% Utility function to convert Python values to SQL equivalent values
-
-@catch_error(logger)
-def to_sql_value(cval):
-    """
-    Utility function to convert Python values to SQL equivalent values
-    """
-    if isinstance(cval, datetime):
-        cval = cval.strftime(strftime)
-    else:
-        cval = str(cval)
-        cval = cval.replace("'", "''")
-    return cval
-
-
-
 # %% Check if file_meta exists in SQL server File History
 
 @catch_error(logger)
@@ -191,20 +177,58 @@ def file_meta_exists_in_history(file_meta:dict):
         cval = to_sql_value(file_meta[c])
         key_columns.append(f"{c}='{cval}'")
     key_columns = ' AND '.join(key_columns)
-    sqlstr_meta_exists = f'SELECT COUNT(*) AS CNT FROM {full_table_name} WHERE {key_columns};'
+    sqlstr_meta_exists = f'SELECT COUNT(*) AS CNT FROM {full_table_name} WHERE {key_columns} AND reingest_file = 0;'
 
     with pymssql.connect(
         server = cloud_file_hist_conf['sql_server'],
         user = cloud_file_hist_conf['sql_id'],
         password = cloud_file_hist_conf['sql_pass'],
         database = cloud_file_hist_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
             cursor.execute(sqlstr_meta_exists)
             row = cursor.fetchone()
             return int(row['CNT']) > 0
+
+
+
+# %% Check if file_meta exists in SQL server File History for initial File Selection
+
+@catch_error(logger)
+def file_meta_exists_for_select_files(file_path:str):
+    """
+    Check if file_meta exists in SQL server File History for initial File Selection
+    """
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+
+    sqlstr_meta_exists = f"""SELECT COUNT(*) AS CNT FROM {full_table_name}
+        WHERE reingest_file = 0 AND
+            ('{to_sql_value(file_path)}' = file_path OR ('{to_sql_value(file_path)}' = zip_file_path AND zip_file_fully_ingested = 1))
+        ;"""
+
+    sqlstr_reingest_file_exists = f"""SELECT COUNT(*) AS CNT FROM {full_table_name}
+        WHERE reingest_file = 1 AND
+            ('{to_sql_value(file_path)}' = file_path OR '{to_sql_value(file_path)}' = zip_file_path)
+        ;"""
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.app.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            cursor.execute(sqlstr_meta_exists)
+            row = cursor.fetchone()
+            if int(row['CNT']) == 0: return False
+
+            cursor.execute(sqlstr_reingest_file_exists)
+            row = cursor.fetchone()
+            return int(row['CNT']) == 0
 
 
 
@@ -225,17 +249,31 @@ def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list
         column_values.append(f"'{cval}'")
     column_values_str = ', '.join(column_values)
 
-    sqlstr = f'INSERT INTO {full_table_name} ({all_columns_str}) VALUES ({column_values_str});'
+    sqlstr_insert = f'INSERT INTO {full_table_name} ({all_columns_str}) VALUES ({column_values_str});'
+
+    if file_meta['key_datetime'] == execution_date_start:
+        key_column_names = data_settings.metadata_key_column_names['with_load']
+    else:
+        key_column_names = data_settings.metadata_key_column_names['with_load_n_date']
+
+    key_columns = []
+    for c in key_column_names:
+        cval = to_sql_value(file_meta[c])
+        key_columns.append(f"{c}='{cval}'")
+    key_columns = ' AND '.join(key_columns)
+
+    sqlstr_update = f'UPDATE {full_table_name} SET reingest_file = 0 WHERE {key_columns} AND reingest_file > 0;'
 
     with pymssql.connect(
         server = cloud_file_hist_conf['sql_server'],
         user = cloud_file_hist_conf['sql_id'],
         password = cloud_file_hist_conf['sql_pass'],
         database = cloud_file_hist_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
-        conn._conn.execute_non_query(sqlstr)
+        conn._conn.execute_non_query(sqlstr_insert)
+        conn._conn.execute_non_query(sqlstr_update)
 
 
 
@@ -248,14 +286,20 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
     file_meta = fn_extract_file_meta(file_path=file_path, zip_file_path=zip_file_path)
     if not file_meta or (data_settings.key_datetime > file_meta['key_datetime']): return
 
+    sys.app.error_file = file_meta['file_path']
+
     file_meta = {
         **file_meta,
         'database_name': data_settings.domain_name,
         'schema_name': data_settings.schema_name,
         'firm_name': data_settings.pipeline_firm,
-        EXECUTION_DATE_str.lower(): execution_date,
+        EXECUTION_DATE_str.lower(): execution_date_start,
         ELT_PROCESS_ID_str.lower(): data_settings.elt_process_id,
         'pipelinekey': data_settings.pipelinekey,
+        'datasourcekey': data_settings.pipeline_datasourcekey,
+        'file_size_kb': os.path.getsize(file_meta['file_path'])/1024,
+        'zip_file_fully_ingested': False if zip_file_path else True,
+        'reingest_file': False,
     }
 
     if file_meta_exists_in_history(file_meta=file_meta):
@@ -279,12 +323,14 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.default_storage_account_name) # for metadata
         copy_commands.append(create_snowflake_ddl(table=table, table_name=table_name, fn_get_dtypes=fn_get_dtypes))
 
-    file_meta['total_seconds'] = (datetime.now() - start_total_seconds).seconds
-    file_meta['file_size_kb'] = os.path.getsize(file_meta['file_path'])/1024
     file_meta['copy_command'] = ' '.join(copy_commands)
-    file_meta['zip_file_fully_ingested'] = False if zip_file_path else True
+    file_meta['total_seconds'] = (datetime.now() - start_total_seconds).seconds
 
     write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
+
+    sys.app.table_count += len(table_list)
+    sys.app.aggregate_file_size_kb += file_meta['file_size_kb']
+    sys.app.error_file = None
 
 
 
@@ -294,7 +340,9 @@ def update_sql_zip_file_path(zip_file_path:str):
     full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
 
     sqlstr_update = f"""UPDATE {full_table_name}
-        SET zip_file_fully_ingested = 1
+        SET
+            zip_file_fully_ingested = 1,
+            reingest_file = 0
         WHERE zip_file_path = '{to_sql_value(zip_file_path)}'
     ;"""
 
@@ -303,7 +351,7 @@ def update_sql_zip_file_path(zip_file_path:str):
         user = cloud_file_hist_conf['sql_id'],
         password = cloud_file_hist_conf['sql_pass'],
         database = cloud_file_hist_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
@@ -329,7 +377,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
                 file_path = os.path.join(root, file_name)
                 selected_file_paths.append(file_path)
 
-    selected_file_paths = sorted(selected_file_paths)
+        selected_file_paths = sorted(selected_file_paths)
 
     for file_path in selected_file_paths:
         file_name = os.path.basename(file_path)

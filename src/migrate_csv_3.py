@@ -6,7 +6,7 @@ Generic Code to Migrate any CSV type files with date info in file name to ADLS G
 
 # %% Parse Arguments
 
-if True: # Set to False for Debugging
+if False: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
@@ -20,8 +20,8 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'METRICS_MIGRATE_ASSETS_RAA',
-        'source_path': r'C:\myworkdir\Shared\METRICS_ASSETS\RAA'
+        'pipelinekey': 'ASSETS_MIGRATE_PRODUCT_AG',
+        'source_path': r'C:\myworkdir\Shared\AG_ASSETS_PRODUCT'
         }
 
 
@@ -29,17 +29,13 @@ else:
 # %% Import Libraries
 
 import os, sys
-from datetime import datetime
 
-class app: pass
-sys.app = app
-sys.app.args = args
-sys.app.parent_name = os.path.basename(__file__)
+sys.args = args
+sys.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, execution_date_start
 from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
-from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes, \
-    file_meta_exists_for_select_files
+from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes
 
 
 
@@ -59,8 +55,6 @@ spark = create_spark()
 
 @catch_error(logger)
 def select_files():
-    date_format = data_settings.date_format
-
     source_path = data_settings.source_path
     selected_file_paths = []
 
@@ -71,24 +65,9 @@ def select_files():
 
             if file_ext.lower() not in allowed_file_extensions + ['.zip']: continue
 
-            try:
-                if file_ext == '.zip':
-                    file_date_str = file_name_noext
-                else:
-                    date_loc = -file_name_noext[::-1].find('_')
-                    file_date_str = file_name_noext[date_loc:]
+            selected_file_paths.append(file_path)
 
-                key_datetime = datetime.strptime(file_date_str, date_format)
-                if key_datetime < data_settings.key_datetime: continue
-            except:
-                continue
-
-            if file_meta_exists_for_select_files(file_path=file_path): continue
-
-            selected_file_paths.append((file_path, key_datetime))
-
-    selected_file_paths = sorted(selected_file_paths, key=lambda c: (c[1], c[0]))
-    selected_file_paths = [c[0] for c in selected_file_paths]
+    selected_file_paths = sorted(selected_file_paths)
     return selected_file_paths
 
 
@@ -100,8 +79,6 @@ def extract_csv_file_meta(file_path:str, zip_file_path:str=None):
     """
     Extract Meta Data from csv file with date in file name
     """
-    date_format = data_settings.date_format # http://strftime.org/
-
     file_name = os.path.basename(file_path)
     file_name_noext, file_ext = os.path.splitext(file_name)
     file_name_noext = file_name_noext.lower()
@@ -110,18 +87,8 @@ def extract_csv_file_meta(file_path:str, zip_file_path:str=None):
         logger.warning(f'Only {allowed_file_extensions} extensions are allowed: {file_path}')
         return
 
-    date_loc = -file_name_noext[::-1].find('_')
-    if date_loc>=0:
-        logger.warning(f'Could not find date stamp for the file or invalid file name: {file_path}')
-        return
-    file_date_str = file_name_noext[date_loc:]
-    table_name = file_name_noext[:date_loc-1]
-
-    try:
-        key_datetime = datetime.strptime(file_date_str, date_format)
-    except:
-        logger.warning(f'Invalid date format in file name: {file_path}')
-        return
+    table_name = file_name_noext
+    key_datetime = execution_date_start
 
     file_meta = {
         'table_name': table_name.lower(), # table name should always be lower

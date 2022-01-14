@@ -22,6 +22,12 @@ default_datalake_file_format = 'delta'
 data_folder_name = 'data'
 metadata_folder_name = 'metadata'
 
+domain_map = { # To keep legacy folder structure in Azure and SQL code in Snowflake
+    'FP': 'financial_professional',
+    'CA': 'client_account',
+    'ASSETS': 'customer_assets',
+    }
+
 
 
 # %% Set up Spark to ADLS Connection
@@ -67,7 +73,12 @@ def azure_container_folder_path(is_metadata:bool=False):
     Construct container folder path for Azure Tables
     """
     data_type = metadata_folder_name if is_metadata else data_folder_name
-    return f"{data_type.lower()}/{data_settings.domain_name.lower()}/{data_settings.schema_name.upper()}"
+
+    domain_name = data_settings.domain_name.lower()
+    if domain_name.upper() in domain_map:
+        domain_name = domain_map[domain_name.upper()]
+
+    return f"{data_type.lower()}/{domain_name.lower()}/{data_settings.schema_name.upper()}"
 
 
 

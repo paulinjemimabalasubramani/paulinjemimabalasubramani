@@ -25,6 +25,7 @@ strftime = r'%Y-%m-%d %H:%M:%S'  # http://strftime.org/
 execution_date = execution_date_start.strftime(strftime)
 execution_date_start = datetime.strptime(execution_date, strftime) # to ensure identity with the string form of execution date
 EXECUTION_DATE_str = 'elt_execution_date'
+ELT_PROCESS_ID_str = 'elt_process_id'
 
 is_pc = platform.system().lower() == 'windows'
 
@@ -62,12 +63,20 @@ def catch_error(logger=None, raise_error:bool=True):
             try:
                 response = fn(*args, **kwargs)
             except (BaseException, AssertionError) as e:
-                exception_message  = f"Exception occurred inside '{fn.__name__}'"
-                exception_message += f"\nException Message: {e}"
-                pprint(exception_message)
+                if not hasattr(sys.app, 'is_error'):
+                    sys.app.is_error = True
+                    exception_message  = f"Exception occurred inside '{fn.__name__}'"
+                    exception_message += f"\nException Message: {e}"
+                    pprint(exception_message)
 
-                if logger: logger.error(exception_message)
-                if raise_error: raise e
+                    if hasattr(sys.app, 'finalize_new_pipeline_instance'):
+                        try:
+                            sys.app.finalize_new_pipeline_instance(error_message=str(e))
+                        except:
+                            pass
+
+                    if logger: logger.error(exception_message)
+                    if raise_error: raise e
             return response
         return inner
     return outer
@@ -91,7 +100,7 @@ def get_env(variable_name:str, default:str=None, logger=None, raise_error_if_no_
         elif value.lower() in ['true', 'false']:
             value = value.lower()=='true'
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -102,7 +111,7 @@ def get_env(variable_name:str, default:str=None, logger=None, raise_error_if_no_
 
 
 
-sys.environment = get_env(variable_name='ENVIRONMENT').upper()
+sys.app.environment = get_env(variable_name='ENVIRONMENT').upper()
 
 
 
@@ -122,7 +131,7 @@ def get_azure_key_vault(logger=None):
         credential = ClientSecretCredential(azure_tenant_id, azure_client_id, azure_client_secret)
         client = SecretClient(vault_endpoint, credential, logging_enable=True)
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -143,7 +152,7 @@ def get_secrets(account_name:str, logger=None, additional_secrets:list=[]):
     sp_additional_secrets = []
 
     try:
-        environment = sys.environment.lower()
+        environment = sys.app.environment.lower()
         account_name = account_name.lower()
         azure_tenant_id, client = get_azure_key_vault()
 
@@ -153,7 +162,7 @@ def get_secrets(account_name:str, logger=None, additional_secrets:list=[]):
         for additional_secret in additional_secrets:
             sp_additional_secrets.append(client.get_secret(f'{environment}-{account_name}-{additional_secret}').value)
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -192,7 +201,7 @@ class Config:
                 try:
                     with open(file_path, 'r') as f:
                         contents = yaml.load(f, Loader=yaml.SafeLoader)
-                except Exception as e:
+                except (BaseException, AssertionError) as e:
                     except_str = f'Error File was not read: {file_path}'
                     if logger:
                         logger.error(except_str)
@@ -203,7 +212,7 @@ class Config:
                 for name, value in contents.items():
                     setattr(self, name, value) # Overwrite defaults from file
 
-        except Exception as e:
+        except (BaseException, AssertionError) as e:
             if logger:
                 logger.error(str(e))
             else:
@@ -233,8 +242,8 @@ def get_data_settings(logger=None):
     generic_pipelinekey = 'GENERIC'
     defaults = {
         'pipelinekey': generic_pipelinekey,
-        'environment': sys.environment,
-        'parent_program': sys.parent_name,
+        'environment': sys.app.environment,
+        'parent_program': sys.app.parent_name,
     }
 
     data_settings = Config(defaults=defaults)
@@ -248,8 +257,8 @@ def get_data_settings(logger=None):
     for envv in env_data_settings_names: # Read all the environmental variables
         setattr(data_settings, envv, get_env(variable_name=envv.upper()))
 
-    if hasattr(sys, 'args'): # CLI Arguments takes precedence over environment variables
-        for arg_key, arg_val in sys.args.items():
+    if hasattr(sys.app, 'args'): # CLI Arguments takes precedence over environment variables
+        for arg_key, arg_val in sys.app.args.items():
             setattr(data_settings, arg_key, arg_val)
 
     cloud_file_hist_conf = {
@@ -265,6 +274,7 @@ def get_data_settings(logger=None):
     pipeline_metadata_conf['sql_schema'] = 'metadata'
     pipeline_metadata_conf['sql_table_name_primary_key'] = 'PrimaryKey'
     pipeline_metadata_conf['sql_table_name_pipe_config'] = 'PipelineConfiguration'
+    pipeline_metadata_conf['sql_table_name_pipe_instance'] = 'PipelineInstance'
 
     sqlstr = f"""SELECT *
     FROM {pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_pipe_config']}
@@ -276,7 +286,7 @@ def get_data_settings(logger=None):
         user = pipeline_metadata_conf['sql_id'],
         password = pipeline_metadata_conf['sql_pass'],
         database = pipeline_metadata_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
@@ -288,7 +298,7 @@ def get_data_settings(logger=None):
 
     if hasattr(data_settings, 'db_name'):  data_settings.domain_name = data_settings.db_name.lower()
     if hasattr(data_settings, 'schema_name'): data_settings.schema_name = data_settings.schema_name.upper()
-    data_settings.elt_process_id = ' '.join([str(data_settings.pipelinekey), str(execution_date)])
+    data_settings.elt_process_id = '_'.join([data_settings.pipelinekey, execution_date_start.strftime(r'%Y%m%d%H%M%S')])
 
     to_storage_account = lambda storage_account_mid:  f"{data_settings.azure_storage_accounts_prefix}{storage_account_mid}{data_settings.azure_storage_accounts_suffix}".lower()
     data_settings.default_storage_account_name = to_storage_account(storage_account_mid=data_settings.azure_storage_accounts_default_mid)
@@ -327,7 +337,7 @@ def build_log_signature(customer_id:str, shared_key:str, rfc1123date:str, conten
         encoded_hash = base64.b64encode(hmac.new(decoded_key, bytes_to_hash, digestmod=hashlib.sha256).digest()).decode()
         authorization = f'SharedKey {customer_id}:{encoded_hash}'
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -349,7 +359,7 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
     try:
         log_data = {
             'TimeGenerated': datetime.now(),
-            'MainScript': sys.parent_name if hasattr(sys, 'parent_name') else '',
+            'MainScript': sys.app.parent_name if hasattr(sys.app, 'parent_name') else '',
             **log_data}
         body = json.dumps(log_data, sort_keys=True, default=str)
 
@@ -390,7 +400,7 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
             else:
                 pprint(f'Log Response code: {response.status_code}')
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -420,7 +430,7 @@ def system_info(logger=None):
             **data_settings.__dict__,
         }
 
-    except Exception as e:
+    except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
@@ -444,7 +454,7 @@ class CreateLogger:
         Initiate the class. Set Logging Policy.
         """
         self.print_log_type = 'AirflowPrintedLogs'
-        self.log_name = sys.parent_name.split('.')[0] if hasattr(sys, 'parent_name') else 'logs'
+        self.log_name = sys.app.parent_name.split('.')[0] if hasattr(sys.app, 'parent_name') else 'logs'
         self.logger = logging.getLogger(self.log_name)
         self.logger.setLevel(logging_level)
 
@@ -559,12 +569,14 @@ ORDER BY p.UpdateTs DESC, p.PipelineId DESC
         user = pipeline_metadata_conf['sql_id'],
         password = pipeline_metadata_conf['sql_pass'],
         database = pipeline_metadata_conf['sql_database'],
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
             cursor.execute(sqlstr)
             row = cursor.fetchone()
+
+    if not row: raise ValueError(f'Pipeline "{pipelinekey}" is not defined in metadata.Pipeline')
 
     for key, value in row.items():
         setattr(data_settings, 'pipeline_' + key.strip().lower(), value.strip() if isinstance(value, str) else value)
@@ -596,30 +608,6 @@ def get_extraClassPath(drivers_path:str):
 
 
 extraClassPath = get_extraClassPath(drivers_path=drivers_path)
-
-
-
-# %% Mark Execution End
-
-@catch_error(logger)
-def mark_execution_end():
-    """
-    Log Execution End date and Execution duration of the entire code
-    """
-    execution_date_end = datetime.now()
-    timedelta1 = execution_date_end - execution_date_start
-
-    h = timedelta1.seconds // 3600
-    m = (timedelta1.seconds - h * 3600) // 60
-    s = timedelta1.seconds - h * 3600 - m * 60
-    total_time = f'{timedelta1.days} day(s), {h} hour(s), {m} minute(s), {s} second(s)'
-
-    logger.info({
-        f'{EXECUTION_DATE_str}_start': execution_date,
-        f'{EXECUTION_DATE_str}_end': execution_date_end.strftime(strftime),
-        'total_seconds': timedelta1.seconds,
-        'total_time': total_time,
-    })
 
 
 
@@ -666,7 +654,7 @@ def pymssql_execute_non_query(sqlstr_list:list, sql_server:str, sql_id:str, sql_
         user = sql_id,
         password = sql_pass,
         database = sql_database,
-        appname = sys.parent_name,
+        appname = sys.app.parent_name,
         autocommit = True,
         )
     conn._conn.set_msghandler(pymssql_msg_handler)
@@ -674,6 +662,167 @@ def pymssql_execute_non_query(sqlstr_list:list, sql_server:str, sql_id:str, sql_
         logger.info({'execute': sqlstr})
         conn._conn.execute_non_query(sqlstr)
     conn.close()
+
+
+
+# %% Utility function to convert Python values to SQL equivalent values
+
+@catch_error(logger)
+def to_sql_value(cval):
+    """
+    Utility function to convert Python values to SQL equivalent values
+    """
+    strftime = r'%Y-%m-%d %H:%M:%S'  # http://strftime.org/
+
+    if isinstance(cval, datetime):
+        cval = cval.strftime(strftime)
+    else:
+        cval = str(cval)
+        cval = cval.replace("'", "''")
+
+    return cval
+
+
+
+# %% Add new pipeline instance. Create Pipeline Instance table if not exists
+
+@catch_error(logger)
+def add_new_pipeline_instance():
+    """
+    Add new pipeline instance. Create Pipeline Instance table if not exists
+    """
+    logger.info(f'Creating new Pipeline Instance: {data_settings.elt_process_id}')
+    sys.app.table_count = 0
+    sys.app.aggregate_file_size_kb = 0.0
+    sys.app.error_file = None
+
+    schema_name = pipeline_metadata_conf['sql_schema']
+    table_name = pipeline_metadata_conf['sql_table_name_pipe_instance']
+    full_table_name = f"{schema_name}.{table_name}"
+
+    sqlstr_table_exists = f"""SELECT COUNT(*) AS CNT
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE UPPER(TABLE_SCHEMA) = '{schema_name.upper()}'
+        AND UPPER(TABLE_TYPE) = 'BASE TABLE'
+        AND UPPER(TABLE_NAME) = '{table_name.upper()}'
+    ;"""
+
+    sqlstr_table_create = f"""CREATE TABLE {full_table_name} (
+        PipelineInstanceId int Identity,
+        PipelineKey varchar(500) NOT NULL,
+        {ELT_PROCESS_ID_str.lower()} varchar(500) NOT NULL,
+        {EXECUTION_DATE_str.lower()} datetime NULL,
+        total_minutes numeric(38, 3) NULL,
+        table_count int NULL,
+        aggregate_file_size_kb numeric(38, 3) NULL,
+        run_status varchar(100) NULL,
+        error_message varchar(1500) NULL,
+        error_file varchar(1000)
+        );"""
+
+    sqlstr_new_instance = f"""INSERT INTO {full_table_name} (
+        PipelineKey,
+        {ELT_PROCESS_ID_str.lower()},
+        {EXECUTION_DATE_str.lower()},
+        run_status
+    ) VALUES (
+        '{data_settings.pipelinekey}',
+        '{data_settings.elt_process_id}',
+        '{to_sql_value(execution_date_start)}',
+        'Running'
+    );"""
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.app.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            cursor.execute(sqlstr_table_exists)
+            row = cursor.fetchone()
+            if int(row['CNT']) == 0:
+                logger.info(f'{full_table_name} table does not exist in SQL server. Creating new table.')
+                conn._conn.execute_non_query(sqlstr_table_create)
+
+            conn._conn.execute_non_query(sqlstr_new_instance)
+
+
+
+add_new_pipeline_instance()
+
+
+
+# %% Update the Pipeline Instance with the final data
+
+@catch_error(logger)
+def finalize_new_pipeline_instance(error_message:str=None):
+    """
+    Update the Pipeline Instance with the final data
+    """
+    schema_name = pipeline_metadata_conf['sql_schema']
+    table_name = pipeline_metadata_conf['sql_table_name_pipe_instance']
+    full_table_name = f"{schema_name}.{table_name}"
+    total_minutes = (datetime.now() - execution_date_start).seconds / 60
+    run_status = 'Failed' if error_message else 'Succeeded'
+
+    sqlstr_error = f"""
+        error_message = '{to_sql_value(error_message)}',
+        error_file = '{to_sql_value(sys.app.error_file)}',
+        """ if error_message else ''
+
+    sqlstr_update = f"""UPDATE {full_table_name} SET
+        total_minutes = {total_minutes},
+        table_count = {sys.app.table_count},
+        aggregate_file_size_kb = {sys.app.aggregate_file_size_kb},
+        {sqlstr_error}
+        run_status = '{run_status}'
+    WHERE
+        {ELT_PROCESS_ID_str.lower()} = '{data_settings.elt_process_id}'
+    """
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.app.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            conn._conn.execute_non_query(sqlstr_update)
+
+
+
+sys.app.finalize_new_pipeline_instance = finalize_new_pipeline_instance
+
+
+
+# %% Mark Execution End
+
+@catch_error(logger)
+def mark_execution_end():
+    """
+    Log Execution End date and Execution duration of the entire code
+    """
+    execution_date_end = datetime.now()
+    timedelta1 = execution_date_end - execution_date_start
+
+    h = timedelta1.seconds // 3600
+    m = (timedelta1.seconds - h * 3600) // 60
+    s = timedelta1.seconds - h * 3600 - m * 60
+    total_time = f'{timedelta1.days} day(s), {h} hour(s), {m} minute(s), {s} second(s)'
+
+    logger.info({
+        f'{EXECUTION_DATE_str}_start': execution_date,
+        f'{EXECUTION_DATE_str}_end': execution_date_end.strftime(strftime),
+        'total_seconds': timedelta1.seconds,
+        'total_time': total_time,
+    })
+
+    finalize_new_pipeline_instance()
 
 
 
