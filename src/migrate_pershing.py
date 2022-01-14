@@ -274,7 +274,7 @@ def generate_tables_from_fwt(
         elif record_name == schema_trailer_str:
             table = text_file.where(cv(1, len(trailer_str))==lit(trailer_str))
         else:
-            table = text_file.where(cv(3, 1)==lit(record_name))
+            table = text_file.where((cv(3, 1)==lit(record_name)) & (cv(1, len(header_str))!=lit(header_str)) & (cv(1, len(trailer_str))!=lit(trailer_str)))
 
         #if table.rdd.isEmpty(): continue
 
