@@ -6,7 +6,7 @@ Generic Code to Migrate any CSV type files with date info in file name to ADLS G
 
 # %% Parse Arguments
 
-if False: # Set to False for Debugging
+if True: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
@@ -30,8 +30,10 @@ else:
 
 import os, sys
 
-sys.args = args
-sys.parent_name = os.path.basename(__file__)
+class app: pass
+sys.app = app
+sys.app.args = args
+sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, execution_date_start
 from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
