@@ -255,8 +255,7 @@ def generate_tables_from_fwt(
         schema,
         table_name:str,
         header_str:str = header_str,
-        trailer_str:str = trailer_str,
-        transaction_code:str = 'CI',
+        trailer_str:str = trailer_str
         ):
     """
     Generate list of sub-tables from a fixed width table file based on record_name and conditional_changes
@@ -275,10 +274,7 @@ def generate_tables_from_fwt(
         elif record_name == schema_trailer_str:
             table = text_file.where(cv(1, len(trailer_str))==lit(trailer_str))
         else:
-            table = text_file.where(
-                (cv(1, len(transaction_code))==lit(transaction_code)) &
-                (cv(3, 1)==lit(record_name))
-                )
+            table = text_file.where(cv(3, 1)==lit(record_name))
 
         #if table.rdd.isEmpty(): continue
 
