@@ -8,7 +8,7 @@ import os
 from functools import wraps
 from collections import defaultdict, OrderedDict
 
-from .common_functions import logger, catch_error, data_settings, execution_date, get_secrets, EXECUTION_DATE_str
+from .common_functions import logger, catch_error, data_settings, execution_date, get_secrets, EXECUTION_DATE_str, to_sql_value, is_pc
 from .spark_functions import elt_audit_columns, PARTITION, IDKeyIndicator
 from .azure_functions import post_log_data
 
@@ -243,13 +243,25 @@ def trigger_snowpipe(table_name:str):
 
     '''
 
+    sqlstr_call_usp_ingest = f"""CALL {wid.elt_stage_schema}.USP_INGEST(
+            '{to_sql_value(copy_command)}',
+            '{ingest_data['SOURCE_SYSTEM']}',
+            '{ingest_data['EXECUTION_DATE']}',
+            '{ingest_data['FULL_OBJECT_NAME']}',
+            '{ingest_data['INGEST_SCHEMA']}',
+            '{ingest_data['ELT_STAGE_SCHEMA']}'
+        );"""
+
     cur = wid.snowflake_connection.cursor()
-    cur.execute(f'TRUNCATE TABLE {variant_table_name};')
-    cur.execute_async(copy_command)
+    # cur.execute(f'TRUNCATE TABLE {variant_table_name};')
+    cur.execute_async(sqlstr_call_usp_ingest)
     query_id = cur.sfqid
     cur.close()
 
+    if is_pc: print(sqlstr_call_usp_ingest)
+
     log_data = {
+        'call_usp_ingest': sqlstr_call_usp_ingest,
         'copy_command': copy_command,
         'table_name': variant_table_name,
         'query_id': query_id,
