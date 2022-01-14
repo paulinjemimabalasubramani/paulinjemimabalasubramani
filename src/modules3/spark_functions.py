@@ -64,6 +64,7 @@ def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str):
     table = table.withColumn(ELT_DELETE_IND_str, lit(0).cast(IntegerType()))
     table = table.withColumn(ELT_PROCESS_ID_str, lit(data_settings.elt_process_id))
     table = table.withColumn(ELT_FIRM_str, lit(data_settings.pipeline_firm))
+    table = table.withColumn(ELT_PipelineKey_str, lit(data_settings.pipelinekey))
 
     dml_type = dml_type.upper()
     if dml_type not in ['U', 'I', 'D']:
