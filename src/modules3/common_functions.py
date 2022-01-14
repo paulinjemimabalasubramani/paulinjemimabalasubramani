@@ -76,7 +76,7 @@ def catch_error(logger=None, raise_error:bool=True):
                             pass
 
                     if logger: logger.error(exception_message)
-                    if raise_error: raise e
+                if raise_error: raise e
             return response
         return inner
     return outer
