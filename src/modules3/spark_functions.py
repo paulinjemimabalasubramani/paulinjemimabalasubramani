@@ -59,12 +59,11 @@ def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str):
     table = table.withColumn(KEY_DATETIME_str, lit(str(key_datetime)))
     table = table.withColumn(EXECUTION_DATE_str, lit(str(execution_date)))
     table = table.withColumn(ELT_SOURCE_str, lit(str(data_settings.pipeline_datasourcekey)))
-    table = table.withColumn(ELT_SOURCE_str, lit(str(data_settings.pipelinekey)))
+    table = table.withColumn(ELT_PipelineKey_str, lit(str(data_settings.pipelinekey)))
     table = table.withColumn(ELT_LOAD_TYPE_str, lit(str("FULL" if is_full_load else "INCREMENTAL")))
     table = table.withColumn(ELT_DELETE_IND_str, lit(0).cast(IntegerType()))
     table = table.withColumn(ELT_PROCESS_ID_str, lit(data_settings.elt_process_id))
     table = table.withColumn(ELT_FIRM_str, lit(data_settings.pipeline_firm))
-    table = table.withColumn(ELT_PipelineKey_str, lit(data_settings.pipelinekey))
 
     dml_type = dml_type.upper()
     if dml_type not in ['U', 'I', 'D']:
