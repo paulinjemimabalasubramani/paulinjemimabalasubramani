@@ -19,10 +19,6 @@ from .snowflake_ddl import connect_to_snowflake, snowflake_ddl_params, create_sn
 
 # %% Parameters
 
-cloud_file_history_name = ('_'.join([data_settings.domain_name, data_settings.schema_name, 'file_history3'])).lower()
-cloud_row_history_name = ('_'.join([data_settings.domain_name, data_settings.schema_name, 'row_history3'])).lower()
-
-
 cloud_file_history_columns = [
     ('database_name', 'varchar(300) NOT NULL'), # data_settings.domain_name
     ('schema_name', 'varchar(300) NOT NULL'), # data_settings.schema_name
@@ -110,13 +106,13 @@ def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
     """
     Create file_meta table in SQL Server if not exists
     """
-    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_hist_conf['sql_file_history_table']}".lower()
 
     sqlstr_table_exists = f"""SELECT COUNT(*) AS CNT
     FROM INFORMATION_SCHEMA.TABLES
     WHERE UPPER(TABLE_SCHEMA) = '{cloud_file_hist_conf['sql_schema'].upper()}'
         AND UPPER(TABLE_TYPE) = 'BASE TABLE'
-        AND UPPER(TABLE_NAME) = '{cloud_file_history_name.upper()}'
+        AND UPPER(TABLE_NAME) = '{cloud_file_hist_conf['sql_file_history_table'].upper()}'
     ;"""
 
     with pymssql.connect(
@@ -170,7 +166,7 @@ def file_meta_exists_in_history(file_meta:dict):
     """
     Check if file_meta exists in SQL server File History
     """
-    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_hist_conf['sql_file_history_table']}".lower()
 
     key_columns = []
     for c in data_settings.metadata_key_column_names['with_load_n_date']:
@@ -201,7 +197,7 @@ def file_meta_exists_for_select_files(file_path:str):
     """
     Check if file_meta exists in SQL server File History for initial File Selection
     """
-    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_hist_conf['sql_file_history_table']}".lower()
 
     sqlstr_meta_exists = f"""SELECT COUNT(*) AS CNT FROM {full_table_name}
         WHERE reingest_file = 0 AND
@@ -239,7 +235,7 @@ def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list
     """
     Write file_meta to SQL server File History
     """
-    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_hist_conf['sql_file_history_table']}".lower()
     all_columns = [c[0] for c in cloud_file_history_columns + additional_file_meta_columns]
     all_columns_str = ', '.join(all_columns)
 
@@ -337,7 +333,7 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
 # %% Update SQL Zip File Path - Fully Ingested to True
 
 def update_sql_zip_file_path(zip_file_path:str):
-    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_history_name}".lower()
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_hist_conf['sql_file_history_table']}".lower()
 
     sqlstr_update = f"""UPDATE {full_table_name}
         SET

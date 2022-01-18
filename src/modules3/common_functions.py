@@ -307,6 +307,10 @@ def get_data_settings(logger=None):
     key_datetime = data_settings.file_history_start_date if hasattr(data_settings, 'file_history_start_date') else '2000-01-15'
     data_settings.key_datetime = datetime.strptime(key_datetime, r'%Y-%m-%d')
 
+    sql_file_history_table = ('_'.join([data_settings.domain_name, data_settings.schema_name, 'file_history3'])).lower()
+    sql_file_history_table = data_settings.sql_file_history_table.lower() if hasattr(data_settings, 'sql_file_history_table') else sql_file_history_table
+    cloud_file_hist_conf['sql_file_history_table'] = sql_file_history_table
+
     if is_pc: # Read Data Settings from file
         data_path = os.path.realpath(python_dirname + '/../../../Shared')
         data_settings.temporary_file_path = os.path.join(data_path, 'TEMP')
