@@ -15,7 +15,7 @@ spark_master_ip = '10.128.25.82'
 
 
 spark_app_name = "Migrate Assets Frontpoint Tables"
-airflow_app_name = "assets_migrate_frontpoint_ag"
+airflow_app_name = "assets_migrate_frontpoint"
 description_DAG = 'Migrate Assets Frontpoint Tables'
 
 
@@ -44,9 +44,9 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    ASSETS_MIGRATE_FRONTPOINT_AG = SparkSubmitOperator(
-         task_id = "ASSETS_MIGRATE_FRONTPOINT_AG",
-         application = "/usr/local/spark/app/assets_migrate_frontpoint_ag.py",
+    ASSETS_MIGRATE_FRONTPOINT = SparkSubmitOperator(
+         task_id = "ASSETS_MIGRATE_FRONTPOINT",
+         application = "/usr/local/spark/app/assets_migrate_frontpoint.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
@@ -56,7 +56,7 @@ with DAG(
          verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
-             '--pipelinekey', 'ASSETS_MIGRATE_FRONTPOINT_AG',
+             '--pipelinekey', 'ASSETS_MIGRATE_FRONTPOINT',
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
 #             '--spark_master_ip', spark_master_ip,
@@ -64,7 +64,7 @@ with DAG(
          dag = dag
          )
 
-    startpipe >> ASSETS_MIGRATE_FRONTPOINT_AG
+    startpipe >> ASSETS_MIGRATE_FRONTPOINT
 
 
 

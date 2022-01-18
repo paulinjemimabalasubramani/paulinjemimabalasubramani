@@ -15,7 +15,7 @@ spark_master_ip = '10.128.25.82'
 
 
 spark_app_name = "Migrate Assets Product Tables"
-airflow_app_name = "assets_migrate_product_ag"
+airflow_app_name = "assets_migrate_product"
 description_DAG = 'Migrate Assets Product Tables'
 
 
@@ -44,8 +44,8 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    ASSETS_MIGRATE_PRODUCT_AG = SparkSubmitOperator(
-         task_id = "ASSETS_MIGRATE_PRODUCT_AG",
+    ASSETS_MIGRATE_PRODUCT = SparkSubmitOperator(
+         task_id = "ASSETS_MIGRATE_PRODUCT",
          application = "/usr/local/spark/app/migrate_csv.py",
          name = spark_app_name,
          jars = jars,
@@ -56,7 +56,7 @@ with DAG(
          verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
-             '--pipelinekey', 'ASSETS_MIGRATE_PRODUCT_AG',
+             '--pipelinekey', 'ASSETS_MIGRATE_PRODUCT',
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
 #             '--spark_master_ip', spark_master_ip,
@@ -64,7 +64,7 @@ with DAG(
          dag = dag
          )
 
-    startpipe >> ASSETS_MIGRATE_PRODUCT_AG
+    startpipe >> ASSETS_MIGRATE_PRODUCT
 
 
 
