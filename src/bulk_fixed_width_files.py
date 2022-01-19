@@ -6,7 +6,7 @@ Add Bulk_id to Fixed Width Files
 
 # %% Parse Arguments
 
-if True: # Set to False for Debugging
+if False: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
@@ -29,8 +29,7 @@ else:
 
 # %% Import Libraries
 
-import os, sys
-import hashlib
+import os, sys, hashlib
 
 class app: pass
 sys.app = app
@@ -41,33 +40,49 @@ from modules3.common_functions import catch_error, data_settings, logger, mark_e
 
 
 
-
 # %% Parameters
 
 bulk_file_ext = '.bulk'
 file_has_header = True
 file_has_trailer = True
 
+HEADER_str = 'HEADER'
+TRAILER_str = 'TRAILER'
+
+hash_func = hashlib.sha1
+total_hash_length = len(hash_func().hexdigest())
+
 is_start_line = lambda line: line[2] == 'A' # Determine Start Line
 
 
 
-# %% Convert lines to SHA1 value and write them to file
+# %% Convert lines to HASH value and write them to file
 
 @catch_error(logger)
 def lines_to_hex(ftarget, lines:list):
     """
-    Convert lines to SHA1 value and write them to file
+    Convert lines to HASH value and write them to file
     """
     if len(lines) == 0: return
 
-    sha1 = hashlib.sha1()
+    hash = hash_func()
     for line in lines:
-        sha1.update(line.encode('ascii'))
-    hex = sha1.hexdigest()
+        hash.update(line.encode('ascii'))
+    hex = hash.hexdigest()
 
     for line in lines:
         ftarget.write(hex + ' ' + line)
+
+
+
+# %% Add Header or Trailer line
+
+@catch_error(logger)
+def add_custom_txt_line(ftarget, line:str, txt:str):
+    """
+    Add Header or Trailer line
+    """
+    ftarget.write(txt.ljust(total_hash_length) + ' ' + line)
 
 
 
@@ -84,7 +99,7 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
             lines = []
             for line in fsource:
                 if first:
-                    lines_to_hex(ftarget=ftarget, lines=[line])
+                    add_custom_txt_line(ftarget=ftarget, line=line, txt=HEADER_str)
                     first = False
                 else:
                     if is_start_line(line=line):
@@ -94,9 +109,9 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
 
             if file_has_trailer:
                 if len(lines)>1: lines_to_hex(ftarget=ftarget, lines=lines[:-1])
-                lines = [lines[-1]]
-
-            lines_to_hex(ftarget=ftarget, lines=lines)
+                add_custom_txt_line(ftarget=ftarget, line=lines[-1], txt=TRAILER_str)
+            else:
+                lines_to_hex(ftarget=ftarget, lines=lines)
 
 
 
