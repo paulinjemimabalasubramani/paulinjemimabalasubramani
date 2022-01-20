@@ -22,7 +22,7 @@ else:
     args = {
         'pipelinekey': 'ASSETS_MIGRATE_FRONTPOINT',
         'source_path': r'C:\myworkdir\Shared\FRONTPOINT',
-        'schema_file_path': r'C:\myworkdir\EDIP-Code\config\assets\frontpoint_schema\frontpoint_schema.csv'
+        'schema_file_path': r'C:\myworkdir\EDIP-Code\config\assets\frontpoint_schema\frontpoint_schema.csv',
         }
 
 

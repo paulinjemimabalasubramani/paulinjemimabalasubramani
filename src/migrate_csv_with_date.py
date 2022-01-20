@@ -21,7 +21,7 @@ if True: # Set to False for Debugging
 else:
     args = {
         'pipelinekey': 'METRICS_MIGRATE_ASSETS_RAA',
-        'source_path': r'C:\myworkdir\Shared\METRICS_ASSETS\RAA'
+        'source_path': r'C:\myworkdir\Shared\METRICS_ASSETS\RAA',
         }
 
 

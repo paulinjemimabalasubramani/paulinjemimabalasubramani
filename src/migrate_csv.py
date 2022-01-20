@@ -20,8 +20,8 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'ASSETS_MIGRATE_PRODUCT_AG',
-        'source_path': r'C:\packages\Shared\AG_ASSETS_PRODUCT'
+        'pipelinekey': 'ASSETS_MIGRATE_PRODUCT',
+        'source_path': r'C:\packages\Shared\AG_ASSETS_PRODUCT',
         }
 
 

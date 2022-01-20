@@ -31,15 +31,16 @@ VALUES
 
 ('ASSETS_AG_DATASOURCE_PRODUCT', 'Assets', 'Product', '', 'csv', 'AG', 'Seymur M.', CURRENT_TIMESTAMP),
 
-('CA_AG_DATASOURCE_PERSHING_CUSTOMERACCOUNT_RAA', 'Client Account', 'Pershing Customer Account', 'RAA', 'FWF', 'AG', 'Seymur M.', CURRENT_TIMESTAMP)
-
-
+('CA_AG_DATASOURCE_PERSHING_RAA', 'Client Account', 'Pershing Customer Account', 'RAA', 'FWF', 'AG', 'Seymur M.', CURRENT_TIMESTAMP)
 
 ;
 
 
 
+
+
 SELECT * FROM metadata.DataSource;
+
 
 
 
@@ -72,7 +73,7 @@ VALUES
 
 ('ASSETS_MIGRATE_PRODUCT', 'outbound_migration', 'Pipeline to migrate Assets-Product files to Snowflake', 'ASSETS_AG_DATASOURCE_PRODUCT', '', '0 13 * * *', '1', 'Seymur M.', CURRENT_TIMESTAMP),
 
-('CA_CONVERT_PERSHING_CUSTOMERACCOUNT_RAA', 'data_conversion', 'Add ELT_Bulk_Id to Fixed with files', 'CA_AG_DATASOURCE_PERSHING_CUSTOMERACCOUNT_RAA', '', '0 13 * * *', '1', 'Seymur M.', CURRENT_TIMESTAMP)
+('CA_MIGRATE_PERSHING_RAA', 'outbound_migration', 'Pipeline to migrate CA-Pershing files to Snowflake for RAA', 'CA_AG_DATASOURCE_PERSHING_RAA', '', '0 13 * * *', '1', 'Seymur M.', CURRENT_TIMESTAMP)
 
 ;
 
@@ -167,8 +168,14 @@ VALUES
 ('ASSETS_MIGRATE_PRODUCT', 'SQL_FILE_HISTORY_TABLE', 'assets_product_file_history3', 'Seymur M.', CURRENT_TIMESTAMP),
 
 
-('CA_CONVERT_PERSHING_CUSTOMERACCOUNT_RAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/PERSHING/23131', 'Seymur M.', CURRENT_TIMESTAMP),
-('CA_CONVERT_PERSHING_CUSTOMERACCOUNT_RAA', 'TARGET_PATH', '/usr/local/spark/resources/fileshare/Shared/PERSHING/RAA_bulk', 'Seymur M.', CURRENT_TIMESTAMP)
+('CA_MIGRATE_PERSHING_RAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/PERSHING/23131', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_PERSHING_RAA', 'BULK_PATH', '/usr/local/spark/resources/fileshare/Shared/PERSHING/RAA_bulk', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_PERSHING_RAA', 'DB_NAME', 'CA', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_PERSHING_RAA', 'SCHEMA_NAME', 'PERSHING', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_PERSHING_RAA', 'AZURE_STORAGE_ACCOUNT_MID', 'raa', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_PERSHING_RAA', 'IS_FULL_LOAD', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_PERSHING_RAA', 'FILE_HISTORY_START_DATE', '2021-08-15', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_PERSHING_RAA', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/pershing_schema', 'Seymur M.', CURRENT_TIMESTAMP)
 
 ;
 
@@ -176,6 +183,8 @@ VALUES
 
 
 SELECT * FROM metadata.PipelineConfiguration;
+
+
 
 
 

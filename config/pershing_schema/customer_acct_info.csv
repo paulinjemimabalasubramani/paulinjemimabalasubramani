@@ -47,15 +47,15 @@ A,114-145,X(32),AN,,account_ registration_line_3,ACCOUNT REGISTRATION LINE 3,
 A,146-177,X(32),AN,,account_ registration_line_4,ACCOUNT REGISTRATION LINE 4,
 A,178-209,X(32),AN,,account_ registration_line_5,ACCOUNT REGISTRATION LINE 5,
 A,210-241,X(32),AN,,account_ registration_line_6,ACCOUNT REGISTRATION LINE 6,
-A,242-242,X(01),AN,,us_tenancy_indicator,"US TENANCY INDICATOR; values include:
+A,242-242,X(01),AN,"JNTN, TODJ",us_tenancy_indicator,"US TENANCY INDICATOR; values include:
 “N” = No (not a US Tenant)
 “Y” = Yes (is a US Tenant)",
-A,243-243,X(01),AN,,married_indicator,"MARRIED INDICATOR; values include:
+A,243-243,X(01),AN,"JNTN, TODJ",married_indicator,"MARRIED INDICATOR; values include:
 “N” = No (is not married)
 “Y” = Yes (is married)
 “” = Not applicable",
-A,244-245,X(02),AN,,tenancy_state,"TENANCY STATE; see Appendix Q, “ACCT Codes & Values”",
-A,246-249,X(04),AN,,joint_tenancy_clause,"JOINT TENANCY CLAUSE; values include:
+A,244-245,X(02),AN,"JNTN, TODJ",tenancy_state,"TENANCY STATE; see Appendix Q, “ACCT Codes & Values”",
+A,246-249,X(04),AN,"JNTN, TODJ",joint_tenancy_clause,"JOINT TENANCY CLAUSE; values include:
 “CMPP” = Community Property
 “CMRS” = Community Property with Right of Survivorship
 “JTTN” = Joint Tenants with Right of Survivorship
@@ -63,9 +63,9 @@ A,246-249,X(04),AN,,joint_tenancy_clause,"JOINT TENANCY CLAUSE; values include:
 “TNET” = Tenants by Entirety
 “USFT” = USUFRUCT
 “” = Not applicable",
-A,250-257,9(08),N,,agreement_execution_date,"AGREEMENT EXECUTION DATE, in CCYYMMDD format",
-A,258-259,X(02),AN,,number_of_tenants,NUMBER OF TENANTS,
-A,260-262,X(03),AN,,not_used,Not Used,
+A,250-257,9(08),N,"JNTN, TODJ",agreement_execution_date,"AGREEMENT EXECUTION DATE, in CCYYMMDD format",
+A,258-259,X(02),AN,"JNTN, TODJ",number_of_tenants,NUMBER OF TENANTS,
+A,260-262,X(03),AN,"JNTN, TODJ",not_used,Not Used,
 A,242-243,X(02),AN,"CUST, 529C",state_gift_given,"STATE GIFT GIVEN; see Appendix Q, “ACCT Codes and Values”","CUSTODIAN ACCOUNT (CUST, 529C) INFORMATION"
 A,244-251,9(08),N,"CUST, 529C",date_gift_given,"DATE GIFT GIVEN, in CCYYMMDD format","CUSTODIAN ACCOUNT (CUST, 529C) INFORMATION"
 A,252-253,9(02),N,"CUST, 529C",age_to_terminate,AGE TO TERMINATE,"CUSTODIAN ACCOUNT (CUST, 529C) INFORMATION"
