@@ -20,7 +20,7 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'ASSETS_MIGRATE_PRODUCT_AG',
+        'pipelinekey': 'ASSETS_MIGRATE_PRODUCT',
         'source_path': r'C:\myworkdir\Shared\AG_ASSETS_PRODUCT'
         }
 
@@ -57,6 +57,9 @@ spark = create_spark()
 
 @catch_error(logger)
 def select_files():
+    """
+    Initial Selection of candidate files potentially to be ingested
+    """
     source_path = data_settings.source_path
     selected_file_paths = []
 
@@ -138,6 +141,9 @@ def process_csv_file(file_meta):
 
 @catch_error(logger)
 def get_dtypes(table, table_name:str):
+    """
+    Translate Column Types
+    """
     dtypes = default_table_dtypes(table=table, use_varchar=True)
     return dtypes
 
