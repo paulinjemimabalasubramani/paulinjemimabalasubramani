@@ -11,7 +11,7 @@ This code assumes bulk_id has been added to the front of each line in the file.
 
 # %% Parse Arguments
 
-if False: # Set to False for Debugging
+if True: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
@@ -138,7 +138,7 @@ def get_pershing_schema(schema_file_name:str):
     with open(schema_file_path, mode='rt', newline='', encoding=csv_encoding, errors='ignore') as fs:
         reader = csv.DictReader(fs)
         for row in reader:
-            rowl = {k.lower().strip():v for k, v in row.items()}
+            rowl = {k.lower().strip():v.strip() for k, v in row.items()}
             field_name = re.sub(column_regex, '_', rowl['field_name'].lower().strip())
             position = rowl['position'].strip()
             record_name = rowl['record_name'].upper().strip()
@@ -253,6 +253,11 @@ def add_schema_fields_to_table(tables, table, schema, record_name:str, condition
     table = table.drop('value')
     tables[(record_name, conditional_changes)] = table
 
+    if is_pc:
+        print(f'\n\nrecord_name: {record_name}, conditional_changes: {conditional_changes}\n')
+        if False: table.show(5)
+        print('\n')
+
 
 
 # %% Add Sub-tables to table
@@ -264,7 +269,7 @@ def add_sub_tables_to_table(tables, schema, sub_tables, record_name:str):
     """
     for conditional_changes, sub_table in sub_tables.items():
         filter_schema = [c for c in schema if (c['record_name'] == record_name) and \
-            ((conditional_changes.upper() in c['conditional_changes']) or (not c['conditional_changes']))]
+            ((conditional_changes and conditional_changes.upper() in c['conditional_changes']) or (not c['conditional_changes']))]
 
         add_schema_fields_to_table(tables=tables, table=sub_table, schema=filter_schema, record_name=record_name, conditional_changes=conditional_changes)
 
@@ -285,13 +290,17 @@ def generate_tables_from_fwt(
     cv = col('value').substr
 
     special_records = table_special_records[table_name]
-    record_names = {c['record_name'] for c in schema}
+    record_names = sorted(list({c['record_name'] for c in schema}))
 
     for record_name in record_names:
-        if is_pc: print(f'Record Name: {record_name}')
+        if is_pc: print(f'Record Name: {record_name}\n')
         if record_name.upper() in [schema_header_str, schema_trailer_str]: continue
 
-        table = text_file.where((cv(3, 1)==lit(record_name)) & (cv(1, len(bulk_id_header))!=lit(bulk_id_header)) & (cv(1, len(bulk_id_trailer))!=lit(bulk_id_trailer)))
+        table = text_file.where((cv(3+total_prefix_length, 1)==lit(record_name)) & (cv(1, len(bulk_id_header))!=lit(bulk_id_header)) & (cv(1, len(bulk_id_trailer))!=lit(bulk_id_trailer)))
+
+        if is_pc:
+            if False: table.show(5, False)
+            print('\n')
 
         if record_name in special_records:
             sub_tables = special_records[record_name](table=table, schema=schema, record_name=record_name)
@@ -498,7 +507,7 @@ def process_pershing_file(file_meta):
         dml_type = 'I' if file_meta['is_full_load'] else 'U',
         )
 
-    if is_pc: table.show(5)
+    if is_pc and False: table.show(5)
 
     return {file_meta['table_name']: table}
 
