@@ -75,7 +75,7 @@ def select_files():
             if file_ext.lower() not in allowed_file_extensions + ['.zip']: continue
 
             try:
-                if file_ext == '.zip':
+                if file_ext.lower() == '.zip':
                     file_date_str = file_name_noext
                 else:
                     date_loc = -file_name_noext[::-1].find('_')

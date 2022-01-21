@@ -113,7 +113,7 @@ def select_files():
 
             if file_ext.lower() not in allowed_file_extensions + ['.zip']: continue
 
-            if file_ext == '.zip':
+            if file_ext.lower() == '.zip':
                 key_datetime = execution_date_start
             else:
                 file_name_list = file_name_noext.split('_')

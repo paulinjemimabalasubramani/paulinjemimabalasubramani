@@ -383,7 +383,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
             with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
                 extract_dir = tmpdir
                 logger.info(f'Extracting {file_path} to {extract_dir}')
-                shutil.unpack_archive(filename=file_path, extract_dir=extract_dir)
+                shutil.unpack_archive(filename=file_path, extract_dir=extract_dir, format='zip')
                 zip_file_path = zip_file_path if zip_file_path else file_path # to keep original zip file path, rather than the last zip file path
                 recursive_migrate_all_files(
                     source_path = extract_dir,

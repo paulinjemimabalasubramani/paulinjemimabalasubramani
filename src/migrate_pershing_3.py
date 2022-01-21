@@ -42,10 +42,9 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, execution_date_start
-from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns, column_regex, \
-    read_text
-from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
+from modules3.spark_functions import add_id_key, create_spark, remove_column_spaces, add_elt_columns, column_regex, read_text
+from modules3.migrate_files import migrate_all_files, default_table_dtypes
 
 from collections import defaultdict
 from datetime import datetime
@@ -366,8 +365,10 @@ def join_all_tables(tables, file_meta:dict):
             else:
                 joined_tables = table
 
+    table_columns = joined_tables.columns
     for column_name in master_schema_header_columns:
-        joined_tables = joined_tables.withColumn(column_name, lit(str(file_meta[column_name])))
+        if column_name not in table_columns:
+            joined_tables = joined_tables.withColumn(column_name, lit(str(file_meta[column_name])))
 
     return joined_tables
 
