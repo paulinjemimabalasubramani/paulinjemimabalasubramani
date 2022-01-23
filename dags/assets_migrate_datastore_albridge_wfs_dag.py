@@ -46,7 +46,7 @@ with DAG(
 
     ASSETS_MIGRATE_DATASTORE_ALBRIDGE_WFS = SparkSubmitOperator(
          task_id = "ASSETS_MIGRATE_DATASTORE_ALBRIDGE_WFS",
-         application = "/usr/local/spark/app/migrate_csv_with_date.py",
+         application = "/usr/local/spark/app/migrate_csv_3.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
