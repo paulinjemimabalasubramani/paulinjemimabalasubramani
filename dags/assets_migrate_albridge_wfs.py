@@ -14,9 +14,9 @@ spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
 
-spark_app_name = "Migrate Albridge Tables"
-airflow_app_name = "assets_migrate_albridge"
-description_DAG = 'Migrate Albridge Tables'
+spark_app_name = "assets_migrate_albridge"
+airflow_app_name = spark_app_name
+description_DAG = 'Migrate Assets-Albridge Tables'
 
 tags = ['DB:Assets', 'SC:Albridge']
 
@@ -47,7 +47,7 @@ with DAG(
     )
 
     ASSETS_MIGRATE_ALBRIDGE_WFS = SparkSubmitOperator(
-         task_id = "migrate_albridge",
+         task_id = "ASSETS_MIGRATE_ALBRIDGE_WFS",
          application = "/usr/local/spark/app/assets_migrate_albridge_3.py",
          name = spark_app_name,
          jars = jars,

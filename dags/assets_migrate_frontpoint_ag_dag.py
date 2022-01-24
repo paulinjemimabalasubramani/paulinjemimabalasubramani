@@ -14,8 +14,8 @@ spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
 
-spark_app_name = "Migrate Assets Frontpoint Tables"
-airflow_app_name = "assets_migrate_frontpoint"
+spark_app_name = "assets_migrate_frontpoint"
+airflow_app_name = spark_app_name
 description_DAG = 'Migrate Assets Frontpoint Tables'
 
 

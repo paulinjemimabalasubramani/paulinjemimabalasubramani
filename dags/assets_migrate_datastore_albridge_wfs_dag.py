@@ -14,10 +14,11 @@ spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
 
-spark_app_name = "Migrate WFS Datastore Albridge data Tables"
-airflow_app_name = "assets_migrate_datastore_albridge_wfs"
+spark_app_name = "assets_migrate_datastore_albridge_wfs"
+airflow_app_name = spark_app_name
 description_DAG = 'Migrate WFS Datastore Albridge data Tables'
 
+tags = ['DB:Assets', 'SC:Datastore-Albridge']
 
 default_args = {
     'owner': 'Seymur',
@@ -37,6 +38,7 @@ with DAG(
     description = description_DAG,
     schedule_interval = '0 13 * * *', # https://crontab.guru/#0_13_*_*_*
     start_date = days_ago(1),
+    tags = tags,
 ) as dag:
 
     startpipe = BashOperator(
