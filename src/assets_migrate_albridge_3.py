@@ -40,8 +40,7 @@ sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
 from modules3.spark_functions import add_id_key, create_spark, read_text, remove_column_spaces, add_elt_columns
-from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes, \
-    file_meta_exists_for_select_files
+from modules3.migrate_files import migrate_all_files, default_table_dtypes, file_meta_exists_for_select_files, add_firm_to_table_name
 
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit
@@ -203,6 +202,7 @@ def extract_albridge_file_meta(file_path:str, zip_file_path:str=None):
 
     table_name = header_meta['file_desc'][:-4].lower()
     table_name = 'positions' if table_name == 'positionchanges' else table_name
+    table_name = add_firm_to_table_name(table_name=table_name)
 
     key_datetime = datetime.strptime(' '.join([header_meta['run_date'], header_meta['run_time']]).strip(), r'%Y%m%d %H%M%S')
 

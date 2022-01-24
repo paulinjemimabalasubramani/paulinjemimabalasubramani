@@ -99,6 +99,18 @@ def get_key_column_names(table_name:str):
 
 
 
+# %% Add Firm to Table Name
+
+@catch_error(logger)
+def add_firm_to_table_name(table_name:str):
+    """
+    Add Firm to Table Name
+    """
+    table_name = '_'.join([data_settings.pipeline_firm, table_name]).lower() if data_settings.pipeline_firm and hasattr(data_settings, 'add_firm_to_table_name') and data_settings.add_firm_to_table_name.upper() == 'TRUE' else table_name
+    return table_name
+
+
+
 # %% Create file_meta table in SQL Server if not exists
 
 @catch_error(logger)

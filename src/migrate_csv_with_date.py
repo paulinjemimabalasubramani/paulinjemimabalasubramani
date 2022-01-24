@@ -38,8 +38,7 @@ sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
 from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
-from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes, \
-    file_meta_exists_for_select_files
+from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes, file_meta_exists_for_select_files, add_firm_to_table_name
 
 
 
@@ -119,6 +118,7 @@ def extract_csv_file_meta(file_path:str, zip_file_path:str=None):
         return
     file_date_str = file_name_noext[date_loc:]
     table_name = file_name_noext[:date_loc-1]
+    table_name = add_firm_to_table_name(table_name=table_name)
 
     try:
         key_datetime = datetime.strptime(file_date_str, date_format)
