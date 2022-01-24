@@ -48,7 +48,7 @@ with DAG(
 
     ASSETS_MIGRATE_FRONTPOINT = SparkSubmitOperator(
          task_id = "ASSETS_MIGRATE_FRONTPOINT",
-         application = "/usr/local/spark/app/assets_migrate_frontpoint.py",
+         application = "/usr/local/spark/app/assets_migrate_frontpoint_3.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",

@@ -18,6 +18,7 @@ spark_app_name = "Migrate Assets Product Tables"
 airflow_app_name = "assets_migrate_product"
 description_DAG = 'Migrate Assets Product Tables'
 
+tags = ['DB:Assets', 'SC:Product']
 
 default_args = {
     'owner': 'Seymur',
@@ -37,6 +38,7 @@ with DAG(
     description = description_DAG,
     schedule_interval = '0 13 * * *', # https://crontab.guru/#0_13_*_*_*
     start_date = days_ago(1),
+    tags = tags,
 ) as dag:
 
     startpipe = BashOperator(
