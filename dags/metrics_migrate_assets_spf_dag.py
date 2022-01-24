@@ -13,12 +13,11 @@ spark_master = "spark://spark:7077"
 spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
-
-spark_app_name = "assets_migrate_frontpoint"
+spark_app_name = "metrics_migrate_assets_spf"
 airflow_app_name = spark_app_name
-description_DAG = 'Migrate Assets Frontpoint Tables'
+description_DAG = 'Migrate Metrics-Assets Tables'
 
-tags = ['DB:Assets', 'SC:Frontpoint']
+tags = ['DB:Metrics', 'SC:Assets']
 
 default_args = {
     'owner': 'Seymur',
@@ -29,14 +28,13 @@ default_args = {
 jars = "/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar,/usr/local/spark/resources/jars/spark-xml_2.12-0.12.0.jar"
 
 
-
 # %% Create DAG
 
 with DAG(
     airflow_app_name,
     default_args = default_args,
     description = description_DAG,
-    schedule_interval = '0 13 * * *', # https://crontab.guru/#0_13_*_*_*
+    schedule_interval = '0 13 * * *',
     start_date = days_ago(1),
     tags = tags,
 ) as dag:
@@ -46,9 +44,9 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    ASSETS_MIGRATE_FRONTPOINT = SparkSubmitOperator(
-         task_id = "ASSETS_MIGRATE_FRONTPOINT",
-         application = "/usr/local/spark/app/assets_migrate_frontpoint.py",
+    METRICS_MIGRATE_ASSETS_SPF = SparkSubmitOperator(
+         task_id = "METRICS_MIGRATE_ASSETS_SPF",
+         application = "/usr/local/spark/app/migrate_csv_with_date_3.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
@@ -58,15 +56,17 @@ with DAG(
          verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
-             '--pipelinekey', 'ASSETS_MIGRATE_FRONTPOINT',
+             '--pipelinekey', 'METRICS_MIGRATE_ASSETS_SPF',
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
-#             '--spark_master_ip', spark_master_ip,
-             ],
+             #'--spark_master_ip', spark_master_ip,
+         ],
          dag = dag
          )
 
-    startpipe >> ASSETS_MIGRATE_FRONTPOINT
+
+    startpipe >> METRICS_MIGRATE_ASSETS_SPF
+
 
 
 

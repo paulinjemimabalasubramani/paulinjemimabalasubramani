@@ -13,7 +13,7 @@ spark_master = "spark://spark:7077"
 spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
-spark_app_name = "metrics_migrate_assets"
+spark_app_name = "metrics_migrate_assets_wfs"
 airflow_app_name = spark_app_name
 description_DAG = 'Migrate Metrics-Assets Tables'
 
@@ -44,26 +44,6 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    METRICS_MIGRATE_ASSETS_RAA = SparkSubmitOperator(
-         task_id = "METRICS_MIGRATE_ASSETS_RAA",
-         application = "/usr/local/spark/app/migrate_csv_with_date_3.py",
-         name = spark_app_name,
-         jars = jars,
-         conn_id = "spark_default",
-         num_executors = spark_executor_instances,
-         executor_cores = 4,
-         executor_memory = "16G",
-         verbose = 1,
-         conf = {"spark.master": spark_master},
-         application_args = [
-             '--pipelinekey', 'METRICS_MIGRATE_ASSETS_RAA',
-             '--spark_master', spark_master,
-             '--spark_executor_instances', str(spark_executor_instances),
-             #'--spark_master_ip', spark_master_ip,
-             ],
-         dag = dag
-         )
-
     METRICS_MIGRATE_ASSETS_WFS = SparkSubmitOperator(
          task_id = "METRICS_MIGRATE_ASSETS_WFS",
          application = "/usr/local/spark/app/migrate_csv_with_date_3.py",
@@ -84,29 +64,8 @@ with DAG(
          dag = dag
          )
 
-    METRICS_MIGRATE_ASSETS_SPF = SparkSubmitOperator(
-         task_id = "METRICS_MIGRATE_ASSETS_SPF",
-         application = "/usr/local/spark/app/migrate_csv_with_date_3.py",
-         name = spark_app_name,
-         jars = jars,
-         conn_id = "spark_default",
-         num_executors = spark_executor_instances,
-         executor_cores = 4,
-         executor_memory = "16G",
-         verbose = 1,
-         conf = {"spark.master": spark_master},
-         application_args = [
-             '--pipelinekey', 'METRICS_MIGRATE_ASSETS_SPF',
-             '--spark_master', spark_master,
-             '--spark_executor_instances', str(spark_executor_instances),
-             #'--spark_master_ip', spark_master_ip,
-         ],
-         dag = dag
-         )
 
-    startpipe >> METRICS_MIGRATE_ASSETS_RAA
     startpipe >> METRICS_MIGRATE_ASSETS_WFS
-    startpipe >> METRICS_MIGRATE_ASSETS_SPF
 
 
 
