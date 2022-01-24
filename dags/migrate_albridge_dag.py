@@ -10,12 +10,15 @@ from airflow.utils.dates import days_ago
 
 # %% Parameters
 spark_master = "spark://spark:7077"
+spark_executor_instances = 3
+spark_master_ip = '10.128.25.82'
 
 
 spark_app_name = "Migrate Albridge Tables"
 airflow_app_name = "migrate_albridge"
 description_DAG = 'Migrate Albridge Tables'
 
+tags = ['DB:Assets', 'SC:Albridge']
 
 default_args = {
     'owner': 'Seymur',
@@ -35,6 +38,7 @@ with DAG(
     description = description_DAG,
     schedule_interval = '0 13 * * *', # https://crontab.guru/#0_13_*_*_*
     start_date = days_ago(1),
+    tags = tags,
 ) as dag:
 
     startpipe = BashOperator(
@@ -42,9 +46,9 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    migratedata = SparkSubmitOperator(
+    ASSETS_MIGRATE_ALBRIDGE_WFS = SparkSubmitOperator(
          task_id = "migrate_albridge",
-         application = "/usr/local/spark/app/migrate_albridge.py",
+         application = "/usr/local/spark/app/assets_migrate_albridge_3.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
@@ -53,11 +57,16 @@ with DAG(
          executor_memory = "16G",
          verbose = 1,
          conf = {"spark.master": spark_master},
-         application_args = None,
+         application_args = [
+             '--pipelinekey', 'ASSETS_MIGRATE_ALBRIDGE_WFS',
+             '--spark_master', spark_master,
+             '--spark_executor_instances', str(spark_executor_instances),
+             #'--spark_master_ip', spark_master_ip,
+         ],
          dag = dag
          )
 
-    startpipe >> [migratedata]
+    startpipe >> [ASSETS_MIGRATE_ALBRIDGE_WFS]
 
 
 

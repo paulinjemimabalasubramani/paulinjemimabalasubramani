@@ -99,6 +99,18 @@ def get_key_column_names(table_name:str):
 
 
 
+# %% Add Firm to Table Name
+
+@catch_error(logger)
+def add_firm_to_table_name(table_name:str):
+    """
+    Add Firm to Table Name
+    """
+    table_name = '_'.join([data_settings.pipeline_firm, table_name]).lower() if data_settings.pipeline_firm and hasattr(data_settings, 'add_firm_to_table_name') and data_settings.add_firm_to_table_name.upper() == 'TRUE' else table_name
+    return table_name
+
+
+
 # %% Create file_meta table in SQL Server if not exists
 
 @catch_error(logger)
@@ -383,7 +395,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
             with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
                 extract_dir = tmpdir
                 logger.info(f'Extracting {file_path} to {extract_dir}')
-                shutil.unpack_archive(filename=file_path, extract_dir=extract_dir)
+                shutil.unpack_archive(filename=file_path, extract_dir=extract_dir, format='zip')
                 zip_file_path = zip_file_path if zip_file_path else file_path # to keep original zip file path, rather than the last zip file path
                 recursive_migrate_all_files(
                     source_path = extract_dir,

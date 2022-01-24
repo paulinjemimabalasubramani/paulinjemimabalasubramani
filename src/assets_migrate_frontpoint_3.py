@@ -40,7 +40,7 @@ sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, execution_date_start
 from modules3.spark_functions import add_id_key, create_spark, remove_column_spaces, add_elt_columns, read_text
-from modules3.migrate_files import migrate_all_files, default_table_dtypes, file_meta_exists_for_select_files
+from modules3.migrate_files import migrate_all_files, default_table_dtypes, file_meta_exists_for_select_files, add_firm_to_table_name
 
 from pyspark.sql.functions import col
 import pyspark.sql.functions as F
@@ -113,7 +113,7 @@ def select_files():
 
             if file_ext.lower() not in allowed_file_extensions + ['.zip']: continue
 
-            if file_ext == '.zip':
+            if file_ext.lower() == '.zip':
                 key_datetime = execution_date_start
             else:
                 file_name_list = file_name_noext.split('_')
@@ -159,6 +159,8 @@ def extract_frontpoint_file_meta(file_path:str, zip_file_path:str=None):
     if table_name not in file_schema:
         logger.warning(f'Table name should be one of {list(file_schema)} for file: {file_path}')
         return
+
+    table_name = add_firm_to_table_name(table_name=table_name)
 
     year, month, day = file_name_list[2], file_name_list[3], file_name_list[4]
     try:

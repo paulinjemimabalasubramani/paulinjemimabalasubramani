@@ -46,7 +46,7 @@ with DAG(
 
     METRICS_MIGRATE_ASSETS_RAA = SparkSubmitOperator(
          task_id = "METRICS_MIGRATE_ASSETS_RAA",
-         application = "/usr/local/spark/app/migrate_csv_with_date.py",
+         application = "/usr/local/spark/app/migrate_csv_with_date_3.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
@@ -66,7 +66,7 @@ with DAG(
 
     METRICS_MIGRATE_ASSETS_WFS = SparkSubmitOperator(
          task_id = "METRICS_MIGRATE_ASSETS_WFS",
-         application = "/usr/local/spark/app/migrate_csv_with_date.py",
+         application = "/usr/local/spark/app/migrate_csv_with_date_3.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
@@ -86,7 +86,7 @@ with DAG(
 
     METRICS_MIGRATE_ASSETS_SPF = SparkSubmitOperator(
          task_id = "METRICS_MIGRATE_ASSETS_SPF",
-         application = "/usr/local/spark/app/migrate_csv_with_date.py",
+         application = "/usr/local/spark/app/migrate_csv_with_date_3.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
