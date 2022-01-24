@@ -13,9 +13,9 @@ spark_master = "spark://spark:7077"
 spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
-spark_app_name = "Migrate Metrics Assets Tables"
-airflow_app_name = "metrics_migrate_assets"
-description_DAG = 'Migrate Metrics Assets Tables'
+spark_app_name = "metrics_migrate_assets"
+airflow_app_name = spark_app_name
+description_DAG = 'Migrate Metrics-Assets Tables'
 
 tags = ['DB:Metrics', 'SC:Assets']
 
