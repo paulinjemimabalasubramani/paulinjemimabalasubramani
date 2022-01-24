@@ -314,7 +314,7 @@ def step1(table_name:str):
 
     sqlstr += step
     wid.ddl_file_per_table += step
-    wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
+    if step not in wid.ddl_file_per_step[ddl_file_per_step_key]: wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
     return sqlstr
 
 
@@ -341,7 +341,7 @@ ON TABLE {SCHEMA_NAME}.{table_name.upper()}{wid.variant_label} APPEND_ONLY = TRU
 
     sqlstr += step
     wid.ddl_file_per_table += step
-    wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
+    if step not in wid.ddl_file_per_step[ddl_file_per_step_key]: wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
     return sqlstr
 
 
@@ -377,7 +377,7 @@ FROM {SCHEMA_NAME}.{table_name.upper()}{wid.variant_label}{wid.stream_suffix};
 
     sqlstr += step
     wid.ddl_file_per_table += step
-    wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
+    if step not in wid.ddl_file_per_step[ddl_file_per_step_key]: wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
     return sqlstr
 
 
@@ -433,7 +433,7 @@ WHERE top_slice = 1;
 
     sqlstr += step
     wid.ddl_file_per_table += step
-    wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
+    if step not in wid.ddl_file_per_step[ddl_file_per_step_key]: wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
     return sqlstr
 
 
@@ -470,7 +470,7 @@ def step5(table_name:str, dtypes:OrderedDict):
 
     sqlstr += step
     wid.ddl_file_per_table += f"\n\nUSE SCHEMA {SCHEMA_NAME};\n\n{step}"
-    wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
+    if step not in wid.ddl_file_per_step[ddl_file_per_step_key]: wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
     return sqlstr
 
 
@@ -568,7 +568,7 @@ $$;
 
     sqlstr += step
     wid.ddl_file_per_table += step
-    wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
+    if step not in wid.ddl_file_per_step[ddl_file_per_step_key]: wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
     return sqlstr
 
 
@@ -606,7 +606,7 @@ AS
 
     sqlstr += step
     wid.ddl_file_per_table += step
-    wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
+    if step not in wid.ddl_file_per_step[ddl_file_per_step_key]: wid.ddl_file_per_step[ddl_file_per_step_key] += step + wid.nlines
     return sqlstr
 
 
@@ -635,7 +635,7 @@ ALTER TASK {task_name} RESUME;
 
     sqlstr += step
     wid.ddl_file_per_table += step
-    wid.ddl_file_per_step[ddl_file_per_step_key] += step + '\n'*1
+    if step not in wid.ddl_file_per_step[ddl_file_per_step_key]: wid.ddl_file_per_step[ddl_file_per_step_key] += step + '\n'*1
     return sqlstr
 
 
