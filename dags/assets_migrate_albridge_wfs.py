@@ -14,7 +14,7 @@ spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
 
-spark_app_name = "assets_migrate_albridge"
+spark_app_name = "assets_migrate_albridge_wfs"
 airflow_app_name = spark_app_name
 description_DAG = 'Migrate Assets-Albridge Tables'
 
