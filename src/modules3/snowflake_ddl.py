@@ -51,7 +51,6 @@ class module_params_class:
     spark = None
     snowflake_connection = None
     ddl_file_per_step = defaultdict(str)
-    ddl_file_per_step_set = {}
 
 
 
