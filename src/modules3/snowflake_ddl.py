@@ -592,10 +592,11 @@ def step7(table_name:str):
     task_suffix = '_MERGE_TASK'
     task_name = f'{table_name.upper()}{task_suffix}'.upper()
     stream_name = f'{SCHEMA_NAME}_RAW.{table_name.upper()}{wid.variant_label}{wid.stream_suffix}'
+    warehouse = '{{ ENV }}_RAW_WH' # data_settings.snowflake_warehouse
 
     step = f"""
 {create_or_replace_func('TASK')} {task_name}
-WAREHOUSE = {data_settings.snowflake_warehouse}
+WAREHOUSE = {warehouse}
 SCHEDULE = '1 minute'
 WHEN
 SYSTEM$STREAM_HAS_DATA('{stream_name}')
