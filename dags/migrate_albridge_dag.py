@@ -15,7 +15,7 @@ spark_master_ip = '10.128.25.82'
 
 
 spark_app_name = "Migrate Albridge Tables"
-airflow_app_name = "migrate_albridge"
+airflow_app_name = "assets_migrate_albridge"
 description_DAG = 'Migrate Albridge Tables'
 
 tags = ['DB:Assets', 'SC:Albridge']
