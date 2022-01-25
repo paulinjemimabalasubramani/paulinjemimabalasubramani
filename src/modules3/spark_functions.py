@@ -130,6 +130,7 @@ def create_spark():
 
     spark = spark.getOrCreate()
     spark.getActiveSession()
+    spark.sparkContext.setLogLevel('WARN')
 
     logger.info({
         'Spark_Version': spark.version,
