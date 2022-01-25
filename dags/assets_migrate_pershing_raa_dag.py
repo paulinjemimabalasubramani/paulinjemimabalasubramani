@@ -37,6 +37,7 @@ with DAG(
     schedule_interval = '0 13 * * *',
     start_date = days_ago(1),
     tags = tags,
+    catchup = False,
 ) as dag:
 
     startpipe = BashOperator(
