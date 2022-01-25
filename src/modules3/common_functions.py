@@ -8,7 +8,6 @@ import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, 
 
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
-from pprint import pprint
 from datetime import datetime
 from functools import wraps
 from collections import OrderedDict
@@ -67,7 +66,7 @@ def catch_error(logger=None, raise_error:bool=True):
                     sys.app.is_error = True
                     exception_message  = f"Exception occurred inside '{fn.__name__}'"
                     exception_message += f"\nException Message: {e}"
-                    pprint(exception_message)
+                    print(exception_message)
 
                     if hasattr(sys.app, 'finalize_new_pipeline_instance'):
                         try:
@@ -104,7 +103,7 @@ def get_env(variable_name:str, default:str=None, logger=None, raise_error_if_no_
         if logger:
             logger.error(str(e))
         else:
-            pprint(e)
+            print(e)
         raise e
 
     return value
@@ -135,7 +134,7 @@ def get_azure_key_vault(logger=None):
         if logger:
             logger.error(str(e))
         else:
-            pprint(e)
+            print(e)
         raise e
 
     return azure_tenant_id, client
@@ -166,7 +165,7 @@ def get_secrets(account_name:str, logger=None, additional_secrets:list=[]):
         if logger:
             logger.error(str(e))
         else:
-            pprint(e)
+            print(e)
         raise e
 
     if sp_additional_secrets:
@@ -206,7 +205,7 @@ class Config:
                     if logger:
                         logger.error(except_str)
                     else:
-                        pprint(except_str)
+                        print(except_str)
                     return
 
                 for name, value in contents.items():
@@ -216,7 +215,7 @@ class Config:
             if logger:
                 logger.error(str(e))
             else:
-                pprint(e)
+                print(e)
             raise e
 
 
@@ -346,7 +345,7 @@ def build_log_signature(customer_id:str, shared_key:str, rfc1123date:str, conten
         if logger:
             logger.error(str(e))
         else:
-            pprint(e)
+            print(e)
         raise e
 
     return authorization
@@ -395,21 +394,21 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
         if backup_logger_func:
             backup_logger_func(body, exc_info=False)
         else:
-            pprint(body)
+            print(body)
 
         if not logger or log_type!=logger.print_log_type: # Temporarily stop sending print logs to Azure
             response = requests.post(uri, data=body, headers=headers)
             if response.status_code >= 200 and response.status_code <= 299 and not is_pc:
-                #pprint('Log Accepted')
+                #print('Log Accepted')
                 pass
             else:
-                pprint(f'Log Response code: {response.status_code}')
+                print(f'Log Response code: {response.status_code}')
 
     except (BaseException, AssertionError) as e:
         if logger:
             logger.error(str(e))
         else:
-            pprint(e)
+            print(e)
 
 
 
@@ -439,7 +438,7 @@ def system_info(logger=None):
         if logger:
             logger.error(str(e))
         else:
-            pprint(e)
+            print(e)
         #raise e
 
     return sysinfo
