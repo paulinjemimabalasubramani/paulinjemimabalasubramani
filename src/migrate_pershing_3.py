@@ -60,7 +60,7 @@ master_schema_file = 'customer_acct_info' # to take header info
 master_schema_form_name = 'customer_acct_info' # to take header info
 master_schema_header_columns = {
     'date_of_data': 'datetime NULL',
-    'remote_id': 'varchar(50)',
+    'remote_id': 'varchar(50) NULL',
     'refreshed_updated': 'varchar(10) NULL',
     }
 
@@ -383,7 +383,7 @@ def create_table_from_fwt_file(file_meta:dict):
     """
     data_file_path = file_meta['file_path']
     table_name = file_meta['table_name']
-    schema_file_name = table_name
+    schema_file_name = file_meta['schema_file_name']
 
     logger.info({
         'action': 'generate_tables_from_fwt_file',
@@ -472,11 +472,12 @@ def extract_pershing_file_meta(file_path:str, zip_file_path:str=None):
 
     header_info = get_header_info(file_path=file_path)
 
-    table_name = re.sub(' ', '_', header_info['form_name'].lower())
-    table_name = add_firm_to_table_name(table_name=table_name)
+    schema_file_name = re.sub(' ', '_', header_info['form_name'].lower())
+    table_name = add_firm_to_table_name(table_name=schema_file_name)
 
     file_meta = {
         'table_name': table_name,
+        'schema_file_name': schema_file_name,
         'file_name': file_name,
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
@@ -532,6 +533,7 @@ def get_dtypes(table, table_name:str):
 # %% Iterate over all the files in all the firms and process them.
 
 additional_file_meta_columns = [(cname, ctype) for cname, ctype in master_schema_header_columns.items()]
+additional_file_meta_columns.append(('schema_file_name', 'varchar(250) NULL'))
 
 migrate_all_files(
     spark = spark,
