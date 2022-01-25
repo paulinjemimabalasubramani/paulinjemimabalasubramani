@@ -10,12 +10,14 @@ from airflow.utils.dates import days_ago
 
 # %% Parameters
 spark_master = "spark://spark:7077"
+spark_executor_instances = 3
+spark_master_ip = '10.128.25.82'
 
+spark_app_name = "assets_migrate_pershing_raa"
+airflow_app_name = spark_app_name
+description_DAG = 'Migrate Assets-Pershing Tables'
 
-spark_app_name = "Migrate Pershing Tables"
-airflow_app_name = "migrate_pershing"
-description_DAG='Migrate Pershing Tables'
-
+tags = ['DB:Assets', 'SC:Pershing']
 
 default_args = {
     'owner': 'Seymur',
@@ -26,15 +28,15 @@ default_args = {
 jars = "/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar,/usr/local/spark/resources/jars/spark-xml_2.12-0.12.0.jar"
 
 
-
 # %% Create DAG
 
 with DAG(
     airflow_app_name,
     default_args = default_args,
     description = description_DAG,
-    schedule_interval = '0 13 * * *', # https://crontab.guru/#0_13_*_*_*
+    schedule_interval = '0 13 * * *',
     start_date = days_ago(1),
+    tags = tags,
 ) as dag:
 
     startpipe = BashOperator(
@@ -42,22 +44,36 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    migratedata = SparkSubmitOperator(
-         task_id = "migrate_pershing",
-         application = "/usr/local/spark/app/migrate_pershing.py",
+    add_bulk_id = BashOperator(
+        task_id = 'ADD_BULK_ID_ASSETS_MIGRATE_PERSHING_RAA',
+        bash_command = 'python /usr/local/spark/app/bulk_fixed_width_files.py --pipelinekey ASSETS_MIGRATE_PERSHING_RAA',
+        dag = dag
+    )
+
+    ASSETS_MIGRATE_PERSHING_RAA = SparkSubmitOperator(
+         task_id = "ASSETS_MIGRATE_PERSHING_RAA",
+         application = "/usr/local/spark/app/migrate_pershing_3.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
-         num_executors = 3,
+         num_executors = spark_executor_instances,
          executor_cores = 4,
          executor_memory = "16G",
          verbose = 1,
          conf = {"spark.master": spark_master},
-         application_args = None,
+         application_args = [
+             '--pipelinekey', 'ASSETS_MIGRATE_PERSHING_RAA',
+             '--spark_master', spark_master,
+             '--spark_executor_instances', str(spark_executor_instances),
+             #'--spark_master_ip', spark_master_ip,
+             ],
          dag = dag
          )
 
-    startpipe >> [migratedata]
+
+    startpipe >> add_bulk_id >> ASSETS_MIGRATE_PERSHING_RAA
+
+
 
 
 
