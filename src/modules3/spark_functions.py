@@ -14,10 +14,8 @@ https://spark.apache.org/docs/latest/configuration
 
 # %% libraries
 import os, re
-from pprint import pprint
 
-from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, \
-    ELT_PROCESS_ID_str
+from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, ELT_PROCESS_ID_str
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
@@ -436,7 +434,7 @@ def flatten_table(table):
 
     table_select = table.select(cols)
     if nested:
-        if is_pc: pprint(f'\n{table_select.columns}')
+        if is_pc: print(f'\n{table_select.columns}')
         table_select = flatten_table(table_select)
 
     return table_select

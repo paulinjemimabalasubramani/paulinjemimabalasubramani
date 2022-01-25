@@ -52,9 +52,22 @@ TRAILER_str = 'TRAILER'
 hash_func = hashlib.sha1
 total_hash_length = len(hash_func().hexdigest())
 
-is_start_line = lambda line: line[2] == 'A' # Determine Start Line
+start_line_record_string = str(data_settings.start_line_record_string)
+start_line_pos_start = int(data_settings.start_line_record_position) - 1
+start_line_pos_end = start_line_pos_start + len(start_line_record_string)
 
 data_settings.target_path = data_settings.bulk_path
+
+
+
+# %% Determine Start Line
+
+@catch_error(logger)
+def is_start_line(line:str):
+    """
+    Determine Start Line
+    """
+    return line[start_line_pos_start:start_line_pos_end] == start_line_record_string
 
 
 
