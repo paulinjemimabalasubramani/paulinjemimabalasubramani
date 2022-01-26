@@ -25,9 +25,7 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'CA_MIGRATE_PERSHING_RAA',
-        'source_path': r'C:\myworkdir\Shared\PERSHING\RAA',
-        'bulk_path': r'C:\myworkdir\Shared\PERSHING\RAA_bulk',
+        'pipelinekey': 'ASSETS_MIGRATE_PERSHING_RAA',
         'schema_file_path': r'C:\myworkdir\EDIP-Code\config\pershing_schema'
         }
 
@@ -70,6 +68,7 @@ hash_field_name = 'bulk_id'
 hash_func = hashlib.sha1
 total_hash_length = len(hash_func().hexdigest())
 total_prefix_length = total_hash_length + 1
+start_line_pos_start = int(data_settings.start_line_record_position) + total_prefix_length
 
 schema_header_str = 'HEADER'
 schema_trailer_str = 'TRAILER'
@@ -81,7 +80,7 @@ master_groupBy = [hash_field_name]
 
 pershing_strftime = r'%m/%d/%Y %H:%M:%S' # http://strftime.org/
 
-data_settings.source_path = data_settings.bulk_path # Use files from bulk path
+data_settings.source_path = data_settings.app_data_path # Use files from app_data_path
 
 table_special_records = defaultdict(dict)
 
@@ -137,7 +136,7 @@ def get_pershing_schema(schema_file_name:str):
     with open(schema_file_path, mode='rt', newline='', encoding=csv_encoding, errors='ignore') as fs:
         reader = csv.DictReader(fs)
         for row in reader:
-            rowl = {k.lower().strip():v.strip() for k, v in row.items()}
+            rowl = {str(k).lower().strip():str(v).strip() for k, v in row.items()}
             field_name = re.sub(column_regex, '_', rowl['field_name'].lower().strip())
             position = rowl['position'].strip()
             record_name = rowl['record_name'].upper().strip()
@@ -295,7 +294,7 @@ def generate_tables_from_fwt(
         if is_pc: print(f'Record Name: {record_name}\n')
         if record_name.upper() in [schema_header_str, schema_trailer_str]: continue
 
-        table = text_file.where((cv(3+total_prefix_length, 1)==lit(record_name)) & (cv(1, len(bulk_id_header))!=lit(bulk_id_header)) & (cv(1, len(bulk_id_trailer))!=lit(bulk_id_trailer)))
+        table = text_file.where((cv(start_line_pos_start, len(record_name))==lit(record_name)) & (cv(1, len(bulk_id_header))!=lit(bulk_id_header)) & (cv(1, len(bulk_id_trailer))!=lit(bulk_id_trailer)))
 
         if is_pc:
             if False: table.show(5, False)

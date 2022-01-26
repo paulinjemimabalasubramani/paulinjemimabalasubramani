@@ -107,15 +107,17 @@ UpdateTS datetime
 
 
 
+
+
+
 INSERT INTO metadata.PipelineConfiguration 
 (PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
 VALUES
-('GENERIC', 'CREATE_CICD_FILE', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP), --to be depreciated
-('GENERIC', 'OUTPUT_CICD_PATH', '/usr/local/spark/resources/fileshare/Shared/CICD', 'Seymur M.', CURRENT_TIMESTAMP), --to be depreciated
 ('GENERIC', 'CREATE_DDL_FILES', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP),
 ('GENERIC', 'OUTPUT_LOG_PATH', '/usr/local/spark/resources/fileshare/Shared/logs', 'Seymur M.', CURRENT_TIMESTAMP),
-('GENERIC', 'OUTPUT_DDL_PATH', '/usr/local/spark/resources/fileshare/Shared/CICD', 'Seymur M.', CURRENT_TIMESTAMP),
+('GENERIC', 'OUTPUT_DDL_PATH', '/usr/local/spark/resources/fileshare/Shared/DDL', 'Seymur M.', CURRENT_TIMESTAMP),
 ('GENERIC', 'TEMPORARY_FILE_PATH', '/usr/local/spark/resources/Shared/TEMP', 'Seymur M.', CURRENT_TIMESTAMP),
+('GENERIC', 'APP_DATA_PATH', '/usr/local/spark/resources/fileshare/Shared/APPDATA', 'Seymur M.', CURRENT_TIMESTAMP),
 ('GENERIC', 'SNOWFLAKE_ACCOUNT', 'advisorgroup-edip', 'Seymur M.', CURRENT_TIMESTAMP),
 ('GENERIC', 'SNOWFLAKE_KEY_VAULT_ACCOUNT', 'snowflake', 'Seymur M.', CURRENT_TIMESTAMP),
 ('GENERIC', 'SNOWFLAKE_ROLE', 'AD_SNOWFLAKE_QA_DBA', 'Seymur M.', CURRENT_TIMESTAMP),
@@ -175,7 +177,6 @@ VALUES
 
 
 ('CA_MIGRATE_PERSHING_RAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/PERSHING-CA/RAA', 'Seymur M.', CURRENT_TIMESTAMP),
-('CA_MIGRATE_PERSHING_RAA', 'BULK_PATH',   '/usr/local/spark/resources/fileshare/Shared/PERSHING-CA/RAA_bulk', 'Seymur M.', CURRENT_TIMESTAMP),
 ('CA_MIGRATE_PERSHING_RAA', 'DB_NAME', 'CA', 'Seymur M.', CURRENT_TIMESTAMP),
 ('CA_MIGRATE_PERSHING_RAA', 'SCHEMA_NAME', 'PERSHING', 'Seymur M.', CURRENT_TIMESTAMP),
 ('CA_MIGRATE_PERSHING_RAA', 'AZURE_STORAGE_ACCOUNT_MID', 'raa', 'Seymur M.', CURRENT_TIMESTAMP),
@@ -187,8 +188,8 @@ VALUES
 ('CA_MIGRATE_PERSHING_RAA', 'START_LINE_RECORD_STRING', 'A', 'Seymur M.', CURRENT_TIMESTAMP),
 
 
+
 ('ASSETS_MIGRATE_PERSHING_RAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS/RAA', 'Seymur M.', CURRENT_TIMESTAMP),
-('ASSETS_MIGRATE_PERSHING_RAA', 'BULK_PATH',   '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS/RAA_bulk', 'Seymur M.', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_PERSHING_RAA', 'DB_NAME', 'ASSETS', 'Seymur M.', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_PERSHING_RAA', 'SCHEMA_NAME', 'PERSHING', 'Seymur M.', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_PERSHING_RAA', 'AZURE_STORAGE_ACCOUNT_MID', 'raa', 'Seymur M.', CURRENT_TIMESTAMP),

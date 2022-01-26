@@ -47,7 +47,7 @@ with DAG(
 
     add_bulk_id = BashOperator(
         task_id = 'ADD_BULK_ID_CA_MIGRATE_PERSHING_RAA',
-        bash_command = 'python /usr/local/spark/app/bulk_fixed_width_files.py --pipelinekey CA_MIGRATE_PERSHING_RAA',
+        bash_command = 'python /usr/local/spark/app/bulk_fixed_width_files_3.py --pipelinekey CA_MIGRATE_PERSHING_RAA',
         dag = dag
     )
 

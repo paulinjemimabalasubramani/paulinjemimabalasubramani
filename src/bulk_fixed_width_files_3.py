@@ -20,23 +20,22 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'CA_MIGRATE_PERSHING_RAA',
-        'source_path': r'C:\myworkdir\Shared\PERSHING\RAA',
-        'bulk_path': r'C:\myworkdir\Shared\PERSHING\RAA_bulk',
+        'pipelinekey': 'ASSETS_MIGRATE_PERSHING_RAA',
+        'source_path': r'C:\myworkdir\Shared\PERSHING-ASSETS\RAA',
         }
 
 
 
 # %% Import Libraries
 
-import os, sys, hashlib
+import os, sys, hashlib, tempfile, shutil
 
 class app: pass
 sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, clear_folder_contents
 
 
 
@@ -56,7 +55,9 @@ start_line_record_string = str(data_settings.start_line_record_string)
 start_line_pos_start = int(data_settings.start_line_record_position) - 1
 start_line_pos_end = start_line_pos_start + len(start_line_record_string)
 
-data_settings.target_path = data_settings.bulk_path
+data_settings.target_path = data_settings.app_data_path
+os.makedirs(data_settings.target_path, exist_ok=True)
+clear_folder_contents(folder_path=data_settings.target_path)
 
 
 
@@ -133,27 +134,29 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
 # %% Main function to iterate over all the files in source_path and add bulk_id
 
 @catch_error(logger)
-def iterate_over_all_fwf():
+def iterate_over_all_fwf(source_path:str):
     """
     Main function to iterate over all the files in source_path and add bulk_id
     """
-    logger.info({
-        'source_path': data_settings.source_path,
-        'target_path': data_settings.target_path,
-        })
-
-    os.makedirs(data_settings.target_path, exist_ok=True)
-
-    for root, dirs, files in os.walk(data_settings.source_path):
+    for root, dirs, files in os.walk(source_path):
         for file_name in files:
             source_file_path = os.path.join(root, file_name)
+            file_name_noext, file_ext = os.path.splitext(file_name)
+            if file_ext.lower() == '.zip':
+                with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
+                    extract_dir = tmpdir
+                    logger.info(f'Extracting {source_file_path} to {extract_dir}')
+                    shutil.unpack_archive(filename=source_file_path, extract_dir=extract_dir, format='zip')
+                    iterate_over_all_fwf(source_path=extract_dir)
+                continue
+
             target_file_path = os.path.join(data_settings.target_path, file_name + bulk_file_ext)
             logger.info(f'Processing {source_file_path}')
             process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path)
 
 
 
-iterate_over_all_fwf()
+iterate_over_all_fwf(source_path=data_settings.source_path)
 
 
 
