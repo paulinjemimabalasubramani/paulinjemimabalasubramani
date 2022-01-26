@@ -4,7 +4,7 @@ Library for common generic functions
 """
 
 # %% Import Libraries
-import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql
+import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, shutil
 
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
@@ -230,13 +230,42 @@ class Config:
 
 
 
+# %% Add PipelineConfiguration to Data Settings
+
+@catch_error()
+def add_PipelineConfiguration_to_data_settings(data_settings, pipeline_metadata_conf:dict, PipelineKey:str):
+    """
+    Add PipelineConfiguration to Data Settings
+    """
+    sqlstr = f"""SELECT *
+    FROM {pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_pipe_config']}
+    WHERE UPPER(PipelineKey) = '{PipelineKey.upper()}'
+    ;"""
+
+    with pymssql.connect(
+        server = pipeline_metadata_conf['sql_server'],
+        user = pipeline_metadata_conf['sql_id'],
+        password = pipeline_metadata_conf['sql_pass'],
+        database = pipeline_metadata_conf['sql_database'],
+        appname = sys.app.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            cursor.execute(sqlstr)
+            for row in cursor:
+                key, value = row['ConfigKey'].strip().lower(), row['ConfigValue'].strip()
+                if not hasattr(data_settings, key): # previous settings (CLI args and Environment Variables) takes precendene over SQL server config
+                    setattr(data_settings, key, value)
+
+
+
 # %% Get Data Settings
 
 @catch_error()
 def get_data_settings(logger=None):
     """
     Apply Data Settings from various environments
-    Order of Command: CLI args > Environmental Variables > SQL Server Settings
+    Order of Command: CLI args > Environmental Variables > SQL Server Settings (Pipeline Specific > Generic)
     """
     generic_pipelinekey = 'GENERIC'
     defaults = {
@@ -275,25 +304,8 @@ def get_data_settings(logger=None):
     pipeline_metadata_conf['sql_table_name_pipe_config'] = 'PipelineConfiguration'
     pipeline_metadata_conf['sql_table_name_pipe_instance'] = 'PipelineInstance'
 
-    sqlstr = f"""SELECT *
-    FROM {pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_pipe_config']}
-    WHERE UPPER(PipelineKey) in ('{generic_pipelinekey.upper()}', '{data_settings.pipelinekey.upper()}')
-    ;"""
-
-    with pymssql.connect(
-        server = pipeline_metadata_conf['sql_server'],
-        user = pipeline_metadata_conf['sql_id'],
-        password = pipeline_metadata_conf['sql_pass'],
-        database = pipeline_metadata_conf['sql_database'],
-        appname = sys.app.parent_name,
-        autocommit = True,
-        ) as conn:
-        with conn.cursor(as_dict=True) as cursor:
-            cursor.execute(sqlstr)
-            for row in cursor:
-                key, value = row['ConfigKey'].strip().lower(), row['ConfigValue'].strip()
-                if not hasattr(data_settings, key): # previous settings (CLI args and Environment Variables) takes precendene over SQL server config
-                    setattr(data_settings, key, value)
+    add_PipelineConfiguration_to_data_settings(data_settings=data_settings, pipeline_metadata_conf=pipeline_metadata_conf, PipelineKey=data_settings.pipelinekey)
+    add_PipelineConfiguration_to_data_settings(data_settings=data_settings, pipeline_metadata_conf=pipeline_metadata_conf, PipelineKey=generic_pipelinekey) # generic pipelinekeys have the lowest power.
 
     if hasattr(data_settings, 'db_name'):  data_settings.domain_name = data_settings.db_name.lower()
     if hasattr(data_settings, 'schema_name'): data_settings.schema_name = data_settings.schema_name.upper()
@@ -316,7 +328,9 @@ def get_data_settings(logger=None):
         data_settings.temporary_file_path = os.path.join(data_path, 'TEMP')
         data_settings.output_ddl_path = os.path.join(data_path, 'DDL')
         data_settings.output_log_path = os.path.join(data_path, 'logs')
+        data_settings.app_data_path = os.path.join(data_path, 'APPDATA')
 
+    data_settings.app_data_path = os.path.join(data_settings.app_data_path, data_settings.pipelinekey)
     os.makedirs(data_settings.temporary_file_path, exist_ok=True)
     return data_settings, cloud_file_hist_conf, pipeline_metadata_conf
 
@@ -827,6 +841,21 @@ def mark_execution_end():
     })
 
     finalize_new_pipeline_instance()
+
+
+
+# %% Utility function to clear folder contents - USE with Caution!
+
+@catch_error(logger)
+def clear_folder_contents(folder_path:str):
+    """
+    Utility function to clear folder contents - USE with Caution!
+    """
+    for root, dirs, files in os.walk(folder_path):
+        for f in files:
+            os.unlink(os.path.join(root, f))
+        for d in dirs:
+            shutil.rmtree(os.path.join(root, d))
 
 
 

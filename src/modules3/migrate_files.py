@@ -407,7 +407,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
                     selected_file_paths = [],
                     )
                 update_sql_zip_file_path(zip_file_path=zip_file_path)
-                continue
+            continue
 
         migrate_single_file(
             file_path = file_path,
