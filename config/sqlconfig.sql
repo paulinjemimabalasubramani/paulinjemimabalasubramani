@@ -35,7 +35,10 @@ VALUES
 
 ('ASSETS_AG_DATASOURCE_PERSHING_RAA', 'Assets', 'Pershing Assets', 'RAA', 'pershing', 'AG', 'Seymur M.', CURRENT_TIMESTAMP),
 
-('ASSETS_AG_DATASOURCE_ALBRIDGE_WFS', 'Assets', 'Albridge', 'WFS', 'assets_albridge', 'AG', 'Seymur M.', CURRENT_TIMESTAMP)
+('ASSETS_AG_DATASOURCE_ALBRIDGE_WFS', 'Assets', 'Albridge', 'WFS', 'assets_albridge', 'AG', 'Seymur M.', CURRENT_TIMESTAMP),
+
+('CA_AG_DATASOURCE_NBS', 'Client Account', 'NBS', '', 'csv', 'AG', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_AG_DATASOURCE_CLIENTODS', 'Client Account', 'ClientODS', '', 'csv', 'AG', 'Seymur M.', CURRENT_TIMESTAMP)
 
 ;
 
@@ -79,7 +82,10 @@ VALUES
 
 ('ASSETS_MIGRATE_PERSHING_RAA', 'outbound_migration', 'Pipeline to migrate ASSETS-Pershing files to Snowflake for RAA', 'ASSETS_AG_DATASOURCE_PERSHING_RAA', '', '0 13 * * *', '1', 'Seymur M.', CURRENT_TIMESTAMP),
 
-('ASSETS_MIGRATE_ALBRIDGE_WFS', 'outbound_migration', 'Pipeline to migrate Assets-Albridge files to Snowflake for WFS', 'ASSETS_AG_DATASOURCE_ALBRIDGE_WFS', '', '0 13 * * *', '1', 'Seymur M.', CURRENT_TIMESTAMP)
+('ASSETS_MIGRATE_ALBRIDGE_WFS', 'outbound_migration', 'Pipeline to migrate Assets-Albridge files to Snowflake for WFS', 'ASSETS_AG_DATASOURCE_ALBRIDGE_WFS', '', '0 13 * * *', '1', 'Seymur M.', CURRENT_TIMESTAMP),
+
+('CA_MIGRATE_NBS', 'outbound_migration', 'Pipeline to migrate CA-NBS files to Snowflake', 'CA_AG_DATASOURCE_NBS', '', '0 13 * * *', '1', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_CLIENTODS', 'outbound_migration', 'Pipeline to migrate CA-ClientODS files to Snowflake', 'CA_AG_DATASOURCE_CLIENTODS', '', '0 13 * * *', '1', 'Seymur M.', CURRENT_TIMESTAMP)
 
 ;
 
@@ -210,7 +216,23 @@ VALUES
 ('ASSETS_MIGRATE_ALBRIDGE_WFS', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/assets/albridge_schema/albridge_schema.csv', 'Seymur M.', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_ALBRIDGE_WFS', 'FIN_INST_ID', '63', 'Seymur M.', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_ALBRIDGE_WFS', 'DATE_FORMAT', '%Y%m%d', 'Seymur M.', CURRENT_TIMESTAMP),
-('ASSETS_MIGRATE_ALBRIDGE_WFS', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP)
+('ASSETS_MIGRATE_ALBRIDGE_WFS', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP),
+
+
+('CA_MIGRATE_NBS', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/NBS', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NBS', 'DB_NAME', 'CA', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NBS', 'SCHEMA_NAME', 'NBS', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NBS', 'FILE_HISTORY_START_DATE', '2022-01-01', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NBS', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NBS', 'IS_FULL_LOAD', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP),
+
+
+('CA_MIGRATE_CLIENTODS', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/CLIENTODS', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_CLIENTODS', 'DB_NAME', 'CA', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_CLIENTODS', 'SCHEMA_NAME', 'CLIENTODS', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_CLIENTODS', 'FILE_HISTORY_START_DATE', '2022-01-01', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_CLIENTODS', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'Seymur M.', CURRENT_TIMESTAMP),
+('CA_MIGRATE_CLIENTODS', 'IS_FULL_LOAD', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP)
 
 ;
 
