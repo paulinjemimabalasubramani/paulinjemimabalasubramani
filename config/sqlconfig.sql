@@ -245,7 +245,9 @@ VALUES
 
 
 
-select * from metadata.PipelineConfiguration;
+select * from metadata.PipelineConfiguration
+where PipelineKey = 'ASSETS_MIGRATE_DATASTORE_ALBRIDGE_WFS'
+;
 
 
 
@@ -264,3 +266,71 @@ ORDER BY p.UpdateTs DESC, p.PipelineId DESC
 
 
 
+
+
+
+
+
+select * from metadata.PrimaryKey;
+
+
+
+insert into metadata.PrimaryKey
+(	[RevisionSeq],
+	[DataSource],
+	[AssetSchema],
+	[AssetName],
+	[AssetUniqueKey],
+	[SystemPrimaryKey],
+	[BusinessKey],
+	[CreateTS],
+	[CreatedBy],
+	[UpdateTS],
+	[UpdatedBy],
+	[DomainName]
+)
+VALUES
+(
+1,
+'PERSHING',
+'PERSHING',
+'RAA_GLOBAL_MONEYLINE',
+'RAA_GLOBAL_MONEYLINE',
+'transaction_code,introducing_broker_dealer_ibd_number,account_number',
+'',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+'ASSETS'
+),
+(
+1,
+'PERSHING',
+'PERSHING',
+'RAA_GLOBAL_CUST_POS',
+'RAA_GLOBAL_CUST_POS',
+'transaction_code,introducing_broker_dealer_ibd_number,account_number,cusip_number',
+'',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+'ASSETS'
+),
+(
+1,
+'PERSHING',
+'PERSHING',
+'RAA_CUSTOMER_ACCT_INFO',
+'RAA_CUSTOMER_ACCT_INFO',
+'transaction_code,introducing_broker_dealer_ibd_number,account_number',
+'',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+'CA'
+)
+
+;
