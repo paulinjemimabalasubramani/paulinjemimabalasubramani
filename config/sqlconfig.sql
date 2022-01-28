@@ -245,6 +245,7 @@ VALUES
 
 
 
+select * from metadata.PipelineConfiguration;
 
 
 
