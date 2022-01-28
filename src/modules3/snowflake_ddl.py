@@ -48,6 +48,8 @@ class module_params_class:
     elt_stream_action_alias = 'elt_stream_action'
     nlines = '\n' * 3
 
+    sql_special_column_names = ['select', 'order', 'by', 'from', 'where', 'having']
+
     spark = None
     snowflake_connection = None
     ddl_file_per_step = defaultdict(str)
@@ -288,6 +290,19 @@ def create_or_replace_func(object_name:str):
 
 
 
+# %% Rename SQL Special Column Names:
+
+@catch_error(logger)
+def rspcol(column_name:str):
+    """
+    Rename SQL Special Column Names
+    """
+    if column_name.lower() in wid.sql_special_column_names:
+        column_name = column_name + '1'
+    return column_name
+
+
+
 # %% Create Step 1
 
 @catch_error(logger)
@@ -362,7 +377,7 @@ def step3(table_name:str, dtypes:OrderedDict):
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     column_list_src = '\n  ,'.join(
-        [f'SRC:"{column_name}"::string AS {column_name}' for column_name in dtypes] +
+        [f'SRC:"{column_name}"::string AS {rspcol(column_name)}' for column_name in dtypes] +
         [f'SRC:"{c}"::string AS {c}' for c in elt_audit_columns]
         )
 
@@ -397,11 +412,11 @@ def step4(table_name:str, dtypes:OrderedDict):
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
-    column_list = '\n  ,'.join([x for x in dtypes]+elt_audit_columns)
-    column_list_with_alias = '\n  ,'.join([f'{wid.src_alias}.{c}' for c in [x for x in dtypes]+elt_audit_columns])
+    column_list = '\n  ,'.join([rspcol(x) for x in dtypes]+elt_audit_columns)
+    column_list_with_alias = '\n  ,'.join([f'{wid.src_alias}.{c}' for c in [rspcol(x) for x in dtypes]+elt_audit_columns])
 
     pk_column_names = [IDKeyIndicator.lower()]
-    table_columns_ex_pk = [c for c in dtypes if c.lower() not in pk_column_names]
+    table_columns_ex_pk = [rspcol(c) for c in dtypes if c.lower() not in pk_column_names]
     if table_columns_ex_pk:
         hash_columns = "SHA1(CONCAT(\n       " + "\n      ,".join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in table_columns_ex_pk]) + "\n      ))"
     else:
@@ -454,7 +469,7 @@ def step5(table_name:str, dtypes:OrderedDict):
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     column_list_types = '\n  ,'.join(
-        [f'{column_name} {data_type}' for column_name, data_type in dtypes.items()] +
+        [f'{rspcol(column_name)} {data_type}' for column_name, data_type in dtypes.items()] +
         [f'{c} VARCHAR' for c in elt_audit_columns]
         )
 
@@ -492,7 +507,7 @@ def step6(table_name:str, dtypes:OrderedDict):
 
     stored_procedure = f'{SCHEMA_NAME}.USP_{table_name.upper()}_MERGE'
 
-    column_list = '\n    ,'.join([x for x in dtypes] + elt_audit_columns)
+    column_list = '\n    ,'.join([rspcol(x) for x in dtypes] + elt_audit_columns)
 
     def fval(column_name:str, data_type:str):
         if data_type.upper().startswith('variant'.upper()):
@@ -502,11 +517,11 @@ def step6(table_name:str, dtypes:OrderedDict):
         else:
             return column_name
 
-    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{c} = ' + fval(f'{wid.src_alias}.{c}', data_type) for c, data_type in dtypes.items()])
+    merge_update_columns     = '\n    ,'.join([f'{wid.tgt_alias}.{rspcol(c)} = ' + fval(f'{wid.src_alias}.{rspcol(c)}', data_type) for c, data_type in dtypes.items()])
     merge_update_elt_columns = '\n    ,'.join([f'{wid.tgt_alias}.{c} = {wid.src_alias}.{c}' for c in elt_audit_columns])
     merge_update_columns    += '\n    ,' + merge_update_elt_columns
 
-    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{c}', data_type) for c, data_type in dtypes.items()])
+    column_list_with_alias     = '\n    ,'.join([fval(f'{wid.src_alias}.{rspcol(c)}', data_type) for c, data_type in dtypes.items()])
     column_list_with_alias_elt = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in elt_audit_columns])
     column_list_with_alias    += '\n    ,' + column_list_with_alias_elt
 

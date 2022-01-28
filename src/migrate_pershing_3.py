@@ -142,7 +142,7 @@ def get_pershing_schema(schema_file_name:str):
             record_name = rowl['record_name'].upper().strip()
             conditional_changes = rowl['conditional_changes'].upper().strip()
 
-            if not field_name or (field_name in ['', 'not_used', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
+            if not field_name or (field_name in ['', 'not_used', 'filler', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
                 or ('-' not in position) or not record_name: continue
 
             if record_name not in record_names:
