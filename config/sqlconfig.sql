@@ -232,17 +232,22 @@ VALUES
 ('CA_MIGRATE_CLIENTODS', 'SCHEMA_NAME', 'CLIENTODS', 'Seymur M.', CURRENT_TIMESTAMP),
 ('CA_MIGRATE_CLIENTODS', 'FILE_HISTORY_START_DATE', '2022-01-01', 'Seymur M.', CURRENT_TIMESTAMP),
 ('CA_MIGRATE_CLIENTODS', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'Seymur M.', CURRENT_TIMESTAMP),
-('CA_MIGRATE_CLIENTODS', 'IS_FULL_LOAD', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP)
+('CA_MIGRATE_CLIENTODS', 'IS_FULL_LOAD', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP),
 
+
+
+
+
+('ASSETS_MIGRATE_DATASTORE_ALBRIDGE_RAA', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_DATASTORE_ALBRIDGE_WFS', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'Seymur M.', CURRENT_TIMESTAMP)
 ;
 
 
 
 
-
-
-SELECT * FROM metadata.PipelineConfiguration;
-
+select * from metadata.PipelineConfiguration
+where PipelineKey = 'ASSETS_MIGRATE_DATASTORE_ALBRIDGE_WFS'
+;
 
 
 
@@ -261,3 +266,71 @@ ORDER BY p.UpdateTs DESC, p.PipelineId DESC
 
 
 
+
+
+
+
+
+select * from metadata.PrimaryKey;
+
+
+
+insert into metadata.PrimaryKey
+(	[RevisionSeq],
+	[DataSource],
+	[AssetSchema],
+	[AssetName],
+	[AssetUniqueKey],
+	[SystemPrimaryKey],
+	[BusinessKey],
+	[CreateTS],
+	[CreatedBy],
+	[UpdateTS],
+	[UpdatedBy],
+	[DomainName]
+)
+VALUES
+(
+1,
+'PERSHING',
+'PERSHING',
+'RAA_GLOBAL_MONEYLINE',
+'RAA_GLOBAL_MONEYLINE',
+'transaction_code,introducing_broker_dealer_ibd_number,account_number',
+'',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+'ASSETS'
+),
+(
+1,
+'PERSHING',
+'PERSHING',
+'RAA_GLOBAL_CUST_POS',
+'RAA_GLOBAL_CUST_POS',
+'transaction_code,introducing_broker_dealer_ibd_number,account_number,cusip_number',
+'',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+'ASSETS'
+),
+(
+1,
+'PERSHING',
+'PERSHING',
+'RAA_CUSTOMER_ACCT_INFO',
+'RAA_CUSTOMER_ACCT_INFO',
+'transaction_code,introducing_broker_dealer_ibd_number,account_number',
+'',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+CURRENT_TIMESTAMP,
+'Seymur M.',
+'CA'
+)
+
+;

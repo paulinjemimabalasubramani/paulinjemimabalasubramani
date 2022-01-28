@@ -76,7 +76,9 @@ def get_key_column_names(table_name:str):
     """
     Get Primary Keys from SQL Server
     """
-    sqlstr_table_exists = f"""SELECT LOWER(SystemPrimaryKey) AS PK FROM {pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_primary_key']}
+    sql_pk_table = f"{pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_primary_key']}"
+
+    sqlstr_table_exists = f"""SELECT LOWER(SystemPrimaryKey) AS PK FROM {sql_pk_table}
         where SystemPrimaryKey IS NOT NULL
             AND UPPER(DomainName) = '{data_settings.domain_name.upper()}'
             AND UPPER(DataSource) = '{data_settings.schema_name.upper()}'
@@ -94,6 +96,9 @@ def get_key_column_names(table_name:str):
         with conn.cursor(as_dict=True) as cursor:
             cursor.execute(sqlstr_table_exists)
             key_column_names = [row['PK'].strip().lower() for row in cursor]
+
+    if not key_column_names:
+        logger.warning(f'No Key Columns found for table {table_name} in {sql_pk_table}')
 
     return sorted(key_column_names)
 
@@ -429,7 +434,13 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:
     """
     create_file_meta_table_if_not_exists(additional_file_meta_columns)
 
-    selected_file_paths = fn_select_files()
+    file_count, selected_file_paths = fn_select_files()
+
+    if file_count == 0:
+        logger.warning(f'No file found in the source_path: {data_settings.source_path}')
+    else:
+        logger.info(f'Total of {file_count} files found in {data_settings.source_path}')
+
     if not selected_file_paths:
         logger.info('No Selected Files to Migrate')
         return

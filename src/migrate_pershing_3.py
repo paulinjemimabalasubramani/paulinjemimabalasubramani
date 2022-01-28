@@ -42,7 +42,7 @@ sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
 from modules3.spark_functions import add_id_key, create_spark, remove_column_spaces, add_elt_columns, column_regex, read_text
-from modules3.migrate_files import migrate_all_files, default_table_dtypes, add_firm_to_table_name
+from modules3.migrate_files import migrate_all_files, default_table_dtypes, add_firm_to_table_name, get_key_column_names
 
 from collections import defaultdict
 from datetime import datetime
@@ -76,8 +76,6 @@ schema_trailer_str = 'TRAILER'
 bulk_id_header = 'HEADER'.ljust(total_hash_length)
 bulk_id_trailer = 'TRAILER'.ljust(total_hash_length)
 
-master_groupBy = [hash_field_name]
-
 pershing_strftime = r'%m/%d/%Y %H:%M:%S' # http://strftime.org/
 
 data_settings.source_path = data_settings.app_data_path # Use files from app_data_path
@@ -99,11 +97,12 @@ def select_files():
     """
     Initial Selection of candidate files potentially to be ingested
     """
-    source_path = data_settings.source_path
     selected_file_paths = []
 
-    for root, dirs, files in os.walk(source_path):
+    file_count = 0
+    for root, dirs, files in os.walk(data_settings.source_path):
         for file_name in files:
+            file_count += 1
             file_path = os.path.join(root, file_name)
             file_name_noext, file_ext = os.path.splitext(file_name)
 
@@ -112,7 +111,7 @@ def select_files():
             selected_file_paths.append(file_path)
 
     selected_file_paths = sorted(selected_file_paths)
-    return selected_file_paths
+    return file_count, selected_file_paths
 
 
 
@@ -142,7 +141,7 @@ def get_pershing_schema(schema_file_name:str):
             record_name = rowl['record_name'].upper().strip()
             conditional_changes = rowl['conditional_changes'].upper().strip()
 
-            if not field_name or (field_name in ['', 'not_used', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
+            if not field_name or (field_name in ['', 'not_used', 'filler', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
                 or ('-' not in position) or not record_name: continue
 
             if record_name not in record_names:
@@ -332,7 +331,7 @@ def union_tables_per_record(tables):
 # %% Combine Rows into Array
 
 @catch_error(logger)
-def combine_rows_into_array(tables):
+def combine_rows_into_array(tables, key_column_names:list):
     """
     Utility function to combine rows into Array (so that to have one column of json data per record name in the final main table)
     """
@@ -340,7 +339,7 @@ def combine_rows_into_array(tables):
         if record_name not in [schema_header_str, schema_trailer_str]:
             tables[record_name] = (tables[record_name]
                 .withColumn('all_columns', F.struct(tables[record_name].columns))
-                .groupBy(master_groupBy)
+                .groupBy(key_column_names)
                 .agg(F.collect_list('all_columns').alias(f'record_{record_name}'))
                 )
 
@@ -351,7 +350,7 @@ def combine_rows_into_array(tables):
 # %% Join All Tables
 
 @catch_error(logger)
-def join_all_tables(tables, file_meta:dict):
+def join_all_tables(tables, file_meta:dict, key_column_names:list):
     """
     Join all sub-tables that were split by record_name and conditional_changes
     """
@@ -360,7 +359,7 @@ def join_all_tables(tables, file_meta:dict):
     for record_name, table in tables.items():
         if record_name not in [schema_header_str, schema_trailer_str]:
             if joined_tables:
-                joined_tables = joined_tables.join(table, on=master_groupBy, how='full')
+                joined_tables = joined_tables.join(table, on=key_column_names, how='full')
             else:
                 joined_tables = table
 
@@ -376,7 +375,7 @@ def join_all_tables(tables, file_meta:dict):
 # %% Create Table from Fixed-With Table File
 
 @catch_error(logger)
-def create_table_from_fwt_file(file_meta:dict):
+def create_table_from_fwt_file(file_meta:dict, key_column_names:list):
     """
     Create Table from Fixed-With Table File. Convery FWT to nested Spark table.
     """
@@ -397,9 +396,9 @@ def create_table_from_fwt_file(file_meta:dict):
 
     tables = generate_tables_from_fwt(text_file=text_file, schema=schema, table_name=table_name)
     tables = union_tables_per_record(tables=tables)
-    tables = combine_rows_into_array(tables=tables)
+    tables = combine_rows_into_array(tables=tables, key_column_names=key_column_names)
 
-    table = join_all_tables(tables=tables, file_meta=file_meta)
+    table = join_all_tables(tables=tables, file_meta=file_meta, key_column_names=key_column_names)
     return table
 
 
@@ -497,12 +496,15 @@ def process_pershing_file(file_meta):
     """
     Main Processing of single Pershing file
     """
-    table = create_table_from_fwt_file(file_meta=file_meta)
+    key_column_names = get_key_column_names(table_name=file_meta['table_name'])
+    if not key_column_names: key_column_names = [hash_field_name]
+
+    table = create_table_from_fwt_file(file_meta=file_meta, key_column_names=key_column_names)
     if not table: return
 
     table = remove_column_spaces(table=table)
 
-    table = add_id_key(table=table, key_column_names=master_groupBy)
+    table = add_id_key(table=table, key_column_names=key_column_names)
 
     table = add_elt_columns(
         table = table,

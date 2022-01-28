@@ -75,11 +75,12 @@ def select_files():
     """
     Initial Selection of candidate files potentially to be ingested
     """
-    source_path = data_settings.source_path
     selected_file_paths = []
 
-    for root, dirs, files in os.walk(source_path):
+    file_count = 0
+    for root, dirs, files in os.walk(data_settings.source_path):
         for file_name in files:
+            file_count += 1
             file_path = os.path.join(root, file_name)
             file_name_noext, file_ext = os.path.splitext(file_name)
 
@@ -102,7 +103,7 @@ def select_files():
 
     selected_file_paths = sorted(selected_file_paths, key=lambda c: (c[1], c[0]))
     selected_file_paths = [c[0] for c in selected_file_paths]
-    return selected_file_paths
+    return file_count, selected_file_paths
 
 
 
