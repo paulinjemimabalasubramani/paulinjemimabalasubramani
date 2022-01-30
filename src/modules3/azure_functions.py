@@ -25,6 +25,7 @@ metadata_folder_name = 'metadata'
 domain_map = { # To keep legacy folder structure in Azure and SQL code in Snowflake
     'FP': 'financial_professional',
     'CA': 'client_account',
+    'CLIENTACCOUNT': 'client_account',
     'ASSETS': 'customer_assets',
     }
 
