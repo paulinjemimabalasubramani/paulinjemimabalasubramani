@@ -72,6 +72,17 @@ def is_start_line(line:str):
 
 
 
+# %% Add Prefix to Line
+
+@catch_error(logger)
+def add_prefix(prefix:str, line:str):
+    """
+    Add Prefix to Line
+    """
+    return prefix + ' ' + line
+
+
+
 # %% Convert lines to HASH value and write them to file
 
 @catch_error(logger)
@@ -87,7 +98,7 @@ def lines_to_hex(ftarget, lines:list):
     hex = hash.hexdigest()
 
     for line in lines:
-        ftarget.write(hex + ' ' + line)
+        ftarget.write(add_prefix(prefix=hex, line=line))
 
 
 
@@ -98,7 +109,7 @@ def add_custom_txt_line(ftarget, line:str, txt:str):
     """
     Add Header or Trailer line
     """
-    ftarget.write(txt.ljust(total_hash_length) + ' ' + line)
+    ftarget.write(add_prefix(prefix=txt.ljust(total_hash_length), line=line))
 
 
 
