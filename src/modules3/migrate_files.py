@@ -42,6 +42,7 @@ cloud_file_history_columns = [
     ('copy_command', 'varchar(2500) NULL'), # ' '.join(copy_commands)
     ('zip_file_fully_ingested', 'bit NULL'), # False if zip_file_path else True
     ('reingest_file', 'bit NULL'), # False
+    ('key_column_names', 'varchar(2500) NULL'), # file_meta['key_column_names']
     ]
 
 
@@ -332,8 +333,17 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         return
 
     copy_commands = []
-    for table_name, table in table_list.items():
+    table_names = []
+    key_column_names_list = []
+    for table_name, (table, key_column_names) in table_list.items():
         logger.info(f'Write Table "{table_name}" in File: {file_path}')
+        table_names.append(table_name)
+
+        if key_column_names:
+            key_column_names_list.append(','.join(key_column_names))
+        else: 
+            key_column_names_list.append('No Primary Key')
+
         setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.storage_account_name) # for data
         if not save_adls_gen2(table=table, table_name=table_name, is_metadata=False): continue
 
@@ -342,6 +352,11 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
 
     file_meta['copy_command'] = ' '.join(copy_commands)
     file_meta['total_seconds'] = (datetime.now() - start_total_seconds).seconds
+
+    file_meta['table_name'] = ','.join(table_names)
+    file_meta['key_column_names'] = ','.join(key_column_names_list)
+    if len(table_names)>1:
+        file_meta['key_column_names'] = ','.join([f'({table_names[i]}: {key_column_names_list[i]})' for i in range(len(table_names))])
 
     write_file_meta_to_history(file_meta=file_meta, additional_file_meta_columns=additional_file_meta_columns)
 

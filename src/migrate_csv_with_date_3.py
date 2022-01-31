@@ -6,7 +6,7 @@ Generic Code to Migrate any CSV type files with date info in file name to ADLS G
 
 # %% Parse Arguments
 
-if True: # Set to False for Debugging
+if False: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
@@ -164,7 +164,7 @@ def process_csv_file(file_meta):
 
     if is_pc: table.show(5)
 
-    return {file_meta['table_name']: table}
+    return {file_meta['table_name']: (table, key_column_names)}
 
 
 

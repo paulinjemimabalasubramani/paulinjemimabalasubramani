@@ -135,7 +135,7 @@ def process_csv_file(file_meta):
 
     if is_pc: table.show(5)
 
-    return {file_meta['table_name']: table}
+    return {file_meta['table_name']: (table, key_column_names)}
 
 
 
