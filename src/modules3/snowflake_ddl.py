@@ -251,16 +251,23 @@ def trigger_snowpipe(table_name:str):
             '{ingest_data['EXECUTION_DATE']}',
             '{ingest_data['FULL_OBJECT_NAME']}',
             '{ingest_data['INGEST_SCHEMA']}',
-            '{ingest_data['ELT_STAGE_SCHEMA']}'
+            '{ingest_data['ELT_STAGE_SCHEMA']}',
+            '{ingest_data['INGEST_STAGE_NAME']}',
+            '{data_settings.elt_process_id}'
         );"""
 
     cur = wid.snowflake_connection.cursor()
     # cur.execute(f'TRUNCATE TABLE {variant_table_name};')
     cur.execute_async(sqlstr_call_usp_ingest)
     query_id = cur.sfqid
-    cur.close()
 
-    if is_pc: print(sqlstr_call_usp_ingest)
+    if is_pc:
+        print('\n' + sqlstr_call_usp_ingest)
+        cur.get_results_from_sfqid(query_id)
+        results = cur.fetchall()
+        print(f'\n\nQuery Results:\n{results[0]}\n\n')
+
+    cur.close()
 
     log_data = {
         'call_usp_ingest': sqlstr_call_usp_ingest,
