@@ -303,6 +303,8 @@ def get_data_settings(logger=None):
     pipeline_metadata_conf['sql_table_name_primary_key'] = 'PrimaryKey'
     pipeline_metadata_conf['sql_table_name_pipe_config'] = 'PipelineConfiguration'
     pipeline_metadata_conf['sql_table_name_pipe_instance'] = 'PipelineInstance'
+    pipeline_metadata_conf['sql_table_name_pipeline'] = 'Pipeline'
+    pipeline_metadata_conf['sql_table_name_datasource'] = 'DataSource'
 
     add_PipelineConfiguration_to_data_settings(data_settings=data_settings, pipeline_metadata_conf=pipeline_metadata_conf, PipelineKey=data_settings.pipelinekey)
     add_PipelineConfiguration_to_data_settings(data_settings=data_settings, pipeline_metadata_conf=pipeline_metadata_conf, PipelineKey=generic_pipelinekey) # generic pipelinekeys have the lowest power.
@@ -573,10 +575,12 @@ def get_pipeline_info():
         return
 
     pipelinekey = data_settings.pipelinekey
+    sql_pipeline_table = f"{pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_pipeline']}"
+    sql_datasource_table = f"{pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_datasource']}"
 
     sqlstr = f"""SELECT TOP 1 p.*, ds.Category, ds.SubCategory, ds.Firm, ds.DataSourceType, ds.DataProvider
-FROM metadata.Pipeline p
-    LEFT JOIN metadata.DataSource ds ON p.DataSourceKey = ds.DataSourceKey
+FROM {sql_pipeline_table} p
+    LEFT JOIN {sql_datasource_table} ds ON p.DataSourceKey = ds.DataSourceKey
 WHERE p.IsActive = 1
     and p.PipelineKey = '{pipelinekey}'
 ORDER BY p.UpdateTs DESC, p.PipelineId DESC
