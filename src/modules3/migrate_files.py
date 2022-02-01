@@ -78,13 +78,25 @@ def get_key_column_names(table_name:str):
     Get Primary Keys from SQL Server
     """
     sql_pk_table = f"{pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_primary_key']}"
+    sql_ds_table = f"{pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_datasource']}"
 
-    sqlstr_table_exists = f"""SELECT LOWER(SystemPrimaryKey) AS PK FROM {sql_pk_table}
-        where SystemPrimaryKey IS NOT NULL
-            AND UPPER(DomainName) = '{data_settings.domain_name.upper()}'
-            AND UPPER(DataSource) = '{data_settings.schema_name.upper()}'
-            AND UPPER(AssetUniqueKey) = '{table_name.upper()}'
+    firm_name = data_settings.pipeline_firm.upper() + '_' if data_settings.pipeline_firm else ''
+    datasourcekey = data_settings.pipeline_datasourcekey.upper()
+
+    sqlstr_get_pk = f"""SELECT LOWER(mpk.SystemPrimaryKey) AS PK
+FROM {sql_ds_table} mds 
+    LEFT JOIN {sql_pk_table} mpk ON  UPPER(mds.DataSourceUniqueKey) = UPPER(mpk.DataSourceUniqueKey)
+WHERE
+    mpk.DataSourceUniqueKey IS NOT NULL
+    AND mpk.SystemPrimaryKey IS NOT NULL
+    AND UPPER(mds.DataSourceKey) = '{datasourcekey}'
+    AND (UPPER(mpk.AssetUniqueKey) = '{table_name.upper()}'
+        OR '{firm_name}'+UPPER(mpk.AssetUniqueKey) = '{table_name.upper()}')
+    ;
     """
+
+    if is_pc:
+        print(f'\n\n{sqlstr_get_pk}\n\n')
 
     with pymssql.connect(
         server = pipeline_metadata_conf['sql_server'],
@@ -95,7 +107,7 @@ def get_key_column_names(table_name:str):
         autocommit = True,
         ) as conn:
         with conn.cursor(as_dict=True) as cursor:
-            cursor.execute(sqlstr_table_exists)
+            cursor.execute(sqlstr_get_pk)
             key_column_names = [row['PK'].strip().lower() for row in cursor]
 
     if not key_column_names:
