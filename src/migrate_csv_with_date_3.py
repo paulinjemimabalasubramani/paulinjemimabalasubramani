@@ -6,7 +6,7 @@ Generic Code to Migrate any CSV type files with date info in file name to ADLS G
 
 # %% Parse Arguments
 
-if True: # Set to False for Debugging
+if False: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
@@ -182,9 +182,7 @@ def get_dtypes(table, table_name:str):
 
 # %% Iterate over all the files in all the firms and process them.
 
-additional_file_meta_columns = [
-    #('file_date', 'date NULL'),
-    ]
+additional_file_meta_columns = []
 
 migrate_all_files(
     spark = spark,

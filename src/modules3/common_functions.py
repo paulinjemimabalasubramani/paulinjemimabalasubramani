@@ -863,6 +863,18 @@ def clear_folder_contents(folder_path:str):
 
 
 
+# %% Utility function to convert JSON data to Spark RDD
+
+@catch_error(logger)
+def json_to_spark(spark, json_data):
+    """
+    Utility function to convert JSON data to Spark RDD
+    """
+    json_string = json.dumps(json_data)
+    return spark.read.json(spark.sparkContext.parallelize([json_string]))
+
+
+
 # %%
 
 

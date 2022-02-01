@@ -15,7 +15,8 @@ Firm varchar(100),
 DataSourceType varchar(100),
 DataProvider varchar(1000),
 UpdatedBy varchar(1000),
-UpdateTS datetime
+UpdateTS datetime,
+DataSourceUniqueKey varchar(1000)
 );
 
 
@@ -45,6 +46,8 @@ VALUES
 
 
 SELECT * FROM metadata.DataSource;
+
+
 
 
 
@@ -287,50 +290,25 @@ insert into metadata.PrimaryKey
 	[CreatedBy],
 	[UpdateTS],
 	[UpdatedBy],
-	[DomainName]
+	[DomainName],
+	[DataSourceUniqueKey]
+
 )
 VALUES
 (
 1,
-'PERSHING',
-'PERSHING',
-'RAA_GLOBAL_MONEYLINE',
-'RAA_GLOBAL_MONEYLINE',
-'transaction_code,introducing_broker_dealer_ibd_number,account_number',
+'METRICS',
+'ASSETS',
+'ACCOUNT',
+'ACCOUNT',
+'AccountId',
 '',
 CURRENT_TIMESTAMP,
 'Seymur M.',
 CURRENT_TIMESTAMP,
 'Seymur M.',
-'ASSETS'
-),
-(
-1,
-'PERSHING',
-'PERSHING',
-'RAA_GLOBAL_CUST_POS',
-'RAA_GLOBAL_CUST_POS',
-'transaction_code,introducing_broker_dealer_ibd_number,account_number,cusip_number',
-'',
-CURRENT_TIMESTAMP,
-'Seymur M.',
-CURRENT_TIMESTAMP,
-'Seymur M.',
-'ASSETS'
-),
-(
-1,
-'PERSHING',
-'PERSHING',
-'RAA_CUSTOMER_ACCT_INFO',
-'RAA_CUSTOMER_ACCT_INFO',
-'transaction_code,introducing_broker_dealer_ibd_number,account_number',
-'',
-CURRENT_TIMESTAMP,
-'Seymur M.',
-CURRENT_TIMESTAMP,
-'Seymur M.',
-'CA'
+'METRICS',
+'METRICS.ASSETS'
 )
 
 ;
