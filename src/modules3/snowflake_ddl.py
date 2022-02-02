@@ -8,7 +8,7 @@ import os
 from functools import wraps
 from collections import defaultdict, OrderedDict
 
-from .common_functions import logger, catch_error, data_settings, execution_date, get_secrets, EXECUTION_DATE_str, to_sql_value, is_pc
+from .common_functions import logger, catch_error, data_settings, execution_date_start, get_secrets, EXECUTION_DATE_str, to_sql_value, is_pc
 from .spark_functions import elt_audit_columns, PARTITION, IDKeyIndicator
 from .azure_functions import post_log_data
 
@@ -187,21 +187,23 @@ def create_ingest_data(table_name:str):
     """
     Create Ingest Data
     """
-    layer = 'RAW'
-    SCHEMA_NAME, sqlstr = base_sqlstr(layer=layer)
+    VARIANT_SCHEMA_NAME, _ = base_sqlstr(layer='RAW')
+    NONVARIANT_SCHEMA_NAME, _ = base_sqlstr(layer='')
 
     INGEST_STAGE_NAME = f'@{wid.elt_stage_schema}.{data_settings.azure_storage_account_mid.upper()}_{data_settings.domain_name.upper()}_DATALAKE/{data_settings.schema_name.upper()}/{table_name.lower()}/{PARTITION}/'
 
-    COPY_COMMAND = f"COPY INTO {SCHEMA_NAME}.{table_name.upper()}{wid.variant_label} FROM '{INGEST_STAGE_NAME}' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"
+    VARIANT_TABLE_NAME = f"{VARIANT_SCHEMA_NAME}.{table_name.upper()}{wid.variant_label}".upper()
+    NONVARIANT_TABLE_NAME = f"{NONVARIANT_SCHEMA_NAME}.{table_name.upper()}".upper()
+
+    COPY_COMMAND = f"COPY INTO {VARIANT_TABLE_NAME} FROM '{INGEST_STAGE_NAME}' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"
 
     ingest_data = {
-        'INGEST_STAGE_NAME': INGEST_STAGE_NAME, 
-        'EXECUTION_DATE': execution_date,
-        'FULL_OBJECT_NAME': table_name.upper(),
         'COPY_COMMAND': COPY_COMMAND,
-        'INGEST_SCHEMA': SCHEMA_NAME,
-        'SOURCE_SYSTEM': f'{data_settings.domain_name.upper()}.{data_settings.schema_name.upper()}',
-        'ELT_STAGE_SCHEMA': wid.elt_stage_schema,
+        'VARIANT_TABLE_NAME': VARIANT_TABLE_NAME,
+        'NONVARIANT_TABLE_NAME': NONVARIANT_TABLE_NAME,
+        'DATABASE_NAME': data_settings.domain_name.upper(),
+        'EXECUTION_DATE': to_sql_value(execution_date_start),
+        'INGEST_STAGE_NAME': INGEST_STAGE_NAME,
     }
 
     log_data = {
@@ -225,41 +227,28 @@ def trigger_snowpipe(table_name:str):
     """
     ingest_data = create_ingest_data(table_name=table_name)
     copy_command = ingest_data['COPY_COMMAND']
-    variant_table_name = f"{ingest_data['INGEST_SCHEMA']}.{ingest_data['FULL_OBJECT_NAME']}{wid.variant_label}"
-
-    '''
-    logger.info(f'Save Ingest Data: {copy_command}')
-    json_string = json.dumps(ingest_data)
-    save_adls_gen2(
-        table = wid.spark.read.json(wid.spark.sparkContext.parallelize([json_string])).coalesce(1),
-        table_name = f'{data_settings.pipelinekey.upper()}_INGEST_PIPE',
-        is_metadata = True,
-        file_format = 'parquet'
-    )
-
-    logger.info(f'Triggering Snowpipe: {sqlstr}')
-    sqlstr = f"""{use_role_warehouse_database()}
-        ALTER PIPE {wid.elt_stage_schema}.{data_settings.pipelinekey.upper()}_INGEST_PIPE REFRESH;
-    """
-    exec_status = wid.snowflake_connection.execute_string(sql_text=sqlstr)
-
-    '''
 
     sqlstr_call_usp_ingest = f"""CALL {wid.elt_stage_schema}.USP_INGEST(
             '{to_sql_value(copy_command)}',
-            '{ingest_data['SOURCE_SYSTEM']}',
+            '{ingest_data['VARIANT_TABLE_NAME']}',
+            '{ingest_data['NONVARIANT_TABLE_NAME']}',
+            '{ingest_data['DATABASE_NAME']}',
             '{ingest_data['EXECUTION_DATE']}',
-            '{ingest_data['FULL_OBJECT_NAME']}',
-            '{ingest_data['INGEST_SCHEMA']}',
-            '{ingest_data['ELT_STAGE_SCHEMA']}',
             '{ingest_data['INGEST_STAGE_NAME']}',
             '{data_settings.elt_process_id}'
         );"""
 
     cur = wid.snowflake_connection.cursor()
-    # cur.execute(f'TRUNCATE TABLE {variant_table_name};')
     cur.execute_async(sqlstr_call_usp_ingest)
     query_id = cur.sfqid
+
+    log_data = {
+        'call_usp_ingest': sqlstr_call_usp_ingest,
+        'copy_command': copy_command,
+        'table_name': ingest_data['VARIANT_TABLE_NAME'],
+        'query_id': query_id,
+    }
+    logger.info(log_data)
 
     if is_pc:
         print('\n' + sqlstr_call_usp_ingest)
@@ -269,14 +258,6 @@ def trigger_snowpipe(table_name:str):
 
     cur.close()
 
-    log_data = {
-        'call_usp_ingest': sqlstr_call_usp_ingest,
-        'copy_command': copy_command,
-        'table_name': variant_table_name,
-        'query_id': query_id,
-    }
-
-    logger.info(log_data)
     post_log_data(log_data=log_data, log_type='AirflowSnowflakeRequests', logger=logger)
     return copy_command
 
@@ -508,6 +489,11 @@ def step6(table_name:str, dtypes:OrderedDict):
     layer = ''
     SCHEMA_NAME, sqlstr = base_sqlstr(layer=layer)
 
+    VARIANT_SCHEMA_NAME, _ = base_sqlstr(layer='RAW')
+    NONVARIANT_SCHEMA_NAME, _ = base_sqlstr(layer='')
+    VARIANT_TABLE_NAME = f"{VARIANT_SCHEMA_NAME}.{table_name.upper()}{wid.variant_label}".upper()
+    NONVARIANT_TABLE_NAME = f"{NONVARIANT_SCHEMA_NAME}.{table_name.upper()}".upper()
+
     ddl_file_per_step_key = (SCHEMA_NAME, f'V0.0.1__Create_{SCHEMA_NAME}_Seed')
     if not wid.ddl_file_per_step[ddl_file_per_step_key]:
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
@@ -575,11 +561,13 @@ THEN
     ,{column_list_with_alias}
     ,{wid.src_alias}.{wid.hash_column_name}
   );
-`""" + """
+`;
+
+var soft_delete_command = "CALL ELT_STAGE.USP_SOFT_DELETE_RAW('{VARIANT_TABLE_NAME}', '{NONVARIANT_TABLE_NAME}');";
+""" + """
 try {
-    snowflake.execute (
-        {sqlText: sql_command}
-        );
+    snowflake.execute({sqlText: sql_command});
+    snowflake.execute({sqlText: soft_delete_command});
     return "Succeeded.";
     }
 catch (err)  {

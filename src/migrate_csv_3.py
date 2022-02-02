@@ -153,9 +153,7 @@ def get_dtypes(table, table_name:str):
 
 # %% Iterate over all the files in all the firms and process them.
 
-additional_file_meta_columns = [
-    #('file_date', 'date NULL'),
-    ]
+additional_file_meta_columns = []
 
 migrate_all_files(
     spark = spark,
