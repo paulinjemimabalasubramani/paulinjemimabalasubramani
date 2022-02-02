@@ -127,34 +127,29 @@ try {
         FROM `+VARIANT_TABLE+` V
         WHERE V.SRC:elt_delete_ind = 0
             AND V.SRC:elt_load_type = 'FULL'
-        ;
     `;
-    var row_count_execute = snowflake.execute({sqlText: get_row_count})
-    row_count_execute.next()
-
-    if (row_count_execute.getColumnValue('ROWCOUNT') > 0) {
 	
-        var sql_update = `
-			UPDATE `+NONVARIANT_TABLE+` T
-			SET T.ELT_DELETE_IND = 1
-			FROM (
-				SELECT NV.ELT_PRIMARY_KEY AS ELT_PRIMARY_KEY
-				FROM `+NONVARIANT_TABLE+` NV
-					LEFT JOIN `+VARIANT_TABLE+` V
-						ON NV.ELT_PRIMARY_KEY = V.SRC:elt_primary_key
-				WHERE V.SRC:elt_primary_key IS NULL
-                    AND NV.ELT_DELETE_IND != 1
-			) D
-			WHERE T.ELT_PRIMARY_KEY = D.ELT_PRIMARY_KEY
-			;
-        `;
-		var sql_update_execute = snowflake.execute({sqlText: sql_update})
-		sql_update_execute.next()
+	var sql_update = `
+		UPDATE `+NONVARIANT_TABLE+` T
+		SET T.ELT_DELETE_IND = 1
+		FROM (
+			SELECT NV.ELT_PRIMARY_KEY AS ELT_PRIMARY_KEY
+			FROM `+NONVARIANT_TABLE+` NV
+				LEFT JOIN `+VARIANT_TABLE+` V
+					ON NV.ELT_PRIMARY_KEY = V.SRC:elt_primary_key
+			WHERE V.SRC:elt_primary_key IS NULL
+				AND NV.ELT_DELETE_IND != 1
+		) D,
+		(`+get_row_count+`) N
+		WHERE T.ELT_PRIMARY_KEY = D.ELT_PRIMARY_KEY
+			AND N.ROWCOUNT>0
+		;
+	`;
+	var sql_update_execute = snowflake.execute({sqlText: sql_update})
+	sql_update_execute.next()
 
-        return "Number of Rows updated: " + sql_update_execute.getColumnValue(1).toString();
-    }
-    return "No action. No Full Data in Variant table";
-    
+	return "Number of Rows updated: " + sql_update_execute.getColumnValue(1).toString();
+
 }
 
 catch (err) {
