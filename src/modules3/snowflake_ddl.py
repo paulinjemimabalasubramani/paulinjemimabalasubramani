@@ -518,6 +518,11 @@ def step6(table_name:str, dtypes:OrderedDict):
     column_list_with_alias_elt = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in elt_audit_columns])
     column_list_with_alias    += '\n    ,' + column_list_with_alias_elt
 
+    fn_fix_quote = """
+function fixQuote(sql) { return sql.replace(/'/g, "''") }
+//'
+"""
+
     step = f"""
 CREATE OR REPLACE PROCEDURE {stored_procedure}()
 RETURNS STRING
@@ -525,6 +530,8 @@ LANGUAGE JAVASCRIPT
 EXECUTE AS CALLER
 AS 
 $$
+{fn_fix_quote}
+
 var sql_command = 
 `
 MERGE INTO {SCHEMA_NAME}.{table_name.upper()} {wid.tgt_alias}
@@ -564,10 +571,16 @@ THEN
 `;
 
 var soft_delete_command = "CALL ELT_STAGE.USP_SOFT_DELETE_RAW('{VARIANT_TABLE_NAME}', '{NONVARIANT_TABLE_NAME}');";
+
+var usp_ingestion_command = "CALL ELT_STAGE.USP_INGESTION_RESULT('{stored_procedure}', ARRAY_CONSTRUCT('"+fixQuote(sql_command)+"', '"+fixQuote(soft_delete_command)+"'));";
+
 """ + """
 try {
-    snowflake.execute({sqlText: sql_command});
-    snowflake.execute({sqlText: soft_delete_command});
+    execObj = snowflake.execute({sqlText: usp_ingestion_command});
+    if (execObj.getRowCount()>0) {
+        execObj.next();
+        return execObj.getColumnValueAsString(1);
+        }
     return "Succeeded.";
     }
 catch (err)  {
