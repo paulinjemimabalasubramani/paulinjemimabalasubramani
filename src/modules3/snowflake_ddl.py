@@ -9,7 +9,7 @@ from functools import wraps
 from collections import defaultdict, OrderedDict
 
 from .common_functions import logger, catch_error, data_settings, execution_date_start, get_secrets, EXECUTION_DATE_str, to_sql_value, is_pc
-from .spark_functions import elt_audit_columns, PARTITION, IDKeyIndicator
+from .spark_functions import ELT_DELETE_IND_str, elt_audit_columns, PARTITION, IDKeyIndicator
 from .azure_functions import post_log_data
 
 from snowflake.connector import connect as snowflake_connect
@@ -457,7 +457,7 @@ def step5(table_name:str, dtypes:OrderedDict):
         wid.ddl_file_per_step[ddl_file_per_step_key] = f'USE SCHEMA {SCHEMA_NAME};' + wid.nlines
 
     column_list_types = '\n  ,'.join(
-        [f'{rspcol(column_name)} {data_type}' for column_name, data_type in dtypes.items()] +
+        [f'{rspcol(column_name)} {data_type.upper()}' for column_name, data_type in dtypes.items()] +
         [f'{c} VARCHAR' for c in elt_audit_columns]
         )
 
@@ -518,6 +518,11 @@ def step6(table_name:str, dtypes:OrderedDict):
     column_list_with_alias_elt = '\n    ,'.join([f'{wid.src_alias}.{c}' for c in elt_audit_columns])
     column_list_with_alias    += '\n    ,' + column_list_with_alias_elt
 
+    fn_fix_quote = """
+function fixQuote(sql) { return sql.replace(/'/g, "''") }
+//'
+"""
+
     step = f"""
 CREATE OR REPLACE PROCEDURE {stored_procedure}()
 RETURNS STRING
@@ -525,6 +530,8 @@ LANGUAGE JAVASCRIPT
 EXECUTE AS CALLER
 AS 
 $$
+{fn_fix_quote}
+
 var sql_command = 
 `
 MERGE INTO {SCHEMA_NAME}.{table_name.upper()} {wid.tgt_alias}
@@ -536,7 +543,7 @@ ON (
 TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) = TRIM(COALESCE({wid.tgt_alias}.{wid.integration_id},'N/A'))
 )
 WHEN MATCHED
-AND TRIM(COALESCE({wid.src_alias}.{wid.hash_column_name},'N/A')) != TRIM(COALESCE({wid.tgt_alias}.{wid.hash_column_name},'N/A'))
+AND (TRIM(COALESCE({wid.src_alias}.{wid.hash_column_name},'N/A')) != TRIM(COALESCE({wid.tgt_alias}.{wid.hash_column_name},'N/A')) OR {wid.tgt_alias}.{ELT_DELETE_IND_str}=1)
 AND TRIM(COALESCE({wid.src_alias}.{wid.integration_id},'N/A')) != 'N/A'
 AND {wid.src_alias}.{wid.elt_stream_action_alias} = 'INSERT'
 THEN
@@ -564,10 +571,16 @@ THEN
 `;
 
 var soft_delete_command = "CALL ELT_STAGE.USP_SOFT_DELETE_RAW('{VARIANT_TABLE_NAME}', '{NONVARIANT_TABLE_NAME}');";
+
+var usp_ingestion_command = "CALL ELT_STAGE.USP_INGESTION_RESULT('{stored_procedure}', ARRAY_CONSTRUCT('"+fixQuote(sql_command)+"', '"+fixQuote(soft_delete_command)+"'));";
+
 """ + """
 try {
-    snowflake.execute({sqlText: sql_command});
-    snowflake.execute({sqlText: soft_delete_command});
+    execObj = snowflake.execute({sqlText: usp_ingestion_command});
+    if (execObj.getRowCount()>0) {
+        execObj.next();
+        return execObj.getColumnValueAsString(1);
+        }
     return "Succeeded.";
     }
 catch (err)  {
