@@ -620,9 +620,10 @@ def get_extraClassPath(drivers_path:str):
     is_windows = platform.system().lower() == 'windows'
     join_drivers_by = ':' if not is_windows else ';'
 
-    for file in os.listdir(drivers_path):
-        if file.endswith('.jar'):
-            drivers.append(os.path.join(drivers_path, file))
+    if os.path.isdir(drivers_path):
+        for file in os.listdir(drivers_path):
+            if file.endswith('.jar'):
+                drivers.append(os.path.join(drivers_path, file))
 
     extraClassPath = join_drivers_by.join(drivers)
     return extraClassPath
