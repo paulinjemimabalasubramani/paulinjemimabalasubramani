@@ -1,9 +1,6 @@
 description = """
 
-Read Pershing FWT files and migrate to the ADLS Gen 2
-
-https://standardfiles.pershing.com/
-
+Read National Financial Services (NFS) FWT files and migrate to the ADLS Gen 2
 
 This code assumes bulk_id has been added to the front of each line in the file.
 
@@ -12,7 +9,7 @@ This code assumes bulk_id has been added to the front of each line in the file.
 
 # %% Parse Arguments
 
-if True: # Set to False for Debugging
+if False: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
@@ -29,6 +26,19 @@ else:
         'pipelinekey': 'ASSETS_MIGRATE_PERSHING_RAA',
         'schema_file_path': r'C:\myworkdir\EDIP-Code\config\pershing_schema',
         }
+
+
+
+# %% DEBUGGING
+
+if True:
+    k=0
+    with open(r'C:\myworkdir\Shared\NFS-CA\MAJ_NABASE.DAT', 'rt') as fsource:
+        with open(r'C:\myworkdir\Shared\NFS-CA-Sample\MAJ_NABASE.DAT', 'wt') as ftarget:
+            for line in fsource:
+                ftarget.write(line)
+                k += 1
+                if k>2000: break
 
 
 

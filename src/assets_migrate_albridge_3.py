@@ -1,4 +1,5 @@
-"""
+description = """
+
 Read all Albridge files and migrate to the ADLS Gen 2
 
 """
@@ -9,7 +10,7 @@ Read all Albridge files and migrate to the ADLS Gen 2
 if True: # Set to False for Debugging
     import argparse
 
-    parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
+    parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
     parser.add_argument('--spark_master', help='URL of the Spark Master to connect to', required=False)
@@ -22,7 +23,7 @@ else:
     args = {
         'pipelinekey': 'ASSETS_MIGRATE_ALBRIDGE_WFS',
         'source_path': r'C:\myworkdir\Shared\ALBRIDGE\WFS',
-        'schema_file_path': r'C:\myworkdir\EDIP-Code\config\assets\albridge_schema\albridge_schema.csv'
+        'schema_file_path': r'C:\myworkdir\EDIP-Code\config\assets\albridge_schema\albridge_schema.csv',
         }
 
 

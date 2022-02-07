@@ -1,4 +1,5 @@
-"""
+description = """
+
 Generic Code to Migrate any CSV type files with date info in file name to ADLS Gen 2
 
 """
@@ -9,7 +10,7 @@ Generic Code to Migrate any CSV type files with date info in file name to ADLS G
 if True: # Set to False for Debugging
     import argparse
 
-    parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
+    parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
     parser.add_argument('--spark_master', help='URL of the Spark Master to connect to', required=False)
