@@ -1,4 +1,5 @@
-"""
+description = """
+
 Read Pershing FWT files and migrate to the ADLS Gen 2
 
 https://standardfiles.pershing.com/
@@ -14,7 +15,7 @@ This code assumes bulk_id has been added to the front of each line in the file.
 if True: # Set to False for Debugging
     import argparse
 
-    parser = argparse.ArgumentParser(description='Migrate any CSV type files with date info in file name')
+    parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
     parser.add_argument('--spark_master', help='URL of the Spark Master to connect to', required=False)
@@ -26,7 +27,7 @@ if True: # Set to False for Debugging
 else:
     args = {
         'pipelinekey': 'ASSETS_MIGRATE_PERSHING_RAA',
-        'schema_file_path': r'C:\myworkdir\EDIP-Code\config\pershing_schema'
+        'schema_file_path': r'C:\myworkdir\EDIP-Code\config\pershing_schema',
         }
 
 
