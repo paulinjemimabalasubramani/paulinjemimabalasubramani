@@ -19,6 +19,7 @@ if True: # Set to False for Debugging
 else:
     args = {
         'pipelinekey': 'ASSETS_MIGRATE_ALBRIDGE_WFS',
+        'remote_path': r'C:\myworkdir\ALBRIDGE\WFS',
         'source_path': r'C:\myworkdir\Shared\ALBRIDGE\WFS',
         }
 
@@ -50,13 +51,17 @@ def delete_files():
     """
     Delete files and folders to the new location
     """
-    logger.info(f'Deleting files from {data_settings.source_path}')
-    remove_tree( # https://docs.python.org/2/distutils/apiref.html#distutils.dir_util.remove_tree
-        directory = data_settings.source_path,
-        verbose = 0, # Do not ignore errors
-        dry_run = 0,
-    )
-    logger.info('Finished deleting files')
+    if not data_settings.remote_path:
+        logger.info('Remote Path Empty, Skipping Delete Files')
+    else:
+        logger.info(f'Deleting files from {data_settings.source_path}')
+        remove_tree( # https://docs.python.org/2/distutils/apiref.html#distutils.dir_util.remove_tree
+            directory = data_settings.source_path,
+            verbose = 0, # Do not ignore errors
+            dry_run = 0,
+        )
+        logger.info('Finished deleting files')
+
 
 delete_files()
 

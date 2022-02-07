@@ -51,18 +51,22 @@ def copy_files():
     """
     Copy files and folders to the new location
     """
-    logger.info(f'Copying files from {data_settings.remote_path} to {data_settings.source_path}')
-    copy_tree( # https://docs.python.org/2/distutils/apiref.html#distutils.dir_util.copy_tree
-        src = data_settings.remote_path, # Files in src that begin with .nfs are skipped
-        dst = data_settings.source_path,
-        preserve_mode = 0, # Do not copy file’s mode (type and permission bits)
-        preserve_times = 0, # Do not copy file's last-modified and last-access times
-        preserve_symlinks = 0, # the destination of the symlink will be copied
-        update = 0, # Update files regardless if they already exists
-        verbose = 0, # Do not ignore errors
-        dry_run = 0,
-    )
-    logger.info('Finished copying files')
+    if not data_settings.remote_path:
+        logger.info('Remote Path Empty, Skipping Copy Files')
+    else:
+        logger.info(f'Copying files from {data_settings.remote_path} to {data_settings.source_path}')
+        copy_tree( # https://docs.python.org/2/distutils/apiref.html#distutils.dir_util.copy_tree
+            src = data_settings.remote_path, # Files in src that begin with .nfs are skipped
+            dst = data_settings.source_path,
+            preserve_mode = 0, # Do not copy file’s mode (type and permission bits)
+            preserve_times = 1, # Do not copy file's last-modified and last-access times
+            preserve_symlinks = 0, # the destination of the symlink will be copied
+            update = 1, # Update files regardless if they already exists
+            verbose = 0, # Do not ignore errors
+            dry_run = 0,
+        )
+        logger.info('Finished copying files')
+
 
 copy_files()
 
