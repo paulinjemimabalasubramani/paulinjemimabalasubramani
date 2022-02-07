@@ -29,6 +29,8 @@ default_args = {
 jars = "/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar,/usr/local/spark/resources/jars/spark-xml_2.12-0.12.0.jar"
 
 
+pipelinekey = 'ASSETS_MIGRATE_ALBRIDGE_WFS'
+
 
 # %% Create DAG
 
@@ -47,8 +49,14 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
+    copy_files = BashOperator(
+        task_id = f'COPY_FILES_{pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/copy_files_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
+
     ASSETS_MIGRATE_ALBRIDGE_WFS = SparkSubmitOperator(
-         task_id = "ASSETS_MIGRATE_ALBRIDGE_WFS",
+         task_id = pipelinekey,
          application = "/usr/local/spark/app/assets_migrate_albridge_3.py",
          name = spark_app_name,
          jars = jars,
@@ -59,7 +67,7 @@ with DAG(
          verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
-             '--pipelinekey', 'ASSETS_MIGRATE_ALBRIDGE_WFS',
+             '--pipelinekey', pipelinekey,
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
              #'--spark_master_ip', spark_master_ip,
@@ -67,7 +75,13 @@ with DAG(
          dag = dag
          )
 
-    startpipe >> [ASSETS_MIGRATE_ALBRIDGE_WFS]
+    delete_files = BashOperator(
+        task_id = f'DELETE_FILES_{pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/delete_files_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
+
+    startpipe >> copy_files >> ASSETS_MIGRATE_ALBRIDGE_WFS >> delete_files
 
 
 
