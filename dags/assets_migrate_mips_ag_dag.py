@@ -21,7 +21,7 @@ description_DAG = 'Migrate Client data to Assets Database'
 tags = ['DB:Assets', 'SC:MIPS']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

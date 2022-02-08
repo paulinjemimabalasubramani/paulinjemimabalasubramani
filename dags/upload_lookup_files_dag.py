@@ -18,7 +18,7 @@ description_DAG = 'Upload Lookup Files'
 
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

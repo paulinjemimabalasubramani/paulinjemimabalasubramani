@@ -21,7 +21,7 @@ description_DAG = 'Migrate FSC Datastore Albridge data Tables'
 tags = ['DB:Assets', 'SC:Datastore-Albridge']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

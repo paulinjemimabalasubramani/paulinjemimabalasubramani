@@ -21,7 +21,7 @@ description_DAG = 'Migrate Assets-Albridge Tables'
 tags = ['DB:Assets', 'SC:Albridge']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

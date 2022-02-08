@@ -20,7 +20,7 @@ description_DAG = 'Test Copy Assets-Albridge files'
 tags = ['DB:Assets', 'SC:Albridge']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

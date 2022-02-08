@@ -20,7 +20,7 @@ description_DAG = 'Migrate CA-NBS Tables'
 tags = ['DB:CA', 'SC:NBS']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

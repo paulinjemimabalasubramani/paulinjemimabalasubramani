@@ -20,7 +20,7 @@ description_DAG = 'Migrate Assets-Pershing Tables'
 tags = ['DB:Assets', 'SC:Pershing']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

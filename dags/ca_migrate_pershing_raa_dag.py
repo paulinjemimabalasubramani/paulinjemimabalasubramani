@@ -20,7 +20,7 @@ description_DAG = 'Migrate CA-Pershing Tables'
 tags = ['DB:CA', 'SC:Pershing']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

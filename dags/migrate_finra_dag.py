@@ -18,7 +18,7 @@ description_DAG = 'Migrate FINRA Tables'
 
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 
