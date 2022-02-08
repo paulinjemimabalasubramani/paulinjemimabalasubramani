@@ -21,7 +21,7 @@ description_DAG = 'Migrate Assets Product Tables'
 tags = ['DB:Assets', 'SC:Product']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

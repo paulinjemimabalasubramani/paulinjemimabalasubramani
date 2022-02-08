@@ -21,7 +21,7 @@ description_DAG = 'Migrate Assets Plaid Tables'
 tags = ['DB:Assets', 'SC:Plaid']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

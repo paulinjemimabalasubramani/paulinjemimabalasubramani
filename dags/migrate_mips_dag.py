@@ -18,7 +18,7 @@ description_DAG = 'Migrate MIPS Tables'
 
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

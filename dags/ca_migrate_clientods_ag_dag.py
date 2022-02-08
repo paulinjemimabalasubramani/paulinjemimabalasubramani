@@ -20,7 +20,7 @@ description_DAG = 'Migrate CA-ClientODS Tables'
 tags = ['DB:CA', 'SC:ClientODS']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

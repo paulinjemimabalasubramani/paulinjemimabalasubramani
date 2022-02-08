@@ -20,7 +20,7 @@ description_DAG = 'Migrate Metrics-Assets Tables'
 tags = ['DB:Metrics', 'SC:Assets']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

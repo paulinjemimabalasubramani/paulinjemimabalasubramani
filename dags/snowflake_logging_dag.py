@@ -18,7 +18,7 @@ description_DAG = 'Load Snowflake log data to Azure Monitor'
 
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 

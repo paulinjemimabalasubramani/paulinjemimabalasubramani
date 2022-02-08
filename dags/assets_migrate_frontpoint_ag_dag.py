@@ -21,7 +21,7 @@ description_DAG = 'Migrate Assets Frontpoint Tables'
 tags = ['DB:Assets', 'SC:Frontpoint']
 
 default_args = {
-    'owner': 'Seymur',
+    'owner': 'EDIP',
     'depends_on_past': False,
 }
 
