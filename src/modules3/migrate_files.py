@@ -130,8 +130,12 @@ def add_firm_to_table_name(table_name:str):
     """
     Add Firm to Table Name
     """
-    table_name = '_'.join([data_settings.pipeline_firm, table_name]).lower() if data_settings.pipeline_firm and hasattr(data_settings, 'add_firm_to_table_name') and data_settings.add_firm_to_table_name.upper() == 'TRUE' else table_name
-    return table_name
+    if data_settings.pipeline_firm and hasattr(data_settings, 'add_firm_to_table_name') and data_settings.add_firm_to_table_name.upper() == 'TRUE':
+        prefix = data_settings.pipeline_firm.lower() + '_'
+        if not table_name.lower().startswith(prefix):
+            table_name = prefix + table_name.lower()
+
+    return table_name.lower()
 
 
 
