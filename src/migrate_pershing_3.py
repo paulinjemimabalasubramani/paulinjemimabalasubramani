@@ -507,12 +507,8 @@ def process_pershing_file(file_meta):
 
     table = add_id_key(table=table, key_column_names=key_column_names)
 
-    table = add_elt_columns(
-        table = table,
-        key_datetime = file_meta['key_datetime'],
-        is_full_load = file_meta['is_full_load'],
-        dml_type = 'I' if file_meta['is_full_load'] else 'U',
-        )
+    dml_type = 'I' if file_meta['is_full_load'] else 'U'
+    table = add_elt_columns(table=table, file_meta=file_meta, dml_type=dml_type)
 
     if is_pc and False: table.show(5)
 

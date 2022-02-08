@@ -6,7 +6,7 @@ Library for Azure Functions
 # %% Import Libraries
 
 from .common_functions import logger, catch_error, is_pc, execution_date, get_secrets, post_log_data, data_settings
-from .spark_functions import partitionBy
+from .spark_functions import partitionBy_str
 
 from azure.storage.filedatalake import DataLakeServiceClient
 from azure.identity import ClientSecretCredential
@@ -40,14 +40,14 @@ def setup_spark_adls_gen2_connection(spark, storage_account_name):
     """
     azure_tenant_id, sp_id, sp_pass = get_secrets(storage_account_name)
 
-    #spark.conf.set(f"fs.azure.account.key.{storage_account_name}.{azure_filesystem_uri}", storage_account_access_key)
+    #spark.conf.set(f'fs.azure.account.key.{storage_account_name}.{azure_filesystem_uri}', storage_account_access_key)
 
-    spark.conf.set(f"fs.azure.account.auth.type.{storage_account_name}.{azure_filesystem_uri}", "OAuth")
-    spark.conf.set(f"fs.azure.account.oauth.provider.type.{storage_account_name}.{azure_filesystem_uri}",  "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
-    spark.conf.set(f"fs.azure.account.oauth2.client.id.{storage_account_name}.{azure_filesystem_uri}", sp_id)
-    spark.conf.set(f"fs.azure.account.oauth2.client.secret.{storage_account_name}.{azure_filesystem_uri}", sp_pass)
-    spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{storage_account_name}.{azure_filesystem_uri}", f"https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token")
-    spark.conf.set(f"fs.azure.createRemoteFileSystemDuringInitialization", "true")
+    spark.conf.set(f'fs.azure.account.auth.type.{storage_account_name}.{azure_filesystem_uri}', 'OAuth')
+    spark.conf.set(f'fs.azure.account.oauth.provider.type.{storage_account_name}.{azure_filesystem_uri}', 'org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider')
+    spark.conf.set(f'fs.azure.account.oauth2.client.id.{storage_account_name}.{azure_filesystem_uri}', sp_id)
+    spark.conf.set(f'fs.azure.account.oauth2.client.secret.{storage_account_name}.{azure_filesystem_uri}', sp_pass)
+    spark.conf.set(f'fs.azure.account.oauth2.client.endpoint.{storage_account_name}.{azure_filesystem_uri}', f'https://login.microsoftonline.com/{azure_tenant_id}/oauth2/token')
+    spark.conf.set(f'fs.azure.createRemoteFileSystemDuringInitialization', 'true')
 
 
 
@@ -79,7 +79,7 @@ def azure_container_folder_path(is_metadata:bool=False):
     if domain_name.upper() in domain_map:
         domain_name = domain_map[domain_name.upper()]
 
-    return f"{data_type.lower()}/{domain_name.lower()}/{data_settings.schema_name.upper()}"
+    return f'{data_type.lower()}/{domain_name.lower()}/{data_settings.schema_name.upper()}'
 
 
 
@@ -95,7 +95,7 @@ def azure_data_path(table_name:str, is_metadata:bool=False):
     container_folder = azure_container_folder_path(is_metadata=is_metadata)
     storage_account_name = data_settings.default_storage_account_name if is_metadata else data_settings.storage_account_name
 
-    return f"abfs://{container_name}@{storage_account_name}.{azure_filesystem_uri}/{container_folder}/{table_name}"
+    return f'abfs://{container_name}@{storage_account_name}.{azure_filesystem_uri}/{container_folder}/{table_name}'
 
 
 
@@ -112,7 +112,7 @@ def save_adls_gen2(
     """
     file_format = file_format.lower()
     data_path = azure_data_path(table_name=table_name, is_metadata=is_metadata)
-    logger.info(f"Write {file_format} -> {data_path}")
+    logger.info(f'Write {file_format} -> {data_path}')
 
     if not is_metadata:
         for c in table.columns:
@@ -130,16 +130,16 @@ def save_adls_gen2(
             return False
         else:
             userMetadata = execution_date # any string metadata to save alongside with the Delta Table
-            table.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy, overwriteSchema="true", userMetadata=userMetadata)
+            table.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy_str, overwriteSchema='true', userMetadata=userMetadata)
     else:
-        table.write.save(path=data_path, format=file_format, mode='overwrite', overwriteSchema="true")
+        table.write.save(path=data_path, format=file_format, mode='overwrite', overwriteSchema='true')
 
     log_data = {
-        "data_path": data_path,
+        'data_path': data_path,
         'Database': data_settings.domain_name.lower(),
         'Schema': data_settings.schema_name.upper(),
-        "Table": table_name,
-        "Format": file_format,
+        'Table': table_name,
+        'Format': file_format,
         }
 
     post_log_data(log_data=log_data, log_type='AirlfowSavedTables', logger=logger)

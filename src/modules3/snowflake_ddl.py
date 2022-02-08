@@ -9,7 +9,7 @@ from functools import wraps
 from collections import defaultdict, OrderedDict
 
 from .common_functions import logger, catch_error, data_settings, execution_date_start, get_secrets, EXECUTION_DATE_str, to_sql_value, is_pc
-from .spark_functions import ELT_DELETE_IND_str, elt_audit_columns, PARTITION, IDKeyIndicator
+from .spark_functions import ELT_DELETE_IND_str, elt_audit_columns, delta_partitionBy, IDKeyIndicator
 from .azure_functions import post_log_data
 
 from snowflake.connector import connect as snowflake_connect
@@ -183,17 +183,18 @@ def write_DDL_file_per_step():
 # %% Create Ingest Data
 
 @catch_error(logger)
-def create_ingest_data(table_name:str):
+def create_ingest_data(table_name:str, partition_by:str):
     """
     Create Ingest Data
     """
     VARIANT_SCHEMA_NAME, _ = base_sqlstr(layer='RAW')
     NONVARIANT_SCHEMA_NAME, _ = base_sqlstr(layer='')
+    PARTITION = delta_partitionBy(partition_by)
 
     INGEST_STAGE_NAME = f'@{wid.elt_stage_schema}.{data_settings.azure_storage_account_mid.upper()}_{data_settings.domain_name.upper()}_DATALAKE/{data_settings.schema_name.upper()}/{table_name.lower()}/{PARTITION}/'
 
-    VARIANT_TABLE_NAME = f"{VARIANT_SCHEMA_NAME}.{table_name.upper()}{wid.variant_label}".upper()
-    NONVARIANT_TABLE_NAME = f"{NONVARIANT_SCHEMA_NAME}.{table_name.upper()}".upper()
+    VARIANT_TABLE_NAME = f'{VARIANT_SCHEMA_NAME}.{table_name.upper()}{wid.variant_label}'.upper()
+    NONVARIANT_TABLE_NAME = f'{NONVARIANT_SCHEMA_NAME}.{table_name.upper()}'.upper()
 
     COPY_COMMAND = f"COPY INTO {VARIANT_TABLE_NAME} FROM '{INGEST_STAGE_NAME}' FILE_FORMAT = (type='{wid.FILE_FORMAT}') PATTERN = '{wid.wild_card}' ON_ERROR = CONTINUE;"
 
@@ -221,11 +222,11 @@ def create_ingest_data(table_name:str):
 # %% Trigger snowpipe
 
 @catch_error(logger)
-def trigger_snowpipe(table_name:str):
+def trigger_snowpipe(table_name:str, partition_by:str):
     """
     Trigger snowpipe to read INGEST_REQUEST files
     """
-    ingest_data = create_ingest_data(table_name=table_name)
+    ingest_data = create_ingest_data(table_name=table_name, partition_by=partition_by)
     copy_command = ingest_data['COPY_COMMAND']
 
     sqlstr_call_usp_ingest = f"""CALL {wid.elt_stage_schema}.USP_INGEST(
@@ -666,7 +667,7 @@ ALTER TASK {task_name} RESUME;
 # %% Create Snowflake DDL
 
 @catch_error(logger)
-def create_snowflake_ddl(table, table_name:str, fn_get_dtypes):
+def create_snowflake_ddl(table, table_name:str, fn_get_dtypes, partition_by:str):
     logger.info(f'Start Creating Snowflake DDL for table {table_name}')
     dtypes = fn_get_dtypes(table=table, table_name=table_name)
 
@@ -680,7 +681,7 @@ def create_snowflake_ddl(table, table_name:str, fn_get_dtypes):
     step8(table_name=table_name)
 
     write_DDL_file_per_table(table_name=table_name)
-    copy_command = trigger_snowpipe(table_name=table_name)
+    copy_command = trigger_snowpipe(table_name=table_name, partition_by=partition_by)
     logger.info(f'Finished Creating Snowflake DDL for table {table_name}')
     return copy_command
 
