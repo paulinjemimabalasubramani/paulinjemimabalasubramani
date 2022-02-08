@@ -38,9 +38,8 @@ KEY_DATETIME_str = 'elt_reception_date'
 ELT_FIRM_str = 'elt_firm'
 ELT_PipelineKey_str = 'elt_pipelinekey'
 
-partitionBy = 'elt_partition_date'
-partitionBy_value = re.sub(column_regex, '_', execution_date)
-PARTITION = f'{partitionBy}={partitionBy_value}'
+partitionBy_str = 'elt_partition_date'
+delta_partitionBy = lambda value: f'{partitionBy_str}={value}'
 
 elt_audit_columns = [EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str, KEY_DATETIME_str, ELT_PROCESS_ID_str, ELT_FIRM_str, ELT_PipelineKey_str]
 elt_audit_columns = [c.lower() for c in elt_audit_columns]
@@ -50,15 +49,17 @@ elt_audit_columns = [c.lower() for c in elt_audit_columns]
 # %% Add ELT Audit Columns
 
 @catch_error(logger)
-def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str):
+def add_elt_columns(table, file_meta:dict, dml_type:str):
     """
     Add ELT Audit Columns to the table
     """
-    table = table.withColumn(KEY_DATETIME_str, lit(str(key_datetime)))
+    elt_load_type = 'FULL' if file_meta['is_full_load'] else 'INCREMENTAL'
+
+    table = table.withColumn(KEY_DATETIME_str, lit(str(file_meta['key_datetime'])))
     table = table.withColumn(EXECUTION_DATE_str, lit(str(execution_date)))
     table = table.withColumn(ELT_SOURCE_str, lit(str(data_settings.pipeline_datasourcekey)))
     table = table.withColumn(ELT_PipelineKey_str, lit(str(data_settings.pipelinekey)))
-    table = table.withColumn(ELT_LOAD_TYPE_str, lit(str("FULL" if is_full_load else "INCREMENTAL")))
+    table = table.withColumn(ELT_LOAD_TYPE_str, lit(str(elt_load_type)))
     table = table.withColumn(ELT_DELETE_IND_str, lit(0).cast(IntegerType()))
     table = table.withColumn(ELT_PROCESS_ID_str, lit(data_settings.elt_process_id))
     table = table.withColumn(ELT_FIRM_str, lit(data_settings.pipeline_firm))
@@ -68,7 +69,7 @@ def add_elt_columns(table, key_datetime:str, is_full_load:bool, dml_type:str):
         raise ValueError(f'{DML_TYPE_str} = {dml_type}')
 
     table = table.withColumn(DML_TYPE_str, lit(str(dml_type)))
-    table = table.withColumn(partitionBy, lit(str(partitionBy_value)))
+    table = table.withColumn(partitionBy_str, lit(str(file_meta['partition_by'])))
     return table
 
 
