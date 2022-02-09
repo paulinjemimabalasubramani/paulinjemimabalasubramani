@@ -39,7 +39,9 @@ VALUES
 ('ASSETS_AG_DATASOURCE_ALBRIDGE_WFS', 'Assets', 'Albridge', 'WFS', 'assets_albridge', 'AG', 'System', CURRENT_TIMESTAMP),
 
 ('CA_AG_DATASOURCE_NBS', 'Client Account', 'NBS', '', 'csv', 'AG', 'System', CURRENT_TIMESTAMP),
-('CA_AG_DATASOURCE_CLIENTODS', 'Client Account', 'ClientODS', '', 'csv', 'AG', 'System', CURRENT_TIMESTAMP)
+('CA_AG_DATASOURCE_CLIENTODS', 'Client Account', 'ClientODS', '', 'csv', 'AG', 'System', CURRENT_TIMESTAMP),
+
+('CA_AG_DATASOURCE_NFS', 'Client Account', 'NFS', '', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP)
 
 ;
 
@@ -88,7 +90,9 @@ VALUES
 ('ASSETS_MIGRATE_ALBRIDGE_WFS', 'outbound_migration', 'Pipeline to migrate Assets-Albridge files to Snowflake for WFS', 'ASSETS_AG_DATASOURCE_ALBRIDGE_WFS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
 ('CA_MIGRATE_NBS', 'outbound_migration', 'Pipeline to migrate CA-NBS files to Snowflake', 'CA_AG_DATASOURCE_NBS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_CLIENTODS', 'outbound_migration', 'Pipeline to migrate CA-ClientODS files to Snowflake', 'CA_AG_DATASOURCE_CLIENTODS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+('CA_MIGRATE_CLIENTODS', 'outbound_migration', 'Pipeline to migrate CA-ClientODS files to Snowflake', 'CA_AG_DATASOURCE_CLIENTODS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+('CA_MIGRATE_NFS', 'outbound_migration', 'Pipeline to migrate CA-NFS files to Snowflake', 'CA_AG_DATASOURCE_NFS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
 
 ;
 
@@ -280,14 +284,25 @@ VALUES
 
 
 ('ASSETS_MIGRATE_DATASTORE_ALBRIDGE_RAA', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP),
-('ASSETS_MIGRATE_DATASTORE_ALBRIDGE_WFS', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP)
+('ASSETS_MIGRATE_DATASTORE_ALBRIDGE_WFS', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP),
+
+
+
+
+('CA_MIGRATE_NFS', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS', 'DB_NAME', 'CA', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS', 'SCHEMA_NAME', 'NFS', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS', 'IS_FULL_LOAD', 'TRUE', 'System', CURRENT_TIMESTAMP),
+
+
 ;
 
 
 
 
 select * from metadata.PipelineConfiguration
-where PipelineKey = 'ASSETS_MIGRATE_ALBRIDGE_WFS'
+where PipelineKey = 'CA_MIGRATE_NFS'
 ;
 
 

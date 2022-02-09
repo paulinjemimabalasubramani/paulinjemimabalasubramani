@@ -23,22 +23,9 @@ if False: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'ASSETS_MIGRATE_PERSHING_RAA',
-        'schema_file_path': r'C:\myworkdir\EDIP-Code\config\pershing_schema',
+        'pipelinekey': 'CA_MIGRATE_NFS',
+        'schema_file_path': r'C:\myworkdir\EDIP-Code\config\nfs_schema',
         }
-
-
-
-# %% DEBUGGING
-
-if True:
-    k=0
-    with open(r'C:\myworkdir\Shared\NFS-CA\MAJ_NABASE.DAT', 'rt') as fsource:
-        with open(r'C:\myworkdir\Shared\NFS-CA-Sample\MAJ_NABASE.DAT', 'wt') as ftarget:
-            for line in fsource:
-                ftarget.write(line)
-                k += 1
-                if k>2000: break
 
 
 
