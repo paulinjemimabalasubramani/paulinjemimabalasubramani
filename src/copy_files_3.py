@@ -59,6 +59,7 @@ def copy_files():
             logger.info(f'Copying files {data_settings.copy_only_files} from {data_settings.remote_path} to {data_settings.source_path}')
 
             copy_only_files = data_settings.copy_only_files.lower().split(',')
+            copy_only_files = [c.strip() for c in copy_only_files]
             for root, dirs, files in os.walk(data_settings.remote_path):
                 for file_name in files:
                     remote_file_path = os.path.join(root, file_name)
