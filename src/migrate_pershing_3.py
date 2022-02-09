@@ -481,7 +481,7 @@ def extract_pershing_file_meta(file_path:str, zip_file_path:str=None):
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
         'zip_file_path': zip_file_path,
-        'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
+        'is_full_load': header_info['refreshed_updated'].upper() == 'REFRESHED',
         'key_datetime': datetime.strptime(' '.join([header_info['run_date'], header_info['run_time']]), pershing_strftime),
         **{c:header_info[c] for c in master_schema_header_columns},
     }
