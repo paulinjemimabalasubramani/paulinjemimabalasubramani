@@ -735,6 +735,7 @@ def add_new_pipeline_instance():
     sqlstr_table_create = f"""CREATE TABLE {full_table_name} (
         PipelineInstanceId int Identity,
         PipelineKey varchar(500) NOT NULL,
+        executing_code varchar(500) NOT NULL,
         {ELT_PROCESS_ID_str.lower()} varchar(500) NOT NULL,
         {EXECUTION_DATE_str.lower()} datetime NULL,
         total_minutes numeric(38, 3) NULL,
@@ -749,11 +750,13 @@ def add_new_pipeline_instance():
         PipelineKey,
         {ELT_PROCESS_ID_str.lower()},
         {EXECUTION_DATE_str.lower()},
+        executing_code,
         run_status
     ) VALUES (
         '{data_settings.pipelinekey}',
         '{data_settings.elt_process_id}',
         '{to_sql_value(execution_date_start)}',
+        '{sys.app.parent_name}',
         'Running'
     );"""
 
