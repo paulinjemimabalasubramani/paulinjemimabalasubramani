@@ -14,7 +14,10 @@ spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
 
-spark_app_name = "assets_migrate_mips"
+pipelinekey = 'ASSETS_MIGRATE_MIPS'
+python_spark_code = 'migrate_csv_3'
+
+spark_app_name = pipelinekey.lower()
 airflow_app_name = spark_app_name
 description_DAG = 'Migrate Client data to Assets Database'
 
@@ -47,9 +50,15 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    ASSETS_MIGRATE_MIPS = SparkSubmitOperator(
-         task_id = "ASSETS_MIGRATE_MIPS",
-         application = "/usr/local/spark/app/migrate_csv_3.py",
+    copy_files = BashOperator(
+        task_id = f'COPY_FILES_{pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/copy_files_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
+
+    migrate_data = SparkSubmitOperator(
+         task_id = pipelinekey,
+         application = f"/usr/local/spark/app/{python_spark_code}.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
@@ -59,15 +68,21 @@ with DAG(
          verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
-             '--pipelinekey', 'ASSETS_MIGRATE_MIPS',
+             '--pipelinekey', pipelinekey,
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
-#             '--spark_master_ip', spark_master_ip,
-             ],
+             #'--spark_master_ip', spark_master_ip,
+         ],
          dag = dag
          )
 
-    startpipe >> ASSETS_MIGRATE_MIPS
+    delete_files = BashOperator(
+        task_id = f'DELETE_FILES_{pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/delete_files_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
+
+    startpipe >> copy_files >> migrate_data >> delete_files
 
 
 

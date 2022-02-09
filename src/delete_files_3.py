@@ -51,8 +51,8 @@ def delete_files():
     """
     Delete files and folders to the new location
     """
-    if not data_settings.remote_path:
-        logger.info('Remote Path Empty, Skipping Delete Files')
+    if not hasattr(data_settings, 'delete_files_after') or data_settings.delete_files_after.upper()!='TRUE':
+        logger.info('DELETE_FILES_AFTER config is not enabled - Skipping Delete')
     else:
         logger.info(f'Deleting files from {data_settings.source_path}')
         remove_tree( # https://docs.python.org/2/distutils/apiref.html#distutils.dir_util.remove_tree

@@ -13,7 +13,10 @@ spark_master = "spark://spark:7077"
 spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
-spark_app_name = "metrics_migrate_assets_wfs"
+pipelinekey = 'METRICS_MIGRATE_ASSETS_WFS'
+python_spark_code = 'migrate_csv_with_date_3'
+
+spark_app_name = pipelinekey.lower()
 airflow_app_name = spark_app_name
 description_DAG = 'Migrate Metrics-Assets Tables'
 
@@ -34,7 +37,7 @@ with DAG(
     airflow_app_name,
     default_args = default_args,
     description = description_DAG,
-    schedule_interval = '0 13 * * *',
+    schedule_interval = '0 13 * * *', # https://crontab.guru/#0_13_*_*_*
     start_date = days_ago(1),
     tags = tags,
     catchup = False,
@@ -45,9 +48,15 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    METRICS_MIGRATE_ASSETS_WFS = SparkSubmitOperator(
-         task_id = "METRICS_MIGRATE_ASSETS_WFS",
-         application = "/usr/local/spark/app/migrate_csv_with_date_3.py",
+    copy_files = BashOperator(
+        task_id = f'COPY_FILES_{pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/copy_files_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
+
+    migrate_data = SparkSubmitOperator(
+         task_id = pipelinekey,
+         application = f"/usr/local/spark/app/{python_spark_code}.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
@@ -57,7 +66,7 @@ with DAG(
          verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
-             '--pipelinekey', 'METRICS_MIGRATE_ASSETS_WFS',
+             '--pipelinekey', pipelinekey,
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
              #'--spark_master_ip', spark_master_ip,
@@ -65,8 +74,14 @@ with DAG(
          dag = dag
          )
 
+    delete_files = BashOperator(
+        task_id = f'DELETE_FILES_{pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/delete_files_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
 
-    startpipe >> METRICS_MIGRATE_ASSETS_WFS
+    startpipe >> copy_files >> migrate_data >> delete_files
+
 
 
 
