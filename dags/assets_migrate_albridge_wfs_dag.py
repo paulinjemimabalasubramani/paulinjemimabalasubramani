@@ -14,7 +14,10 @@ spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
 
-spark_app_name = "assets_migrate_albridge_wfs"
+pipelinekey = 'ASSETS_MIGRATE_ALBRIDGE_WFS'
+python_spark_code = 'assets_migrate_albridge_3'
+
+spark_app_name = pipelinekey.lower()
 airflow_app_name = spark_app_name
 description_DAG = 'Migrate Assets-Albridge Tables'
 
@@ -28,8 +31,6 @@ default_args = {
 
 jars = "/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar,/usr/local/spark/resources/jars/spark-xml_2.12-0.12.0.jar"
 
-
-pipelinekey = 'ASSETS_MIGRATE_ALBRIDGE_WFS'
 
 
 # %% Create DAG
@@ -55,13 +56,13 @@ with DAG(
         dag = dag
     )
 
-    ASSETS_MIGRATE_ALBRIDGE_WFS = SparkSubmitOperator(
+    migrate_data = SparkSubmitOperator(
          task_id = pipelinekey,
-         application = "/usr/local/spark/app/assets_migrate_albridge_3.py",
+         application = f"/usr/local/spark/app/{python_spark_code}.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
-         num_executors = 3,
+         num_executors = spark_executor_instances,
          executor_cores = 4,
          executor_memory = "16G",
          verbose = 1,
@@ -81,7 +82,7 @@ with DAG(
         dag = dag
     )
 
-    startpipe >> copy_files >> ASSETS_MIGRATE_ALBRIDGE_WFS >> delete_files
+    startpipe >> copy_files >> migrate_data >> delete_files
 
 
 

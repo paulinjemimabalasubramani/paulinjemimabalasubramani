@@ -13,7 +13,10 @@ spark_master = "spark://spark:7077"
 spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
-spark_app_name = "assets_migrate_pershing_raa"
+pipelinekey = 'ASSETS_MIGRATE_PERSHING_RAA'
+python_spark_code = 'migrate_pershing_3'
+
+spark_app_name = pipelinekey.lower()
 airflow_app_name = spark_app_name
 description_DAG = 'Migrate Assets-Pershing Tables'
 
@@ -46,14 +49,20 @@ with DAG(
     )
 
     add_bulk_id = BashOperator(
-        task_id = 'ADD_BULK_ID_ASSETS_MIGRATE_PERSHING_RAA',
-        bash_command = 'python /usr/local/spark/app/bulk_fixed_width_files_3.py --pipelinekey ASSETS_MIGRATE_PERSHING_RAA',
+        task_id = f'ADD_BULK_ID_{pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/bulk_fixed_width_files_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
-    ASSETS_MIGRATE_PERSHING_RAA = SparkSubmitOperator(
-         task_id = "ASSETS_MIGRATE_PERSHING_RAA",
-         application = "/usr/local/spark/app/migrate_pershing_3.py",
+    copy_files = BashOperator(
+        task_id = f'COPY_FILES_{pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/copy_files_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
+
+    migrate_data = SparkSubmitOperator(
+         task_id = pipelinekey,
+         application = f"/usr/local/spark/app/{python_spark_code}.py",
          name = spark_app_name,
          jars = jars,
          conn_id = "spark_default",
@@ -63,16 +72,21 @@ with DAG(
          verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
-             '--pipelinekey', 'ASSETS_MIGRATE_PERSHING_RAA',
+             '--pipelinekey', pipelinekey,
              '--spark_master', spark_master,
              '--spark_executor_instances', str(spark_executor_instances),
              #'--spark_master_ip', spark_master_ip,
-             ],
+         ],
          dag = dag
          )
 
+    delete_files = BashOperator(
+        task_id = f'DELETE_FILES_{pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/delete_files_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
 
-    startpipe >> add_bulk_id >> ASSETS_MIGRATE_PERSHING_RAA
+    startpipe >> copy_files >> add_bulk_id >> migrate_data >> delete_files
 
 
 
