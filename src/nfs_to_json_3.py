@@ -7,7 +7,7 @@ Add Bulk_id to Fixed Width Files
 
 # %% Parse Arguments
 
-if True: # Set to False for Debugging
+if False: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
@@ -21,15 +21,16 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'ASSETS_MIGRATE_PERSHING_RAA',
-        'source_path': r'C:\myworkdir\Shared\PERSHING-ASSETS\RAA',
+        'pipelinekey': 'CA_MIGRATE_NFS',
+        'schema_file_path': r'C:\myworkdir\EDIP-Code\config\nfs_schema',
+        'source_path': r'C:\myworkdir\Shared\NFS-CA',
         }
 
 
 
 # %% Import Libraries
 
-import os, sys, hashlib, tempfile, shutil
+import os, sys, tempfile, shutil, json
 
 class app: pass
 sys.app = app
@@ -44,23 +45,18 @@ from distutils.dir_util import remove_tree
 
 # %% Parameters
 
-bulk_file_ext = '.bulk'
 file_has_header = True
 file_has_trailer = True
 
-HEADER_str = 'HEADER'
-TRAILER_str = 'TRAILER'
-
-hash_func = hashlib.sha1
-total_hash_length = len(hash_func().hexdigest())
-
-start_line_record_string = str(data_settings.start_line_record_string)
-start_line_pos_start = int(data_settings.start_line_record_position) - 1
-start_line_pos_end = start_line_pos_start + len(start_line_record_string)
+HEADER_record = 'H'
+DATA_record = 'D'
+TRAILER_record = 'T'
 
 data_settings.target_path = data_settings.app_data_path
 if os.path.isdir(data_settings.target_path): remove_tree(directory=data_settings.target_path, verbose=0, dry_run=0)
 os.makedirs(data_settings.target_path, exist_ok=True)
+
+json_file_ext = '.json'
 
 
 
@@ -71,48 +67,81 @@ def is_start_line(line:str):
     """
     Determine Start Line
     """
-    return line[start_line_pos_start:start_line_pos_end] == start_line_record_string
+    record_segment = line[0:1]
+    record_number = line[14:17]
+    return record_segment=='1' and record_number == '101'
 
 
 
-# %% Add Prefix to Line
+# %%
+
+
+source_file_path = os.path.join(data_settings.source_path, 'MAJ_NABASE.DAT')
+
+with open(source_file_path, mode='rt', encoding='ISO-8859-1') as fsource:
+    k = 0
+    for line in fsource:
+        k+=1
+        if k>500: break
+
+        record_segment = line[0:1]
+        if record_segment=='1':
+            firm = line[1:5]
+            branch = line[5:8]
+            account_number = line[8:14]
+            record_number = line[14:17]
+            if record_number == '101':
+                print(firm, branch, account_number, record_number, 'X')
+                record_set = []
+                first_account_number = account_number
+                first_branch = branch
+                first_firm = firm
+            else:
+                if first_account_number != account_number or first_branch != branch or first_firm != firm:
+                    print((firm, branch, account_number))
+                    raise
+                print(firm, branch, account_number, record_number)
+            if record_number in record_set and record_number!='900':
+                print(firm, branch, account_number, record_number)
+                print(record_set)
+            
+
+            record_set.append(record_number)
+
+
+
+
+
+
+
+
+
+
+
+
+# %% Process all lines belonging to a single record
 
 @catch_error(logger)
-def add_prefix(prefix:str, line:str):
+def process_lines(ftarget, lines:list):
     """
-    Add Prefix to Line
-    """
-    return prefix + ' ' + line
-
-
-
-# %% Convert lines to HASH value and write them to file
-
-@catch_error(logger)
-def lines_to_hex(ftarget, lines:list):
-    """
-    Convert lines to HASH value and write them to file
+    Process all lines belonging to a single record
     """
     if len(lines) == 0: return
 
-    hash = hash_func()
     for line in lines:
-        hash.update(line.encode('ascii'))
-    hex = hash.hexdigest()
+        
 
-    for line in lines:
-        ftarget.write(add_prefix(prefix=hex, line=line))
 
 
 
 # %% Add Header or Trailer line
 
 @catch_error(logger)
-def add_custom_txt_line(ftarget, line:str, txt:str):
+def process_custom_line(ftarget, line:str, custom:str):
     """
     Add Header or Trailer line
     """
-    ftarget.write(add_prefix(prefix=txt.ljust(total_hash_length), line=line))
+    #ftarget.write(add_prefix(prefix=txt.ljust(total_hash_length), line=line))
 
 
 
@@ -129,19 +158,19 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
             lines = []
             for line in fsource:
                 if first:
-                    add_custom_txt_line(ftarget=ftarget, line=line, txt=HEADER_str)
+                    process_custom_line(ftarget=ftarget, line=line, custom=HEADER_record)
                     first = False
                 else:
                     if is_start_line(line=line) and lines:
-                        lines_to_hex(ftarget=ftarget, lines=lines)
+                        process_lines(ftarget=ftarget, lines=lines)
                         lines = []
                     lines.append(line)
 
             if file_has_trailer:
-                if len(lines)>1: lines_to_hex(ftarget=ftarget, lines=lines[:-1])
-                add_custom_txt_line(ftarget=ftarget, line=lines[-1], txt=TRAILER_str)
+                if len(lines)>1: process_lines(ftarget=ftarget, lines=lines[:-1])
+                process_custom_line(ftarget=ftarget, line=lines[-1], custom=TRAILER_record)
             else:
-                lines_to_hex(ftarget=ftarget, lines=lines)
+                process_lines(ftarget=ftarget, lines=lines)
 
 
 
@@ -164,7 +193,7 @@ def iterate_over_all_fwf(source_path:str):
                     iterate_over_all_fwf(source_path=extract_dir)
                 continue
 
-            target_file_path = os.path.join(data_settings.target_path, file_name + bulk_file_ext)
+            target_file_path = os.path.join(data_settings.target_path, file_name + json_file_ext)
             logger.info(f'Processing {source_file_path}')
             process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path)
 

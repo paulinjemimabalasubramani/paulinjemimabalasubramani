@@ -4,7 +4,7 @@ Library for common generic functions
 """
 
 # %% Import Libraries
-import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, shutil
+import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql
 
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
@@ -851,21 +851,6 @@ def mark_execution_end():
     })
 
     finalize_new_pipeline_instance()
-
-
-
-# %% Utility function to clear folder contents - USE with Caution!
-
-@catch_error(logger)
-def clear_folder_contents(folder_path:str):
-    """
-    Utility function to clear folder contents - USE with Caution!
-    """
-    for root, dirs, files in os.walk(folder_path):
-        for f in files:
-            os.unlink(os.path.join(root, f))
-        for d in dirs:
-            shutil.rmtree(os.path.join(root, d))
 
 
 

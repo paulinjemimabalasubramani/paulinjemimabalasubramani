@@ -53,6 +53,8 @@ def delete_files():
     """
     if not hasattr(data_settings, 'delete_files_after') or data_settings.delete_files_after.upper()!='TRUE':
         logger.info('DELETE_FILES_AFTER config is not enabled - Skipping Delete')
+    elif not os.path.isdir(data_settings.source_path):
+        logger.info(f'Directory {data_settings.source_path} is not found - Skipping Delete')
     else:
         logger.info(f'Deleting files from {data_settings.source_path}')
         remove_tree( # https://docs.python.org/2/distutils/apiref.html#distutils.dir_util.remove_tree
