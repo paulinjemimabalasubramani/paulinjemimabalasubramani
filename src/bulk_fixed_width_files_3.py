@@ -51,7 +51,7 @@ file_has_trailer = True
 HEADER_str = 'HEADER'
 TRAILER_str = 'TRAILER'
 
-hash_func = hashlib.sha1
+hash_func = hashlib.sha256
 total_hash_length = len(hash_func().hexdigest())
 
 start_line_record_string = str(data_settings.start_line_record_string)

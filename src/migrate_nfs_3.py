@@ -63,7 +63,7 @@ master_schema_header_columns = {
 allowed_file_extensions = ['.bulk']
 
 hash_field_name = 'bulk_id'
-hash_func = hashlib.sha1
+hash_func = hashlib.sha256
 total_hash_length = len(hash_func().hexdigest())
 total_prefix_length = total_hash_length + 1
 start_line_pos_start = int(data_settings.start_line_record_position) + total_prefix_length

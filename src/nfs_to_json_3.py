@@ -30,6 +30,7 @@ else:
 
 # %% Import Libraries
 
+from multiprocessing.sharedctypes import Value
 import os, sys, tempfile, shutil, json
 
 class app: pass
@@ -93,6 +94,8 @@ def process_lines(ftarget, lines:list):
     fba = ()
     for line in lines:
         record_segment = line[0:1]
+        if record_segment not in ['1', '2', '3', '4', '5']: raise ValueError(f'Invalid record_segment: {record_segment}')
+
         if record_segment == '1':
             firm = line[1:5]
             branch = line[5:8]
@@ -105,7 +108,6 @@ def process_lines(ftarget, lines:list):
                     raise ValueError(f'Values {(firm, branch, account_number)} in record {record_number} does not Match record 101 data {fba}')
 
         if record_number == '900': continue # record_number 900 is empty - ignore
-
 
 
 
