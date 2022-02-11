@@ -19,7 +19,7 @@ from .common_functions import logger, catch_error, is_pc, extraClassPath, execut
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import col, lit, sha1, concat_ws, coalesce, trim, explode
+from pyspark.sql.functions import col, lit, concat_ws, coalesce, trim, explode, sha2
 from pyspark.sql.types import IntegerType
 
 
@@ -375,7 +375,7 @@ def add_id_key(table, key_column_names:list=[], always_use_hash:bool=True):
     id_key_list.append(lit(data_settings.pipeline_datasourcekey))
 
     id_key = concat_ws('_', *id_key_list)
-    if use_hash: id_key = sha1(id_key)
+    if use_hash: id_key = sha2(id_key, 256)
 
     table = table.withColumn(IDKeyIndicator, id_key.alias(IDKeyIndicator, metadata={'maxlength': 1000, 'sqltype': 'varchar(1000)'}))
     return table
