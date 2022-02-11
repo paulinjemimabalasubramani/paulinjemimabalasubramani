@@ -69,49 +69,11 @@ def is_start_line(line:str):
     """
     record_segment = line[0:1]
     record_number = line[14:17]
-    return record_segment=='1' and record_number == '101'
+    return record_segment == '1' and record_number == '101'
 
 
 
 # %%
-
-
-source_file_path = os.path.join(data_settings.source_path, 'MAJ_NABASE.DAT')
-
-with open(source_file_path, mode='rt', encoding='ISO-8859-1') as fsource:
-    k = 0
-    for line in fsource:
-        k+=1
-        if k>500: break
-
-        record_segment = line[0:1]
-        if record_segment=='1':
-            firm = line[1:5]
-            branch = line[5:8]
-            account_number = line[8:14]
-            record_number = line[14:17]
-            if record_number == '101':
-                print(firm, branch, account_number, record_number, 'X')
-                record_set = []
-                first_account_number = account_number
-                first_branch = branch
-                first_firm = firm
-            else:
-                if first_account_number != account_number or first_branch != branch or first_firm != firm:
-                    print((firm, branch, account_number))
-                    raise
-                print(firm, branch, account_number, record_number)
-            if record_number in record_set and record_number!='900':
-                print(firm, branch, account_number, record_number)
-                print(record_set)
-            
-
-            record_set.append(record_number)
-
-
-
-
-
 
 
 
@@ -128,8 +90,25 @@ def process_lines(ftarget, lines:list):
     """
     if len(lines) == 0: return
 
+    fba = ()
     for line in lines:
-        
+        record_segment = line[0:1]
+        if record_segment == '1':
+            firm = line[1:5]
+            branch = line[5:8]
+            account_number = line[8:14]
+            record_number = line[14:17]
+            if record_number == '101':
+                fba = (firm, branch, account_number)
+            else:
+                if fba != (firm, branch, account_number):
+                    raise ValueError(f'Values {(firm, branch, account_number)} in record {record_number} does not Match record 101 data {fba}')
+
+        if record_number == '900': continue # record_number 900 is empty - ignore
+
+
+
+
 
 
 
@@ -152,7 +131,7 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
     """
     Process single FWF
     """
-    with open(source_file_path, mode='rt', encoding='utf-8') as fsource:
+    with open(source_file_path, mode='rt', encoding='ISO-8859-1') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
             first = file_has_header
             lines = []

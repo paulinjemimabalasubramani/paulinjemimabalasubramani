@@ -407,7 +407,7 @@ def step4(table_name:str, dtypes:OrderedDict):
     pk_column_names = [IDKeyIndicator.lower()]
     table_columns_ex_pk = [rspcol(c) for c in dtypes if c.lower() not in pk_column_names]
     if table_columns_ex_pk:
-        hash_columns = "SHA1(CONCAT(\n       " + "\n      ,".join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in table_columns_ex_pk]) + "\n      ))"
+        hash_columns = "SHA2(CONCAT(\n       " + "\n      ,".join([f"COALESCE({wid.src_alias}.{c},'N/A')" for c in table_columns_ex_pk]) + "\n      ))"
     else:
         hash_columns = "'All columns are Primary Keys'"
 
