@@ -619,7 +619,7 @@ def step7(table_name:str):
     warehouse = '{{ WAREHOUSE }}_RAW_WH' # data_settings.snowflake_warehouse
 
     step = f"""
-{create_or_replace_func('TASK')} {task_name}
+{create_or_replace_func('TASK')} {SCHEMA_NAME}.{task_name}
 WAREHOUSE = {warehouse}
 SCHEDULE = '1 minute'
 WHEN
