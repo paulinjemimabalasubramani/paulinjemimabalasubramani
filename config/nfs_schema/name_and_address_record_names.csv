@@ -1,0 +1,13 @@
+﻿record_number,Description,record_name,Primary source,Primary information
+101,Customer,customer,BNAM DISP CUST,Basic customer account – primary only
+102,FFR,ffr,BNAM DISP CUST/ADDL,Fixed format registration (FFR)
+103,FFR,ffr,BNAM DISP CUST/ADDL,Fixed format registration (FFR)
+104,FBSI,fbsi,BNAM DISP FBSI,Telephone numbers and bank information
+113,FFR,ffr,BNAM DISP CUST/ADDL,Fixed format registration (FFR)
+115,Legal,legal,BNAM DISP LEGL,Legal information
+2X0,Customer,customer,BNAM DISP BOOK,Customer and telephone information
+2X1,Mailing address,mailing_address,BNAM DISP BOOK,Mailing address information
+2X2,Legal address,legal_address,BNAM DISP BOOK,Legal address information
+2X3,Affiliation address,affiliation_address,BNAM DISP BOOK,Affiliation address information
+900,Internal use only,internal_use_only,,
+901,IPCS,ipcs,BNAM DISP IPCS,Interested party confirm and statement

@@ -4,7 +4,7 @@ Library for common generic functions
 """
 
 # %% Import Libraries
-import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql
+import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, re, csv
 
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
@@ -25,6 +25,8 @@ execution_date = execution_date_start.strftime(strftime)
 execution_date_start = datetime.strptime(execution_date, strftime) # to ensure identity with the string form of execution date
 EXECUTION_DATE_str = 'elt_execution_date'
 ELT_PROCESS_ID_str = 'elt_process_id'
+
+column_regex = r'[\W]+'
 
 is_pc = platform.system().lower() == 'windows'
 
@@ -863,6 +865,21 @@ def json_to_spark(spark, json_data):
     """
     json_string = json.dumps(json_data)
     return spark.read.json(spark.sparkContext.parallelize([json_string]))
+
+
+
+# %% Get CSV rows
+
+@catch_error(logger)
+def get_csv_rows(csv_file_path:str, csv_encoding:str='utf-8-sig'):
+    """
+    Generator function to get csv file rows one by one
+    """
+    with open(csv_file_path, mode='rt', newline='', encoding=csv_encoding, errors='ignore') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            rowl = {re.sub(column_regex, '_', str(k).lower().strip()):str(v).strip() for k, v in row.items()}
+            yield rowl
 
 
 

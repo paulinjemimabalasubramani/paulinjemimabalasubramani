@@ -39,7 +39,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, get_csv_rows
 from modules3.spark_functions import add_id_key, create_spark, read_text, remove_column_spaces, add_elt_columns
 from modules3.migrate_files import migrate_all_files, default_table_dtypes, file_meta_exists_for_select_files, add_firm_to_table_name
 
@@ -118,26 +118,24 @@ def get_albridge_schema():
     schema = defaultdict(list)
     albridge_file_types = dict()
 
-    with open(data_settings.schema_file_path, newline='', encoding='utf-8-sig', errors='ignore') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            file_types = row['file_type'].upper().split(',')
-            is_primary_key = row['is_primary_key'].strip().upper() == 'Y'
+    for row in get_csv_rows(csv_file_path=data_settings.schema_file_path):
+        file_types = row['file_type'].upper().split(',')
+        is_primary_key = row['is_primary_key'].strip().upper() == 'Y'
 
-            column_name = row['column_name'].strip().lower()
-            if column_name in ['', 'n/a', 'none', '_', '__', 'na', 'null', '-', '.']:
-                column_name = unused_column_name
+        column_name = row['column_name'].strip().lower()
+        if column_name in ['', 'n/a', 'none', '_', '__', 'na', 'null', '-', '.']:
+            column_name = unused_column_name
 
-            file_type_desc = row['file_type_desc'].strip()
+        file_type_desc = row['file_type_desc'].strip()
 
-            for file_type in file_types:
-                ftype = file_type.strip()
-                schema[ftype].append({
-                    'is_primary_key': is_primary_key,
-                    'column_name': column_name,
-                    })
-                if ftype not in ['HEADER', 'TRAILER']:
-                    albridge_file_types[ftype] = file_type_desc
+        for file_type in file_types:
+            ftype = file_type.strip()
+            schema[ftype].append({
+                'is_primary_key': is_primary_key,
+                'column_name': column_name,
+                })
+            if ftype not in ['HEADER', 'TRAILER']:
+                albridge_file_types[ftype] = file_type_desc
 
     return schema, albridge_file_types
 
