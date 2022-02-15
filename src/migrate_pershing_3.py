@@ -41,8 +41,8 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
-from modules3.spark_functions import add_id_key, create_spark, remove_column_spaces, add_elt_columns, column_regex, read_text
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, column_regex, get_csv_rows
+from modules3.spark_functions import add_id_key, create_spark, remove_column_spaces, add_elt_columns, read_text
 from modules3.migrate_files import migrate_all_files, default_table_dtypes, add_firm_to_table_name, get_key_column_names
 
 from collections import defaultdict
@@ -123,8 +123,6 @@ def get_pershing_schema(schema_file_name:str):
     """
     Read and Pre-process the schema table to make it code-friendly
     """
-    csv_encoding = 'utf-8-sig'
-
     if not schema_file_name.endswith('.csv'): schema_file_name = schema_file_name + '.csv'
     schema_file_path = os.path.join(data_settings.schema_file_path, schema_file_name)
     if not os.path.isfile(schema_file_path):
@@ -133,43 +131,40 @@ def get_pershing_schema(schema_file_name:str):
 
     schema = []
     record_names = []
-    with open(schema_file_path, mode='rt', newline='', encoding=csv_encoding, errors='ignore') as fs:
-        reader = csv.DictReader(fs)
-        for row in reader:
-            rowl = {str(k).lower().strip():str(v).strip() for k, v in row.items()}
-            field_name = re.sub(column_regex, '_', rowl['field_name'].lower().strip())
-            position = rowl['position'].strip()
-            record_name = rowl['record_name'].upper().strip()
-            conditional_changes = rowl['conditional_changes'].upper().strip()
+    for row in get_csv_rows(csv_file_path=schema_file_path):
+        field_name = re.sub(column_regex, '_', row['field_name'].lower().strip())
+        position = row['position'].strip()
+        record_name = row['record_name'].upper().strip()
+        conditional_changes = row['conditional_changes'].upper().strip()
 
-            if not field_name or (field_name in ['', 'not_used', 'filler', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
-                or ('-' not in position) or not record_name: continue
+        if not field_name or (field_name in ['', 'not_used', 'filler', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
+            or ('-' not in position) or not record_name: continue
 
-            if record_name not in record_names:
-                record_names.append(record_name)
-                schema.append({
-                    'field_name': hash_field_name.lower(),
-                    'position_start': 1,
-                    'position_end': total_hash_length,
-                    'length': total_hash_length,
-                    'record_name': record_name,
-                    'conditional_changes': conditional_changes,
-                    })
-
-            pos = position.split('-')
-            position_start = int(pos[0]) + total_prefix_length
-            position_end = int(pos[1]) + total_prefix_length
-            if position_start > position_end:
-                raise ValueError(f'position_start {pos[0]} > position_end {pos[1]} for field_name {field_name} in record_name {record_name}')
-
+        if record_name not in record_names:
+            record_names.append(record_name)
             schema.append({
-                'field_name': field_name,
-                'position_start': position_start,
-                'position_end': position_end,
-                'length': position_end - position_start + 1,
+                'field_name': hash_field_name.lower(),
+                'position_start': 1,
+                'position_end': total_hash_length,
+                'length': total_hash_length,
                 'record_name': record_name,
                 'conditional_changes': conditional_changes,
                 })
+
+        pos = position.split('-')
+        position_start = int(pos[0]) + total_prefix_length
+        position_end = int(pos[1]) + total_prefix_length
+        if position_start > position_end:
+            raise ValueError(f'position_start {pos[0]} > position_end {pos[1]} for field_name {field_name} in record_name {record_name}')
+
+        schema.append({
+            'field_name': field_name,
+            'position_start': position_start,
+            'position_end': position_end,
+            'length': position_end - position_start + 1,
+            'record_name': record_name,
+            'conditional_changes': conditional_changes,
+            })
 
     return schema
 

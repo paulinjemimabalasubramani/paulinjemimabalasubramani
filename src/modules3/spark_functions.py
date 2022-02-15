@@ -15,7 +15,7 @@ https://spark.apache.org/docs/latest/configuration
 # %% libraries
 import os, re
 
-from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, ELT_PROCESS_ID_str
+from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, ELT_PROCESS_ID_str, column_regex
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
@@ -25,8 +25,6 @@ from pyspark.sql.types import IntegerType
 
 
 # %% Parameters
-
-column_regex = r'[\W]+'
 
 IDKeyIndicator = 'elt_primary_key'
 
