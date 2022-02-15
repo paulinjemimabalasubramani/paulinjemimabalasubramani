@@ -49,7 +49,7 @@ from datetime import datetime
 @catch_error(logger)
 def get_fid_map():
     """
-    Get Financial Institution ID Map0
+    Get Financial Institution ID Map
     """
     fid_map = dict()
 
