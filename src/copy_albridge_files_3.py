@@ -42,7 +42,7 @@ def relative_copy_file(remote_path:str, dest_path:str, remote_file_path:str, upd
     if relpath and relpath not in ['.', '..', '/', '//', '\\']:
         dest_path = os.path.join(dest_path, relpath)
 
-    print(f'Copying a file from {remote_file_path} to {dest_path}')
+    print(f'Copying {remote_file_path} to {dest_path}')
     os.makedirs(dest_path, exist_ok=True)
     copy_file( # https://docs.python.org/3/distutils/apiref.html#distutils.file_util.copy_file
         src = remote_file_path,
@@ -57,19 +57,16 @@ def relative_copy_file(remote_path:str, dest_path:str, remote_file_path:str, upd
 
 
 
-
 # %% Copy files and folders to the new location
 
-def copy_files(remote_path:str, source_path:str, fin_inst_id:int):
+def copy_files():
     """
     Copy files and folders to the new location
     """
-    print(f'Copying files {fin_inst_id} from {remote_path} to {source_path}')
-
-    for root, dirs, files in os.walk(remote_path):
-        for file_name in files:
+    for file_name in os.listdir(remote_path):
+        remote_file_path = os.path.join(remote_path, file_name)
+        if os.path.isfile(remote_file_path):
             file_name_noext, file_ext = os.path.splitext(file_name)
-            remote_file_path = os.path.join(root, file_name)
 
             if file_ext.lower() != '.zip':
                 print(f'Not a zip file, not copying: {remote_file_path}')
@@ -79,24 +76,18 @@ def copy_files(remote_path:str, source_path:str, fin_inst_id:int):
                 print(f'zip file {remote_file_path} should start with "S", skipping copy')
                 continue
 
-            file_fid = file_name_noext[1:len(str(fin_inst_id))+1]
-            if file_fid != str(fin_inst_id):
-                continue
-
-            relative_copy_file(remote_path=remote_path, dest_path=source_path, remote_file_path=remote_file_path)
+            for firm, fin_inst_id in fid_map.items():
+                file_fid = file_name_noext[1:len(str(fin_inst_id))+1]
+                if file_fid == str(fin_inst_id):
+                    source_path = os.path.join(source_path_root, firm)
+                    relative_copy_file(remote_path=remote_path, dest_path=source_path, remote_file_path=remote_file_path)
+                    break
 
     print('Finished copying files')
 
 
 
-# %%
-
-for firm, fin_inst_id in fid_map.items():
-    copy_files(
-        remote_path = remote_path,
-        source_path = os.path.join(source_path_root, firm),
-        fin_inst_id = fin_inst_id
-    )
+copy_files()
 
 
 
