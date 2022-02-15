@@ -34,7 +34,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file
 
 from distutils.dir_util import copy_tree
 from distutils.file_util import copy_file
@@ -64,20 +64,9 @@ def copy_files():
         for root, dirs, files in os.walk(data_settings.remote_path):
             for file_name in files:
                 remote_file_path = os.path.join(root, file_name)
-                source_file_path = os.path.join(data_settings.source_path, os.path.relpath(root, data_settings.remote_path), file_name)
 
                 if any(c in file_name for c in copy_only_files):
-                    logger.info(f'Copying a file from {remote_file_path} to {source_file_path}')
-                    copy_file( # https://docs.python.org/3/distutils/apiref.html#distutils.file_util.copy_file
-                        src = remote_file_path,
-                        dst = source_file_path,
-                        preserve_mode = 0, # Do not copy file’s mode (type and permission bits)
-                        preserve_times = 1, # Copy file's last-modified and last-access times
-                        update = 1, #  src will only be copied if dst does not exist, or if dst does exist but is older than src.
-                        link = None, # if it is None (the default), files are copied
-                        verbose = 0, # Do not ignore errors
-                        dry_run = 0,
-                    )
+                    relative_copy_file(remote_path=data_settings.remote_path, dest_path=data_settings.source_path, remote_file_path=remote_file_path)
                 else:
                     logger.info(f'{file_name} is not in [{data_settings.copy_only_files}] -> Skipping Copy')
 

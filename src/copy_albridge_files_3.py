@@ -15,9 +15,9 @@ from distutils.file_util import copy_file
 
 # %% Parameters
 
-remote_path = ''
+remote_path = r''
 
-source_path_root = ''
+source_path_root = r''
 
 
 fid_map = {
@@ -28,6 +28,32 @@ fid_map = {
     'SPF': 130,
     'TRI': 1293,
 }
+
+
+
+# %% Relative Copy File
+
+def relative_copy_file(remote_path:str, dest_path:str, remote_file_path:str, update:int=1):
+    """
+    Relative Copy File
+    """
+    root = os.path.dirname(remote_file_path)
+    relpath = os.path.relpath(root, remote_path)
+    if relpath and relpath not in ['.', '..', '/', '//', '\\']:
+        dest_path = os.path.join(dest_path, relpath)
+
+    print(f'Copying a file from {remote_file_path} to {dest_path}')
+    os.makedirs(dest_path, exist_ok=True)
+    copy_file( # https://docs.python.org/3/distutils/apiref.html#distutils.file_util.copy_file
+        src = remote_file_path,
+        dst = dest_path,
+        preserve_mode = 0, # Do not copy file’s mode (type and permission bits)
+        preserve_times = 1, # Copy file's last-modified and last-access times
+        update = update, # if 1 then src will only be copied if dst does not exist, or if dst does exist but is older than src.
+        link = None, # if it is None (the default), files are copied
+        verbose = 0, # Do not ignore errors
+        dry_run = 0,
+    )
 
 
 
@@ -44,7 +70,6 @@ def copy_files(remote_path:str, source_path:str, fin_inst_id:int):
         for file_name in files:
             file_name_noext, file_ext = os.path.splitext(file_name)
             remote_file_path = os.path.join(root, file_name)
-            source_file_path = os.path.join(source_path, os.path.relpath(root, remote_path), file_name)
 
             if file_ext.lower() != '.zip':
                 print(f'Not a zip file, not copying: {remote_file_path}')
@@ -58,17 +83,7 @@ def copy_files(remote_path:str, source_path:str, fin_inst_id:int):
             if file_fid != str(fin_inst_id):
                 continue
 
-            print(f'Copying a file from {remote_file_path} to {source_file_path}')
-            copy_file( # https://docs.python.org/3/distutils/apiref.html#distutils.file_util.copy_file
-                src = remote_file_path,
-                dst = source_file_path,
-                preserve_mode = 0, # Do not copy file’s mode (type and permission bits)
-                preserve_times = 1, # Copy file's last-modified and last-access times
-                update = 1, #  src will only be copied if dst does not exist, or if dst does exist but is older than src.
-                link = None, # if it is None (the default), files are copied
-                verbose = 0, # Do not ignore errors
-                dry_run = 0,
-            )
+            relative_copy_file(remote_path=remote_path, dest_path=source_path, remote_file_path=remote_file_path)
 
     print('Finished copying files')
 

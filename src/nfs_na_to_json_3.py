@@ -21,7 +21,7 @@ if False: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'CA_MIGRATE_NFS',
+        'pipelinekey': 'CA_MIGRATE_NFS_NA',
         'schema_file_path': r'C:\myworkdir\EDIP-Code\config\nfs_schema',
         'source_path': r'C:\myworkdir\Shared\NFS-CA',
         }
@@ -55,8 +55,6 @@ headerrecordclientid_map = {
 table_name_map = {
     'name_addr_history': 'name_and_address',
 }
-
-
 
 master_schema_name = 'name_and_address' # to take header info
 master_schema_header_columns = ['firm_name', 'headerrecordclientid']

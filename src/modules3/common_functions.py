@@ -11,6 +11,7 @@ from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from functools import wraps
 from collections import OrderedDict
+from distutils.file_util import copy_file
 
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
@@ -880,6 +881,33 @@ def get_csv_rows(csv_file_path:str, csv_encoding:str='utf-8-sig'):
         for row in reader:
             rowl = {re.sub(column_regex, '_', str(k).lower().strip()):str(v).strip() for k, v in row.items()}
             yield rowl
+
+
+
+# %% Relative Copy File
+
+@catch_error(logger)
+def relative_copy_file(remote_path:str, dest_path:str, remote_file_path:str, update:int=1):
+    """
+    Relative Copy File
+    """
+    root = os.path.dirname(remote_file_path)
+    relpath = os.path.relpath(root, remote_path)
+    if relpath and relpath not in ['.', '..', '/', '//', '\\']:
+        dest_path = os.path.join(dest_path, relpath)
+
+    logger.info(f'Copying a file from {remote_file_path} to {dest_path}')
+    os.makedirs(dest_path, exist_ok=True)
+    copy_file( # https://docs.python.org/3/distutils/apiref.html#distutils.file_util.copy_file
+        src = remote_file_path,
+        dst = dest_path,
+        preserve_mode = 0, # Do not copy file’s mode (type and permission bits)
+        preserve_times = 1, # Copy file's last-modified and last-access times
+        update = update, # if 1 then src will only be copied if dst does not exist, or if dst does exist but is older than src.
+        link = None, # if it is None (the default), files are copied
+        verbose = 0, # Do not ignore errors
+        dry_run = 0,
+    )
 
 
 
