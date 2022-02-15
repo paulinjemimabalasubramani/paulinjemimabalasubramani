@@ -41,7 +41,9 @@ VALUES
 ('CA_AG_DATASOURCE_NBS', 'Client Account', 'NBS', '', 'csv', 'AG', 'System', CURRENT_TIMESTAMP),
 ('CA_AG_DATASOURCE_CLIENTODS', 'Client Account', 'ClientODS', '', 'csv', 'AG', 'System', CURRENT_TIMESTAMP),
 
-('CA_AG_DATASOURCE_NFS', 'Client Account', 'NFS', '', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP)
+('CA_AG_DATASOURCE_NFS', 'Client Account', 'NFS', '', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP),
+
+('ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', 'Assets', 'Albridge', '', 'assets_copy_albridge', 'AG', 'System', CURRENT_TIMESTAMP)
 
 ;
 
@@ -92,7 +94,9 @@ VALUES
 ('CA_MIGRATE_NBS', 'outbound_migration', 'Pipeline to migrate CA-NBS files to Snowflake', 'CA_AG_DATASOURCE_NBS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 ('CA_MIGRATE_CLIENTODS', 'outbound_migration', 'Pipeline to migrate CA-ClientODS files to Snowflake', 'CA_AG_DATASOURCE_CLIENTODS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
-('CA_MIGRATE_NFS', 'outbound_migration', 'Pipeline to migrate CA-NFS files to Snowflake', 'CA_AG_DATASOURCE_NFS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+('CA_MIGRATE_NFS', 'outbound_migration', 'Pipeline to migrate CA-NFS files to Snowflake', 'CA_AG_DATASOURCE_NFS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+('ASSETS_COPY_ALBRIDGE', 'copy', 'Pipeline to copy Assets-Albridge files from remote location', 'ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
 
 ;
 
@@ -254,6 +258,14 @@ VALUES
 ('ASSETS_MIGRATE_ALBRIDGE_WFS', 'FIN_INST_ID', '63', 'System', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_ALBRIDGE_WFS', 'DATE_FORMAT', '%Y%m%d', 'System', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_ALBRIDGE_WFS', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP),
+
+
+
+('ASSETS_COPY_ALBRIDGE', 'REMOTE_PATH', '/usr/local/spark/resources/fileshare/APP01/sftpsite/StatementOne/s1tov2020', 'System', CURRENT_TIMESTAMP),
+('ASSETS_COPY_ALBRIDGE', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/ALBRIDGE', 'System', CURRENT_TIMESTAMP),
+('ASSETS_COPY_ALBRIDGE', 'FILE_HISTORY_START_DATE', '2021-10-15', 'System', CURRENT_TIMESTAMP),
+('ASSETS_COPY_ALBRIDGE', 'DATE_FORMAT', '%Y%m%d', 'System', CURRENT_TIMESTAMP),
+('ASSETS_COPY_ALBRIDGE', 'FID_MAP', 'FSC:107,WFS:163,RAA:119,SAI:1134,SPF:130,TRI:1293', 'System', CURRENT_TIMESTAMP),
 
 
 
