@@ -39,7 +39,7 @@ with DAG(
     airflow_app_name,
     default_args = default_args,
     description = description_DAG,
-    schedule_interval = '0 13 * * *', # https://crontab.guru/#0_13_*_*_*
+    schedule_interval = '30 8 * * *', # https://crontab.guru/
     start_date = days_ago(1),
     tags = tags,
     catchup = False,
