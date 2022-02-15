@@ -30,7 +30,7 @@ else:
 
 # %% Import Libraries
 
-import os, sys, csv
+import os, sys
 from datetime import datetime
 from collections import defaultdict
 
