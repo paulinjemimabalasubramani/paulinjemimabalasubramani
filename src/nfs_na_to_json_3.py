@@ -32,7 +32,7 @@ else:
 
 from collections import defaultdict
 from email.header import Header
-import os, sys, tempfile, shutil, json, csv, re
+import os, sys, tempfile, shutil, json, re
 
 class app: pass
 sys.app = app
@@ -77,8 +77,6 @@ json_file_ext = '.json'
 
 
 
-
-
 # %% get and pre-process schema
 
 @catch_error(logger)
@@ -118,7 +116,6 @@ def get_nfs_schema(schema_name:str):
             schema[(record_number, record_segment)][(field_name, conditional_changes)] = {
                 'position_start': position_start,
                 'position_end': position_end,
-                'conditional_changes': conditional_changes,
             }
         elif record_type.upper() == HEADER_record.upper():
             if field_name in header_schema:
@@ -181,12 +178,12 @@ def get_header_info(file_path:str):
     header_info['table_name'] = '_'.join([firm_name, table_name_map[table_name]]).lower()
     header_info['firm_name'] = firm_name
     header_info['key_datetime'] = datetime.strptime(header_info['transmissioncreationdate'], r'%m%d%y')
-    header_info['target_file_name'] = header_info['table_name'] + '_' + header_info['key_datetime'].strftime(r'%Y%m%d') + '.json'
+    header_info['target_file_name'] = header_info['table_name'] + '_' + header_info['key_datetime'].strftime(r'%Y%m%d') + json_file_ext
     return header_info
 
 
 
-header_info = get_header_info(file_path=r'C:\myworkdir\Shared\NFS-CA\MAJ_NABASE.DAT')
+#header_info = get_header_info(file_path=r'C:\myworkdir\Shared\NFS-CA\MAJ_NABASE.DAT')
 
 
 
@@ -203,27 +200,20 @@ def is_start_line(line:str):
 
 
 
-# %%
-
-
-
-
-
-
-
 # %% Process all lines belonging to a single record
 
 @catch_error(logger)
-def process_lines(ftarget, lines:list):
+def process_lines(ftarget, lines:list, header_info:dict, is_first_line:bool):
     """
     Process all lines belonging to a single record
     """
     if len(lines) == 0: return
 
+    record = dict()
     fba = ()
     for line in lines:
         record_segment = line[0:1]
-        if ord(record_segment)-ord('0') not in range(1, 5): raise ValueError(f'Invalid record_segment: {record_segment}')
+        if ord(record_segment)-ord('0') not in range(1, 6): raise ValueError(f'Invalid record_segment: {record_segment}')
 
         if record_segment == '1':
             firm = line[1:5]
@@ -238,49 +228,90 @@ def process_lines(ftarget, lines:list):
 
         if record_number == '900': continue # record_number 900 is empty - ignore
 
+        line_schema = schema[(record_number, record_segment)]
+        line_fields = dict()
+        for field, pos in line_schema.items():
+            field_name = field[0]
+            conditional_changes = field[1]
+            if conditional_changes:
+                name_type = line[1:2]
+                if name_type != conditional_changes: continue
+            line_fields = {**line_fields, field_name:line[pos['position_start']:pos['position_end']].strip()}
+
+        for field_name, field_value in line_fields:
+            if not field_value: continue
+
+            if record_number == '101':
+                if field_name in record:
+                    record[field_name] += ' ' + field_value
+                else:
+                    record[field_name] = field_value
+
+            elif record_number == '':
+                pass
+
+
+
+
+
+    if not is_first_line:
+        ftarget.write(',\n')
+    else:
+        is_first_line = False
+
+    ftarget.write(json.dumps(record))
 
 
 
 
 
 
-# %% Add Header or Trailer line
+# %% Process Header or Trailer line
 
 @catch_error(logger)
 def process_custom_line(ftarget, line:str, custom:str):
     """
-    Add Header or Trailer line
+    Process Header or Trailer line
     """
-    #ftarget.write(add_prefix(prefix=txt.ljust(total_hash_length), line=line))
+    pass
 
 
 
 # %% Process single FWF
 
 @catch_error(logger)
-def process_single_fwf(source_file_path:str, target_file_path:str):
+def process_single_fwf(source_file_path:str):
     """
     Process single FWF
     """
+    header_info = get_header_info(file_path=source_file_path)
+    target_file_path = os.path.join(data_settings.target_path, header_info['target_file_name'])
+
     with open(source_file_path, mode='rt', encoding='ISO-8859-1') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
+            ftarget.write('[\n')
+
             first = file_has_header
             lines = []
+            is_first_line = True
             for line in fsource:
                 if first:
                     process_custom_line(ftarget=ftarget, line=line, custom=HEADER_record)
                     first = False
                 else:
                     if is_start_line(line=line) and lines:
-                        process_lines(ftarget=ftarget, lines=lines)
+                        process_lines(ftarget=ftarget, lines=lines, header_info=header_info, is_first_line=is_first_line)
+                        is_first_line = False
                         lines = []
                     lines.append(line)
 
             if file_has_trailer:
-                if len(lines)>1: process_lines(ftarget=ftarget, lines=lines[:-1])
+                if len(lines)>1: process_lines(ftarget=ftarget, lines=lines[:-1], header_info=header_info, is_first_line=is_first_line)
                 process_custom_line(ftarget=ftarget, line=lines[-1], custom=TRAILER_record)
             else:
-                process_lines(ftarget=ftarget, lines=lines)
+                process_lines(ftarget=ftarget, lines=lines, header_info=header_info, is_first_line=is_first_line)
+
+            ftarget.write('\n]')
 
 
 
@@ -303,9 +334,8 @@ def iterate_over_all_fwf(source_path:str):
                     iterate_over_all_fwf(source_path=extract_dir)
                 continue
 
-            target_file_path = os.path.join(data_settings.target_path, file_name + json_file_ext)
             logger.info(f'Processing {source_file_path}')
-            process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path)
+            process_single_fwf(source_file_path=source_file_path)
 
 
 

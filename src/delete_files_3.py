@@ -35,6 +35,7 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end
+from modules3.migrate_files import file_meta_exists_for_select_files
 
 from distutils.dir_util import remove_tree
 
@@ -44,12 +45,12 @@ from distutils.dir_util import remove_tree
 
 
 
-# %% Delete files and folders to the new location
+# %% Delete files and folders in the source path
 
 @catch_error(logger)
 def delete_files():
     """
-    Delete files and folders to the new location
+    Delete files and folders in the source path
     """
     if not hasattr(data_settings, 'delete_files_after') or data_settings.delete_files_after.upper()!='TRUE':
         logger.info('DELETE_FILES_AFTER config is not enabled - Skipping Delete')
@@ -57,12 +58,16 @@ def delete_files():
         logger.info(f'Directory {data_settings.source_path} is not found - Skipping Delete')
     else:
         logger.info(f'Deleting files from {data_settings.source_path}')
-        remove_tree( # https://docs.python.org/2/distutils/apiref.html#distutils.dir_util.remove_tree
-            directory = data_settings.source_path,
-            verbose = 0, # Do not ignore errors
-            dry_run = 0,
-        )
-        logger.info('Finished deleting files')
+
+    for root, dirs, files in os.walk(data_settings.source_path):
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+            if file_meta_exists_for_select_files(file_path=file_path):
+                logger.info(f'Deleting file: {file_path}')
+                os.remove(file_path)
+
+    logger.info('Finished deleting files')
+
 
 
 delete_files()
