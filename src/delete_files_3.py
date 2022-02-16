@@ -37,8 +37,6 @@ sys.app.parent_name = os.path.basename(__file__)
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end
 from modules3.migrate_files import file_meta_exists_for_select_files
 
-from distutils.dir_util import remove_tree
-
 
 
 # %% Parameters
