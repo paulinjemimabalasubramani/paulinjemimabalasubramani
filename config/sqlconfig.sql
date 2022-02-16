@@ -301,20 +301,20 @@ VALUES
 
 
 
-('CA_MIGRATE_NFS', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS', 'DB_NAME', 'CA', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS', 'SCHEMA_NAME', 'NFS', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS', 'IS_FULL_LOAD', 'TRUE', 'System', CURRENT_TIMESTAMP),
-
+('CA_MIGRATE_NFS_NA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_NA', 'DB_NAME', 'CA', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_NA', 'SCHEMA_NAME', 'NFS', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_NA', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_NA', 'IS_FULL_LOAD', 'TRUE', 'System', CURRENT_TIMESTAMP)
 
 ;
 
 
 
 
+
 select * from metadata.PipelineConfiguration
-where PipelineKey = 'CA_MIGRATE_NFS'
+where PipelineKey = 'CA_MIGRATE_NFS_NA'
 ;
 
 
