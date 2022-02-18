@@ -13,14 +13,14 @@ spark_master = "spark://spark:7077"
 spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
-pipelinekey = 'CA_MIGRATE_PERSHING_RAA'
-python_spark_code = 'migrate_pershing_3'
+pipelinekey = 'CA_MIGRATE_NFS_NA'
+python_spark_code = 'migrate_nfs_3'
 
 spark_app_name = pipelinekey.lower()
 airflow_app_name = spark_app_name
-description_DAG = 'Migrate ClientAccount-Pershing Tables'
+description_DAG = 'Migrate ClientAccount NFS-NA Tables'
 
-tags = ['DB:ClientAccount', 'SC:Pershing']
+tags = ['DB:ClientAccount', 'SC:NFS']
 
 default_args = {
     'owner': 'EDIP',
@@ -29,6 +29,7 @@ default_args = {
 
 
 jars = "/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar,/usr/local/spark/resources/jars/spark-xml_2.12-0.12.0.jar"
+
 
 
 # %% Create DAG
@@ -54,9 +55,9 @@ with DAG(
         dag = dag
     )
 
-    add_bulk_id = BashOperator(
-        task_id = f'ADD_BULK_ID_{pipelinekey}',
-        bash_command = f'python /usr/local/spark/app/bulk_fixed_width_files_3.py --pipelinekey {pipelinekey}',
+    convert_to_json = BashOperator(
+        task_id = f'CONVERT_TO_JSON_{pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/nfs_na_to_json_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
@@ -86,7 +87,7 @@ with DAG(
         dag = dag
     )
 
-    startpipe >> copy_files >> add_bulk_id >> migrate_data >> delete_files
+    startpipe >> copy_files >> convert_to_json >> migrate_data >> delete_files
 
 
 
