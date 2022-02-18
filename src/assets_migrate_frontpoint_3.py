@@ -126,6 +126,7 @@ def select_files():
                 try:
                     key_datetime = datetime.strptime('-'.join([year, month, day]), r'%Y-%m-%d')
                 except:
+                    logger.warning(f'Invalid Date Format: {file_path}')
                     continue
 
             if file_meta_exists_for_select_files(file_path=file_path): continue

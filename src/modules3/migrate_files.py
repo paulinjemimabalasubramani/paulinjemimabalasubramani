@@ -75,14 +75,18 @@ data_settings.metadata_key_column_names = get_metadata_key_column_names()
 # %% Get Primary Keys from SQL Server
 
 @catch_error(logger)
-def get_key_column_names(table_name:str):
+def get_key_column_names(table_name:str, firm_name:str=''):
     """
     Get Primary Keys from SQL Server
     """
     sql_pk_table = f"{pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_primary_key']}"
     sql_ds_table = f"{pipeline_metadata_conf['sql_schema']}.{pipeline_metadata_conf['sql_table_name_datasource']}"
 
-    firm_name = data_settings.pipeline_firm.upper() + '_' if data_settings.pipeline_firm else ''
+    if firm_name:
+        firm_name = firm_name.upper() + '_'
+    else:
+        firm_name = data_settings.pipeline_firm.upper() + '_' if data_settings.pipeline_firm else ''
+
     datasourcekey = data_settings.pipeline_datasourcekey.upper()
 
     sqlstr_get_pk = f"""SELECT LOWER(mpk.SystemPrimaryKey) AS PK
@@ -138,16 +142,13 @@ def add_firm_to_table_name(table_name:str):
     return table_name.lower()
 
 
-
-# %% Create file_meta table in SQL Server if not exists
+# %% Check if file_meta table exists
 
 @catch_error(logger)
-def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
+def check_if_file_meta_table_exists():
     """
-    Create file_meta table in SQL Server if not exists
+    Check if file_meta table exists
     """
-    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_hist_conf['sql_file_history_table']}".lower()
-
     sqlstr_table_exists = f"""SELECT COUNT(*) AS CNT
     FROM INFORMATION_SCHEMA.TABLES
     WHERE UPPER(TABLE_SCHEMA) = '{cloud_file_hist_conf['sql_schema'].upper()}'
@@ -166,11 +167,35 @@ def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
         with conn.cursor(as_dict=True) as cursor:
             cursor.execute(sqlstr_table_exists)
             row = cursor.fetchone()
-            if int(row['CNT']) == 0:
-                logger.info(f'{full_table_name} table does not exist in SQL server. Creating new table.')
-                file_meta_columns = 'id int identity' + ''.join([f', {c[0]} {c[1]}' for c in cloud_file_history_columns + additional_file_meta_columns])
-                create_table_sqlstr = f'CREATE TABLE {full_table_name} ({file_meta_columns});'
-                conn._conn.execute_non_query(create_table_sqlstr)
+            return int(row['CNT']) > 0
+
+
+
+# %% Create file_meta table in SQL Server if not exists
+
+@catch_error(logger)
+def create_file_meta_table_if_not_exists(additional_file_meta_columns:list):
+    """
+    Create file_meta table in SQL Server if not exists
+    """
+    if check_if_file_meta_table_exists(): return
+
+    full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_hist_conf['sql_file_history_table']}".lower()
+    logger.info(f'{full_table_name} table does not exist in SQL server. Creating new table.')
+
+    file_meta_columns = 'id int identity' + ''.join([f', {c[0]} {c[1]}' for c in cloud_file_history_columns + additional_file_meta_columns])
+    create_table_sqlstr = f'CREATE TABLE {full_table_name} ({file_meta_columns});'
+
+    with pymssql.connect(
+        server = cloud_file_hist_conf['sql_server'],
+        user = cloud_file_hist_conf['sql_id'],
+        password = cloud_file_hist_conf['sql_pass'],
+        database = cloud_file_hist_conf['sql_database'],
+        appname = sys.app.parent_name,
+        autocommit = True,
+        ) as conn:
+        with conn.cursor(as_dict=True) as cursor:
+            conn._conn.execute_non_query(create_table_sqlstr)
 
 
 
@@ -206,6 +231,8 @@ def file_meta_exists_in_history(file_meta:dict):
     """
     Check if file_meta exists in SQL server File History
     """
+    if not check_if_file_meta_table_exists(): return False
+
     full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_hist_conf['sql_file_history_table']}".lower()
 
     key_columns = []
@@ -237,6 +264,8 @@ def file_meta_exists_for_select_files(file_path:str):
     """
     Check if file_meta exists in SQL server File History for initial File Selection
     """
+    if not check_if_file_meta_table_exists(): return False
+
     full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_hist_conf['sql_file_history_table']}".lower()
 
     sqlstr_meta_exists = f"""SELECT COUNT(*) AS CNT FROM {full_table_name}
@@ -331,7 +360,7 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         **file_meta,
         'database_name': data_settings.domain_name,
         'schema_name': data_settings.schema_name,
-        'firm_name': data_settings.pipeline_firm,
+        'firm_name': data_settings.pipeline_firm.upper(),
         EXECUTION_DATE_str.lower(): execution_date_start,
         ELT_PROCESS_ID_str.lower(): data_settings.elt_process_id,
         'pipelinekey': data_settings.pipelinekey,
