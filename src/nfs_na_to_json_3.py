@@ -38,6 +38,7 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, column_regex, get_csv_rows
+from modules3.migrate_files import file_meta_exists_for_select_files
 
 from datetime import datetime
 from collections import defaultdict
@@ -380,7 +381,15 @@ def process_single_fwf(source_file_path:str):
     Process single FWF
     """
     header_info = get_header_info(file_path=source_file_path)
+
+    if data_settings.key_datetime > header_info['key_datetime']:
+        logger.info(f'Skipping file due to older key_datetime: {source_file_path}')
+        return
+
     target_file_path = os.path.join(data_settings.target_path, header_info['target_file_name'])
+    if file_meta_exists_for_select_files(file_path=target_file_path):
+        logger.info(f'Already ingested file: {source_file_path} -> skipping')
+        return
 
     with open(source_file_path, mode='rt', encoding='ISO-8859-1') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:

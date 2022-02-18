@@ -357,6 +357,27 @@ def read_text(spark, file_path:str):
 
 
 
+
+# %% Read JSON File
+
+@catch_error(logger)
+def read_json(spark, file_path:str):
+    """
+    Read JSON File using PySpark
+    """
+    logger.info(f'Reading JSON file: {file_path}')
+
+    json_table = (spark.read
+        .format('json')
+        .option('multiLine', 'true')
+        .load(file_path)
+    )
+
+    logger.info('Finished reading JSON file')
+    return json_table
+
+
+
 # %% Add ID Key
 
 @catch_error(logger)

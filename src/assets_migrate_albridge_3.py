@@ -96,6 +96,7 @@ def select_files():
                 key_datetime = datetime.strptime(file_date_str, data_settings.date_format)
                 if key_datetime < data_settings.key_datetime: continue
             except:
+                logger.warning(f'Invalid Date Format: {file_path}')
                 continue
 
             if file_meta_exists_for_select_files(file_path=file_path): continue
