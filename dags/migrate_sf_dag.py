@@ -42,11 +42,11 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    # extractdata = BashOperator(
-    #     task_id = 'extract_salesforce_data',
-    #     bash_command = 'python /usr/local/spark/app/extract_sf.py',
-    #     dag = dag
-    # )
+    extractdata = BashOperator(
+        task_id = 'extract_salesforce_data',
+        bash_command = 'python /usr/local/spark/app/extract_sf.py',
+        dag = dag
+    )
 
     migratedata = SparkSubmitOperator(
          task_id = "migrate_salesforce",
@@ -63,8 +63,8 @@ with DAG(
          dag = dag
          )
 
-    #startpipe >> extractdata >> migratedata
-    startpipe >> migratedata
+    startpipe >> extractdata >> migratedata
+    #startpipe >> migratedata
 
 
 
