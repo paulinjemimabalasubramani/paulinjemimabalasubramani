@@ -471,22 +471,22 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
                 extract_dir = tmpdir
                 logger.info(f'Extracting {file_path} to {extract_dir}')
                 shutil.unpack_archive(filename=file_path, extract_dir=extract_dir, format='zip')
-                zip_file_path = zip_file_path if zip_file_path else file_path # to keep original zip file path, rather than the last zip file path
+                zip_file_path1 = zip_file_path if zip_file_path else file_path # to keep original zip file path, rather than the last zip file path
                 recursive_migrate_all_files(
                     source_path = extract_dir,
                     fn_extract_file_meta = fn_extract_file_meta,
                     additional_file_meta_columns = additional_file_meta_columns,
                     fn_process_file = fn_process_file,
                     fn_get_dtypes = fn_get_dtypes,
-                    zip_file_path = zip_file_path,
+                    zip_file_path = zip_file_path1,
                     selected_file_paths = [],
                     )
-                update_sql_zip_file_path(zip_file_path=zip_file_path)
+                update_sql_zip_file_path(zip_file_path=zip_file_path1)
             continue
 
         migrate_single_file(
             file_path = file_path,
-            zip_file_path = zip_file_path,
+            zip_file_path = zip_file_path1,
             fn_extract_file_meta = fn_extract_file_meta,
             fn_process_file = fn_process_file,
             fn_get_dtypes = fn_get_dtypes,
