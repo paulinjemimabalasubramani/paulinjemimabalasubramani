@@ -13,14 +13,14 @@ spark_master = "spark://spark:7077"
 spark_executor_instances = 3
 spark_master_ip = '10.128.25.82'
 
-pipelinekey = 'CA_MIGRATE_NFS_NA'
+pipelinekey = 'ASSETS_MIGRATE_NFS_FSC'
 python_spark_code = 'migrate_nfs_3'
 
 spark_app_name = pipelinekey.lower()
 airflow_app_name = spark_app_name
-description_DAG = 'Migrate ClientAccount NFS-NA Tables'
+description_DAG = 'Migrate Assets NFS-NA Tables'
 
-tags = ['DB:ClientAccount', 'SC:NFS']
+tags = ['DB:Assets', 'SC:NFS']
 
 default_args = {
     'owner': 'EDIP',
@@ -57,7 +57,7 @@ with DAG(
 
     convert_to_json = BashOperator(
         task_id = f'CONVERT_TO_JSON_{pipelinekey}',
-        bash_command = f'python /usr/local/spark/app/nfs_na_to_json_3.py --pipelinekey {pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/nfs_to_json_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
