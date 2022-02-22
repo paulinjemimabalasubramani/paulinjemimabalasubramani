@@ -21,7 +21,7 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'CA_MIGRATE_NFS_NA',
+        'pipelinekey': 'CA_MIGRATE_NFS_RAA',
         'schema_file_path': r'C:\myworkdir\EDIP-Code\config\nfs_schema',
         'source_path': r'C:\myworkdir\Shared\NFS-CA',
         }

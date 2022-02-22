@@ -41,11 +41,13 @@ VALUES
 ('CA_AG_DATASOURCE_NBS', 'Client Account', 'NBS', '', 'csv', 'AG', 'System', CURRENT_TIMESTAMP),
 ('CA_AG_DATASOURCE_CLIENTODS', 'Client Account', 'ClientODS', '', 'csv', 'AG', 'System', CURRENT_TIMESTAMP),
 
-('CA_AG_DATASOURCE_NFS', 'Client Account', 'NFS', '', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP),
+('CA_AG_DATASOURCE_NFS_RAA', 'Client Account', 'NFS', '', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP),
 
 ('ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', 'Assets', 'Albridge', '', 'assets_copy_albridge', 'AG', 'System', CURRENT_TIMESTAMP)
 
 ;
+
+
 
 
 
@@ -94,7 +96,7 @@ VALUES
 ('CA_MIGRATE_NBS', 'outbound_migration', 'Pipeline to migrate CA-NBS files to Snowflake', 'CA_AG_DATASOURCE_NBS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 ('CA_MIGRATE_CLIENTODS', 'outbound_migration', 'Pipeline to migrate CA-ClientODS files to Snowflake', 'CA_AG_DATASOURCE_CLIENTODS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
-('CA_MIGRATE_NFS', 'outbound_migration', 'Pipeline to migrate CA-NFS files to Snowflake', 'CA_AG_DATASOURCE_NFS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'outbound_migration', 'Pipeline to migrate CA-NFS files to Snowflake', 'CA_AG_DATASOURCE_NFS_RAA', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
 ('ASSETS_COPY_ALBRIDGE', 'copy', 'Pipeline to copy Assets-Albridge files from remote location', 'ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
 
@@ -104,7 +106,11 @@ VALUES
 
 
 
-SELECT * FROM metadata.Pipeline;
+
+
+SELECT * FROM metadata.Pipeline
+order by PipelineKey
+;
 
 
 
@@ -301,20 +307,19 @@ VALUES
 
 
 
-('CA_MIGRATE_NFS_NA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'DB_NAME', 'CLIENTACCOUNT', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'SCHEMA_NAME', 'NFS', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'IS_FULL_LOAD', 'TRUE', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'CLIENTID_MAP', 'MAJ:RAA,XXX:XXX', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'SNOWFLAKE_ROLE', 'QA_CLIENTACCOUNT_DBO', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'SNOWFLAKE_WAREHOUSE', 'QA_CLIENTACCOUNT_RAW_WH', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'FILE_HISTORY_START_DATE', '2022-01-15', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_NA', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/nfs_schema', 'System', CURRENT_TIMESTAMP)
-
+('CA_MIGRATE_NFS_RAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'DB_NAME', 'CLIENTACCOUNT', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'SCHEMA_NAME', 'NFS', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'IS_FULL_LOAD', 'TRUE', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'SNOWFLAKE_ROLE', 'QA_CLIENTACCOUNT_DBO', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'SNOWFLAKE_WAREHOUSE', 'QA_CLIENTACCOUNT_RAW_WH', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'FILE_HISTORY_START_DATE', '2022-01-15', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/nfs_schema', 'System', CURRENT_TIMESTAMP),
+('CA_MIGRATE_NFS_RAA', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP)
 
 ;
 
@@ -322,8 +327,11 @@ VALUES
 
 
 
+
+
+
 select * from metadata.PipelineConfiguration
-where PipelineKey = 'CA_MIGRATE_NFS_NA'
+where PipelineKey = 'CA_MIGRATE_NFS_RAA'
 ;
 
 
