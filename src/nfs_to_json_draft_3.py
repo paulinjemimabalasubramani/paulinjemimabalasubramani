@@ -50,6 +50,7 @@ from distutils.dir_util import remove_tree
 
 table_name_map = {
     'name_addr_history': 'name_and_address',
+    'position_extract': 'position',
 }
 
 master_schema_name = 'name_and_address' # to take header info
