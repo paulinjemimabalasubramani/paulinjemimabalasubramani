@@ -51,9 +51,9 @@ from distutils.dir_util import remove_tree
 table_name_map = {
     'name_addr_history': 'name_and_address',
     'position_extract': 'position',
+    'bookkeeping': 'activity',
 }
 
-master_table_name = 'name_and_address' # to take header info
 get_schema_name = lambda table_name_no_firm: table_name_no_firm + '.csv'
 
 file_has_header = True
@@ -155,22 +155,6 @@ def get_nfs_schema(table_name_no_firm:str):
 
 
 
-# %% Get Master Header and Trailer Schema
-
-@catch_error(logger)
-def get_master_header_trailer_schema():
-    """
-    Get Master Header and Trailer Schema
-    """
-    master_schema, master_header_schema, master_trailer_schema = get_nfs_schema(table_name_no_firm=master_table_name)
-    return master_header_schema, master_trailer_schema
-
-
-
-master_header_schema, master_trailer_schema = get_master_header_trailer_schema()
-
-
-
 # %% Get Header Info from Pershing file
 
 @catch_error(logger)
@@ -181,13 +165,27 @@ def get_header_info(file_path:str):
     with open(file=file_path, mode='rt') as f:
         HEADER = f.readline()
 
+    master_header_schema = defaultdict(dict)
+
+    if HEADER[21:37].upper() == 'FIDELITY SYSTEMS':
+        master_header_schema['headerrecordclientid'] = {'position_start': 1, 'position_end': 4}
+        master_header_schema['filetitle'] = {'position_start': 41, 'position_end': 58}
+        master_header_schema['transmissioncreationdate'] = {'position_start': 62, 'position_end': 68}
+    elif HEADER[36:48].upper() == 'NFSC SYSTEMS':
+        master_header_schema['headerrecordclientid'] = {'position_start': 58, 'position_end': 61}
+        master_header_schema['filetitle'] = {'position_start': 11, 'position_end': 22}
+        master_header_schema['transmissioncreationdate'] = {'position_start': 71, 'position_end': 77}
+    else:
+        logger.warning(f'File: "{file_path}" has unknown HEADER: {HEADER}')
+        return
+
     header_info = dict()
     for field_name, pos in master_header_schema.items():
         header_info[field_name] = re.sub(' +', ' ', HEADER[pos['position_start']: pos['position_end']].strip())
 
     table_name = re.sub(column_regex, '_', header_info['filetitle'].lower())
     if table_name not in table_name_map:
-        logger.info(f'Unknown Table Name "{table_name}" in file {file_path}')
+        logger.warning(f'Unknown Table Name "{table_name}" in file {file_path}')
         return
 
     firm_name = headerrecordclientid_map[header_info['headerrecordclientid'].upper()]
@@ -197,6 +195,8 @@ def get_header_info(file_path:str):
     header_info['firm_name'] = firm_name
     header_info['key_datetime'] = datetime.strptime(header_info['transmissioncreationdate'], r'%m%d%y')
     header_info['target_file_name'] = header_info['table_name'] + '_' + header_info['key_datetime'].strftime(r'%Y%m%d') + json_file_ext
+
+    logger.info(header_info)
     return header_info
 
 
@@ -215,9 +215,9 @@ def is_start_line(line:str, header_info:dict):
         record_number = line[14:17]
         return record_segment == '1' and record_number == '101'
 
-    if table_name_no_firm == 'position':
-        record_number = line[0:1]
-        return record_number == '1'
+    if table_name_no_firm in ['position', 'activity']:
+        record_segment = line[0:1]
+        return record_segment == '1'
 
     raise ValueError(f'Unknown table name {table_name_no_firm}')
 
@@ -419,6 +419,46 @@ def process_lines_position(ftarget, lines:list, header_info:dict, schema, is_fir
 
 
 
+# %% Process all lines belonging to a single record for NFS Activity file
+
+@catch_error(logger)
+def process_lines_activity(ftarget, lines:list, header_info:dict, schema, is_first_line:bool):
+    """
+    Process all lines belonging to a single record for NFS Position file
+    """
+    if len(lines) == 0: return
+
+    record = {
+        'header_firm_name': header_info['firm_name'],
+        'headerrecordclientid': header_info['headerrecordclientid'],
+    }
+
+    standard_record_number = '1' # There is only one record_number for activity file
+
+    for line in lines:
+        record_segment = line[0:1]
+        if record_segment not in ['1', '2', '3', '4']: raise ValueError(f'Invalid record_segment: {record_segment}')
+
+        line_schema = schema[(standard_record_number, record_segment)]
+        line_fields = dict()
+        for field, pos in line_schema.items():
+            field_name = field[0]
+            conditional_changes = field[1]
+            if conditional_changes:
+                raise ValueError(f'Unexpected conditional_changes for activity file {conditional_changes}')
+            line_fields = {**line_fields, field_name:line[pos['position_start']:pos['position_end']]}
+
+        for field_name, field_value in line_fields.items():
+            if field_name.startswith('recordnumber') and len(field_name) == len('recordnumber') + 1: continue
+            add_field_to_record(record=record, field_name=field_name, field_value=field_value)
+
+    if not is_first_line:
+        ftarget.write(',\n')
+
+    ftarget.write(json.dumps(recursive_strip_json(record)))
+
+
+
 # %% Process all lines belonging to a single record
 
 @catch_error(logger)
@@ -429,6 +469,7 @@ def process_lines(ftarget, lines:list, header_info:dict, schema, is_first_line:b
     process_lines_map = {
         'name_and_address': process_lines_name_and_address,
         'position': process_lines_position,
+        'activity': process_lines_activity,
     }
 
     process_lines_map[header_info['table_name_no_firm']](ftarget=ftarget, lines=lines, header_info=header_info, schema=schema, is_first_line=is_first_line)
@@ -453,6 +494,8 @@ def process_single_fwf(source_file_path:str):
     """
     Process single FWF
     """
+    logger.info(f'Processing {source_file_path}')
+
     header_info = get_header_info(file_path=source_file_path)
     schema, header_schema, trailer_schema = get_nfs_schema(table_name_no_firm=header_info['table_name_no_firm'])
 
@@ -512,7 +555,6 @@ def iterate_over_all_fwf(source_path:str):
                     iterate_over_all_fwf(source_path=extract_dir)
                 continue
 
-            logger.info(f'Processing {source_file_path}')
             process_single_fwf(source_file_path=source_file_path)
 
 
