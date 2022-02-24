@@ -43,7 +43,10 @@ VALUES
 
 ('CA_AG_DATASOURCE_NFS_RAA', 'Client Account', 'NFS', '', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP),
 
-('ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', 'Assets', 'Albridge', '', 'assets_copy_albridge', 'AG', 'System', CURRENT_TIMESTAMP)
+('ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', 'Assets', 'Albridge', 'RAA', 'assets_copy_albridge', 'AG', 'System', CURRENT_TIMESTAMP),
+
+('ASSETS_AG_DATASOURCE_NFS_SPF', 'Assets', 'NFS', 'SPF', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP)
+
 
 ;
 
@@ -52,7 +55,7 @@ VALUES
 
 
 SELECT * FROM metadata.DataSource
-ORDER BY DataSourceId;
+ORDER BY DataSourceId DESC;
 
 
 
@@ -98,7 +101,9 @@ VALUES
 
 ('CA_MIGRATE_NFS_RAA', 'outbound_migration', 'Pipeline to migrate CA-NFS files to Snowflake', 'CA_AG_DATASOURCE_NFS_RAA', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
-('ASSETS_COPY_ALBRIDGE', 'copy', 'Pipeline to copy Assets-Albridge files from remote location', 'ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+('ASSETS_COPY_ALBRIDGE', 'copy', 'Pipeline to copy Assets-Albridge files from remote location', 'ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+('ASSETS_MIGRATE_NFS_SPF', 'outbound_migration', 'Pipeline to migrate Assets-NFS files to Snowflake', 'ASSETS_AG_DATASOURCE_NFS_SPF', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
 
 ;
 
@@ -319,7 +324,27 @@ VALUES
 ('CA_MIGRATE_NFS_RAA', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
 ('CA_MIGRATE_NFS_RAA', 'FILE_HISTORY_START_DATE', '2022-01-15', 'System', CURRENT_TIMESTAMP),
 ('CA_MIGRATE_NFS_RAA', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/nfs_schema', 'System', CURRENT_TIMESTAMP),
-('CA_MIGRATE_NFS_RAA', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP)
+('CA_MIGRATE_NFS_RAA', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP),
+
+
+
+
+('ASSETS_MIGRATE_NFS_SPF', 'SOURCE_PATH', '/ag_airflow/AdvisorGroup/spark/resources/fileshare/Shared/NFS-ASSETS/SPF', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'DB_NAME', 'ASSETS', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'SCHEMA_NAME', 'NFS', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'IS_FULL_LOAD', 'FALSE', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'SNOWFLAKE_ROLE', 'QA_ASSETS_DBO', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'SNOWFLAKE_WAREHOUSE', 'QA_ASSETS_RAW_WH', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'FILE_HISTORY_START_DATE', '2022-01-15', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/nfs_schema', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP)
+
+
+
 
 ;
 
@@ -331,7 +356,7 @@ VALUES
 
 
 select * from metadata.PipelineConfiguration
-where PipelineKey = 'CA_MIGRATE_NFS_RAA'
+where PipelineKey = 'ASSETS_MIGRATE_PERSHING_RAA'
 ;
 
 
@@ -350,13 +375,15 @@ ORDER BY p.UpdateTs DESC, p.PipelineId DESC
 
 
 
+update metadata.PrimaryKey
+set AssetSchema = 'NFS'
+where id = 459
+;
 
 
 
-
-
-
-select * from metadata.PrimaryKey;
+select * from metadata.PrimaryKey
+order by Id desc;
 
 
 
@@ -380,16 +407,16 @@ VALUES
 (
 1,
 'NFS',
-'NA',
-'NAME_AND_ADDRESS',
-'NAME_AND_ADDRESS',
-'accountnumber',
+'NFS',
+'POSITION',
+'POSITION',
+'Firm,AccountNumber,AccountType,CUSIP,SecurityType',
 '',
 CURRENT_TIMESTAMP,
 'System',
 CURRENT_TIMESTAMP,
 'System',
-'ClientAccount',
+'Assets',
 'NFS'
 )
 

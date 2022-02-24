@@ -18,7 +18,7 @@ python_spark_code = 'migrate_nfs_3'
 
 spark_app_name = pipelinekey.lower()
 airflow_app_name = spark_app_name
-description_DAG = 'Migrate Assets NFS-NA Tables'
+description_DAG = 'Migrate Assets NFS Tables'
 
 tags = ['DB:Assets', 'SC:NFS']
 

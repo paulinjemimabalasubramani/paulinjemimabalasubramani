@@ -50,11 +50,12 @@ from distutils.dir_util import remove_tree
 
 table_name_map = {
     'name_addr_history': 'name_and_address',
-    'position_extract': 'position',
 }
 
-master_table_name = 'name_and_address' # to take header info
-get_schema_name = lambda table_name_no_firm: table_name_no_firm + '.csv'
+master_schema_name = 'name_and_address' # to take header info
+master_schema_header_columns = ['firm_name', 'headerrecordclientid']
+
+schema_to_file_records = lambda schema_name: schema_name + '.csv'
 
 file_has_header = True
 file_has_trailer = True
@@ -99,15 +100,15 @@ headerrecordclientid_map = get_headerrecordclientid_map()
 # %% get and pre-process schema
 
 @catch_error(logger)
-def get_nfs_schema(table_name_no_firm:str):
+def get_nfs_schema(schema_name:str):
     """
     Read and Pre-process the schema table to make it code-friendly
     """
-    schema_file_name = get_schema_name(table_name_no_firm=table_name_no_firm)
+    schema_file_name = schema_to_file_records(schema_name=schema_name)
     schema_file_path = os.path.join(data_settings.schema_file_path, schema_file_name)
     if not os.path.isfile(schema_file_path):
         logger.warning(f'Schema file is not found: {schema_file_path}')
-        return (None, ) * 3
+        return (None, ) * 4
 
     schema = defaultdict(dict)
     header_schema = defaultdict(dict)
@@ -155,19 +156,7 @@ def get_nfs_schema(table_name_no_firm:str):
 
 
 
-# %% Get Master Header and Trailer Schema
-
-@catch_error(logger)
-def get_master_header_trailer_schema():
-    """
-    Get Master Header and Trailer Schema
-    """
-    master_schema, master_header_schema, master_trailer_schema = get_nfs_schema(table_name_no_firm=master_table_name)
-    return master_header_schema, master_trailer_schema
-
-
-
-master_header_schema, master_trailer_schema = get_master_header_trailer_schema()
+schema, header_schema, trailer_schema = get_nfs_schema(schema_name=master_schema_name)
 
 
 
@@ -182,7 +171,7 @@ def get_header_info(file_path:str):
         HEADER = f.readline()
 
     header_info = dict()
-    for field_name, pos in master_header_schema.items():
+    for field_name, pos in header_schema.items():
         header_info[field_name] = re.sub(' +', ' ', HEADER[pos['position_start']: pos['position_end']].strip())
 
     table_name = re.sub(column_regex, '_', header_info['filetitle'].lower())
@@ -192,8 +181,7 @@ def get_header_info(file_path:str):
 
     firm_name = headerrecordclientid_map[header_info['headerrecordclientid'].upper()]
 
-    header_info['table_name_no_firm'] = table_name_map[table_name].lower()
-    header_info['table_name'] = '_'.join([firm_name, header_info['table_name_no_firm']]).lower()
+    header_info['table_name'] = '_'.join([firm_name, table_name_map[table_name]]).lower()
     header_info['firm_name'] = firm_name
     header_info['key_datetime'] = datetime.strptime(header_info['transmissioncreationdate'], r'%m%d%y')
     header_info['target_file_name'] = header_info['table_name'] + '_' + header_info['key_datetime'].strftime(r'%Y%m%d') + json_file_ext
@@ -204,22 +192,13 @@ def get_header_info(file_path:str):
 # %% Determine Start Line
 
 @catch_error(logger)
-def is_start_line(line:str, header_info:dict):
+def is_start_line(line:str):
     """
     Determine Start Line
     """
-    table_name_no_firm = header_info['table_name_no_firm']
-
-    if table_name_no_firm == 'name_and_address':
-        record_segment = line[0:1]
-        record_number = line[14:17]
-        return record_segment == '1' and record_number == '101'
-
-    if table_name_no_firm == 'position':
-        record_number = line[0:1]
-        return record_number == '1'
-
-    raise ValueError(f'Unknown table name {table_name_no_firm}')
+    record_segment = line[0:1]
+    record_number = line[14:17]
+    return record_segment == '1' and record_number == '101'
 
 
 
@@ -245,7 +224,7 @@ def recursive_strip_json(obj):
 # %% Convert to Standard Record Number
 
 @catch_error(logger)
-def to_standard_record_number_name_and_address(record_number:str):
+def to_standard_record_number(record_number:str):
     """
     Convert to Standard Record Number
     """
@@ -268,12 +247,12 @@ def add_field_to_record(record:dict, field_name:str, field_value):
 
 
 
-# %% Process all lines belonging to a single record for NFS NA file
+# %% Process all lines belonging to a single record
 
 @catch_error(logger)
-def process_lines_name_and_address(ftarget, lines:list, header_info:dict, schema, is_first_line:bool):
+def process_lines(ftarget, lines:list, header_info:dict, is_first_line:bool):
     """
-    Process all lines belonging to a single record for NFS NA file
+    Process all lines belonging to a single record
     """
     if len(lines) == 0: return
 
@@ -300,7 +279,7 @@ def process_lines_name_and_address(ftarget, lines:list, header_info:dict, schema
             branch = line[5:8].strip()
             account_number = line[8:14].strip()
             record_number = line[14:17].strip()
-            standard_record_number = to_standard_record_number_name_and_address(record_number=record_number)
+            standard_record_number = to_standard_record_number(record_number=record_number)
             if record_number == '101':
                 fba = (firm, branch, account_number)
                 record['firm'] = firm
@@ -374,71 +353,17 @@ def process_lines_name_and_address(ftarget, lines:list, header_info:dict, schema
 
     if not is_first_line:
         ftarget.write(',\n')
+    else:
+        is_first_line = False
 
     ftarget.write(json.dumps(recursive_strip_json(record)))
-
-
-
-# %% Process all lines belonging to a single record for NFS Position file
-
-@catch_error(logger)
-def process_lines_position(ftarget, lines:list, header_info:dict, schema, is_first_line:bool):
-    """
-    Process all lines belonging to a single record for NFS Position file
-    """
-    if len(lines) == 0: return
-
-    record = {
-        'header_firm_name': header_info['firm_name'],
-        'headerrecordclientid': header_info['headerrecordclientid'],
-    }
-
-    standard_record_number = '1' # There is only one record_number for position file
-
-    for line in lines:
-        record_segment = line[0:1]
-        if record_segment not in ['1', '2', '3', '4', '5', '6', '7']: raise ValueError(f'Invalid record_segment: {record_segment}')
-
-        line_schema = schema[(standard_record_number, record_segment)]
-        line_fields = dict()
-        for field, pos in line_schema.items():
-            field_name = field[0]
-            conditional_changes = field[1]
-            if conditional_changes:
-                raise ValueError(f'Unexpected conditional_changes for position file {conditional_changes}')
-            line_fields = {**line_fields, field_name:line[pos['position_start']:pos['position_end']]}
-
-        for field_name, field_value in line_fields.items():
-            if field_name.startswith('recordnumber') and len(field_name) == len('recordnumber') + 1: continue
-            add_field_to_record(record=record, field_name=field_name, field_value=field_value)
-
-    if not is_first_line:
-        ftarget.write(',\n')
-
-    ftarget.write(json.dumps(recursive_strip_json(record)))
-
-
-
-# %% Process all lines belonging to a single record
-
-@catch_error(logger)
-def process_lines(ftarget, lines:list, header_info:dict, schema, is_first_line:bool):
-    """
-    Process all lines belonging to a single record
-    """
-    process_lines_map = {
-        'name_and_address': process_lines_name_and_address,
-        'position': process_lines_position,
-    }
-
-    process_lines_map[header_info['table_name_no_firm']](ftarget=ftarget, lines=lines, header_info=header_info, schema=schema, is_first_line=is_first_line)
 
 
 
 # %% Process Header or Trailer line
 
 @catch_error(logger)
-def process_custom_line(ftarget, line:str, header_info:dict, custom:str):
+def process_custom_line(ftarget, line:str, custom:str):
     """
     Process Header or Trailer line
     """
@@ -454,7 +379,6 @@ def process_single_fwf(source_file_path:str):
     Process single FWF
     """
     header_info = get_header_info(file_path=source_file_path)
-    schema, header_schema, trailer_schema = get_nfs_schema(table_name_no_firm=header_info['table_name_no_firm'])
 
     if data_settings.key_datetime > header_info['key_datetime']:
         logger.info(f'Skipping file due to older key_datetime: {source_file_path}')
@@ -474,20 +398,20 @@ def process_single_fwf(source_file_path:str):
             is_first_line = True
             for line in fsource:
                 if first:
-                    process_custom_line(ftarget=ftarget, line=line, header_info=header_info, custom=HEADER_record)
+                    process_custom_line(ftarget=ftarget, line=line, custom=HEADER_record)
                     first = False
                 else:
-                    if is_start_line(line=line, header_info=header_info) and lines:
-                        process_lines(ftarget=ftarget, lines=lines, header_info=header_info, schema=schema, is_first_line=is_first_line)
+                    if is_start_line(line=line) and lines:
+                        process_lines(ftarget=ftarget, lines=lines, header_info=header_info, is_first_line=is_first_line)
                         is_first_line = False
                         lines = []
                     lines.append(line)
 
             if file_has_trailer:
-                if len(lines)>1: process_lines(ftarget=ftarget, lines=lines[:-1], header_info=header_info, schema=schema, is_first_line=is_first_line)
-                process_custom_line(ftarget=ftarget, line=lines[-1], header_info=header_info, custom=TRAILER_record)
+                if len(lines)>1: process_lines(ftarget=ftarget, lines=lines[:-1], header_info=header_info, is_first_line=is_first_line)
+                process_custom_line(ftarget=ftarget, line=lines[-1], custom=TRAILER_record)
             else:
-                process_lines(ftarget=ftarget, lines=lines, header_info=header_info, schema=schema, is_first_line=is_first_line)
+                process_lines(ftarget=ftarget, lines=lines, header_info=header_info, is_first_line=is_first_line)
 
             ftarget.write('\n]')
 
