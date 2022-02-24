@@ -99,12 +99,12 @@ def select_files():
 
 
 
-# %% Extract Meta Data from NA json file
+# %% Extract Meta Data from NFS json file
 
 @catch_error(logger)
-def extract_na_json_file_meta(file_path:str, zip_file_path:str=None):
+def extract_json_file_meta(file_path:str, zip_file_path:str=None):
     """
-    Extract Meta Data from NA json file with date in file name
+    Extract Meta Data from NFS json file with date in file name
     """
     date_format = data_settings.date_format # http://strftime.org/
 
@@ -144,12 +144,12 @@ def extract_na_json_file_meta(file_path:str, zip_file_path:str=None):
 
 
 
-# %% Main Processing of sinlge NA json File
+# %% Main Processing of single NFS json File
 
 @catch_error(logger)
-def process_na_json_file(file_meta):
+def process_json_file(file_meta):
     """
-    Main Processing of single NA json file
+    Main Processing of single NFS json file
     """
     table = read_json(spark=spark, file_path=file_meta['file_path'])
     if not table: return
@@ -187,9 +187,9 @@ additional_file_meta_columns = []
 
 migrate_all_files(
     spark = spark,
-    fn_extract_file_meta = extract_na_json_file_meta,
+    fn_extract_file_meta = extract_json_file_meta,
     additional_file_meta_columns = additional_file_meta_columns,
-    fn_process_file = process_na_json_file,
+    fn_process_file = process_json_file,
     fn_select_files = select_files,
     fn_get_dtypes = get_dtypes,
     )
