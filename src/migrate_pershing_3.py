@@ -34,7 +34,7 @@ else:
 
 # %% Import Libraries
 
-import os, sys, hashlib, csv, re
+import os, sys, hashlib, re
 
 class app: pass
 sys.app = app

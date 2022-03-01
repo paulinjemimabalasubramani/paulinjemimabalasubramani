@@ -329,7 +329,7 @@ VALUES
 
 
 
-('ASSETS_MIGRATE_NFS_SPF', 'SOURCE_PATH', '/ag_airflow/AdvisorGroup/spark/resources/fileshare/Shared/NFS-ASSETS/SPF', 'System', CURRENT_TIMESTAMP),
+('ASSETS_MIGRATE_NFS_SPF', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS/SPF', 'System', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_NFS_SPF', 'DB_NAME', 'ASSETS', 'System', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_NFS_SPF', 'SCHEMA_NAME', 'NFS', 'System', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_NFS_SPF', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'System', CURRENT_TIMESTAMP),
@@ -352,11 +352,8 @@ VALUES
 
 
 
-
-
-
 select * from metadata.PipelineConfiguration
-where PipelineKey = 'ASSETS_MIGRATE_PERSHING_RAA'
+where PipelineKey = 'ASSETS_MIGRATE_NFS_SPF'
 ;
 
 
