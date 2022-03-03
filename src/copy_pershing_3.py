@@ -1,6 +1,6 @@
 description = """
 
-Copy NFS files and folders from one location to another
+Copy Pershing files from remote location to source location
 
 """
 

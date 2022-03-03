@@ -1,6 +1,6 @@
 description = """
 
-Copy NFS files and folders from one location to another
+Copy NFS files from remote location to source location
 
 """
 
