@@ -41,7 +41,6 @@ from modules3.common_functions import catch_error, data_settings, logger, mark_e
 from modules3.migrate_files import file_meta_exists_for_select_files
 from modules3.nfs_header import get_header_info
 
-from datetime import datetime
 from collections import defaultdict
 from distutils.dir_util import remove_tree
 

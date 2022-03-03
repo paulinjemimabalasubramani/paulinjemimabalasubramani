@@ -7,7 +7,7 @@ Copy NFS files and folders from one location to another
 
 # %% Parse Arguments
 
-if True: # Set to False for Debugging
+if False: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
@@ -18,11 +18,11 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'COPY_NFS',
-        'remote_path': r'C:\myworkdir\NFS-CA',
-        'source_path_name_and_address': r'C:\myworkdir\Shared\NFS',
-        'source_path_position': r'C:\myworkdir\Shared\NFS',
-        'source_path_activity': r'C:\myworkdir\Shared\NFS',
+        'pipelinekey': 'COPY_PERSHING',
+        'remote_path': r'C:\myworkdir\PERSHING-CA',
+        'source_path_name_and_address': r'C:\myworkdir\Shared\PERSHING',
+        'source_path_position': r'C:\myworkdir\Shared\PERSHING',
+        'source_path_activity': r'C:\myworkdir\Shared\PERSHING',
         }
 
 
@@ -37,7 +37,7 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file
-from modules3.nfs_header import get_header_info
+from modules3.pershing_header import get_header_info
 
 
 

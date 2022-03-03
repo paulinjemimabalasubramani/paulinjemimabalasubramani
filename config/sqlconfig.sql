@@ -351,15 +351,25 @@ VALUES
 
 
 
-INSERT INTO metadata.PipelineConfiguration 
-(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
-VALUES
 ('COPY_NFS', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS', 'SOURCE_PATH_NAME_AND_ADDRESS', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS', 'SOURCE_PATH_POSITION', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS', 'SOURCE_PATH_ACTIVITY', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS', 'FILE_HISTORY_START_DATE', '2021-10-15', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP)
+('COPY_NFS', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP),
+
+
+
+INSERT INTO metadata.PipelineConfiguration 
+(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
+VALUES
+('COPY_PERSHING', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_CUSTOMER_ACCT_INFO', '/usr/local/spark/resources/fileshare/Shared/PERSHING-CA', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_EXPANDED_SEC_DESC', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_GLOBAL_ACTIVITY', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_GLOBAL_CUST_POS', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_GLOBAL_MONEYLINE', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'FILE_HISTORY_START_DATE', '2021-10-15', 'System', CURRENT_TIMESTAMP),
 
 ;
 

@@ -22,8 +22,8 @@ table_name_map = {
     'bookkeeping': 'activity',
 }
 
-
 json_file_ext = '.json'
+json_file_date_format = r'%Y%m%d'
 
 
 
@@ -97,7 +97,7 @@ def get_header_info(file_path:str):
         logger.warning(f"Cannot parse transmissioncreationdate: {header_info['transmissioncreationdate']}")
         return
 
-    header_info['target_file_name'] = header_info['table_name'] + '_' + header_info['key_datetime'].strftime(r'%Y%m%d') + json_file_ext
+    header_info['target_file_name'] = header_info['table_name'] + '_' + header_info['key_datetime'].strftime(json_file_date_format) + json_file_ext
 
     logger.info(header_info)
     return header_info
