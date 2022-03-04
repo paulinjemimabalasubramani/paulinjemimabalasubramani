@@ -89,6 +89,9 @@ def get_nfs_schema(table_name_no_firm:str):
         if not field_name or (field_name in ['', 'not_used', 'filler', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
             or not record_type: continue
 
+        scale = str(row['scale']).strip()
+        scale = int(scale) if scale.isdigit() else -1
+
         position_start = int(row['position_start'].strip()) - 1
         position_end = int(row['position_end'].strip())
         if position_start > position_end:
@@ -100,6 +103,7 @@ def get_nfs_schema(table_name_no_firm:str):
             schema[(record_number, record_segment)][(field_name, conditional_changes)] = {
                 'position_start': position_start,
                 'position_end': position_end,
+                'scale': scale,
             }
         elif record_type.upper() == HEADER_record.upper():
             if field_name in header_schema:
@@ -189,6 +193,29 @@ def add_field_to_record(record:dict, field_name:str, field_value):
 
 
 
+# %% Extract Field Value
+
+@catch_error(logger)
+def extract_field_value(line:str, pos:dict, field_name:str):
+    """
+    Extract Field Value from line for given pos dict
+    """
+    field_value = line[pos['position_start']:pos['position_end']]
+
+    if 'scale' in pos and pos['scale']>=0:
+        if not field_value.isdigit():
+            raise ValueError(f'Schema Scale mismatch for field "{field_name}" field value "{field_value}". Field Value should be all digits!')
+
+        if pos['scale'] == 0:
+            field_value = int(field_value)
+        else:
+            x = len(field_value) - pos['scale']
+            field_value = float(field_value[:x] + '.' + field_value[x:])
+
+    return field_value
+
+
+
 # %% Process all lines belonging to a single record for NFS NA file
 
 @catch_error(logger)
@@ -241,7 +268,8 @@ def process_lines_name_and_address(ftarget, lines:list, header_info:dict, schema
             if conditional_changes:
                 name_type = line[1:2]
                 if name_type != conditional_changes: continue
-            line_fields = {**line_fields, field_name:line[pos['position_start']:pos['position_end']]}
+            field_value = extract_field_value(line=line, pos=pos, field_name=field_name)
+            line_fields = {**line_fields, field_name:field_value}
 
         ffr_count_flag = True
         for field_name, field_value in line_fields.items():
@@ -327,7 +355,8 @@ def process_lines_position(ftarget, lines:list, header_info:dict, schema, is_fir
             conditional_changes = field[1]
             if conditional_changes:
                 raise ValueError(f'Unexpected conditional_changes for position file {conditional_changes}')
-            line_fields = {**line_fields, field_name:line[pos['position_start']:pos['position_end']]}
+            field_value = extract_field_value(line=line, pos=pos, field_name=field_name)
+            line_fields = {**line_fields, field_name:field_value}
 
         for field_name, field_value in line_fields.items():
             if field_name.startswith('recordnumber') and len(field_name) == len('recordnumber') + 1: continue
@@ -367,7 +396,8 @@ def process_lines_activity(ftarget, lines:list, header_info:dict, schema, is_fir
             conditional_changes = field[1]
             if conditional_changes:
                 raise ValueError(f'Unexpected conditional_changes for activity file {conditional_changes}')
-            line_fields = {**line_fields, field_name:line[pos['position_start']:pos['position_end']]}
+            field_value = extract_field_value(line=line, pos=pos, field_name=field_name)
+            line_fields = {**line_fields, field_name:field_value}
 
         for field_name, field_value in line_fields.items():
             if field_name.startswith('recordnumber') and len(field_name) == len('recordnumber') + 1: continue
