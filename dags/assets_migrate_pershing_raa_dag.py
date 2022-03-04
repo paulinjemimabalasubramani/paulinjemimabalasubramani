@@ -50,7 +50,7 @@ with DAG(
 
     add_bulk_id = BashOperator(
         task_id = f'ADD_BULK_ID_{pipelinekey}',
-        bash_command = f'python /usr/local/spark/app/bulk_fixed_width_files_3.py --pipelinekey {pipelinekey}',
+        bash_command = f'python /usr/local/spark/app/pershing_bulk_id_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 

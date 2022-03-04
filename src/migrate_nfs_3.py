@@ -41,14 +41,15 @@ sys.app.parent_name = os.path.basename(__file__)
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
 from modules3.spark_functions import add_id_key, create_spark, read_json, remove_column_spaces, add_elt_columns
 from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes, file_meta_exists_for_select_files, add_firm_to_table_name
+from modules3.nfs_header import json_file_ext, json_file_date_format
 
 
 
 # %% Parameters
 
-allowed_file_extensions = ['.json']
+allowed_file_extensions = [json_file_ext]
 
-data_settings.date_format = r'%Y%m%d'
+data_settings.date_format = json_file_date_format
 
 data_settings.source_path = data_settings.app_data_path # Use files from app_data_path
 

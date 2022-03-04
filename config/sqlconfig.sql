@@ -43,9 +43,13 @@ VALUES
 
 ('CA_AG_DATASOURCE_NFS_RAA', 'Client Account', 'NFS', '', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP),
 
-('ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', 'Assets', 'Albridge', 'RAA', 'assets_copy_albridge', 'AG', 'System', CURRENT_TIMESTAMP),
+('ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', 'Assets', 'Albridge', '', 'assets_copy_albridge', 'AG', 'System', CURRENT_TIMESTAMP),
 
-('ASSETS_AG_DATASOURCE_NFS_SPF', 'Assets', 'NFS', 'SPF', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP)
+('ASSETS_AG_DATASOURCE_NFS_SPF', 'Assets', 'NFS', 'SPF', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP),
+
+('AG_DATASOURCE_NFS_COPY', '', 'NFS', '', 'copy_nfs', 'AG', 'System', CURRENT_TIMESTAMP),
+
+('AG_DATASOURCE_PERSHING_COPY', '', 'Pershing', '', 'copy_pershing', 'AG', 'System', CURRENT_TIMESTAMP)
 
 
 ;
@@ -55,6 +59,7 @@ VALUES
 
 
 SELECT * FROM metadata.DataSource
+where DataSourceKey = 'ASSETS_AG_DATASOURCE_ALBRIDGE_COPY'
 ORDER BY DataSourceId DESC;
 
 
@@ -103,7 +108,12 @@ VALUES
 
 ('ASSETS_COPY_ALBRIDGE', 'copy', 'Pipeline to copy Assets-Albridge files from remote location', 'ASSETS_AG_DATASOURCE_ALBRIDGE_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
-('ASSETS_MIGRATE_NFS_SPF', 'outbound_migration', 'Pipeline to migrate Assets-NFS files to Snowflake', 'ASSETS_AG_DATASOURCE_NFS_SPF', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+('ASSETS_MIGRATE_NFS_SPF', 'outbound_migration', 'Pipeline to migrate Assets-NFS files to Snowflake', 'ASSETS_AG_DATASOURCE_NFS_SPF', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+('COPY_NFS', 'copy', 'Pipeline to copy NFS files from remote location', 'AG_DATASOURCE_NFS_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+('COPY_PERSHING', 'copy', 'Pipeline to copy Pershing files from remote location', 'AG_DATASOURCE_PERSHING_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+
 
 ;
 
@@ -341,23 +351,46 @@ VALUES
 ('ASSETS_MIGRATE_NFS_SPF', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_NFS_SPF', 'FILE_HISTORY_START_DATE', '2022-01-15', 'System', CURRENT_TIMESTAMP),
 ('ASSETS_MIGRATE_NFS_SPF', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/nfs_schema', 'System', CURRENT_TIMESTAMP),
-('ASSETS_MIGRATE_NFS_SPF', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP)
+('ASSETS_MIGRATE_NFS_SPF', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP),
 
 
 
+('COPY_NFS', 'REMOTE_PATH_RAA', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'REMOTE_PATH_SPF', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'REMOTE_PATH_FSC', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'REMOTE_PATH_SAI', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'REMOTE_PATH_TRI', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_NAME_AND_ADDRESS', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_POSITION', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_ACTIVITY', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'FILE_HISTORY_START_DATE', '2021-10-15', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP),
+
+
+('COPY_PERSHING', 'REMOTE_PATH_RAA', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_SPF', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_FSC', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_WFS', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_SAI', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_TRI', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_ACCT', '/usr/local/spark/resources/fileshare/Shared/PERSHING-CA', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_ACCF', '/usr/local/spark/resources/fileshare/Shared/PERSHING-CA', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_GACT', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_GCUS', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_GMON', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'FILE_HISTORY_START_DATE', '2021-10-15', 'System', CURRENT_TIMESTAMP)
 
 ;
-
 
 
 
 
 select * from metadata.PipelineConfiguration
-where PipelineKey = 'ASSETS_MIGRATE_NFS_SPF'
+where PipelineKey = 'COPY_PERSHING'
 ;
 
 
-
+SELECT * FROM [edip].[assets_pershing_file_history3];
 
 
 

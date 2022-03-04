@@ -29,7 +29,7 @@ else:
 
 # %% Import Libraries
 
-import os, sys, hashlib, tempfile, shutil
+import os, sys, tempfile, shutil
 
 class app: pass
 sys.app = app
@@ -37,6 +37,7 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end
+from modules3.pershing_header import total_hash_length, hash_func, bulk_file_ext, HEADER_str, TRAILER_str
 
 from distutils.dir_util import remove_tree
 
@@ -44,15 +45,8 @@ from distutils.dir_util import remove_tree
 
 # %% Parameters
 
-bulk_file_ext = '.bulk'
 file_has_header = True
 file_has_trailer = True
-
-HEADER_str = 'HEADER'
-TRAILER_str = 'TRAILER'
-
-hash_func = hashlib.sha256
-total_hash_length = len(hash_func().hexdigest())
 
 start_line_record_string = str(data_settings.start_line_record_string)
 start_line_pos_start = int(data_settings.start_line_record_position) - 1

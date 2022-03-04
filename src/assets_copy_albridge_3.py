@@ -1,6 +1,6 @@
 description = """
 
-Copy Albridge files and folders from one location to another
+Copy Albridge files from remote location to source location
 
 """
 

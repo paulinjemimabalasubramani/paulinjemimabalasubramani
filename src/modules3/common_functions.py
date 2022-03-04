@@ -911,6 +911,24 @@ def relative_copy_file(remote_path:str, dest_path:str, remote_file_path:str, upd
 
 
 
+# %% Collect Keys from SQL Config
+
+@catch_error(logger)
+def collect_keys_from_config(prefix:str, uppercase_key:bool=True):
+    """
+    Collect Keys from SQL Config
+    """
+    keys = dict()
+    for key, val in data_settings.__dict__.items():
+        if key.lower().startswith(prefix.lower()) and val:
+            key1 = key[len(prefix):]
+            if uppercase_key: key1 = key1.upper()
+            if key1:
+                keys = {**keys, key1:val}
+    return keys
+
+
+
 # %%
 
 
