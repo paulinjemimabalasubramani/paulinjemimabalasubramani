@@ -47,7 +47,9 @@ VALUES
 
 ('ASSETS_AG_DATASOURCE_NFS_SPF', 'Assets', 'NFS', 'SPF', 'nfs', 'AG', 'System', CURRENT_TIMESTAMP),
 
-('AG_DATASOURCE_NFS_COPY', '', 'NFS', '', 'copy_nfs', 'AG', 'System', CURRENT_TIMESTAMP)
+('AG_DATASOURCE_NFS_COPY', '', 'NFS', '', 'copy_nfs', 'AG', 'System', CURRENT_TIMESTAMP),
+
+('AG_DATASOURCE_PERSHING_COPY', '', 'Pershing', '', 'copy_pershing', 'AG', 'System', CURRENT_TIMESTAMP)
 
 
 ;
@@ -108,7 +110,10 @@ VALUES
 
 ('ASSETS_MIGRATE_NFS_SPF', 'outbound_migration', 'Pipeline to migrate Assets-NFS files to Snowflake', 'ASSETS_AG_DATASOURCE_NFS_SPF', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
-('COPY_NFS', 'copy', 'Pipeline to copy NFS files from remote location', 'AG_DATASOURCE_NFS_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+('COPY_NFS', 'copy', 'Pipeline to copy NFS files from remote location', 'AG_DATASOURCE_NFS_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+('COPY_PERSHING', 'copy', 'Pipeline to copy Pershing files from remote location', 'AG_DATASOURCE_PERSHING_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+
 
 ;
 
@@ -350,8 +355,11 @@ VALUES
 
 
 
-
-('COPY_NFS', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'REMOTE_PATH_RAA', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'REMOTE_PATH_SPF', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'REMOTE_PATH_FSC', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'REMOTE_PATH_SAI', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'REMOTE_PATH_TRI', '', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS', 'SOURCE_PATH_NAME_AND_ADDRESS', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS', 'SOURCE_PATH_POSITION', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS', 'SOURCE_PATH_ACTIVITY', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
@@ -359,32 +367,30 @@ VALUES
 ('COPY_NFS', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP),
 
 
-
-INSERT INTO metadata.PipelineConfiguration 
-(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
-VALUES
-('COPY_PERSHING', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
-('COPY_PERSHING', 'SOURCE_PATH_CUSTOMER_ACCT_INFO', '/usr/local/spark/resources/fileshare/Shared/PERSHING-CA', 'System', CURRENT_TIMESTAMP),
-('COPY_PERSHING', 'SOURCE_PATH_EXPANDED_SEC_DESC', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
-('COPY_PERSHING', 'SOURCE_PATH_GLOBAL_ACTIVITY', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
-('COPY_PERSHING', 'SOURCE_PATH_GLOBAL_CUST_POS', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
-('COPY_PERSHING', 'SOURCE_PATH_GLOBAL_MONEYLINE', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
-('COPY_PERSHING', 'FILE_HISTORY_START_DATE', '2021-10-15', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_RAA', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_SPF', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_FSC', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_WFS', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_SAI', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'REMOTE_PATH_TRI', '', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_ACCT', '/usr/local/spark/resources/fileshare/Shared/PERSHING-CA', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_ACCF', '/usr/local/spark/resources/fileshare/Shared/PERSHING-CA', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_GACT', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_GCUS', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'SOURCE_PATH_GMON', '/usr/local/spark/resources/fileshare/Shared/PERSHING-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_PERSHING', 'FILE_HISTORY_START_DATE', '2021-10-15', 'System', CURRENT_TIMESTAMP)
 
 ;
-
-
-
 
 
 
 
 select * from metadata.PipelineConfiguration
-where PipelineKey = 'COPY_NFS'
+where PipelineKey = 'COPY_PERSHING'
 ;
 
 
-
+SELECT * FROM [edip].[assets_pershing_file_history3];
 
 
 
