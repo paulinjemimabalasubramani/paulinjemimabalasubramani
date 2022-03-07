@@ -1,631 +1,631 @@
-﻿record_name,position,picture,type,conditional_changes,field_name,description,notes
-HEADER,001 - 018,X(18),AN,,b_of_pershing,Literally “BOF                           PERSHING     ” (beginning of Pershing file),
-HEADER,019 - 037,X(19),AN,,global_moneyline,Literally “GLOBAL     MONEYLINE              ”,
-HEADER,038 - 046,X(09),AN,,data_of ,Literally “DATA     OF         ”,
-HEADER,047 - 056,X(10),AN,,date_of_data,DATE OF DATA = “MM/DD/CCYY”,
-HEADER,057 - 067,X(11),AN,,to_remote,Literally “     TO    REMOTE    ”,
-HEADER,068 - 071,X(04),AN,,remote_id,REMOTE ID = “XXXX”,
-HEADER,072 - 085,X(14),AN,,begins_here,Literally “     BEGINS     HERE         ”,
-HEADER,086 - 095,X(10),AN,,run_date,RUN DATE = “MM/DD/CCYY”,
-HEADER,096 - 096,X(01),AN,,not_used,Not Used,
-HEADER,097 - 104,X(08),AN,,run_time,RUN TIME = “HH:MM:SS”,
-HEADER,105 - 249,X(145),AN,,not_used,Not Used,
-HEADER,250 - 250,X(01),AN,,end_of_the_header_record,Literally “A”; indicates the end of the header record,
-A,001 - 002,X(02),AN,,transaction_code,"TRANSACTION CODE
+﻿record_name,position,picture,type,conditional_changes,field_name,scale,description,notes
+HEADER,001 - 018,X(18),AN,,b_of_pershing,,Literally “BOF                           PERSHING     ” (beginning of Pershing file),
+HEADER,019 - 037,X(19),AN,,global_moneyline,,Literally “GLOBAL     MONEYLINE              ”,
+HEADER,038 - 046,X(09),AN,,data_of ,,Literally “DATA     OF         ”,
+HEADER,047 - 056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+HEADER,057 - 067,X(11),AN,,to_remote,,Literally “     TO    REMOTE    ”,
+HEADER,068 - 071,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+HEADER,072 - 085,X(14),AN,,begins_here,,Literally “     BEGINS     HERE         ”,
+HEADER,086 - 095,X(10),AN,,run_date,,RUN DATE = “MM/DD/CCYY”,
+HEADER,096 - 096,X(01),AN,,not_used,,Not Used,
+HEADER,097 - 104,X(08),AN,,run_time,,RUN TIME = “HH:MM:SS”,
+HEADER,105 - 249,X(145),AN,,not_used,,Not Used,
+HEADER,250 - 250,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates the end of the header record,
+A,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE
 Values include:
 “GM” = GMON (Brokerage)
 “N1” = GMN1 (Bank Custody)",
-A,003 - 003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “A”,
-A,004 - 011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+A,003 - 003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “A”,
+A,004 - 011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 Begins with “00000001”",
-A,012 - 020,X(09),AN,,account_number,"ACCOUNT NUMBER
+A,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 Including Office (3), Base (6)",
-A,021 - 021,X(01),AN,,not_used,Not Used,
-A,022 - 024,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
-A,025 - 025,X(01),AN,,not_used,Not Used,
-A,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
-A,029 - 046,9(16)v9(02),N,,usde_td_balance_for_all_account_types,"USDE T/D BALANCE FOR ALL ACCOUNT TYPES
+A,021 - 021,X(01),AN,,not_used,,Not Used,
+A,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+A,025 - 025,X(01),AN,,not_used,,Not Used,
+A,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+A,029 - 046,9(16)v9(02),N,,usde_td_balance_for_all_account_types,,"USDE T/D BALANCE FOR ALL ACCOUNT TYPES
 Equivalent to Net Balance on NetX360.
 Total netted balances of all A/C types combined, as of the last T/D, in USDE.",
-A,047 - 047,X(01),AN,,usde_td_balance_for_all_account_types_sign,"USDE T/D BALANCE FOR ALL ACCOUNT TYPES SIGN
+A,047 - 047,X(01),AN,,usde_td_balance_for_all_account_types_sign,,"USDE T/D BALANCE FOR ALL ACCOUNT TYPES SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-A,048 - 065,9(16)v9(02),N,,usd_td_balance_for_all_account_types,"USD T/D BALANCE FOR ALL ACCOUNT TYPES
+A,048 - 065,9(16)v9(02),N,,usd_td_balance_for_all_account_types,,"USD T/D BALANCE FOR ALL ACCOUNT TYPES
 Does not include foreign currency",
-A,066 - 066,X(01),AN,,usd_td_balance_for_all_account_types_sign,"USD T/D BALANCE FOR ALL ACCOUNT TYPES SIGN
+A,066 - 066,X(01),AN,,usd_td_balance_for_all_account_types_sign,,"USD T/D BALANCE FOR ALL ACCOUNT TYPES SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-A,067 - 084,9(16)v9(02),N,,long_td_market_value_for_all_account_types_in_usde,"LONG T/D MARKET VALUE FOR ALL ACCOUNT TYPES in USDE
+A,067 - 084,9(16)v9(02),N,,long_td_market_value_for_all_account_types_in_usde,,"LONG T/D MARKET VALUE FOR ALL ACCOUNT TYPES in USDE
 Long T/D Market Value for all positions (domestic and international).
 This value excludes currency positions.",
-A,085 - 085,X(01),AN,,long_td_market_value_for_all_account_types_in_usde_sign,"LONG T/D MARKET VALUE FOR ALL ACCOUNT TYPES SIGN
+A,085 - 085,X(01),AN,,long_td_market_value_for_all_account_types_in_usde_sign,,"LONG T/D MARKET VALUE FOR ALL ACCOUNT TYPES SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-A,086 - 103,9(16)v9(02),N,,short_td_market_value_for_all_account_types_in_usde,"SHORT T/D MARKET VALUE FOR ALL ACCOUNT TYPES in USDE
+A,086 - 103,9(16)v9(02),N,,short_td_market_value_for_all_account_types_in_usde,,"SHORT T/D MARKET VALUE FOR ALL ACCOUNT TYPES in USDE
 Short Trade Market Value for all positions (domestic and international).
 This value excludes currency positions.",
-A,104 - 104,X(01),AN,,short_td_market_value_for_all_account_types_in_usde_sign,"SHORT T/D MARKET VALUE FOR ALL ACCOUNT TYPES SIGN
+A,104 - 104,X(01),AN,,short_td_market_value_for_all_account_types_in_usde_sign,,"SHORT T/D MARKET VALUE FOR ALL ACCOUNT TYPES SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-A,105 - 122,9(16)v9(02),N,,td_liquidating_equity_for_all_account_types,"T/D LIQUIDATING EQUITY FOR ALL ACCOUNT TYPES
+A,105 - 122,9(16)v9(02),N,,td_liquidating_equity_for_all_account_types,,"T/D LIQUIDATING EQUITY FOR ALL ACCOUNT TYPES
 the Total Equity of the A/C plus (or minus) the MV of precious metals, commercial paper and options for all A/C types.",
-A,123 - 123,X(01),AN,,td_liquidating_equity_for_all_account_types_sign,"T/D LIQUIDATING EQUITY FOR ALL ACCOUNT TYPES SIGN
+A,123 - 123,X(01),AN,,td_liquidating_equity_for_all_account_types_sign,,"T/D LIQUIDATING EQUITY FOR ALL ACCOUNT TYPES SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-A,124 - 141,9(16)v9(02),N,,total_usde_td_balance_for_all_account_types,"TOTAL USDE T/D BALANCE FOR ALL ACCOUNT TYPES
+A,124 - 141,9(16)v9(02),N,,total_usde_td_balance_for_all_account_types,,"TOTAL USDE T/D BALANCE FOR ALL ACCOUNT TYPES
 Equivalent to Total Balance on NetX360; 
 sum of the Net Balances in all A/C types, all currency (domestic and foreign) in A/C and Money Market Fund Opening Balances (Principal and Dividend) in USDE.",
-A,142 - 142,X(01),AN,,total_usde_td_balance_for_all_account_types_sign,"TOTAL USDE T/D BALANCE FOR ALL ACCOUNT TYPES SIGN
+A,142 - 142,X(01),AN,,total_usde_td_balance_for_all_account_types_sign,,"TOTAL USDE T/D BALANCE FOR ALL ACCOUNT TYPES SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-A,143 - 160,9(16)v9(02),N,,total_equity_for_all_account_types,"TOTAL EQUITY FOR ALL ACCOUNT TYPES
+A,143 - 160,9(16)v9(02),N,,total_equity_for_all_account_types,,"TOTAL EQUITY FOR ALL ACCOUNT TYPES
 equal to the Long MV minus the Short MV, plus the Total Credit Balances minus the Total Debit Balances for all A/C types.",
-A,161 - 161,X(01),AN,,total_equity_for_all_account_types_sign,"TOTAL EQUITY FOR ALL ACCOUNT TYPES SIGN
+A,161 - 161,X(01),AN,,total_equity_for_all_account_types_sign,,"TOTAL EQUITY FOR ALL ACCOUNT TYPES SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-A,162 - 179,9(16)v9(02),N,,trade_date_net_worth_of_account_for_all_account_types,"TRADE DATE NET WORTH OF ACCOUNT FOR ALL ACCOUNT TYPES
+A,162 - 179,9(16)v9(02),N,,trade_date_net_worth_of_account_for_all_account_types,,"TRADE DATE NET WORTH OF ACCOUNT FOR ALL ACCOUNT TYPES
 Liquidating Equity plus Money Market Fund Balances.",
-A,180 - 180,X(01),AN,,trade_date_net_worth_of_account_for_all_account_types_sign,"TRADE DATE NET WORTH FOR ALL ACCOUNT TYPES SIGN
+A,180 - 180,X(01),AN,,trade_date_net_worth_of_account_for_all_account_types_sign,,"TRADE DATE NET WORTH FOR ALL ACCOUNT TYPES SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-A,181 - 198,9(16)v9(02),N,,money_market_fund_principal_balance,"MONEY MARKET FUND PRINCIPAL BALANCE
+A,181 - 198,9(16)v9(02),N,,money_market_fund_principal_balance,,"MONEY MARKET FUND PRINCIPAL BALANCE
 Equivalent to MMF Open Balance on NetX360",
-A,199 - 199,X(01),AN,,money_market_fund_principal_balance_sign,"MM FUND PRINCIPAL BALANCE SIGN
+A,199 - 199,X(01),AN,,money_market_fund_principal_balance_sign,,"MM FUND PRINCIPAL BALANCE SIGN
 value includes:
 “+” = Credit Amount",
-A,200 - 217,9(16)v9(02),N,,money_market_fund_dividend,"MONEY MARKET FUND DIVIDEND
+A,200 - 217,9(16)v9(02),N,,money_market_fund_dividend,,"MONEY MARKET FUND DIVIDEND
 equivalent to MMF Dividend on NetX360",
-A,218 - 218,X(01),AN,,money_market_fund_dividend_sign,"MM FUND DIVIDEND SIGN
+A,218 - 218,X(01),AN,,money_market_fund_dividend_sign,,"MM FUND DIVIDEND SIGN
 value includes:
 “+” = Credit Amount",
-A,219 - 236,9(16)v9(02),N,,cash_available_for_all_account_types,"CASH AVAILABLE FOR ALL ACCOUNT TYPES
+A,219 - 236,9(16)v9(02),N,,cash_available_for_all_account_types,,"CASH AVAILABLE FOR ALL ACCOUNT TYPES
 refers to the amount of cash that can be withdrawn",
-A,237 - 237,X(01),AN,,cash_available_for_all_account_types_sign,"CASH AVAILABLE FOR ALL ACCOUNT TYPES SIGN
+A,237 - 237,X(01),AN,,cash_available_for_all_account_types_sign,,"CASH AVAILABLE FOR ALL ACCOUNT TYPES SIGN
 values include:
 “+” = Debit Amount
 “-” = Credit Amount",
-A,238 - 241,X(04),AN,,not_used,Not Used,
-A,242 - 249,9(08),N,,date_of_data,"DATE OF DATA
+A,238 - 241,X(04),AN,,not_used,,Not Used,
+A,242 - 249,9(08),N,,date_of_data,,"DATE OF DATA
 in CCYYMMDD format",
-A,250 - 250,X(01),AN,,end_of_record_a,"Literally “X”
+A,250 - 250,X(01),AN,,end_of_record_a,,"Literally “X”
 indicates the end of record A",
-B,001 - 002,X(02),AN,,transaction_code,"TRANSACTION CODE
+B,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE
 values include:
 “GM” = GMON (Brokerage)
 “N1” = GMN1 (Bank Custody)",
-B,003 - 003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “B”,
-B,004 - 011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+B,003 - 003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “B”,
+B,004 - 011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 begins with “00000001”",
-B,012 - 020,X(09),AN,,account_number,"ACCOUNT NUMBER
+B,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
-B,021 - 021,X(01),AN,,not_used,Not Used,
-B,022 - 024,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
-B,025 - 025,X(01),AN,,not_used,Not Used,
-B,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
-B,029 - 046,9(16)v9(02),N,,usde_sd_balance_for_all_account_types,"USDE S/D BALANCE FOR ALL ACCOUNT TYPES
+B,021 - 021,X(01),AN,,not_used,,Not Used,
+B,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+B,025 - 025,X(01),AN,,not_used,,Not Used,
+B,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+B,029 - 046,9(16)v9(02),N,,usde_sd_balance_for_all_account_types,,"USDE S/D BALANCE FOR ALL ACCOUNT TYPES
 Total netted balances of all A/C types combined, as of the last S/D, in USDE.",
-B,047 - 047,X(01),AN,,usde_sd_balance_for_all_account_types_sign,"USDE S/D BALANCE FOR ALL ACCOUNT TYPES SIGN
+B,047 - 047,X(01),AN,,usde_sd_balance_for_all_account_types_sign,,"USDE S/D BALANCE FOR ALL ACCOUNT TYPES SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-B,048 - 065,9(16)v9(02),N,,usd_sd_balance_for_all_account_types,USD S/D BALANCE FOR ALL ACCOUNT TYPES,
-B,066 - 066,X(01),AN,,usd_sd_balance_for_all_account_types_sign,"USD S/D BALANCE FOR ALL ACCOUNT TYPES SIGN
+B,048 - 065,9(16)v9(02),N,,usd_sd_balance_for_all_account_types,,USD S/D BALANCE FOR ALL ACCOUNT TYPES,
+B,066 - 066,X(01),AN,,usd_sd_balance_for_all_account_types_sign,,"USD S/D BALANCE FOR ALL ACCOUNT TYPES SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-B,067 - 084,9(16)v9(02),N,,long_sd_market_value_for_all_account_types_in_usde,"LONG S/D MARKET VALUE FOR ALL ACCOUNT TYPES in USDE
+B,067 - 084,9(16)v9(02),N,,long_sd_market_value_for_all_account_types_in_usde,,"LONG S/D MARKET VALUE FOR ALL ACCOUNT TYPES in USDE
 Long S/D Market Value for all positions (domestic and international).
 Excludes currency positions.",
-B,085 - 085,X(01),AN,,long_sd_market_value_for_all_account_types_in_usde_sign,"LONG S/D MV FOR ALL ACCOUNT TYPES SIGN
+B,085 - 085,X(01),AN,,long_sd_market_value_for_all_account_types_in_usde_sign,,"LONG S/D MV FOR ALL ACCOUNT TYPES SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-B,086 - 103,9(16)v9(02),N,,short_sd_market_value_for_all_account_types_in_usde,"SHORT S/D MARKET VALUE FOR ALL ACCOUNT TYPES in USDE
+B,086 - 103,9(16)v9(02),N,,short_sd_market_value_for_all_account_types_in_usde,,"SHORT S/D MARKET VALUE FOR ALL ACCOUNT TYPES in USDE
 Short S/D Market Value for all positions (domestic and international).
 Excludes currency positions.",
-B,104 - 104,X(01),AN,,short_sd_market_value_for_all_account_types_in_usde_sign,"SHORT S/D MV FOR ALL ACCOUNT TYPES SIGN
+B,104 - 104,X(01),AN,,short_sd_market_value_for_all_account_types_in_usde_sign,,"SHORT S/D MV FOR ALL ACCOUNT TYPES SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-B,105 - 112,9(08),N,,sma_datestamp,"SMA DATESTAMP
+B,105 - 112,9(08),N,,sma_datestamp,,"SMA DATESTAMP
 in CCYYMMDD format",
-B,113 - 130,9(16)v9(02),N,,sma_balance_fed_call_for_all_account_types,SMA BALANCE/FED CALL FOR ALL ACCOUNT TYPES,
-B,131 - 131,X(01),AN,,sma_balance_fed_call_for_all_account_types_sign,"SMA BALANCE SIGN
+B,113 - 130,9(16)v9(02),N,,sma_balance_fed_call_for_all_account_types,,SMA BALANCE/FED CALL FOR ALL ACCOUNT TYPES,
+B,131 - 131,X(01),AN,,sma_balance_fed_call_for_all_account_types_sign,,"SMA BALANCE SIGN
 values include:
 “+” = Debit Amount (Fed Call)
 “-” = Credit Amount (Current SMA)",
-B,132 - 149,9(16)v9(02),N,,margin_buying_power,"MARGIN BUYING POWER
+B,132 - 149,9(16)v9(02),N,,margin_buying_power,,"MARGIN BUYING POWER
 does not include Type 1 Cash and money market fund balances",
-B,150 - 150,X(01),AN,,margin_buying_power_sign,"MARGIN BUYING POWER SIGN
+B,150 - 150,X(01),AN,,margin_buying_power_sign,,"MARGIN BUYING POWER SIGN
 values include:
 “+” = Available Margin Buying Power amount
 “     ” = Not Applicable",
-B,151 - 168,9(16)v9(02),N,,technical_short_value,"TECHNICAL SHORT VALUE
+B,151 - 168,9(16)v9(02),N,,technical_short_value,,"TECHNICAL SHORT VALUE
 valid in ACCOUNT Types “0” & “1”",
-B,169 - 169,X(01),AN,,technical_short_value_sign,"TECHNICAL SHORT VALUE SIGN
+B,169 - 169,X(01),AN,,technical_short_value_sign,,"TECHNICAL SHORT VALUE SIGN
 values include:
 “+” = Debit Amount
 “-” = Credit Amount",
-B,170 - 187,9(16)v9(02),N,,total_fed_requirement,TOTAL FED REQUIREMENT,
-B,188 - 188,X(01),AN,,total_fed_requirement_sign,"TOTAL FED REQUIREMENT SIGN
+B,170 - 187,9(16)v9(02),N,,total_fed_requirement,,TOTAL FED REQUIREMENT,
+B,188 - 188,X(01),AN,,total_fed_requirement_sign,,"TOTAL FED REQUIREMENT SIGN
 values include:
 “+” = Requirement Amount
 “     ” = Not Applicable",
-B,189 - 206,9(16)v9(02),N,,total_options_requirement,TOTAL OPTIONS REQUIREMENT,
-B,207 - 207,X(01),AN,,total_options_requirement_sign,"TOTAL OPTIONS REQUIREMENT SIGN
+B,189 - 206,9(16)v9(02),N,,total_options_requirement,,TOTAL OPTIONS REQUIREMENT,
+B,207 - 207,X(01),AN,,total_options_requirement_sign,,"TOTAL OPTIONS REQUIREMENT SIGN
 values include:
 “+” = Requirement Amount
 “     ” = Not Applicable",
-B,208 - 210,X(03),AN,,base_currency,BASE CURRENCY,
-B,211 - 211,X(01),AN,,non_usd_currency_trading_eligible,"NON-USD CURRENCY TRADING ELIGIBLE
+B,208 - 210,X(03),AN,,base_currency,,BASE CURRENCY,
+B,211 - 211,X(01),AN,,non_usd_currency_trading_eligible,,"NON-USD CURRENCY TRADING ELIGIBLE
 values include:
 “A” = Account is Eligible
 “     ” = Account is not Eligible",
-B,212 - 229,9(16)v9(02),N,,masked_house_call,MASKED HOUSE CALL,
-B,230 - 230,X(01),AN,,masked_house_call_sign,"MASKED HOUSE CALL SIGN
+B,212 - 229,9(16)v9(02),N,,masked_house_call,,MASKED HOUSE CALL,
+B,230 - 230,X(01),AN,,masked_house_call_sign,,"MASKED HOUSE CALL SIGN
 values include:
 “+” = Debit Amount
 “-” = Credit Amount",
-B,231 - 241,X(11),AN,,not_used,Not Used,
-B,242 - 249,9(08),N,,date_of_data,"DATE OF DATA
+B,231 - 241,X(11),AN,,not_used,,Not Used,
+B,242 - 249,9(08),N,,date_of_data,,"DATE OF DATA
 in CCYYMMDD format",
-B,250 - 250,X(01),AN,,end_of_record_b,Literally “X”; indicates the end of record B,
-C,001 - 002,X(02),AN,,transaction_code,"TRANSACTION CODE
+B,250 - 250,X(01),AN,,end_of_record_b,,Literally “X”; indicates the end of record B,
+C,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE
 values include:
 “GM” = GMON (Brokerage)
 “N1” = GMN1 (Bank Custody)",
-C,003 - 003,X(01),AN,,record_indicator_value,RECORD INDICATOR VALUE = “C”,
-C,004 - 011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+C,003 - 003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “C”,
+C,004 - 011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 begins with “00000001”",
-C,012 - 020,X(09),AN,,account_number,"ACCOUNT NUMBER
+C,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
-C,021 - 021,X(01),AN,,not_used,Not Used,
-C,022 - 024,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
-C,025 - 025,X(01),AN,,not_used,Not Used,
-C,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
-C,029 - 046,9(16)v9(02),N,,settlement_date_net_worth_of_account_for_all_account_types,"SETTLEMENT DATE NET WORTH OF ACCOUNT FOR ALL ACCOUNT TYPES
+C,021 - 021,X(01),AN,,not_used,,Not Used,
+C,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+C,025 - 025,X(01),AN,,not_used,,Not Used,
+C,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+C,029 - 046,9(16)v9(02),N,,settlement_date_net_worth_of_account_for_all_account_types,,"SETTLEMENT DATE NET WORTH OF ACCOUNT FOR ALL ACCOUNT TYPES
 Liquidating Equity plus Money Market Fund Balances.",
-C,047 - 047,X(01),AN,,settlement_date_net_worth_of_account_for_all_account_types_sign,"SETTLEMENT DATE NET WORTH FOR ALL ACCOUNT TYPES SIGN
+C,047 - 047,X(01),AN,,settlement_date_net_worth_of_account_for_all_account_types_sign,,"SETTLEMENT DATE NET WORTH FOR ALL ACCOUNT TYPES SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-C,048 - 065,9(09)v9(09),N,,equity_percent_for_all_account_types,EQUITY PERCENT FOR ALL ACCOUNT TYPES,
-C,066 - 083,9(16)v9(02),N,,funds_to_trade,"FUNDS TO TRADE
+C,048 - 065,9(09)v9(09),N,,equity_percent_for_all_account_types,,EQUITY PERCENT FOR ALL ACCOUNT TYPES,
+C,066 - 083,9(16)v9(02),N,,funds_to_trade,,"FUNDS TO TRADE
 based on margin excess, includes type 1 Cash and money market fund balances (effective 05/04/2012)",
-C,084 - 084,X(01),AN,,funds_to_trade_sign,"FUNDS TO TRADE SIGN
+C,084 - 084,X(01),AN,,funds_to_trade_sign,,"FUNDS TO TRADE SIGN
 values include:
 “+” = Available Funds to Trade amount
 “     ” = Not Applicable",
-C,085 - 222,X(138),AN,,not_used,Not Used,
-C,223 - 240,9(18),N,,for_pershing_internal_use_pending_mf_pr,For Pershing Internal Use (Reserved-Pending MF P/R),
-C,241 - 241,X(01),AN,,for_pershing_internal_use_pending_mf_pr_sign,For Pershing Internal Use (Reserved-Pending MF P/R Sign),
-C,242 - 249,9(08),N,,date_of_data,"DATE OF DATA, in CCYYMMDD format",
-C,250 - 250,X(01),AN,,end_of_record_c,Literally “X”; indicates the end of record C,
-1,001 - 002,X(02),AN,,transaction_code,"TRANSACTION CODE
+C,085 - 222,X(138),AN,,not_used,,Not Used,
+C,223 - 240,9(18),N,,for_pershing_internal_use_pending_mf_pr,,For Pershing Internal Use (Reserved-Pending MF P/R),
+C,241 - 241,X(01),AN,,for_pershing_internal_use_pending_mf_pr_sign,,For Pershing Internal Use (Reserved-Pending MF P/R Sign),
+C,242 - 249,9(08),N,,date_of_data,,"DATE OF DATA, in CCYYMMDD format",
+C,250 - 250,X(01),AN,,end_of_record_c,,Literally “X”; indicates the end of record C,
+1,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE
 values include:
 “GM” = GMON (Brokerage)
 “N1” = GMN1 (Bank Custody)",
-1,003 - 003,X(01),AN,,record_indicator,"RECORD INDICATOR
+1,003 - 003,X(01),AN,,record_indicator,,"RECORD INDICATOR
 values include:
 “1” = Cash/Principal accounting for Bank Custody
 “9” = Income/Income accounting for Bank Custody",
-1,004 - 011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+1,004 - 011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 begins with “00000001”",
-1,012 - 020,X(09),AN,,account_number,"ACCOUNT NUMBER
+1,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
-1,021 - 021,X(01),AN,,account_type,"ACCOUNT TYPE
+1,021 - 021,X(01),AN,,account_type,,"ACCOUNT TYPE
 value includes:
 “1” = Cash/Principal accounting for Bank Custody
 “9” = Income/Income accounting for Bank Custody",
-1,022 - 024,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
-1,025 - 025,X(01),AN,,not_used,Not Used,
-1,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
-1,029 - 036,9(08),N,,type_1_9_account_usd_td_datestamp,"TYPE 1/9 ACCOUNT USD T/D DATESTAMP
+1,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+1,025 - 025,X(01),AN,,not_used,,Not Used,
+1,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+1,029 - 036,9(08),N,,type_1_9_account_usd_td_datestamp,,"TYPE 1/9 ACCOUNT USD T/D DATESTAMP
 in CCYYMMDD format",
-1,037 - 054,9(16)v9(02),N,,type_1_9_account_usd_td_balance,TYPE 1/9 ACCOUNT USD T/D BALANCE,
-1,055 - 055,X(01),AN,,type_1_9_account_usd_td_balance_sign,"TYPE 1/9 ACCOUNT USD T/D BAL. SIGN
+1,037 - 054,9(16)v9(02),N,,type_1_9_account_usd_td_balance,,TYPE 1/9 ACCOUNT USD T/D BALANCE,
+1,055 - 055,X(01),AN,,type_1_9_account_usd_td_balance_sign,,"TYPE 1/9 ACCOUNT USD T/D BAL. SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-1,056 - 063,9(08),N,,type_1_9_account_usd_sd_datestamp,"TYPE 1/9 ACCOUNT USD S/D DATESTAMP
+1,056 - 063,9(08),N,,type_1_9_account_usd_sd_datestamp,,"TYPE 1/9 ACCOUNT USD S/D DATESTAMP
 in CCYYMMDD format",
-1,064 - 081,9(16)v9(02),N,,type_1_9_account_usd_sd_balance,TYPE 1/9 ACCOUNT USD S/D BALANCE,
-1,082 - 082,X(01),AN,,type_1_9_account_usd_sd_balance_sign,"TYPE 1/9 ACCOUNT USD S/D BAL. SIGN
+1,064 - 081,9(16)v9(02),N,,type_1_9_account_usd_sd_balance,,TYPE 1/9 ACCOUNT USD S/D BALANCE,
+1,082 - 082,X(01),AN,,type_1_9_account_usd_sd_balance_sign,,"TYPE 1/9 ACCOUNT USD S/D BAL. SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-1,083 - 100,9(16)v9(02),N,,type_1_9_account_td_market_value,"TYPE 1/9 ACCOUNT T/D MARKET VALUE
+1,083 - 100,9(16)v9(02),N,,type_1_9_account_td_market_value,,"TYPE 1/9 ACCOUNT T/D MARKET VALUE
 Long Market Value in Type 1/9 A/C for all positions (domestic and international).
 This USDE value excludes currency positions.",
-1,101 - 101,X(01),AN,,type_1_9_account_td_market_value_sign,"TYPE 1/9 ACCOUNT T/D MKT. VLU. SIGN
+1,101 - 101,X(01),AN,,type_1_9_account_td_market_value_sign,,"TYPE 1/9 ACCOUNT T/D MKT. VLU. SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-1,102 - 119,9(16)v9(02),N,,type_1_9_account_equity,TYPE 1/9 ACCOUNT EQUITY,
-1,120 - 120,X(01),AN,,type_1_9_account_equity_sign,"TYPE 1/9 ACCOUNT EQUITY SIGN
+1,102 - 119,9(16)v9(02),N,,type_1_9_account_equity,,TYPE 1/9 ACCOUNT EQUITY,
+1,120 - 120,X(01),AN,,type_1_9_account_equity_sign,,"TYPE 1/9 ACCOUNT EQUITY SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-1,121 - 138,9(16)v9(02),N,,type_1_9_account_unavailable_funds,"TYPE 1/9 ACCOUNT UNAVAILABLE FUNDS
+1,121 - 138,9(16)v9(02),N,,type_1_9_account_unavailable_funds,,"TYPE 1/9 ACCOUNT UNAVAILABLE FUNDS
 Uncollected Funds",
-1,139 - 139,X(01),AN,,type_1_9_account_unavailable_funds_sign,"TYPE 1/9 A/C UNAVAIL. FUNDS SIGN
+1,139 - 139,X(01),AN,,type_1_9_account_unavailable_funds_sign,,"TYPE 1/9 A/C UNAVAIL. FUNDS SIGN
 values include:
 “-” = Credit Amount; displayed on NetX360 as a positive number
 “     ” or “+” = Not Applicable/Debit Amount",
-1,140 - 157,9(16)v9(02),N,,type_1_9_account_cash_available,TYPE 1/9 ACCOUNT CASH AVAILABLE,
-1,158 - 158,X(01),AN,,type_1_9_account_cash_available_sign,"TYPE 1/9 ACCOUNT CASH AVAILABLE SIGN
+1,140 - 157,9(16)v9(02),N,,type_1_9_account_cash_available,,TYPE 1/9 ACCOUNT CASH AVAILABLE,
+1,158 - 158,X(01),AN,,type_1_9_account_cash_available_sign,,"TYPE 1/9 ACCOUNT CASH AVAILABLE SIGN
 values include:
 “+” = Debit Amount
 “-” = Credit Amount",
-1,159 - 176,9(16)v9(02),N,,type_1_9_account_td_foreign_currency_credit_balance_in_usde,TYPE 1/9 ACCOUNT T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
-1,177 - 177,X(01),AN,,type_1_9_account_td_foreign_currency_credit_balance_in_usde_sign,"TYPE 1/9 ACCOUNT T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE SIGN
+1,159 - 176,9(16)v9(02),N,,type_1_9_account_td_foreign_currency_credit_balance_in_usde,,TYPE 1/9 ACCOUNT T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
+1,177 - 177,X(01),AN,,type_1_9_account_td_foreign_currency_credit_balance_in_usde_sign,,"TYPE 1/9 ACCOUNT T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-1,178 - 195,9(16)v9(02),N,,type_1_9_account_td_foreign_currency_debit_balance_in_usde,TYPE 1/9 ACCOUNT T/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
-1,196 - 196,X(01),AN,,type_1_9_account_td_foreign_currency_debit_balance_in_usde_sign,"TYPE 1/9 ACCOUNT T/D FOREIGN CURRENCY DEBIT BALANCE IN USDE SIGN
+1,178 - 195,9(16)v9(02),N,,type_1_9_account_td_foreign_currency_debit_balance_in_usde,,TYPE 1/9 ACCOUNT T/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
+1,196 - 196,X(01),AN,,type_1_9_account_td_foreign_currency_debit_balance_in_usde_sign,,"TYPE 1/9 ACCOUNT T/D FOREIGN CURRENCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-1,197 - 214,9(16)v9(02),N,,type_1_9_account_sd_foreign_currency_credit_balance_in_usde,TYPE 1/9 ACCOUNT S/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
-1,215 - 215,X(01),AN,,type_1_9_account_sd_foreign_currency_credit_balance_in_usde_sign,"TYPE 1/9 ACCOUNT S/D FOREIGN CURRENCY CREDIT BALANCE IN USDE SIGN
+1,197 - 214,9(16)v9(02),N,,type_1_9_account_sd_foreign_currency_credit_balance_in_usde,,TYPE 1/9 ACCOUNT S/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
+1,215 - 215,X(01),AN,,type_1_9_account_sd_foreign_currency_credit_balance_in_usde_sign,,"TYPE 1/9 ACCOUNT S/D FOREIGN CURRENCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-1,216 - 233,9(16)v9(02),N,,type_1_9_account_sd_foreign_currency_debit_balance_in_usde,TYPE 1/9 ACCOUNT S/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
-1,234 - 234,X(01),AN,,type_1_9_account_sd_foreign_currency_debit_balance_in_usde_sign,"TYPE 1/9 ACCOUNT S/D FOREIGN CURRENCY DEBIT BALANCE IN USDE SIGN
+1,216 - 233,9(16)v9(02),N,,type_1_9_account_sd_foreign_currency_debit_balance_in_usde,,TYPE 1/9 ACCOUNT S/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
+1,234 - 234,X(01),AN,,type_1_9_account_sd_foreign_currency_debit_balance_in_usde_sign,,"TYPE 1/9 ACCOUNT S/D FOREIGN CURRENCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-1,235 - 241,X(07),AN,,not_used,Not Used,
-1,242 - 249,9(08),N,,date_of_data,"DATE OF DATA
+1,235 - 241,X(07),AN,,not_used,,Not Used,
+1,242 - 249,9(08),N,,date_of_data,,"DATE OF DATA
 in CCYYMMDD format",
-1,250 - 250,X(01),AN,,end_of_record_1,Literally “X”; indicates the end of record 1/9,
-2,001 - 002,X(02),AN,,transaction_code,"TRANSACTION CODE
+1,250 - 250,X(01),AN,,end_of_record_1,,Literally “X”; indicates the end of record 1/9,
+2,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE
 values include:
 “GM” = GMON (Brokerage)
 “N1” = GMN1 (Bank Custody)",
-2,003 - 003,X(01),AN,,record_indicator,RECORD INDICATOR VALUE = “2”,
-2,004 - 011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+2,003 - 003,X(01),AN,,record_indicator,,RECORD INDICATOR VALUE = “2”,
+2,004 - 011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 begins with “00000001”",
-2,012 - 020,X(09),AN,,account_number,"ACCOUNT NUMBER
+2,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
-2,021 - 021,X(01),AN,,account_type,ACCOUNT TYPE = “2” (margin),
-2,022 - 024,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
-2,025 - 025,X(01),AN,,not_used,Not Used,
-2,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
-2,029 - 036,9(08),N,,type_2_account_usd_td_datestamp,"TYPE 2 ACCOUNT USD T/D DATESTAMP
+2,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “2” (margin),
+2,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+2,025 - 025,X(01),AN,,not_used,,Not Used,
+2,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+2,029 - 036,9(08),N,,type_2_account_usd_td_datestamp,,"TYPE 2 ACCOUNT USD T/D DATESTAMP
 in CCYYMMDD format",
-2,037 - 054,9(16)v9(02),N,,type_2_account_usd_td_balance,TYPE 2 ACCOUNT USD T/D BALANCE,
-2,055 - 055,X(01),AN,,type_2_account_usd_td_balance_sign,"TYPE 2 ACCOUNT USD T/D BALANCE SIGN
+2,037 - 054,9(16)v9(02),N,,type_2_account_usd_td_balance,,TYPE 2 ACCOUNT USD T/D BALANCE,
+2,055 - 055,X(01),AN,,type_2_account_usd_td_balance_sign,,"TYPE 2 ACCOUNT USD T/D BALANCE SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-2,056 - 063,9(08),N,,type_2_account_usd_sd_datestamp,"TYPE 2 ACCOUNT USD S/D DATESTAMP
+2,056 - 063,9(08),N,,type_2_account_usd_sd_datestamp,,"TYPE 2 ACCOUNT USD S/D DATESTAMP
 in CCYYMMDD format",
-2,064 - 081,9(16)v9(02),N,,type_2_account_usd_sd_balance,TYPE 2 ACCOUNT USD S/D BALANCE,
-2,082 - 082,X(01),AN,,type_2_account_usd_sd_balance_sign,"TYPE 2 ACCOUNT USD S/D BALANCE SIGN
+2,064 - 081,9(16)v9(02),N,,type_2_account_usd_sd_balance,,TYPE 2 ACCOUNT USD S/D BALANCE,
+2,082 - 082,X(01),AN,,type_2_account_usd_sd_balance_sign,,"TYPE 2 ACCOUNT USD S/D BALANCE SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-2,083 - 100,9(16)v9(02),N,,type_2_account_td_market_value,"TYPE 2 ACCOUNT T/D MARKET VALUE
+2,083 - 100,9(16)v9(02),N,,type_2_account_td_market_value,,"TYPE 2 ACCOUNT T/D MARKET VALUE
 Long Market Value in Type 2 A/C for all positions (domestic and international).
 This USDE value excludes currency positions.",
-2,101 - 101,X(01),AN,,type_2_account_td_market_value_sign,"TYPE 2 ACCOUNT T/D MKT VALUE SIGN
+2,101 - 101,X(01),AN,,type_2_account_td_market_value_sign,,"TYPE 2 ACCOUNT T/D MKT VALUE SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-2,102 - 119,9(16)v9(02),N,,type_2_account_equity,TYPE 2 ACCOUNT EQUITY,
-2,120 - 120,X(01),AN,,type_2_account_equity_sign,"TYPE 2 ACCOUNT EQUITY SIGN
+2,102 - 119,9(16)v9(02),N,,type_2_account_equity,,TYPE 2 ACCOUNT EQUITY,
+2,120 - 120,X(01),AN,,type_2_account_equity_sign,,"TYPE 2 ACCOUNT EQUITY SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-2,121 - 138,9(16)v9(02),N,,type_2_account_unavailable_funds,TYPE 2 ACCOUNT UNAVAILABLE FUNDS,
-2,139 - 139,X(01),AN,,type_2_account_unavailable_funds_sign,"TYPE 2 ACCOUNT UNAVAIL. FUNDS SIGN
+2,121 - 138,9(16)v9(02),N,,type_2_account_unavailable_funds,,TYPE 2 ACCOUNT UNAVAILABLE FUNDS,
+2,139 - 139,X(01),AN,,type_2_account_unavailable_funds_sign,,"TYPE 2 ACCOUNT UNAVAIL. FUNDS SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount /Not Applicable",
-2,140 - 157,9(16)v9(02),N,,type_2_account_cash_available,TYPE 2 ACCOUNT CASH AVAILABLE,
-2,158 - 158,X(01),AN,,type_2_account_cash_available_sign,"TYPE 2 ACCOUNT CASH AVAILABLE SIGN
+2,140 - 157,9(16)v9(02),N,,type_2_account_cash_available,,TYPE 2 ACCOUNT CASH AVAILABLE,
+2,158 - 158,X(01),AN,,type_2_account_cash_available_sign,,"TYPE 2 ACCOUNT CASH AVAILABLE SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount/Not Applicable",
-2,159 - 176,9(16)v9(02),N,,type_2_account_house_call_surplus,TYPE 2 ACCOUNT HOUSE CALL/SURPLUS,
-2,177 - 177,X(01),AN,,type_2_account_house_call_surplus_sign,"TYPE 2 ACCOUNT HOUSE CALL/SURPLUS SIGN
+2,159 - 176,9(16)v9(02),N,,type_2_account_house_call_surplus,,TYPE 2 ACCOUNT HOUSE CALL/SURPLUS,
+2,177 - 177,X(01),AN,,type_2_account_house_call_surplus_sign,,"TYPE 2 ACCOUNT HOUSE CALL/SURPLUS SIGN
 values include:
 “+” = Call; (displayed on NetX360 as a negative number)
 “-” = Surplus; (displayed on NetX360 as a positive number",
-2,178 - 195,9(16)v9(02),N,,type_2_account_nyse_call_surplus,TYPE 2 ACCOUNT NYSE CALL/SURPLUS,
-2,196 - 196,X(01),AN,,type_2_account_nyse_call_surplus_sign,"TYPE 2 ACCOUNT NYSE CALL/SURPLUS SIGN
+2,178 - 195,9(16)v9(02),N,,type_2_account_nyse_call_surplus,,TYPE 2 ACCOUNT NYSE CALL/SURPLUS,
+2,196 - 196,X(01),AN,,type_2_account_nyse_call_surplus_sign,,"TYPE 2 ACCOUNT NYSE CALL/SURPLUS SIGN
 values include:
 “+” = Call; (displayed on NetX360 as a negative number)
 “-” = Surplus; (displayed on NetX360 as a positive number",
-2,197 - 215,X(19),AN,,reserved,Reserved,
-2,216 - 241,X(26),AN,,not_used,Not Used,
-2,242 - 249,9(08),N,,date_of_data,"DATE OF DATA
+2,197 - 215,X(19),AN,,reserved,,Reserved,
+2,216 - 241,X(26),AN,,not_used,,Not Used,
+2,242 - 249,9(08),N,,date_of_data,,"DATE OF DATA
 in CCYYMMDD format",
-2,250 - 250,X(01),AN,,end_of_record_2,Literally “X”; indicates the end of record 2,
-4,001 - 002,X(02),AN,,transaction_code,"TRANSACTION CODE
+2,250 - 250,X(01),AN,,end_of_record_2,,Literally “X”; indicates the end of record 2,
+4,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE
 values include:
 “GM” = GMON (Brokerage)
 “N1” = GMN1 (Bank Custody)",
-4,003 - 003,X(01),AN,,record_indicator,RECORD INDICATOR VALUE = “4”,
-4,004 - 011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+4,003 - 003,X(01),AN,,record_indicator,,RECORD INDICATOR VALUE = “4”,
+4,004 - 011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 begins with “00000001”",
-4,012 - 020,X(09),AN,,account_number,"ACCOUNT NUMBER
+4,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
-4,021 - 021,X(01),AN,,account_type,ACCOUNT TYPE = “2” (margin account currency),
-4,022 - 024,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
-4,025 - 025,X(01),AN,,not_used,Not Used,
-4,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
-4,029 - 046,9(16)v9(02),N,,portfolio_margin_house_requirement,"PORTFOLIO MARGIN HOUSE REQUIREMENT
+4,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “2” (margin account currency),
+4,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+4,025 - 025,X(01),AN,,not_used,,Not Used,
+4,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+4,029 - 046,9(16)v9(02),N,,portfolio_margin_house_requirement,,"PORTFOLIO MARGIN HOUSE REQUIREMENT
 the portfolio margin house requirement for eligible securities",
-4,047 - 047,X(01),AN,,portfolio_margin_house_requirement_sign,"PORTFOLIO MARGIN HOUSE REQUIREMENT SIGN
+4,047 - 047,X(01),AN,,portfolio_margin_house_requirement_sign,,"PORTFOLIO MARGIN HOUSE REQUIREMENT SIGN
 value includes:
 “+” = Requirement",
-4,048 - 065,9(16)v9(02),N,,total_house_requirement_for_the_ac,"TOTAL HOUSE REQUIREMENT FOR THE A/C
+4,048 - 065,9(16)v9(02),N,,total_house_requirement_for_the_ac,,"TOTAL HOUSE REQUIREMENT FOR THE A/C
 includes both portfolio and normal requirements for both eligible and ineligible positions",
-4,066 - 066,X(01),AN,,total_house_requirement_for_the_ac_sign,"TOTAL HOUSE REQUIREMENT FOR THE A/C SIGN
+4,066 - 066,X(01),AN,,total_house_requirement_for_the_ac_sign,,"TOTAL HOUSE REQUIREMENT FOR THE A/C SIGN
 value includes:
 “+” = Requirement",
-4,067 - 084,9(09)v9(09),N,,td_liquidating_equity_percent,"T/D LIQUIDATING EQUITY PERCENT
+4,067 - 084,9(09)v9(09),N,,td_liquidating_equity_percent,,"T/D LIQUIDATING EQUITY PERCENT
 the percentage of equity in the A/C, calculated as follows:  Total Net Worth / Total Market Value x 100.",
-4,085 - 158,X(74),AN,,not_used,Not Used,
-4,159 - 176,9(16)v9(02),N,,type_2_ac_td_foreign_currency_credit_balance_in_usde,TYPE 2 A/C T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
-4,177 - 177,X(01),AN,,type_2_ac_td_foreign_currency_credit_balance_in_usde_sign,"TYPE 2 ACCOUNT T/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
+4,085 - 158,X(74),AN,,not_used,,Not Used,
+4,159 - 176,9(16)v9(02),N,,type_2_ac_td_foreign_currency_credit_balance_in_usde,,TYPE 2 A/C T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
+4,177 - 177,X(01),AN,,type_2_ac_td_foreign_currency_credit_balance_in_usde_sign,,"TYPE 2 ACCOUNT T/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-4,178 - 195,9(16)v9(02),N,,type_2_account_td_foreign_currency_debit_balance_in_usde,TYPE 2 ACCOUNT T/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
-4,196 - 196,X(01),AN,,type_2_account_td_foreign_currency_debit_balance_in_usde_sign,"TYPE 2 ACCOUNT T/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
+4,178 - 195,9(16)v9(02),N,,type_2_account_td_foreign_currency_debit_balance_in_usde,,TYPE 2 ACCOUNT T/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
+4,196 - 196,X(01),AN,,type_2_account_td_foreign_currency_debit_balance_in_usde_sign,,"TYPE 2 ACCOUNT T/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-4,197 - 214,9(16)v9(02),N,,type_2_ac_sd_foreign_currency_credit_balance_in_usde,TYPE 2 ACCOUNT S/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
-4,215 - 215,X(01),AN,,type_2_ac_sd_foreign_currency_credit_balance_in_usde_sign,"TYPE 2 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
+4,197 - 214,9(16)v9(02),N,,type_2_ac_sd_foreign_currency_credit_balance_in_usde,,TYPE 2 ACCOUNT S/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
+4,215 - 215,X(01),AN,,type_2_ac_sd_foreign_currency_credit_balance_in_usde_sign,,"TYPE 2 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-4,216 - 233,9(16)v9(02),N,,type_2_account_sd_foreign_currency_debit_balance_in_usde,TYPE 2 ACCOUNT S/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
-4,234 - 234,X(01),AN,,type_2_account_sd_foreign_currency_debit_balance_in_usde_sign,"TYPE 2 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
+4,216 - 233,9(16)v9(02),N,,type_2_account_sd_foreign_currency_debit_balance_in_usde,,TYPE 2 ACCOUNT S/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
+4,234 - 234,X(01),AN,,type_2_account_sd_foreign_currency_debit_balance_in_usde_sign,,"TYPE 2 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-4,235 - 241,X(07),AN,,not_used,Not Used,
-4,242 - 249,9(08),N,,date_of_data,"DATE OF DATA, in CCYYMMDD format",
-4,250 - 250,X(01),AN,,end_of_record_4,Literally “X”; indicates the end of record 4,
-3,001 - 002,X(02),AN,,transaction_code,"TRANSACTION CODE
+4,235 - 241,X(07),AN,,not_used,,Not Used,
+4,242 - 249,9(08),N,,date_of_data,,"DATE OF DATA, in CCYYMMDD format",
+4,250 - 250,X(01),AN,,end_of_record_4,,Literally “X”; indicates the end of record 4,
+3,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE
 values include:
 “GM” = GMON (Brokerage)
 “N1” = GMN1 (Bank Custody)",
-3,003 - 003,X(01),AN,,record_indicator,RECORD INDICATOR VALUE = “3”,
-3,004 - 011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+3,003 - 003,X(01),AN,,record_indicator,,RECORD INDICATOR VALUE = “3”,
+3,004 - 011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 begins with “00000001”",
-3,012 - 020,X(09),AN,,account_number,"ACCOUNT NUMBER
+3,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
-3,021 - 021,X(01),AN,,account_type,ACCOUNT TYPE = “3” (short),
-3,022 - 024,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
-3,025 - 025,X(01),AN,,not_used,Not Used,
-3,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
-3,029 - 036,9(08),N,,type_3_account_usd_td_datestamp,"TYPE 3 ACCOUNT USD T/D DATESTAMP 
+3,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “3” (short),
+3,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+3,025 - 025,X(01),AN,,not_used,,Not Used,
+3,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+3,029 - 036,9(08),N,,type_3_account_usd_td_datestamp,,"TYPE 3 ACCOUNT USD T/D DATESTAMP 
 in CCYYMMDD format",
-3,037 - 054,9(16)v9(02),N,,type_3_account_usd_td_balance,TYPE 3 ACCOUNT USD T/D BALANCE,
-3,055 - 055,X(01),AN,,type_3_account_usd_td_balance_sign,"TYPE 3 ACCOUNT USD T/D BALANCE SIGN
+3,037 - 054,9(16)v9(02),N,,type_3_account_usd_td_balance,,TYPE 3 ACCOUNT USD T/D BALANCE,
+3,055 - 055,X(01),AN,,type_3_account_usd_td_balance_sign,,"TYPE 3 ACCOUNT USD T/D BALANCE SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-3,056 - 063,9(08),N,,type_3_account_usd_sd_datestamp,"TYPE 3 ACCOUNT USD S/D DATESTAMP
+3,056 - 063,9(08),N,,type_3_account_usd_sd_datestamp,,"TYPE 3 ACCOUNT USD S/D DATESTAMP
 in CCYYMMDD format",
-3,064 - 081,9(16)v9(02),N,,type_3_account_usd_sd_balance,TYPE 3 ACCOUNT USD S/D BALANCE,
-3,082 - 082,X(01),AN,,type_3_account_usd_sd_balance_sign,"TYPE 3 ACCOUNT USD S/D BAL. SIGN
+3,064 - 081,9(16)v9(02),N,,type_3_account_usd_sd_balance,,TYPE 3 ACCOUNT USD S/D BALANCE,
+3,082 - 082,X(01),AN,,type_3_account_usd_sd_balance_sign,,"TYPE 3 ACCOUNT USD S/D BAL. SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-3,083 - 100,9(16)v9(02),N,,type_3_account_td_market_value_in_usde,"TYPE 3 ACCOUNT T/D MARKET VALUE IN USDE
+3,083 - 100,9(16)v9(02),N,,type_3_account_td_market_value_in_usde,,"TYPE 3 ACCOUNT T/D MARKET VALUE IN USDE
 Long MV for all positions (domestic and international) in type 3 A/C.
 Excludes currency positions.",
-3,101 - 101,X(01),AN,,type_3_account_td_market_value_in_usde_sign,"TYPE 3 ACCOUNT T/D MKT VALUE SIGN
+3,101 - 101,X(01),AN,,type_3_account_td_market_value_in_usde_sign,,"TYPE 3 ACCOUNT T/D MKT VALUE SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-3,102 - 119,9(16)v9(02),N,,type_3_account_equity,TYPE 3 ACCOUNT EQUITY,
-3,120 - 120,X(01),AN,,type_3_account_equity_sign,"TYPE 3 ACCOUNT EQUITY SIGN
+3,102 - 119,9(16)v9(02),N,,type_3_account_equity,,TYPE 3 ACCOUNT EQUITY,
+3,120 - 120,X(01),AN,,type_3_account_equity_sign,,"TYPE 3 ACCOUNT EQUITY SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-3,121 - 138,9(16)v9(02),N,,type_3_account_unavailable_funds,"TYPE 3 ACCOUNT UNAVAILABLE FUNDS
+3,121 - 138,9(16)v9(02),N,,type_3_account_unavailable_funds,,"TYPE 3 ACCOUNT UNAVAILABLE FUNDS
 Uncollected Funds",
-3,139 - 139,X(01),AN,,type_3_account_unavailable_funds_sign,"TYPE 3 ACCOUNT UNAVAIL. FUNDS SIGN
+3,139 - 139,X(01),AN,,type_3_account_unavailable_funds_sign,,"TYPE 3 ACCOUNT UNAVAIL. FUNDS SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount /Not Applicable",
-3,140 - 157,9(16)v9(02),N,,type_3_account_cash_available,TYPE 3 ACCOUNT CASH AVAILABLE,
-3,158 - 158,X(01),AN,,type_3_account_cash_available_sign,"TYPE 3 ACCOUNT CASH AVAIL. SIGN
+3,140 - 157,9(16)v9(02),N,,type_3_account_cash_available,,TYPE 3 ACCOUNT CASH AVAILABLE,
+3,158 - 158,X(01),AN,,type_3_account_cash_available_sign,,"TYPE 3 ACCOUNT CASH AVAIL. SIGN
 values include:
 “+” = Debit Amount
 “-” = Credit Amount",
-3,159 - 241,X(83),AN,,not_used,Not Used,
-3,242 - 249,9(08),N,,date_of_data,"DATE OF DATA, in CCYYMMDD format",
-3,250 - 250,X(01),AN,,end_of_record_3,Literally “X”; indicates the end of record 3,
-5,001 - 002,X(02),AN,,transaction_code,"TRANSACTION CODE
+3,159 - 241,X(83),AN,,not_used,,Not Used,
+3,242 - 249,9(08),N,,date_of_data,,"DATE OF DATA, in CCYYMMDD format",
+3,250 - 250,X(01),AN,,end_of_record_3,,Literally “X”; indicates the end of record 3,
+5,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE
 values include:
 “GM” = GMON (Brokerage)
 “N1” = GMN1 (Bank Custody)",
-5,003 - 003,X(01),AN,,record_indicator,RECORD INDICATOR VALUE = “5”,
-5,004 - 011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+5,003 - 003,X(01),AN,,record_indicator,,RECORD INDICATOR VALUE = “5”,
+5,004 - 011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 begins with “00000001”",
-5,012 - 020,X(09),AN,,account_number,"ACCOUNT NUMBER
+5,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
-5,021 - 021,X(01),AN,,account_type,ACCOUNT TYPE = “3” (short account currency),
-5,022 - 024,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
-5,025 - 025,X(01),AN,,not_used,Not Used,
-5,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
-5,029 - 158,X(130),AN,,not_used,Not Used,
-5,159 - 176,9(16)v9(02),N,,type_3_account_td_foreign_currency_credit_balance_in_usde,TYPE 3 ACCOUNT T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
-5,177 - 177,X(01),AN,,type_3_account_td_foreign_currency_credit_balance_in_usde_sign,"TYPE 3 ACCOUNT T/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
+5,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “3” (short account currency),
+5,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+5,025 - 025,X(01),AN,,not_used,,Not Used,
+5,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+5,029 - 158,X(130),AN,,not_used,,Not Used,
+5,159 - 176,9(16)v9(02),N,,type_3_account_td_foreign_currency_credit_balance_in_usde,,TYPE 3 ACCOUNT T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
+5,177 - 177,X(01),AN,,type_3_account_td_foreign_currency_credit_balance_in_usde_sign,,"TYPE 3 ACCOUNT T/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-5,178 - 195,9(16)v9(02),N,,type_3_account_td_foreign_currency_debit_balance_in_usde,TYPE 3 ACCOUNT T/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
-5,196 - 196,X(01),AN,,type_3_account_td_foreign_currency_debit_balance_in_usde_sign,"TYPE 3 ACCOUNT T/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
+5,178 - 195,9(16)v9(02),N,,type_3_account_td_foreign_currency_debit_balance_in_usde,,TYPE 3 ACCOUNT T/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
+5,196 - 196,X(01),AN,,type_3_account_td_foreign_currency_debit_balance_in_usde_sign,,"TYPE 3 ACCOUNT T/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-5,197 - 214,9(16)v9(02),N,,type_3_account_sd_foreign_currency_credit_balance_in_usde,TYPE 3 ACCOUNT S/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
-5,215 - 215,X(01),AN,,type_3_account_sd_foreign_currency_credit_balance_in_usde_sign,"TYPE 3 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
+5,197 - 214,9(16)v9(02),N,,type_3_account_sd_foreign_currency_credit_balance_in_usde,,TYPE 3 ACCOUNT S/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
+5,215 - 215,X(01),AN,,type_3_account_sd_foreign_currency_credit_balance_in_usde_sign,,"TYPE 3 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-5,216 - 233,9(16)v9(02),N,,type_3_account_sd_foreign_currency_debit_balance_in_usde,TYPE 3 ACCOUNT S/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
-5,234 - 234,X(01),AN,,type_3_account_sd_foreign_currency_debit_balance_in_usde_sign,"TYPE 3 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
+5,216 - 233,9(16)v9(02),N,,type_3_account_sd_foreign_currency_debit_balance_in_usde,,TYPE 3 ACCOUNT S/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
+5,234 - 234,X(01),AN,,type_3_account_sd_foreign_currency_debit_balance_in_usde_sign,,"TYPE 3 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-5,235 - 241,X(07),AN,,not_used,Not Used,
-5,242 - 249,9(08),N,,date_of_data,"DATE OF DATA, in CCYYMMDD format",
-5,250 - 250,X(01),AN,,end_of_record_5,Literally “X”; indicates the end of record 5,
-8,001 - 002,X(02),AN,,transaction_code,"TRANSACTION CODE
+5,235 - 241,X(07),AN,,not_used,,Not Used,
+5,242 - 249,9(08),N,,date_of_data,,"DATE OF DATA, in CCYYMMDD format",
+5,250 - 250,X(01),AN,,end_of_record_5,,Literally “X”; indicates the end of record 5,
+8,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE
 values include:
 “GM” = GMON (Brokerage)
 “N1” = GMN1 (Bank Custody)",
-8,003 - 003,X(01),AN,,record_indicator,RECORD INDICATOR VALUE = “8”,
-8,004 - 011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+8,003 - 003,X(01),AN,,record_indicator,,RECORD INDICATOR VALUE = “8”,
+8,004 - 011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 begins with “00000001”",
-8,012 - 020,X(09),AN,,account_number,"ACCOUNT NUMBER
+8,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
-8,021 - 021,X(01),AN,,account_type,ACCOUNT TYPE = “8” (precious metals),
-8,022 - 024,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
-8,025 - 025,X(01),AN,,not_used,Not Used,
-8,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
-8,029 - 036,9(08),N,,type_8_account_usd_td_datestamp,"TYPE 8 ACCOUNT USD T/D DATESTAMP
+8,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “8” (precious metals),
+8,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+8,025 - 025,X(01),AN,,not_used,,Not Used,
+8,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+8,029 - 036,9(08),N,,type_8_account_usd_td_datestamp,,"TYPE 8 ACCOUNT USD T/D DATESTAMP
 in CCYYMMDD format",
-8,037 - 054,9(16)v9(02),N,,type_8_account_usd_td_balance,TYPE 8 ACCOUNT USD T/D BALANCE,
-8,055 - 055,X(01),AN,,type_8_account_usd_td_balance_sign,"TYPE 8 ACCOUNT USD T/D BALANCE SIGN
+8,037 - 054,9(16)v9(02),N,,type_8_account_usd_td_balance,,TYPE 8 ACCOUNT USD T/D BALANCE,
+8,055 - 055,X(01),AN,,type_8_account_usd_td_balance_sign,,"TYPE 8 ACCOUNT USD T/D BALANCE SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-8,056 - 063,9(08),N,,type_8_account_usd_sd_datestamp,"TYPE 8 ACCOUNT USD S/D DATESTAMP
+8,056 - 063,9(08),N,,type_8_account_usd_sd_datestamp,,"TYPE 8 ACCOUNT USD S/D DATESTAMP
 in CCYYMMDD format",
-8,064 - 081,9(16)v9(02),N,,type_8_account_usd_sd_balance,TYPE 8 ACCOUNT USD S/D BALANCE,
-8,082 - 082,X(01),AN,,type_8_account_usd_sd_balance_sign,"TYPE 8 ACCOUNT USD S/D BALANCE SIGN
+8,064 - 081,9(16)v9(02),N,,type_8_account_usd_sd_balance,,TYPE 8 ACCOUNT USD S/D BALANCE,
+8,082 - 082,X(01),AN,,type_8_account_usd_sd_balance_sign,,"TYPE 8 ACCOUNT USD S/D BALANCE SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-8,083 - 100,9(16)v9(02),N,,type_8_account_td_market_value_in_usde,"TYPE 8 ACCOUNT T/D MARKET VALUE in USDE
+8,083 - 100,9(16)v9(02),N,,type_8_account_td_market_value_in_usde,,"TYPE 8 ACCOUNT T/D MARKET VALUE in USDE
 Long MV for all positions (domestic and international) in type 8 A/C.
 Excludes currency positions.",
-8,101 - 101,X(01),AN,,type_8_account_td_market_value_in_usde_sign,"TYPE 8 ACCOUNT T/D MARKET VALUE SIGN
+8,101 - 101,X(01),AN,,type_8_account_td_market_value_in_usde_sign,,"TYPE 8 ACCOUNT T/D MARKET VALUE SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-8,102 - 119,9(16)v9(02),N,,type_8_account_equity,TYPE 8 ACCOUNT EQUITY,
-8,120 - 120,X(01),AN,,type_8_account_equity_sign,"TYPE 8 ACCOUNT EQUITY SIGN
+8,102 - 119,9(16)v9(02),N,,type_8_account_equity,,TYPE 8 ACCOUNT EQUITY,
+8,120 - 120,X(01),AN,,type_8_account_equity_sign,,"TYPE 8 ACCOUNT EQUITY SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-8,121 - 138,9(16)v9(02),N,,type_8_account_unavailable_funds,"TYPE 8 ACCOUNT UNAVAILABLE FUNDS
+8,121 - 138,9(16)v9(02),N,,type_8_account_unavailable_funds,,"TYPE 8 ACCOUNT UNAVAILABLE FUNDS
 (uncollected funds)",
-8,139 - 139,X(01),AN,,type_8_account_unavailable_funds_sign,"TYPE 8 ACCOUNT UNAVAILABLE FUNDS SIGN
+8,139 - 139,X(01),AN,,type_8_account_unavailable_funds_sign,,"TYPE 8 ACCOUNT UNAVAILABLE FUNDS SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount /Not Applicable",
-8,140 - 157,9(16)v9(02),N,,type_8_account_cash_available,TYPE 8 ACCOUNT CASH AVAILABLE,
-8,158 - 158,X(01),AN,,type_8_account_cash_available_sign,"TYPE 8 ACCOUNT CASH AVAILABLE SIGN
+8,140 - 157,9(16)v9(02),N,,type_8_account_cash_available,,TYPE 8 ACCOUNT CASH AVAILABLE,
+8,158 - 158,X(01),AN,,type_8_account_cash_available_sign,,"TYPE 8 ACCOUNT CASH AVAILABLE SIGN
 values include:
 “+” = Debit Amount
 “-” = Credit Amount",
-8,159 - 176,9(16)v9(02),N,,type_8_account_td_foreign_currency_credit_balance_in_usde,TYPE 8 ACCOUNT T/D FOREIGN CCY CREDIT BAL. IN USDE,
-8,177 - 177,X(01),AN,,type_8_account_td_foreign_currency_credit_balance_in_usde_sign,"TYPE 8 ACCOUNT TD FOREIGN CCY CREDIT BALANCE IN USDE SIGN
+8,159 - 176,9(16)v9(02),N,,type_8_account_td_foreign_currency_credit_balance_in_usde,,TYPE 8 ACCOUNT T/D FOREIGN CCY CREDIT BAL. IN USDE,
+8,177 - 177,X(01),AN,,type_8_account_td_foreign_currency_credit_balance_in_usde_sign,,"TYPE 8 ACCOUNT TD FOREIGN CCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-8,178 - 195,9(16)v9(02),N,,type_8_account_td_foreign_currency_debit_balance_in_usde,TYPE 8 ACCOUNT T/D FOREIGN CCY DEBIT BALANCE IN USDE,
-8,196 - 196,X(01),AN,,type_8_account_td_foreign_currency_debit_balance_in_usde_sign,"TYPE 8 ACCOUNT TD FOREIGN CCY DEBIT BALANCE IN USDE SIGN
+8,178 - 195,9(16)v9(02),N,,type_8_account_td_foreign_currency_debit_balance_in_usde,,TYPE 8 ACCOUNT T/D FOREIGN CCY DEBIT BALANCE IN USDE,
+8,196 - 196,X(01),AN,,type_8_account_td_foreign_currency_debit_balance_in_usde_sign,,"TYPE 8 ACCOUNT TD FOREIGN CCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-8,197 - 214,9(16)v9(02),N,,type_8_account_sd_foreign_currency_credit_balance_in_usde,TYPE 8 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE,
-8,215 - 215,X(01),AN,,type_8_account_sd_foreign_currency_credit_balance_in_usde_sign,"TYPE 8 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
+8,197 - 214,9(16)v9(02),N,,type_8_account_sd_foreign_currency_credit_balance_in_usde,,TYPE 8 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE,
+8,215 - 215,X(01),AN,,type_8_account_sd_foreign_currency_credit_balance_in_usde_sign,,"TYPE 8 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-8,216 - 233,9(16)v9(02),N,,type_8_account_sd_foreign_currency_debit_balance_in_usde,TYPE 8 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE,
-8,234 - 234,X(01),AN,,type_8_account_sd_foreign_currency_debit_balance_in_usde_sign,"TYPE 8 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
+8,216 - 233,9(16)v9(02),N,,type_8_account_sd_foreign_currency_debit_balance_in_usde,,TYPE 8 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE,
+8,234 - 234,X(01),AN,,type_8_account_sd_foreign_currency_debit_balance_in_usde_sign,,"TYPE 8 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-8,235 - 241,X(07),AN,,not_used,Not Used,
-8,242 - 249,9(08),N,,date_of_data,"DATE OF DATA, in CCYYMMDD format",
-8,250 - 250,X(01),AN,,end_of_record_8,Literally “X”; indicates the end of record 8,
-0,001 - 002,X(02),AN,,transaction_code,"TRANSACTION CODE
+8,235 - 241,X(07),AN,,not_used,,Not Used,
+8,242 - 249,9(08),N,,date_of_data,,"DATE OF DATA, in CCYYMMDD format",
+8,250 - 250,X(01),AN,,end_of_record_8,,Literally “X”; indicates the end of record 8,
+0,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE
 values include:
 “GM” = GMON (Brokerage)
 “N1” = GMN1 (Bank Custody)",
-0,003 - 003,X(01),AN,,record_indicator,RECORD INDICATOR VALUE = “0”,
-0,004 - 011,9(08),N,,record_id_sequence_number,"RECORD ID SEQUENCE NUMBER
+0,003 - 003,X(01),AN,,record_indicator,,RECORD INDICATOR VALUE = “0”,
+0,004 - 011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 begins with “00000001”",
-0,012 - 020,X(09),AN,,account_number,"ACCOUNT NUMBER
+0,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
-0,021 - 021,X(01),AN,,account_type,ACCOUNT TYPE = “0” (DVP/RVP [COD]),
-0,022 - 024,X(03),AN,,investment_professional_ip_number,INVESTMENT PROFESSIONAL (IP) NUMBER,
-0,025 - 025,X(01),AN,,not_used,Not Used,
-0,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,INTRODUCING BROKER DEALER (IBD) NUMBER,
-0,029 - 036,9(08),N,,type_0_account_usd_td_datestamp,"TYPE 0 ACCOUNT USD T/D DATESTAMP
+0,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “0” (DVP/RVP [COD]),
+0,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+0,025 - 025,X(01),AN,,not_used,,Not Used,
+0,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+0,029 - 036,9(08),N,,type_0_account_usd_td_datestamp,,"TYPE 0 ACCOUNT USD T/D DATESTAMP
 in CCYYMMDD format",
-0,037 - 054,9(16)v9(02),N,,type_0_account_usd_td_balance,TYPE 0 ACCOUNT USD T/D BALANCE,
-0,055 - 055,X(01),AN,,type_0_account_usd_td_balance_sign,"TYPE 0 ACCOUNT USD T/D BALANCE SIGN
+0,037 - 054,9(16)v9(02),N,,type_0_account_usd_td_balance,,TYPE 0 ACCOUNT USD T/D BALANCE,
+0,055 - 055,X(01),AN,,type_0_account_usd_td_balance_sign,,"TYPE 0 ACCOUNT USD T/D BALANCE SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-0,056 - 063,9(08),N,,type_0_account_usd_sd_datestamp,"TYPE 0 ACCOUNT USD S/D DATESTAMP
+0,056 - 063,9(08),N,,type_0_account_usd_sd_datestamp,,"TYPE 0 ACCOUNT USD S/D DATESTAMP
 in CCYYMMDD format",
-0,064 - 081,9(16)v9(02),N,,type_0_account_usd_sd_balance,TYPE 0 ACCOUNT USD S/D BALANCE,
-0,082 - 082,X(01),AN,,type_0_account_usd_sd_balance_sign,"TYPE 0 ACCOUNT USD S/D BALANCE SIGN
+0,064 - 081,9(16)v9(02),N,,type_0_account_usd_sd_balance,,TYPE 0 ACCOUNT USD S/D BALANCE,
+0,082 - 082,X(01),AN,,type_0_account_usd_sd_balance_sign,,"TYPE 0 ACCOUNT USD S/D BALANCE SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount",
-0,083 - 100,9(16)v9(02),N,,type_0_account_td_market_value,"TYPE 0 ACCOUNT T/D MARKET VALUE
+0,083 - 100,9(16)v9(02),N,,type_0_account_td_market_value,,"TYPE 0 ACCOUNT T/D MARKET VALUE
 Long Market Value for all positions (domestic and international) in type 0 A/C.
 This USDE value excludes currency positions.",
-0,101 - 101,X(01),AN,,type_0_account_td_market_value_sign,"TYPE 0 ACCOUNT T/D MARKET VALUE SIGN
+0,101 - 101,X(01),AN,,type_0_account_td_market_value_sign,,"TYPE 0 ACCOUNT T/D MARKET VALUE SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-0,102 - 119,9(16)v9(02),N,,type_0_account_equity,TYPE 0 ACCOUNT EQUITY,
-0,120 - 120,X(01),AN,,type_0_account_equity_sign,"TYPE 0 ACCOUNT EQUITY SIGN
+0,102 - 119,9(16)v9(02),N,,type_0_account_equity,,TYPE 0 ACCOUNT EQUITY,
+0,120 - 120,X(01),AN,,type_0_account_equity_sign,,"TYPE 0 ACCOUNT EQUITY SIGN
 values include:
 “+” = Credit Amount
 “-” = Debit Amount",
-0,121 - 138,9(16)v9(02),N,,type_0_account_unavailable_funds,"TYPE 0 ACCOUNT UNAVAILABLE FUNDS
+0,121 - 138,9(16)v9(02),N,,type_0_account_unavailable_funds,,"TYPE 0 ACCOUNT UNAVAILABLE FUNDS
 Uncollected Funds",
-0,139 - 139,X(01),AN,,type_0_account_unavailable_funds_sign,"TYPE 0 ACCOUNT UNAVAILABLE FUNDS SIGN
+0,139 - 139,X(01),AN,,type_0_account_unavailable_funds_sign,,"TYPE 0 ACCOUNT UNAVAILABLE FUNDS SIGN
 values include:
 “-” = Credit Amount
 “+” = Debit Amount /Not Applicable",
-0,140 - 157,9(16)v9(02),N,,type_0_account_cash_available,TYPE 0 ACCOUNT CASH AVAILABLE,
-0,158 - 158,X(01),AN,,type_0_account_cash_available_sign,"TYPE 0 ACCOUNT CASH AVAILABLE SIGN
+0,140 - 157,9(16)v9(02),N,,type_0_account_cash_available,,TYPE 0 ACCOUNT CASH AVAILABLE,
+0,158 - 158,X(01),AN,,type_0_account_cash_available_sign,,"TYPE 0 ACCOUNT CASH AVAILABLE SIGN
 values include:
 “+” = Debit Amount
 “-” = Credit Amount",
-0,159 - 176,9(16)v9(02),N,,type_0_account_td_foreign_currency_credit_balance_in_usde,TYPE 0 ACCOUNT T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
-0,177 - 177,X(01),AN,,type_0_account_td_foreign_currency_credit_balance_in_usde_sign,"TYPE 0 ACCOUNT T/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
+0,159 - 176,9(16)v9(02),N,,type_0_account_td_foreign_currency_credit_balance_in_usde,,TYPE 0 ACCOUNT T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
+0,177 - 177,X(01),AN,,type_0_account_td_foreign_currency_credit_balance_in_usde_sign,,"TYPE 0 ACCOUNT T/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-0,178 - 195,9(16)v9(02),N,,type_0_account_td_foreign_currency_debit_balance_in_usde,TYPE 0 ACCOUNT T/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
-0,196 - 196,X(01),AN,,type_0_account_td_foreign_currency_debit_balance_in_usde_sign,"TYPE 0 ACCOUNT T/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
+0,178 - 195,9(16)v9(02),N,,type_0_account_td_foreign_currency_debit_balance_in_usde,,TYPE 0 ACCOUNT T/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
+0,196 - 196,X(01),AN,,type_0_account_td_foreign_currency_debit_balance_in_usde_sign,,"TYPE 0 ACCOUNT T/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-0,197 - 214,9(16)v9(02),N,,type_0_account_sd_foreign_currency_credit_balance_in_usde,TYPE 0 ACCOUNT S/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
-0,215 - 215,X(01),AN,,type_0_account_sd_foreign_currency_credit_balance_in_usde_sign,"TYPE 0 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN SIGN
+0,197 - 214,9(16)v9(02),N,,type_0_account_sd_foreign_currency_credit_balance_in_usde,,TYPE 0 ACCOUNT S/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
+0,215 - 215,X(01),AN,,type_0_account_sd_foreign_currency_credit_balance_in_usde_sign,,"TYPE 0 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN SIGN
 value includes:
 “-” = Credit Amount",
-0,216 - 233,9(16)v9(02),N,,type_0_account_sd_foreign_currency_debit_balance_in_usde,TYPE 0 ACCOUNT S/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
-0,234 - 234,X(01),AN,,type_0_account_sd_foreign_currency_debit_balance_in_usde_sign,"TYPE 0 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
+0,216 - 233,9(16)v9(02),N,,type_0_account_sd_foreign_currency_debit_balance_in_usde,,TYPE 0 ACCOUNT S/D FOREIGN CURRENCY DEBIT BALANCE IN USDE,
+0,234 - 234,X(01),AN,,type_0_account_sd_foreign_currency_debit_balance_in_usde_sign,,"TYPE 0 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-0,235 - 241,X(07),AN,,not_used,Not Used,
-0,242 - 249,9(08),N,,date_of_data,"DATE OF DATA, in CCYYMMDD format",
-0,250 - 250,X(01),AN,,end_of_record_0,Literally “X”; indicates the end of record 0,
-TRAILER,001 - 018,X(18),AN,,e_of_pershing,Literally “EOF                           PERSHING     ” (end of Pershing file),
-TRAILER,019 - 037,X(19),AN,,global_moneyline,Literally “GLOBAL     MONEYLINE              ”,
-TRAILER,038 - 046,X(09),AN,,data_of,Literally “DATA     OF         ”,
-TRAILER,047 - 056,X(10),AN,,date_of_data,DATE OF DATA = “MM/DD/CCYY”,
-TRAILER,057 - 067,X(11),AN,,to_remote,Literally “     TO    REMOTE    ”,
-TRAILER,068 - 071,X(04),AN,,remote_id,REMOTE ID = “XXXX”,
-TRAILER,072 - 083,X(12),AN,,ends_here,Literally “     ENDS     HERE.     ”,
-TRAILER,084 - 105,X(22),AN,,total_detail_records,Literally “TOTAL     DETAIL     RECORDS:     ”,
-TRAILER,106 - 115,9(10),N,,number_of_detail_records,NUMBER OF DETAIL RECORDS,
-TRAILER,116 - 249,X(134),AN,,not_used,Not Used,
-TRAILER,250 - 250,X(01),AN,,end_of_the_trailer_record,Literally “Z”; indicates the end of the trailer record,
+0,235 - 241,X(07),AN,,not_used,,Not Used,
+0,242 - 249,9(08),N,,date_of_data,,"DATE OF DATA, in CCYYMMDD format",
+0,250 - 250,X(01),AN,,end_of_record_0,,Literally “X”; indicates the end of record 0,
+TRAILER,001 - 018,X(18),AN,,e_of_pershing,,Literally “EOF                           PERSHING     ” (end of Pershing file),
+TRAILER,019 - 037,X(19),AN,,global_moneyline,,Literally “GLOBAL     MONEYLINE              ”,
+TRAILER,038 - 046,X(09),AN,,data_of,,Literally “DATA     OF         ”,
+TRAILER,047 - 056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+TRAILER,057 - 067,X(11),AN,,to_remote,,Literally “     TO    REMOTE    ”,
+TRAILER,068 - 071,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+TRAILER,072 - 083,X(12),AN,,ends_here,,Literally “     ENDS     HERE.     ”,
+TRAILER,084 - 105,X(22),AN,,total_detail_records,,Literally “TOTAL     DETAIL     RECORDS:     ”,
+TRAILER,106 - 115,9(10),N,,number_of_detail_records,,NUMBER OF DETAIL RECORDS,
+TRAILER,116 - 249,X(134),AN,,not_used,,Not Used,
+TRAILER,250 - 250,X(01),AN,,end_of_the_trailer_record,,Literally “Z”; indicates the end of the trailer record,

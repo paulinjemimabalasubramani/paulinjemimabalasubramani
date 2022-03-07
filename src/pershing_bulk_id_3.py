@@ -23,6 +23,7 @@ else:
     args = {
         'pipelinekey': 'ASSETS_MIGRATE_PERSHING_RAA',
         'source_path': r'C:\myworkdir\Shared\PERSHING-ASSETS\RAA',
+        'schema_file_path': r'C:\myworkdir\EDIP-Code\config\pershing_schema',
         }
 
 
