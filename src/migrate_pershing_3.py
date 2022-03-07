@@ -51,7 +51,8 @@ from collections import defaultdict
 from datetime import datetime
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit
+from pyspark.sql.functions import col, lit, udf
+from pyspark.sql.types import StringType
 
 
 
@@ -99,16 +100,40 @@ def select_files():
     return file_count, selected_file_paths
 
 
+# %% Add Scale
+
+@udf(StringType())
+def add_scale(field_value:str, scale:int=-1):
+    """
+    Utility PySpark UDF for adding Scale to Numbers if exists
+    """
+    if not field_value or scale < 0 or not field_value.isdigit(): return field_value
+
+    if scale == 0:
+        field_value = int(field_value)
+    else:
+        x = len(field_value) - scale
+        field_value = float(field_value[:x] + '.' + field_value[x:])
+
+    field_value = str(field_value)
+    return field_value
+
+
 
 # %% Extract field from a fixed width table
 
 @catch_error(logger)
-def extract_field_from_fwt(table, field_name:str, position_start:int, length:int):
+def extract_field_from_fwt(table, field_name:str, position_start:int, length:int, scale:int=-1):
     """
     Extract a field from a fixed width table
     """
     cv = col('value').substr
-    return table.withColumn(field_name, F.regexp_replace(F.trim(cv(position_start, length)), ' +', ' '))
+    table = table.withColumn(field_name, F.regexp_replace(F.trim(cv(position_start, length)), ' +', ' '))
+
+    if scale >= 0:
+        table = table.withColumn(field_name, add_scale(col(field_name), lit(scale)))
+
+    return table
 
 
 
@@ -125,7 +150,7 @@ def add_schema_fields_to_table(tables, table, schema, record_name:str, condition
     if not schema: return
 
     for schema_dict in schema:
-        table = extract_field_from_fwt(table=table, field_name=schema_dict['field_name'], position_start=schema_dict['position_start'], length=schema_dict['length'])
+        table = extract_field_from_fwt(table=table, field_name=schema_dict['field_name'], position_start=schema_dict['position_start'], length=schema_dict['length'], scale=schema_dict['scale'])
 
     table = table.drop('value')
     tables[(record_name, conditional_changes)] = table
@@ -294,7 +319,7 @@ def process_record_A_customer_acct_info(table, schema, record_name):
 
     field_name = 'registration_type'
     field_pos = [c for c in schema if c['record_name'] == record_name and c['field_name'] == field_name][0]
-    table = extract_field_from_fwt(table=table, field_name=field_name, position_start=field_pos['position_start'], length=field_pos['length'])
+    table = extract_field_from_fwt(table=table, field_name=field_name, position_start=field_pos['position_start'], length=field_pos['length'], scale=field_pos['scale'])
 
     registration_types = ['JNTN', 'TODJ', 'CUST', '529C', 'TRST', '529T', 'NPLT', 'CPPS']
 
@@ -318,7 +343,7 @@ def process_record_C_customer_acct_info(table, schema, record_name):
 
     field_name = 'country_code_1'
     field_pos = [c for c in schema if c['record_name'] == record_name and c['field_name'] == field_name][0]
-    table = extract_field_from_fwt(table=table, field_name=field_name, position_start=field_pos['position_start'], length=field_pos['length'])
+    table = extract_field_from_fwt(table=table, field_name=field_name, position_start=field_pos['position_start'], length=field_pos['length'], scale=field_pos['scale'])
 
     USCA_codes = ['US','CA']
 

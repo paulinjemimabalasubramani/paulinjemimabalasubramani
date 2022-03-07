@@ -65,6 +65,9 @@ def get_pershing_schema(schema_file_name:str):
         if not field_name or (field_name in ['', 'not_used', 'filler', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
             or ('-' not in position) or not record_name: continue
 
+        scale = str(row['scale']).strip()
+        scale = int(scale) if scale.isdigit() else -1
+
         if record_name not in record_names:
             record_names.append(record_name)
             schema.append({
@@ -72,6 +75,7 @@ def get_pershing_schema(schema_file_name:str):
                 'position_start': 1,
                 'position_end': total_hash_length,
                 'length': total_hash_length,
+                'scale': scale,
                 'record_name': record_name,
                 'conditional_changes': conditional_changes,
                 })
@@ -87,6 +91,7 @@ def get_pershing_schema(schema_file_name:str):
             'position_start': position_start,
             'position_end': position_end,
             'length': position_end - position_start + 1,
+            'scale': scale,
             'record_name': record_name,
             'conditional_changes': conditional_changes,
             })
