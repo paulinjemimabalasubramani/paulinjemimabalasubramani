@@ -213,6 +213,8 @@ def extract_field_value(line:str, pos:dict, field_name:str):
             x = len(field_value) - pos['scale']
             field_value = float(field_value[:x] + '.' + field_value[x:])
 
+        field_value = str(field_value)
+
     return field_value
 
 
