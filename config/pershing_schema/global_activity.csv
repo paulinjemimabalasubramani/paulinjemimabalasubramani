@@ -229,8 +229,8 @@ A,619 - 636,9(09)v9(09),N,,reported_price,,REPORTED PRICE,
 A,637 - 637,X(01),AN,,reported_price_sign,,"REPORTED PRICE SIGN; values include:
 “+” = Debit Amount
 “     ” = Not Applicable",
-A,638 - 655,9(16)v9(02),N,,previous_day_market_value_of_transaction,,PREVIOUS DAY MARKET VALUE OF TRANSACTION,
-A,656 - 673,9(09)v9(09),N,,price_in_usde,,PRICE IN USDE,
+A,638 - 655,9(16)v9(02),N,,previous_day_market_value_of_transaction,2,PREVIOUS DAY MARKET VALUE OF TRANSACTION,
+A,656 - 673,9(09)v9(09),N,,price_in_usde,9,PRICE IN USDE,
 A,674 - 679,X(06),AN,,option_root_id,,OPTION ROOT ID,OCC DATA SET - The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol. They apply only to transactions for Options Products.
 A,680 - 685,9(06),N,,expiration_date,,"EXPIRATION DATE, in YYMMDD format",OCC DATA SET - The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol. They apply only to transactions for Options Products.
 A,686 - 686,X(01),AN,,put_call_code,,"PUT/CALL CODE; values include:
@@ -241,7 +241,7 @@ A,686 - 686,X(01),AN,,put_call_code,,"PUT/CALL CODE; values include:
 “L” = Letter of Credit (Call)
 “M” = Letter of Credit (Put)
 “P” = Put",OCC DATA SET - The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol. They apply only to transactions for Options Products.
-A,687 - 694,9(05)v9(03),N,,strike_price,,STRIKE PRICE,OCC DATA SET - The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol. They apply only to transactions for Options Products.
+A,687 - 694,9(05)v9(03),N,,strike_price,3,STRIKE PRICE,OCC DATA SET - The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol. They apply only to transactions for Options Products.
 A,695 - 695,X(01),AN,,repo_identifier,,"REPO IDENTIFIER; values include:
 “A” = Repo Open Transaction
 “B” = Repo Close Transaction
@@ -378,7 +378,7 @@ B,598 - 598,X(01),AN,,security_currency_indicator,,"SECURITY/CURRENCY INDICATOR;
 “C” = Currency",
 B,599 - 602,X(04),AN,,market_mnemonic_code,,"MARKET MNEMONIC CODE; populated for trade date trades only; 
 See Appendix S, “GTDE Codes,” for values",
-B,603 - 620,9(09)v9(09),N,,currency_of_issuance_usd_currency_fx_rate,,CURRENCY OF ISSUANCE – USD CURRENCY FX RATE,
+B,603 - 620,9(09)v9(09),N,,currency_of_issuance_usd_currency_fx_rate,9,CURRENCY OF ISSUANCE – USD CURRENCY FX RATE,
 B,621 - 621,X(01),AN,,currency_of_issuance_usd_multiply_divide_code,,"CURRENCY OF ISSUANCE – USD MULTIPLY/DIVIDE CODE; values include:
 “M” = Multiply
 “D” = Divide",
