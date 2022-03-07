@@ -201,8 +201,9 @@ def extract_field_value(line:str, pos:dict, field_name:str):
     Extract Field Value from line for given pos dict
     """
     field_value = line[pos['position_start']:pos['position_end']]
+    field_value = re.sub(' +', ' ', field_value.strip())
 
-    if 'scale' in pos and pos['scale']>=0:
+    if field_value and 'scale' in pos and pos['scale']>=0:
         if not field_value.isdigit():
             raise ValueError(f'Schema Scale mismatch for field "{field_name}" field value "{field_value}". Field Value should be all digits!')
 
