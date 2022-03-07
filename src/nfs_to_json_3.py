@@ -32,8 +32,6 @@ else:
 
 import os, sys, tempfile, shutil, json, re
 
-from attr import field
-
 class app: pass
 sys.app = app
 sys.app.args = args
