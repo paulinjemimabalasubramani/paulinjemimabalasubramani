@@ -60,7 +60,7 @@ In CCYYMMDD format; the date the TRADE DATE quantity was last updated",
 A,066-073,9(08),N,,date_stamp_settlement_date,,"DATE STAMP/SETTLEMENT DATE
 In CCYYMMDD
 format; the date the S/DATE quantity was last updated",
-A,074-091,9(13)v9(05),N,,trade_date_quantity,,"TRADE DATE QUANTITY
+A,074-091,9(13)v9(05),N,,trade_date_quantity,5,"TRADE DATE QUANTITY
 Number of shares traded, but not yet settled 
 (add Pending/Split Quantity in Record A, 283-300, to this field to equal the T/D Quantity in NetX360)",
 A,092-092,X(01),AN,,trade_date_quantity_sign,,"TRADE DATE QUANTITY SIGN
@@ -68,7 +68,7 @@ Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,093-110,9(13)v9(05),N,,settlement_date_quantity,,"SETTLEMENT DATE QUANTITY
+A,093-110,9(13)v9(05),N,,settlement_date_quantity,5,"SETTLEMENT DATE QUANTITY
 The books and records position (for instance, the position shown on your clients’ brokerage statements);
 It reflects all securities that are received or delivered and all settled trades; 
 It does not include pending trades (add Pending/Split Quantity in Record A, 283-300, to this field to equal the S/D Quantity in NetX360)",
@@ -77,42 +77,42 @@ Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,112-129,9(13)v9(05),N,,seg_quantity_memo,,"SEG QUANTITY (MEMO)
+A,112-129,9(13)v9(05),N,,seg_quantity_memo,5,"SEG QUANTITY (MEMO)
 The securities held in street name",
 A,130-130,X(01),AN,,seg_quantity_sign,,"SEG QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,131-148,9(13)v9(05),N,,safekeeping_quantity_memo,,"SAFEKEEPING QUANTITY (MEMO)
+A,131-148,9(13)v9(05),N,,safekeeping_quantity_memo,5,"SAFEKEEPING QUANTITY (MEMO)
 Number of shares registered in the customer’s name",
 A,149-149,X(01),AN,,safekeeping_quantity_sign,,"SAFEKEEPING QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,150-167,9(13)v9(05),N,,transfer_quantity_memo,,"TRANSFER QUANTITY (MEMO)
+A,150-167,9(13)v9(05),N,,transfer_quantity_memo,5,"TRANSFER QUANTITY (MEMO)
 Number of shares in the process of being registered in the customer’s name",
 A,168-168,X(01),AN,,transfer_quantity_sign,,"TRANSFER QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,169-186,9(13)v9(05),N,,pending_transfer_quantity,,"PENDING TRANSFER QUANTITY
+A,169-186,9(13)v9(05),N,,pending_transfer_quantity,5,"PENDING TRANSFER QUANTITY
 The number of shares currently pending the transfer process",
 A,187-187,X(01),AN,,pending_transfer_quantity_sign,,"PENDING TRANSFER QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,188-205,9(13)v9(05),N,,legal_transfer_quantity,,"LEGAL TRANSFER QUANTITY
+A,188-205,9(13)v9(05),N,,legal_transfer_quantity,5,"LEGAL TRANSFER QUANTITY
 The number of shares awaiting clearance at the transfer agent",
 A,206-206,X(01),AN,,legal_transfer_quantity_sign,,"LEGAL TRANSFER QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,207-224,9(13)v9(05),N,,tendered_reorg_quantity_memo,,"TENDERED (REORG) QUANTITY (MEMO)
+A,207-224,9(13)v9(05),N,,tendered_reorg_quantity_memo,5,"TENDERED (REORG) QUANTITY (MEMO)
 Number of shares submitted with instructions to participate in a corporate reorganization 
 (e.g., exchange, tender, redemption, etc.)",
 A,225-225,X(01),AN,,tendered_quantity_sign,,"TENDERED QUANTITY SIGN
@@ -120,69 +120,69 @@ Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,226-243,9(13)v9(05),N,,pending_papers_memo,,"PENDING PAPERS (MEMO)
+A,226-243,9(13)v9(05),N,,pending_papers_memo,5,"PENDING PAPERS (MEMO)
 Number of shares pending the receipt of documents to make them negotiable",
 A,244-244,X(01),AN,,pending_papers_sign,,"PENDING PAPERS SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,245-262,9(13)v9(05),N,,short_against_the_box_quantity_memo,,SHORT AGAINST THE BOX QUANTITY (MEMO),
+A,245-262,9(13)v9(05),N,,short_against_the_box_quantity_memo,5,SHORT AGAINST THE BOX QUANTITY (MEMO),
 A,263-263,X(01),AN,,short_against_the_box_quantity_sign,,"SHORT AGAINST THE BOX QTY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,264-281,9(13)v9(05),N,,networked_quantity_memo,,NETWORKED QUANTITY (MEMO),
+A,264-281,9(13)v9(05),N,,networked_quantity_memo,5,NETWORKED QUANTITY (MEMO),
 A,282-282,X(01),AN,,networked_quantity_sign,,"NETWORKED QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,283-300,9(13)v9(05),N,,pending_split_quantity_memo,,"PENDING SPLIT QUANTITY (MEMO)
+A,283-300,9(13)v9(05),N,,pending_split_quantity_memo,5,"PENDING SPLIT QUANTITY (MEMO)
 Quantity of the security that is subject to a pending stock distribution",
 A,301-301,X(01),AN,,pending_split_quantity_sign,,"PENDING SPLIT QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,302-319,9(13)v9(05),N,,quantity_covering_options_or_covered_quantity,,QUANTITY COVERING OPTIONS or COVERED QTY,
+A,302-319,9(13)v9(05),N,,quantity_covering_options_or_covered_quantity,5,QUANTITY COVERING OPTIONS or COVERED QTY,
 A,320-320,X(01),AN,,quantity_covering_options_or_covered_quantity_sign,,"QUANTITY COVERING OPTIONS or COVERED QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,321-338,9(13)v9(05),N,,,,TRADE DATE QUANTITY BOUGHT,
+A,321-338,9(13)v9(05),N,,trade_date_quantity_bought,5,TRADE DATE QUANTITY BOUGHT,
 A,339-339,X(01),AN,,trade_date_quantity_bought_sign,,"TRADE DATE QUANTITY BOUGHT SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,340-357,9(13)v9(05),N,,trade_date_quantity_sold,,TRADE DATE QUANTITY SOLD,
+A,340-357,9(13)v9(05),N,,trade_date_quantity_sold,5,TRADE DATE QUANTITY SOLD,
 A,358-358,X(01),AN,,trade_date_quantity_sold_sign,,"TRADE DATE QUANTITY SOLD SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",
-A,359-376,9(16)v9(02),N,,fed_reg_t_requirement,,FED (REG T) REQUIREMENT,REQUIREMENTS
+A,359-376,9(16)v9(02),N,,fed_reg_t_requirement,2,FED (REG T) REQUIREMENT,REQUIREMENTS
 A,377-377,X(01),AN,,fed_requirement_sign,,"FED REQUIREMENT SIGN
 Values include:
 “+” = Positive Amount
 “-” = Negative Amount
 “” = Not Applicable",REQUIREMENTS
-A,378-395,9(16)v9(02),N,,house_pershing_margin_requirement,,HOUSE (PERSHING) MARGIN REQUIREMENT,REQUIREMENTS
+A,378-395,9(16)v9(02),N,,house_pershing_margin_requirement,2,HOUSE (PERSHING) MARGIN REQUIREMENT,REQUIREMENTS
 A,396-396,X(01),AN,,house_margin_requirement_sign,,"HOUSE MARGIN REQUIREMENT SIGN
 Values include:
 “+” = Positive Amount
 “-” = Negative Amount
 “” = Not Applicable",REQUIREMENTS
-A,397-414,9(16)v9(02),N,,exchange_nyse_requirement,,EXCHANGE (NYSE) REQUIREMENT,REQUIREMENTS
+A,397-414,9(16)v9(02),N,,exchange_nyse_requirement,2,EXCHANGE (NYSE) REQUIREMENT,REQUIREMENTS
 A,415-415,X(01),AN,,exchange_requirement_sign,,"EXCHANGE REQUIREMENT SIGN
 Values include:
 “+” = Positive Amount
 “-” = Negative Amount
 “” = Not Applicable",REQUIREMENTS
-A,416-433,9(16)v9(02),N,,equity_requirement,,EQUITY REQUIREMENT,REQUIREMENTS
+A,416-433,9(16)v9(02),N,,equity_requirement,2,EQUITY REQUIREMENT,REQUIREMENTS
 A,434-434,X(01),AN,,equity_requirement_sign,,"EQUITY REQUIREMENT SIGN
 Values include:
 “+” = Positive Amount
@@ -198,7 +198,7 @@ See Appendix B, “Security Code Matrix”",SELECTED SECURITY INFORMATION
 A,447-449,X(03),AN,,minor_product_code,,"MINOR PRODUCT CODE
 See Appendix B",SELECTED SECURITY INFORMATION
 A,450-450,X(01),AN,,network_eligibility_indicator,,NETWORK ELIGIBILITY INDICATOR,SELECTED SECURITY INFORMATION
-A,451-468,9(09)v9(09),N,,strike_price,,STRIKE PRICE,SELECTED SECURITY INFORMATION
+A,451-468,9(09)v9(09),N,,strike_price,9,STRIKE PRICE,SELECTED SECURITY INFORMATION
 A,469-469,X(01),AN,,strike_price_sign,,"STRIKE PRICE SIGN
 Values include:
 “+” = Positive Amount
@@ -206,8 +206,8 @@ Values include:
 “” = Not Applicable",SELECTED SECURITY INFORMATION
 A,470-477,9(08),N,,expiration_maturity_date,,"EXPIRATION/MATURITY DATE
 in CCYYMMDD",SELECTED SECURITY INFORMATION
-A,478-495,9(13)v9(05),N,,contract_size,,CONTRACT SIZE,SELECTED SECURITY INFORMATION
-A,496-513,9(09)v9(09),N,,conversion_ratio,,CONVERSION RATIO,SELECTED SECURITY INFORMATION
+A,478-495,9(13)v9(05),N,,contract_size,5,CONTRACT SIZE,SELECTED SECURITY INFORMATION
+A,496-513,9(09)v9(09),N,,conversion_ratio,9,CONVERSION RATIO,SELECTED SECURITY INFORMATION
 A,514-523,X(10),AN,,account_short_name,,ACCOUNT SHORT NAME,SELECTED CUSTOMER ACCOUNT INFORMATION (for positions 514-529)
 A,524-526,X(03),AN,,state_code,,STATE CODE,SELECTED CUSTOMER ACCOUNT INFORMATION (for positions 514-529)
 A,527-529,X(03),AN,,country_code,,"COUNTRY CODE
@@ -240,26 +240,26 @@ Values include:
 “” = Not Applicable",SECURITY DESCRIPTION INFORMATION
 A,661-661,X(01),AN,,firm_trading_indicator,,FIRM TRADING INDICATOR,SECURITY DESCRIPTION INFORMATION
 A,662-664,X(03),AN,,position_currency,,POSITION CURRENCY,SECURITY DESCRIPTION INFORMATION
-A,665-682,9(15)v9(03),N,,trade_date_liquidating_value,,"TRADE DATE LIQUIDATING VALUE
+A,665-682,9(15)v9(03),N,,trade_date_liquidating_value,3,"TRADE DATE LIQUIDATING VALUE
 Add Pending Split Quantity Liquidating Value in Record B, 454-471, to this field to equal the T/D Liquidating Value displayed on NetX360",SECURITY DESCRIPTION INFORMATION
 A,683-683,X(01),AN,,trade_date_liquidating_value_sign,,"TRADE DATE LIQUIDATING VALUE SIGN
 Values include:
 “+” = Long Market Value
 “-” = Short Market Value
 “” = Not Applicable",SECURITY DESCRIPTION INFORMATION
-A,684-693,9(02)v9(08),N,,pool_factor,,POOL FACTOR,SECURITY DESCRIPTION INFORMATION
+A,684-693,9(02)v9(08),N,,pool_factor,8,POOL FACTOR,SECURITY DESCRIPTION INFORMATION
 A,694-694,X(01),AN,,pool_factor_sign,,"POOL FACTOR SIGN
 Values include:
 “+” = Positive Amount
 “-” = Negative Amount
 “” = Not Applicable",SECURITY DESCRIPTION INFORMATION
-A,695-712,9(08)v9(10),N,,exchange_rate,,EXCHANGE RATE,SECURITY DESCRIPTION INFORMATION
+A,695-712,9(08)v9(10),N,,exchange_rate,10,EXCHANGE RATE,SECURITY DESCRIPTION INFORMATION
 A,713-713,X(01),AN,,exchange_rate_sign,,"EXCHANGE RATE SIGN
 Values include:
 “+” = Positive Amount
 “-” = Negative Amount
 “” = Not Applicable",SECURITY DESCRIPTION INFORMATION
-A,714-731,9(15)v9(03),N,,settlement_date_liquidating_value,,"SETTLEMENT DATE LIQUIDATING VALUE
+A,714-731,9(15)v9(03),N,,settlement_date_liquidating_value,3,"SETTLEMENT DATE LIQUIDATING VALUE
 Add Pending Split Quantity Liquidating Value in Record B, 454-471, to this field to equal the S/D Liquidating Value displayed on NetX360",SECURITY DESCRIPTION INFORMATION
 A,732-732,X(01),AN,,settlement_date_liquidating_value_sign,,"SETTLEMENT DATE LIQUIDATING VALUE SIGN
 Values include:
@@ -301,12 +301,12 @@ For GCUS, this represents country of security’s issuance",
 B,046-047,X(02),AN,,not_used,,Not Used,
 B,048-050,X(03),AN,,investment_professional_ip_of_record_number,,INVESTMENT PROFESSIONAL (IP) OF RECORD NUMBER,
 B,051-053,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
-B,054-071,9(13)v9(05),N,,fully_paid_lending_quantity,,FULLY PAID LENDING QUANTITY,
+B,054-071,9(13)v9(05),N,,fully_paid_lending_quantity,5,FULLY PAID LENDING QUANTITY,
 B,072-072,X(01),AN,,fully_paid_lending_quantity_sign,,"FULLY PAID LENDING QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity",
-B,073-090,9(15)v9(03),N,,fully_paid_lending_quantity_collateral_amt,,FULLY PAID LENDING QUANTITY COLLATERAL AMT,
+B,073-090,9(15)v9(03),N,,fully_paid_lending_quantity_collateral_amt,3,FULLY PAID LENDING QUANTITY COLLATERAL AMT,
 B,091-091,X(01),AN,,fully_paid_lending_quantity_collateral_amt_sign,,"FULLY PAID LENDING QUANTITY COLLATERAL AMOUNT SIGN
 Values include:
 “+” = Positive Amount
@@ -323,7 +323,7 @@ Values include:
 “L” = Letter of Credit (Call)
 “M” = Letter of Credit (Put)
 “P” = Put",OCC DATA SET – The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol.  They apply only to Options Products.
-B,105-112,9(05)v9(03),N,,strike_price,,STRIKE PRICE,OCC DATA SET – The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol.  They apply only to Options Products.
+B,105-112,9(05)v9(03),N,,strike_price,3,STRIKE PRICE,OCC DATA SET – The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol.  They apply only to Options Products.
 B,113-130,9(13)v9(05),N,,trade_date_repo_quantity,,TRADE DATE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,131-131,X(01),AN,,trade_date_repo_quantity_sign,,"TRADE DATE REPO QUANTITY SIGN
 Values include:

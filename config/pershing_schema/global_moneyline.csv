@@ -530,19 +530,19 @@ values include:
 values include:
 “+” = Debit Amount
 “-” = Credit Amount",
-8,159 - 176,9(16)v9(02),N,,type_8_account_td_foreign_currency_credit_balance_in_usde,,TYPE 8 ACCOUNT T/D FOREIGN CCY CREDIT BAL. IN USDE,
+8,159 - 176,9(16)v9(02),N,,type_8_account_td_foreign_currency_credit_balance_in_usde,2,TYPE 8 ACCOUNT T/D FOREIGN CCY CREDIT BAL. IN USDE,
 8,177 - 177,X(01),AN,,type_8_account_td_foreign_currency_credit_balance_in_usde_sign,,"TYPE 8 ACCOUNT TD FOREIGN CCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-8,178 - 195,9(16)v9(02),N,,type_8_account_td_foreign_currency_debit_balance_in_usde,,TYPE 8 ACCOUNT T/D FOREIGN CCY DEBIT BALANCE IN USDE,
+8,178 - 195,9(16)v9(02),N,,type_8_account_td_foreign_currency_debit_balance_in_usde,2,TYPE 8 ACCOUNT T/D FOREIGN CCY DEBIT BALANCE IN USDE,
 8,196 - 196,X(01),AN,,type_8_account_td_foreign_currency_debit_balance_in_usde_sign,,"TYPE 8 ACCOUNT TD FOREIGN CCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
-8,197 - 214,9(16)v9(02),N,,type_8_account_sd_foreign_currency_credit_balance_in_usde,,TYPE 8 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE,
+8,197 - 214,9(16)v9(02),N,,type_8_account_sd_foreign_currency_credit_balance_in_usde,2,TYPE 8 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE,
 8,215 - 215,X(01),AN,,type_8_account_sd_foreign_currency_credit_balance_in_usde_sign,,"TYPE 8 ACCOUNT S/D FOREIGN CCY CREDIT BALANCE IN USDE SIGN
 value includes:
 “-” = Credit Amount",
-8,216 - 233,9(16)v9(02),N,,type_8_account_sd_foreign_currency_debit_balance_in_usde,,TYPE 8 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE,
+8,216 - 233,9(16)v9(02),N,,type_8_account_sd_foreign_currency_debit_balance_in_usde,2,TYPE 8 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE,
 8,234 - 234,X(01),AN,,type_8_account_sd_foreign_currency_debit_balance_in_usde_sign,,"TYPE 8 ACCOUNT S/D FOREIGN CCY DEBIT BALANCE IN USDE SIGN
 value includes:
 “+” = Debit Amount",
