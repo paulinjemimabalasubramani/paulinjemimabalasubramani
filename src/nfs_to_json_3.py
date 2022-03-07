@@ -32,6 +32,8 @@ else:
 
 import os, sys, tempfile, shutil, json, re
 
+from attr import field
+
 class app: pass
 sys.app = app
 sys.app.args = args
@@ -212,6 +214,8 @@ def extract_field_value(line:str, pos:dict, field_name:str):
         else:
             x = len(field_value) - pos['scale']
             field_value = float(field_value[:x] + '.' + field_value[x:])
+
+        field_value = str(field_value)
 
     return field_value
 
