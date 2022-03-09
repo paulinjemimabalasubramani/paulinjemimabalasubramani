@@ -20,12 +20,11 @@ Values include:
 A,003-003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “A”,
 A,004-011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 Begins with “00000001”",
-A,012-021,X(10),AN,,account_number,,"ACCOUNT NUMBER
+A,012-020,X(9),AN,,account_number,,"ACCOUNT NUMBER
 Including Office (3), 
 Base Account (5), 
-Check Digit (1), 
-Type (1); 
-Values for Type include:
+Check Digit (1)",
+A,021-021,X(01),AN,,account_type,,"ACCOUNT TYPE
 “0” = Cash on Delivery
 “1” = Cash/Principal Accounting for Bank Custody
 “2” = Margin
