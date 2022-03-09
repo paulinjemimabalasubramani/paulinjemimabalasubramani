@@ -268,7 +268,8 @@ B,001 - 002,X(02),AN,,transaction_code,,"TRANSACTION CODE; values include:
 “K1” = GAC1 (Bank Custody)",
 B,003 - 003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “B”,
 B,004 - 011,9(08),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
-B,012 - 021,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base (6), and Type (1); values for Type include:
+B,012 - 020,X(9),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base (6)",
+B,021-021,X(01),AN,,account_type,,"ACCOUNT TYPE
 “0” = Cash on Delivery
 “1” = Cash/Principal Accounting for Bank Custody
 “2” = Margin

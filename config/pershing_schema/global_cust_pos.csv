@@ -279,12 +279,17 @@ Values include:
 B,003-003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “B”,
 B,004-011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
 Begins with “00000001”",
-B,012-021,X(10),AN,,account_number,,"ACCOUNT NUMBER
+B,012-020,X(9),AN,,account_number,,"ACCOUNT NUMBER
 Including Office (3), 
 Base Account (5), 
-Check Digit (1), 
-Type (1)  
-(see A, pos. 021, for values for Type)",
+Check Digit (1)",
+B,021-021,X(01),AN,,account_type,,"ACCOUNT TYPE
+“0” = Cash on Delivery
+“1” = Cash/Principal Accounting for Bank Custody
+“2” = Margin
+“3” = Short
+“8” = Precious Metals
+“9” = Income/Income Accounting for Bank Custody",
 B,022-030,X(09),AN,,cusip_number,,CUSIP NUMBER,
 B,031-033,X(03),AN,,portfolio_currency,,"PORTFOLIO CURRENCY
 Populated only for Bank Custody accounts; for Brokerage accounts, this field will be spaces",
