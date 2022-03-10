@@ -462,7 +462,7 @@ def process_single_fwf(source_file_path:str):
         logger.info(f'Already ingested file: {source_file_path} -> skipping')
         return
 
-    with open(source_file_path, mode='rt', encoding='ISO-8859-1') as fsource:
+    with open(source_file_path, mode='rt', encoding='ISO-8859-1', errors='ignore') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
             ftarget.write('[\n')
 
