@@ -38,14 +38,23 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file, collect_keys_from_config
-from modules3.nfs_header import get_header_info
+from modules3.nfs_header import headerrecordclientid_map
+
+
+# %% Parameters
+
+file_name_map = {
+    'NABASE': 'name_and_address',
+    'POSITD': 'position',
+    'ACTVYD': 'activity',
+}
 
 
 
 # %% Copy files and folders to the new location
 
 @catch_error(logger)
-def copy_files(firm:str, firm_remote_path:str):
+def copy_files(firm:str, headerrecordclientid:str, firm_remote_path:str):
     """
     Copy files and folders to the new location
     """
@@ -53,27 +62,31 @@ def copy_files(firm:str, firm_remote_path:str):
         logger.warning(f'Not a folder path: {firm_remote_path}')
         return
 
+    logger.info({
+        'firm': firm,
+        'headerrecordclientid': headerrecordclientid,
+        'firm_remote_path': firm_remote_path,
+        })
+
+    allowed_files = dict()
+    for k, v in file_name_map.items():
+        if k.upper()=='NABASE':
+            allowed_files = {**allowed_files, '_'.join([headerrecordclientid, k]):v}
+        else:
+            allowed_files = {**allowed_files, k:v}
+
     for file_name in os.listdir(firm_remote_path):
         remote_file_path = os.path.join(firm_remote_path, file_name)
         if os.path.isfile(remote_file_path):
             file_name_noext, file_ext = os.path.splitext(file_name)
 
+            if file_name_noext not in allowed_files: continue
+
             if file_ext.lower() != '.dat':
                 logger.warning(f'Not a .DAT file, not copying: {remote_file_path}')
                 continue
 
-            header_info = get_header_info(file_path=remote_file_path)
-            if not header_info: continue
-
-            if header_info['firm_name'].upper()!=firm.upper():
-                logger.warning(f"header_info firm_name {header_info['firm_name']} does not match with given SQL firm_name {firm}")
-                continue
-
-            if header_info['key_datetime'] < data_settings.key_datetime:
-                logger.warning(f'Older date in file name: {remote_file_path} -> skipping copy')
-                continue
-
-            source_path_table = 'source_path_' + header_info['table_name_no_firm']
+            source_path_table = 'source_path_' + allowed_files[file_name_noext]
             if not hasattr(data_settings, source_path_table):
                 logger.warning(f'{source_path_table} is not defined in SQL PipelineConfig')
                 continue
@@ -96,7 +109,8 @@ def copy_files_per_firm():
     remote_paths = collect_keys_from_config(prefix='remote_path_', uppercase_key=True)
 
     for firm, firm_remote_path in remote_paths.items():
-        copy_files(firm=firm, firm_remote_path=firm_remote_path)
+        headerrecordclientid = [k for k, v in headerrecordclientid_map.items() if v.upper()==firm.upper()][0].upper()
+        copy_files(firm=firm, headerrecordclientid=headerrecordclientid, firm_remote_path=firm_remote_path)
 
 
 
