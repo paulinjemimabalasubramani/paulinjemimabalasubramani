@@ -98,88 +98,88 @@ A,142 - 142,X(01),AN,,legend_code_1,,"LEGEND CODE 1; see Appendix K, “Legend C
 “     ” = Does not apply to Bookkeeping Entries","See Appendix K, “Legend Codes”;"
 A,143 - 143,X(01),AN,,legend_code_2,,LEGEND CODE 2; see position 142 for values,See position 142 for values
 A,144 - 145,X(02),AN,,for_pershing_internal_use_only,,For Pershing Internal Use only,
-A,146 - 163,9(13)v9(05),N,,quantity,,QUANTITY,
+A,146 - 163,9(13)v9(05),N,,quantity,5,QUANTITY,
 A,164 - 164,X(01),AN,,quantity_sign,,"QUANTITY SIGN; values include:
 “+” = Positive Quantity
 “-” = Negative Quantity
 “     ” = Not Applicable",
-A,165 - 182,9(09)v9(09),N,,price_in_settlement_currency,,PRICE IN SETTLEMENT CURRENCY,
+A,165 - 182,9(09)v9(09),N,,price_in_settlement_currency,9,PRICE IN SETTLEMENT CURRENCY,
 A,183 - 187,X(05),AN,,not_used,,Not Used,
 A,188 - 188,X(01),AN,,price_in_settlement_currency_sign,,"PRICE IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = This is always a positive number when it is a filled field
 “     ” = Not Applicable",
 A,189 - 191,X(03),AN,,currency_indicator_for_price,,CURRENCY INDICATOR FOR PRICE,
-A,192 - 209,9(15)v9(03),N,,net_amount_of_transaction_in_usd_or_usde,,NET AMOUNT OF TRANSACTION in USD or USDE,
+A,192 - 209,9(15)v9(03),N,,net_amount_of_transaction_in_usd_or_usde,3,NET AMOUNT OF TRANSACTION in USD or USDE,
 A,210 - 210,X(01),AN,,net_amount_in_usd_or_usde_sign,,"NET AMOUNT, in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,211 - 228,9(15)v9(03),N,,principal_in_usd_or_usde,,PRINCIPAL in USD or USDE,
+A,211 - 228,9(15)v9(03),N,,principal_in_usd_or_usde,3,PRINCIPAL in USD or USDE,
 A,229 - 229,X(01),AN,,principal_in_usd_or_usde_sign,,"PRINCIPAL in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,230 - 247,9(16)v9(02),N,,interest_in_usd_or_usde,,INTEREST in USD or USDE; accrued or accreted,
+A,230 - 247,9(16)v9(02),N,,interest_in_usd_or_usde,2,INTEREST in USD or USDE; accrued or accreted,
 A,248 - 248,X(01),AN,,interest_in_usd_or_usde_sign,,"INTEREST in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,249 - 266,9(16)v9(02),N,,commission_in_usd_or_usde,,COMMISSION in USD or USDE,
+A,249 - 266,9(16)v9(02),N,,commission_in_usd_or_usde,2,COMMISSION in USD or USDE,
 A,267 - 267,X(01),AN,,commission_in_usd_or_usde_sign,,"COMMISSION in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,268 - 285,9(16)v9(02),N,,tax_in_usd_or_usde,,TAX in USD or USDE,
+A,268 - 285,9(16)v9(02),N,,tax_in_usd_or_usde,2,TAX in USD or USDE,
 A,286 - 286,X(01),AN,,tax_in_usd_or_usde_sign,,"TAX in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,287 - 304,9(16)v9(02),N,,transaction_fee_in_usd_or_usde,,TRANSACTION FEE in USD or USDE,
+A,287 - 304,9(16)v9(02),N,,transaction_fee_in_usd_or_usde,2,TRANSACTION FEE in USD or USDE,
 A,305 - 305,X(01),AN,,transaction_fee_in_usd_or_usde_sign,,"TRANSACTION FEE in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-”= Credit Amount
 “     ” = Not Applicable",
-A,306 - 323,9(16)v9(02),N,,misc_fee_in_usd_or_usde,,MISC FEE in USD or USDE,
+A,306 - 323,9(16)v9(02),N,,misc_fee_in_usd_or_usde,2,MISC FEE in USD or USDE,
 A,324 - 324,X(01),AN,,misc_fee_in_usd_or_usde_sign,,"MISC FEE in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,325 - 342,9(16)v9(02),N,,other_fee_in_usd_or_usde,,OTHER FEE in USD or USDE,
+A,325 - 342,9(16)v9(02),N,,other_fee_in_usd_or_usde,2,OTHER FEE in USD or USDE,
 A,343 - 343,X(01),AN,,other_fee_in_usd_or_usde_sign,,"OTHER FEE in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,344 - 361,9(16)v9(02),N,,tefra_withholding_amount_in_usd,,TEFRA WITHHOLDING AMOUNT in USD,
+A,344 - 361,9(16)v9(02),N,,tefra_withholding_amount_in_usd,2,TEFRA WITHHOLDING AMOUNT in USD,
 A,362 - 362,X(01),AN,,tefra_withholding_amount_in_usd_sign,,"TEFRA W/H AMOUNT in USD SIGN; values include:
 “+” = Debit Amount
 “-”= Credit Amount
 “     ” = Not Applicable",
-A,363 - 380,9(16)v9(02),N,,pershing_charge_in_usd,,PERSHING CHARGE in USD,
+A,363 - 380,9(16)v9(02),N,,pershing_charge_in_usd,2,PERSHING CHARGE in USD,
 A,381 - 381,X(01),AN,,pershing_charge_in_usd_sign,,"PERSHING CHARGE in USD SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “      ” = Not Applicable",
-A,382 - 399,9(16)v9(02),N,,brokerage_charge_in_usd,,BROKERAGE CHARGE in USD,
+A,382 - 399,9(16)v9(02),N,,brokerage_charge_in_usd,2,BROKERAGE CHARGE in USD,
 A,400 - 400,X(01),AN,,brokerage_charge_in_usd_sign,,"BROKERAGE CHARGE in USD SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,401 - 418,9(16)v9(02),N,,sales_credit_in_usd_or_usde,,SALES CREDIT in USD or USDE,
+A,401 - 418,9(16)v9(02),N,,sales_credit_in_usd_or_usde,2,SALES CREDIT in USD or USDE,
 A,419 - 419,X(01),AN,,sales_credit_in_usd_or_usde_sign,,"SALES CREDIT in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,420 - 437,9(16)v9(02),N,,settlement_fee_in_usd_or_usde,,SETTLEMENT FEE in USD or USDE,
+A,420 - 437,9(16)v9(02),N,,settlement_fee_in_usd_or_usde,2,SETTLEMENT FEE in USD or USDE,
 A,438 - 438,X(01),AN,,settlement_fee_in_usd_or_usde_sign,,"SETTLEMENT FEE in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,439 - 456,9(16)v9(02),N,,service_charge_in_usd_or_usde,,SERVICE CHARGE in USD or USDE,
+A,439 - 456,9(16)v9(02),N,,service_charge_in_usd_or_usde,2,SERVICE CHARGE in USD or USDE,
 A,457 - 457,X(01),AN,,service_charge_in_usd_or_usde_sign,,"SERVICE CHARGE in USD or USDE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-A,458 - 475,9(16)v9(02),N,,markup_markdown_amount_in_usd_or_usde,,MARKUP/MARKDOWN AMOUNT in USD or USDE,
+A,458 - 475,9(16)v9(02),N,,markup_markdown_amount_in_usd_or_usde,2,MARKUP/MARKDOWN AMOUNT in USD or USDE,
 A,476 - 476,X(01),AN,,markup_markdown_amount_in_usd_or_usde_sign,,"MARKUP/DOWN AMT. in USD/E SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -194,11 +194,11 @@ A,495 - 495,9(01),N,,dividend_type,,"DIVIDEND TYPE; values include:
 “8” = Bond Interest
 “0” = Not applicable",
 A,496 - 496,X(01),AN,,not_used,,Not Used,
-A,497 - 514,9(13)v9(05),N,,shares_of_record_quantity_for_dividends,,SHARES OF RECORD QUANTITY FOR DIVIDENDS,
-A,515 - 532,9(13)v9(05),N,,order_size_quantity,,"ORDER SIZE QUANTITY
+A,497 - 514,9(13)v9(05),N,,shares_of_record_quantity_for_dividends,5,SHARES OF RECORD QUANTITY FOR DIVIDENDS,
+A,515 - 532,9(13)v9(05),N,,order_size_quantity,5,"ORDER SIZE QUANTITY
 (Note:  This is an unsigned field. If order is a sell, you can view value as a negative quantity.)",
 A,533 - 533,X(01),AN,,not_used,,Not Used,
-A,534 - 551,9(09)v9(09),N,,pool_factor,,POOL FACTOR,
+A,534 - 551,9(09)v9(09),N,,pool_factor,9,POOL FACTOR,
 A,552 - 561,X(10),AN,,parsed_customer_acct_nbr_associated_with_firm_acct_transaction,,"PARSED CUSTOMER ACCOUNT NUMBER ASSOCIATED WITH FIRM ACCOUNT TRANSACTION for /MF, /FF, /UT,
 /NT, /ML, /NB, /52, /FE, /BP. /PR/, /SU, /NC, PPC, WFC, /SV,
 /FWC, /RK, /AD, /4K, /LI, /LF, MIS, CAD SOURCE CODES,
@@ -224,9 +224,9 @@ A,574 - 574,X(01),AN,,omnibus_indicator,,"OMNIBUS INDICATOR; values include:
 “     ” = Not Omnibus",
 A,575 - 594,X(20),AN,,external_order_id,,EXTERNAL ORDER ID,
 A,595 - 597,X(03),AN,,not_used,,Not Used,
-A,598 - 615,9(16)v9(02),N,,market_value_of_transaction,,MARKET VALUE OF TRANSACTION,
+A,598 - 615,9(16)v9(02),N,,market_value_of_transaction,2,MARKET VALUE OF TRANSACTION,
 A,616 - 618,X(03),AN,,ip_nbr_parsed_from_gmar_description_for_firm_acct_transactions,,IP NUMBER PARSED FROM GMAR DESCRIPTION for FIRM ACCOUNT TRANSACTIONS,
-A,619 - 636,9(09)v9(09),N,,reported_price,,REPORTED PRICE,
+A,619 - 636,9(09)v9(09),N,,reported_price,9,REPORTED PRICE,
 A,637 - 637,X(01),AN,,reported_price_sign,,"REPORTED PRICE SIGN; values include:
 “+” = Debit Amount
 “     ” = Not Applicable",
@@ -284,15 +284,15 @@ B,022 - 024,X(03),AN,,security_currency_of_issuance,,"SECURITY CURRENCY OF ISSUA
 currency the security is denominated in, see Appendix N, “Currency Codes,” for values",
 B,025 - 027,X(03),AN,,trade_currency_code,,TRADE CURRENCY CODE,
 B,028 - 030,X(03),AN,,settlement_currency_code,,SETTLEMENT CURRENCY CODE,
-B,031 - 048,9(09)v9(09),N,,settlement_usd_currency_fx_rate,,SETTLEMENT - USD CURRENCY FX RATE,
+B,031 - 048,9(09)v9(09),N,,settlement_usd_currency_fx_rate,9,SETTLEMENT - USD CURRENCY FX RATE,
 B,049 - 049,X(01),AN,,settlement_usd_multiply_divide_code,,"SETTLEMENT - USD MULTIPLY/DIVIDE CODE; values include:
 “M” = Multiply
 “D” = Divide",
-B,050 - 067,9(09)v9(09),N,,cross_currency_fx_rate,,CROSS CURRENCY FX RATE; rate to convert trade  currency to settle currency,
+B,050 - 067,9(09)v9(09),N,,cross_currency_fx_rate,9,CROSS CURRENCY FX RATE; rate to convert trade  currency to settle currency,
 B,068 - 068,X(01),AN,,currency_multiply_divide_code,,"CURRENCY MULTIPLY/DIVIDE CODE; values include:
 “M” = Multiply
 “D” = Divide",
-B,069 - 086,9(16)v9(02),N,,accrued_interest_in_settlement_currency,,ACCRUED INTEREST IN SETTLEMENT CURRENCY,
+B,069 - 086,9(16)v9(02),N,,accrued_interest_in_settlement_currency,2,ACCRUED INTEREST IN SETTLEMENT CURRENCY,
 B,087 - 087,X(01),AN,,accrued_interest_in_settlement_currency_sign,,"ACCRUED INTEREST IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -300,62 +300,62 @@ B,087 - 087,X(01),AN,,accrued_interest_in_settlement_currency_sign,,"ACCRUED INT
 B,088 - 099,X(12),AN,,market_code,,MARKET CODE,
 B,100 - 119,X(20),AN,,internal_reference_for_gloss,,INTERNAL REFERENCE FOR GLOSS,
 B,120 - 121,X(02),AN,,introducing_broker_dealer_ibd_version,,INTRODUCING BROKER DEALER (IBD) VERSION,
-B,122 - 139,9(16)v9(02),N,,net_amount_in_settlement_currency,,NET AMOUNT IN SETTLEMENT CURRENCY,
+B,122 - 139,9(16)v9(02),N,,net_amount_in_settlement_currency,2,NET AMOUNT IN SETTLEMENT CURRENCY,
 B,140 - 140,X(01),AN,,net_amount_in_settlement_currency_sign,,"NET AMOUNT IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,141 - 158,9(16)v9(02),N,,principal_amount_in_settlement_currency,,PRINCIPAL AMOUNT IN SETTLEMENT CURRENCY,
+B,141 - 158,9(16)v9(02),N,,principal_amount_in_settlement_currency,2,PRINCIPAL AMOUNT IN SETTLEMENT CURRENCY,
 B,159 - 159,X(01),AN,,principal_amount_in_settlement_currency_sign,,"PRINCIPAL AMOUNT IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,160 - 177,9(16)v9(02),N,,interest_in_settlement_currency,,INTEREST IN SETTLEMENT CURRENCY,
+B,160 - 177,9(16)v9(02),N,,interest_in_settlement_currency,2,INTEREST IN SETTLEMENT CURRENCY,
 B,178 - 178,X(01),AN,,interest_in_settlement_currency_sign,,"INTEREST IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,179 - 196,9(16)v9(02),N,,commission_in_settlement_currency,,COMMISSION IN SETTLEMENT CURRENCY,
+B,179 - 196,9(16)v9(02),N,,commission_in_settlement_currency,2,COMMISSION IN SETTLEMENT CURRENCY,
 B,197 - 197,X(01),AN,,commission_in_settlement_currency_sign,,"COMMISSION IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,198 - 215,9(16)v9(02),N,,tax_in_settlement_currency,,TAX IN SETTLEMENT CURRENCY,
+B,198 - 215,9(16)v9(02),N,,tax_in_settlement_currency,2,TAX IN SETTLEMENT CURRENCY,
 B,216 - 216,X(01),AN,,tax_in_settlement_currency_sign,,"TAX IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,217 - 234,9(16)v9(02),N,,transaction_fee_in_settlement_currency,,TRANSACTION FEE IN SETTLEMENT CURRENCY,
+B,217 - 234,9(16)v9(02),N,,transaction_fee_in_settlement_currency,2,TRANSACTION FEE IN SETTLEMENT CURRENCY,
 B,235 - 235,X(01),AN,,transaction_fee_in_settlement_currency_sign,,"TRANSACTION FEE IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,236 - 253,9(16)v9(02),N,,miscellaneous_fee_in_settlement_currency,,MISCELLANEOUS FEE IN SETTLEMENT CURRENCY,
+B,236 - 253,9(16)v9(02),N,,miscellaneous_fee_in_settlement_currency,2,MISCELLANEOUS FEE IN SETTLEMENT CURRENCY,
 B,254 - 254,X(01),AN,,miscellaneous_fee_in_settlement_currency_sign,,"MISCELLANEOUS FEE IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,255 - 272,9(16)v9(02),N,,other_fee_in_settlement_currency,,OTHER FEE IN SETTLEMENT CURRENCY,
+B,255 - 272,9(16)v9(02),N,,other_fee_in_settlement_currency,2,OTHER FEE IN SETTLEMENT CURRENCY,
 B,273 - 273,X(01),AN,,other_fee_in_settlement_currency_sign,,"OTHER FEE IN SETTLE CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,274 - 291,9(16)v9(02),N,,sales_credit_in_settlement_currency,,SALES CREDIT IN SETTLEMENT CURRENCY,
+B,274 - 291,9(16)v9(02),N,,sales_credit_in_settlement_currency,2,SALES CREDIT IN SETTLEMENT CURRENCY,
 B,292 - 292,X(01),AN,,sales_credit_in_settlement_currency_sign,,"SALES CREDIT IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,293 - 310,9(16)v9(02),N,,settlement_fee_in_settlement_currency,,SETTLEMENT FEE IN SETTLEMENT CURRENCY,
+B,293 - 310,9(16)v9(02),N,,settlement_fee_in_settlement_currency,2,SETTLEMENT FEE IN SETTLEMENT CURRENCY,
 B,311 - 311,X(01),AN,,settlement_fee_in_settlement_currency_sign,,"SETTLEMENT FEE IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,312 - 329,9(16)v9(02),N,,service_charge_in_settlement_currency,,SERVICE CHARGE IN SETTLEMENT CURRENCY,
+B,312 - 329,9(16)v9(02),N,,service_charge_in_settlement_currency,2,SERVICE CHARGE IN SETTLEMENT CURRENCY,
 B,330 - 330,X(01),AN,,service_charge_in_settlement_currency_sign,,"SERVICE CHARGE IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
 “     ” = Not Applicable",
-B,331 - 348,9(16)v9(02),N,,markup_markdown_in_settlement_currency,,MARKUP/MARKDOWN IN SETTLEMENT CURRENCY,
+B,331 - 348,9(16)v9(02),N,,markup_markdown_in_settlement_currency,2,MARKUP/MARKDOWN IN SETTLEMENT CURRENCY,
 B,349 - 349,X(01),AN,,markup_markdown_in_settlement_currency_sign,,"MARKUP/MARKDOWN IN SETTLEMENT CURRENCY SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -394,16 +394,16 @@ B,664 - 665,X(02),AN,This feild applies to brokerage (GACT) trades only,confirma
 B,666 - 667,X(02),AN,This feild applies to brokerage (GACT) trades only,confirmation_code_two,,CONFIRMATION CODE TWO; see Appendix S for values,The following fields in positions 664-717 apply to brokerage (GACT) trades only
 B,668 - 669,X(02),AN,This feild applies to brokerage (GACT) trades only,confirmation_code_three,,CONFIRMATION CODE THREE; see Appendix S for values,The following fields in positions 664-717 apply to brokerage (GACT) trades only
 B,670 - 671,X(02),AN,This feild applies to brokerage (GACT) trades only,confirmation_code_four,,CONFIRMATION CODE FOUR; see Appendix S for values,The following fields in positions 664-717 apply to brokerage (GACT) trades only
-B,672 - 689,9(09)v9(09),N,This feild applies to brokerage (GACT) trades only,prevailing_market_price,,PREVAILING MARKET PRICE (PMP); all zeroes represents “not provided”,"The following fields in positions 664-717 apply to brokerage (GACT) trades only.
+B,672 - 689,9(09)v9(09),N,This feild applies to brokerage (GACT) trades only,prevailing_market_price,9,PREVAILING MARKET PRICE (PMP); all zeroes represents “not provided”,"The following fields in positions 664-717 apply to brokerage (GACT) trades only.
 The next four fields relate to FINRA/MSRB Mark-up/Mark-down Disclosure Rule and apply only to trades in Brokerage accounts (effective 5/14/2018)"
-B,690 - 707,9(16)v9(02),N,This feild applies to brokerage (GACT) trades only,total_amount_of_mark_up_down,,TOTAL AMOUNT OF MARK UP/DOWN,"The following fields in positions 664-717 apply to brokerage (GACT) trades only.
+B,690 - 707,9(16)v9(02),N,This feild applies to brokerage (GACT) trades only,total_amount_of_mark_up_down,2,TOTAL AMOUNT OF MARK UP/DOWN,"The following fields in positions 664-717 apply to brokerage (GACT) trades only.
 The next four fields relate to FINRA/MSRB Mark-up/Mark-down Disclosure Rule and apply only to trades in Brokerage accounts (effective 5/14/2018)"
 B,708 - 708,X(01),AN,This feild applies to brokerage (GACT) trades only,total_amount_of_mark_up_down_sign,,"TOTAL AMOUNT OF MARK UP/DOWN SIGN, values include:
 “+” = Mark up amount
 “-” = Mark down amount
 “     ” = Not Applicable or Zeroes","The following fields in positions 664-717 apply to brokerage (GACT) trades only.
 The next four fields relate to FINRA/MSRB Mark-up/Mark-down Disclosure Rule and apply only to trades in Brokerage accounts (effective 5/14/2018)"
-B,709 - 717,9(04)v9(05),N,This feild applies to brokerage (GACT) trades only,prevailing_market_price_percent,,"PMP PERCENT; the sign for the percentage is the same as the sign for the Mark Up/Mark Down in position 708, above","The following fields in positions 664-717 apply to brokerage (GACT) trades only.
+B,709 - 717,9(04)v9(05),N,This feild applies to brokerage (GACT) trades only,prevailing_market_price_percent,5,"PMP PERCENT; the sign for the percentage is the same as the sign for the Mark Up/Mark Down in position 708, above","The following fields in positions 664-717 apply to brokerage (GACT) trades only.
 The next four fields relate to FINRA/MSRB Mark-up/Mark-down Disclosure Rule and apply only to trades in Brokerage accounts (effective 5/14/2018)"
 B,718 - 729,X(12),AN,The following field applies only to transactions in Bank Custody accounts (effective 3rd Q 2019),fx_reference,,FX REFERENCE; for dividend and maturity redemption repatriation transactions,The following field applies only to transactions in Bank Custody accounts (effective 3rd Q 2019)
 B,730 - 749,X(20),AN,,not_used,,Not Used,

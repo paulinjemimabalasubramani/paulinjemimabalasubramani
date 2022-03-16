@@ -35,11 +35,11 @@ values include:
 “9” = NYSE Arca (formerly PSE)
 “B” = BATS Exchange
 “E” = Investors Exchange (IEXG) (effective 3rd Q 2019)",
-A,021 - 027,s9(04)v9(03),N,,coupon_rate_for_fixed_income_securities_or_indicated_dividend_for_equities,,COUPON RATE FOR FIXED INCOME SECURITIES or INDICATED DIVIDEND FOR EQUITIES,FOR FIXED INCOME SECURITIES or INDICATED DIVIDEND FOR EQUITIES
+A,021 - 027,s9(04)v9(03),N,,coupon_rate_for_fixed_income_securities_or_indicated_dividend_for_equities,3,COUPON RATE FOR FIXED INCOME SECURITIES or INDICATED DIVIDEND FOR EQUITIES,FOR FIXED INCOME SECURITIES or INDICATED DIVIDEND FOR EQUITIES
 A,028 - 034,9(07),N,,maturity_option_expire_date,,"MATURITY/OPTION EXPIRE DATE, in CCYYDDD format",
 A,035 - 043,X(09),AN,,underlying_security_cusip,,UNDERLYING SECURITY CUSIP,
-A,044 - 052,s9(05)v9(04),N,,first_call_price_for_fixed_income_or_strike_price_for_option,,FIRST CALL PRICE FOR FIXED INCOME or STRIKE PRICE FOR OPTION,
-A,053 - 061,s9(05)v9(04),N,,first_par_call_price_for_fixed_income_or_units_for_option,,FIRST PAR CALL PRICE FOR FIXED INCOME or UNITS FOR OPTION,
+A,044 - 052,s9(05)v9(04),N,,first_call_price_for_fixed_income_or_strike_price_for_option,4,FIRST CALL PRICE FOR FIXED INCOME or STRIKE PRICE FOR OPTION,
+A,053 - 061,s9(05)v9(04),N,,first_par_call_price_for_fixed_income_or_units_for_option,4,FIRST PAR CALL PRICE FOR FIXED INCOME or UNITS FOR OPTION,
 A,062 - 071,X(10),AN,,primary_symbol,,PRIMARY SYMBOL,
 A,072 - 073,X(02),AN,,interest_frequency,,INTEREST FREQUENCY; see Appendix A for values,
 A,074 - 074,X(01),AN,,bond_class,,"BOND CLASS
@@ -112,19 +112,19 @@ B,020 - 020,X(01),AN,,etf_indicator,,"ETF INDICATOR
 values include:
 “Y” = Exchange Traded Fund
 “N” = Not Exchange Traded Fund",
-B,021 - 029,s9(05)v9(04),N,,bid_price,,BID PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
+B,021 - 029,s9(05)v9(04),N,,bid_price,4,BID PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
 We encourage you to use Record F for your prices. 
 This field is considerably larger."
-B,030 - 038,s9(05)v9(04),N,,ask_price,,ASK PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
+B,030 - 038,s9(05)v9(04),N,,ask_price,4,ASK PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
 We encourage you to use Record F for your prices. 
 This field is considerably larger."
-B,039 - 047,s9(05)v9(04),N,,previous_day_price,,PREVIOUS DAY PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
+B,039 - 047,s9(05)v9(04),N,,previous_day_price,4,PREVIOUS DAY PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
 We encourage you to use Record F for your prices. 
 This field is considerably larger."
-B,048 - 056,s9(05)v9(04),N,,latest_price,,LATEST PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
+B,048 - 056,s9(05)v9(04),N,,latest_price,4,LATEST PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
 We encourage you to use Record F for your prices. 
 This field is considerably larger."
-B,057 - 065,s9(05)v9(04),N,,end_of_month_price,,END OF MONTH PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
+B,057 - 065,s9(05)v9(04),N,,end_of_month_price,4,END OF MONTH PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
 We encourage you to use Record F for your prices. 
 This field is considerably larger."
 B,066 - 078,9(13),N,,round_lot_quantity,,ROUND LOT QUANTITY,
@@ -236,15 +236,15 @@ D,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begin
 D,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
 D,017 - 020,X(04),AN,,not_used,,Not Used,
 D,021 - 040,X(20),AN,,security_description_line_six,,SECURITY DESCRIPTION LINE 6,
-D,041 - 049,s9(05)v9(04),N,,put_price,,PUT PRICE,
+D,041 - 049,s9(05)v9(04),N,,put_price,4,PUT PRICE,
 D,050 - 056,9(07),N,,put_date,,"PUT DATE, in CCYYDDD format",
-D,057 - 065,s9(05)v9(04),N,,second_premium_call_price,,SECOND PREMIUM CALL PRICE,
+D,057 - 065,s9(05)v9(04),N,,second_premium_call_price,4,SECOND PREMIUM CALL PRICE,
 D,066 - 072,9(07),N,,second_premium_call_date,,"SECOND PREMIUM CALL DATE, in CCYYDDD format",
 D,073 - 079,9(07),N,,called_date,,"CALLED DATE, in CCYYDDD format (security that has been called)",
 D,080 - 087,X(08),AN,,pool_number,,POOL NUMBER,
-D,088 - 097,s9(02)v9(08),N,,factor,,"FACTOR; displays the percentage value applied to a mortgage- backed pool, inflation protected bond, or other type of security to obtain a current amortized amount",
+D,088 - 097,s9(02)v9(08),N,,factor,4,"FACTOR; displays the percentage value applied to a mortgage- backed pool, inflation protected bond, or other type of security to obtain a current amortized amount",
 D,098 - 104,9(07),N,,factor_date,,"FACTOR DATE, in CCYYDDD format",
-D,105 - 114,s9(02)v9(08),N,,previsous_factor,,PREVIOUS FACTOR,
+D,105 - 114,s9(02)v9(08),N,,previsous_factor,8,PREVIOUS FACTOR,
 D,115 - 121,9(07),N,,previsous_factor_date,,"PREVIOUS FACTOR DATE, in CCYYDDD format",
 D,122 - 122,X(01),AN,,variable_rate_indicator,,"VARIABLE RATE INDICATOR
 values include:
@@ -266,10 +266,10 @@ E,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “E”,
 E,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
 E,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
 E,017 - 020,X(04),AN,,not_used,,Not Used,
-E,021 - 038,s9(09)v9(09),N,,expanded_first_call_price_for_fixed_income_or_strike_price_for_option,,EXPANDED FIRST CALL PRICE FOR FIXED INCOME OR STRIKE PRICE FOR OPTION,
-E,039 - 056,s9(09)v9(09),N,,expanded_first_par_call_price_for_fixed_income_or_exercise_quantity_for_option,,EXPANDED FIRST PAR CALL PRICE FOR FIXED INCOME OR EXERCISE QUANTITY FOR OPTION,
-E,057 - 074,s9(09)v9(09),N,,expanded_put_price,,EXPANDED PUT PRICE,
-E,075 - 092,s9(09)v9(09),N,,expanded_second_premium_call_price,,EXPANDED SECOND PREMIUM CALL PRICE,
+E,021 - 038,s9(09)v9(09),N,,expanded_first_call_price_for_fixed_income_or_strike_price_for_option,8,EXPANDED FIRST CALL PRICE FOR FIXED INCOME OR STRIKE PRICE FOR OPTION,
+E,039 - 056,s9(09)v9(09),N,,expanded_first_par_call_price_for_fixed_income_or_exercise_quantity_for_option,9,EXPANDED FIRST PAR CALL PRICE FOR FIXED INCOME OR EXERCISE QUANTITY FOR OPTION,
+E,057 - 074,s9(09)v9(09),N,,expanded_put_price,9,EXPANDED PUT PRICE,
+E,075 - 092,s9(09)v9(09),N,,expanded_second_premium_call_price,9,EXPANDED SECOND PREMIUM CALL PRICE,
 E,093 - 124,X(32),AN,,name_of_the_issuer_of_the_security,,NAME OF THE ISSUER OF THE SECURITY,
 E,125 - 127,X(03),AN,,issuing_currency,,"ISSUING CURRENCY; see Appendix “N”, Currency Codes",
 E,128 - 128,X(01),AN,,globally_locked_security_indicator,,"GLOBALLY LOCKED SECURITY INDICATOR
@@ -293,17 +293,17 @@ F,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “F”,
 F,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
 F,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
 F,017 - 020,X(04),AN,,not_used,,Not Used,
-F,021 - 038,s9(09)v9(09),N,,expanded_bid_price,,EXPANDED BID PRICE,"Please use the prices on this record instead of those displayed in Record B.
+F,021 - 038,s9(09)v9(09),N,,expanded_bid_price,9,EXPANDED BID PRICE,"Please use the prices on this record instead of those displayed in Record B.
 They are larger and can accommodate prices greater than 99,999.99, which record B cannot."
-F,039 - 056,s9(09)v9(09),N,,expanded_ask_price,,EXPANDED ASK PRICE,"Please use the prices on this record instead of those displayed in Record B.
+F,039 - 056,s9(09)v9(09),N,,expanded_ask_price,9,EXPANDED ASK PRICE,"Please use the prices on this record instead of those displayed in Record B.
 They are larger and can accommodate prices greater than 99,999.99, which record B cannot."
-F,057 - 074,s9(09)v9(09),N,,expanded_previous_day_price,,EXPANDED PREVIOUS DAY PRICE,"Please use the prices on this record instead of those displayed in Record B.
+F,057 - 074,s9(09)v9(09),N,,expanded_previous_day_price,9,EXPANDED PREVIOUS DAY PRICE,"Please use the prices on this record instead of those displayed in Record B.
 They are larger and can accommodate prices greater than 99,999.99, which record B cannot."
-F,075 - 092,s9(09)v9(09),N,,expanded_latest_price,,EXPANDED LATEST PRICE,"Please use the prices on this record instead of those displayed in Record B.
+F,075 - 092,s9(09)v9(09),N,,expanded_latest_price,9,EXPANDED LATEST PRICE,"Please use the prices on this record instead of those displayed in Record B.
 They are larger and can accommodate prices greater than 99,999.99, which record B cannot."
-F,093 - 110,s9(09)v9(09),N,,expanded_end_of_month_price,,EXPANDED END OF MONTH PRICE,"Please use the prices on this record instead of those displayed in Record B.
+F,093 - 110,s9(09)v9(09),N,,expanded_end_of_month_price,9,EXPANDED END OF MONTH PRICE,"Please use the prices on this record instead of those displayed in Record B.
 They are larger and can accommodate prices greater than 99,999.99, which record B cannot."
-F,111 - 127,s9(15)v9(02),N,,contract_share_quantity,,CONTRACT SHARE QUANTITY,
+F,111 - 127,s9(15)v9(02),N,,contract_share_quantity,2,CONTRACT SHARE QUANTITY,
 F,128 - 131,9(04),N,,year_covered_under_cost_basis_rules,,"YEAR COVERED UNDER COST BASIS RULES
 in CCYY format;
 (effective 10/24/2014) other value includes:
@@ -313,7 +313,7 @@ G,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “G”,
 G,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
 G,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
 G,017 - 020,X(04),AN,,not_used,,Not Used,
-G,021 - 038,9(09)v9(09),N,,delta,,DELTA; the ratio of the change in market price of an option relative to the change in the market price of its underlying instrument,"The following three fields are effective 2nd Q, 2020"
+G,021 - 038,9(09)v9(09),N,,delta,9,DELTA; the ratio of the change in market price of an option relative to the change in the market price of its underlying instrument,"The following three fields are effective 2nd Q, 2020"
 G,039 - 039,X(01),AN,,delta_sign,,"DELTA SIGN
 values include:
 “+” = Positive Delta
@@ -339,7 +339,7 @@ H,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “H”,
 H,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
 H,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
 H,017 - 020,X(04),AN,,not_used,,Not Used,
-H,021 - 038,9(08)v9(10),N,,exchange_rate_between_denom_curr_and_usd,,EXCH. RATE BETWEEN DENOM CURR. and USD,
+H,021 - 038,9(08)v9(10),N,,exchange_rate_between_denom_curr_and_usd,10,EXCH. RATE BETWEEN DENOM CURR. and USD,
 H,039 - 047,X(09),AN,,underlying_cusip_one,,UNDERLYING CUSIP #1,
 H,048 - 051,X(04),AN,,not_used,,Not Used,
 H,052 - 056,9(05),N,,deliverable_unit_quantity_one,,DELIVERABLE UNIT QUANTITY,
@@ -353,7 +353,7 @@ H,093 - 101,X(09),AN,,underlying_cusip_four,,UNDERLYING CUSIP #4,
 H,102 - 105,X(04),AN,,not_used,,Not Used,
 H,106 - 110,9(05),N,,deliverable_unit_quantity_four,,DELIVERABLE UNIT QUANTITY,
 H,111 - 113,X(03),AN,,annual_dividend_currency_code,,"ANNUAL DIVIDEND CURRENCY CODE, effective 3rd Q, 2016",
-H,114 - 131,9(16)v9(02),N,,outstanding_shares,,OUTSTANDING SHARES,
+H,114 - 131,9(16)v9(02),N,,outstanding_shares,2,OUTSTANDING SHARES,
 H,132 - 132,X(01),AN,,the_end_of_record_h,,Literally “X”; indicates the end of record H,
 I,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “I”,
 I,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
@@ -370,7 +370,7 @@ values include:
 “L” = Letter of Credit (Call)
 “M” = Letter of Credit (Put)
 “P” = Put",OCC DATA SET – The following four fields (in position 21 through 41) comprise the OCC DATA SET
-I,034 - 041,9(05)v9(03),N,,strike_price,,STRIKE PRICE,OCC DATA SET – The following four fields (in position 21 through 41) comprise the OCC DATA SET
+I,034 - 041,9(05)v9(03),N,,strike_price,3,STRIKE PRICE,OCC DATA SET – The following four fields (in position 21 through 41) comprise the OCC DATA SET
 I,042 - 042,X(01),AN,,fund_type,,"FUND TYPE
 fund is leveraged or short
 values include:
@@ -384,7 +384,7 @@ values include:
 “B” = Broad based
 “N” = Narrow based
 “     ” = Undefined or Not Applicable",
-I,044 - 061,9(09)v9(09),N,,leverage_factor,,LEVERAGE FACTOR; multiple of the performance of the underlying index or benchmark that fund is designed to generate,
+I,044 - 061,9(09)v9(09),N,,leverage_factor,9,LEVERAGE FACTOR; multiple of the performance of the underlying index or benchmark that fund is designed to generate,
 I,062 - 062,X(01),AN,,leverage_factor_sign,,"LEVERAGE FACTOR SIGN
 values include:
 “+” = Positive factor
@@ -432,13 +432,13 @@ J,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “J”,
 J,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
 J,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
 J,017 - 020,X(04),AN,,not_used,,Not Used,
-J,021 - 038,9(09)v9(09),N,,latest_price,,LATEST PRICE,
+J,021 - 038,9(09)v9(09),N,,latest_price,9,LATEST PRICE,
 J,039 - 046,9(08),N,,latest_price_date,,"LATEST PRICE DATE, in CCYYMMDD format",
-J,047 - 064,9(06)v9(12),N,,factored_market_value_multiplier,,"FACTORED MARKET VALUE MULTIPLIER
+J,047 - 064,9(06)v9(12),N,,factored_market_value_multiplier,12,"FACTORED MARKET VALUE MULTIPLIER
 (price * quantity * factored MV multiplier = Market Value)
 please note format changed to 9(06)v9(12) on the evening of 10/24/2014",
-J,065 - 082,9(09)v9(09),N,,current_yield,,CURRENT YIELD (when available),
-J,083 - 100,9(09)v9(09),N,,yield,,YIELD (when available),
+J,065 - 082,9(09)v9(09),N,,current_yield,9,CURRENT YIELD (when available),
+J,083 - 100,9(09)v9(09),N,,yield,9,YIELD (when available),
 J,101 - 101,X(01),AN,,price_source,,"PRICE SOURCE
 values include:
 “V” = Vendor source
@@ -535,7 +535,7 @@ values include:
 L,083 - 090,9(08),N,,tick_size_effective_date,,"TICK SIZE EFFECTIVE DATE, effective 3rd Q, 2016, in CCYYMMDD format",
 L,091 - 098,9(08),N,,tick_size_change_date,,"TICK SIZE CHANGE DATE, effective 3rd Q, 2016, in CCYYMMDD format",
 L,099 - 106,9(08),N,,update_date,,"UPDATE DATE, in CCYYMMDD format",The next three fields contain OAS LIBOR Rate data (effective 05/05/2017)
-L,107 - 124,9(09)v9(09),N,,oas_libor_rate,,OAS LIBOR RATE,The next three fields contain OAS LIBOR Rate data (effective 05/05/2017)
+L,107 - 124,9(09)v9(09),N,,oas_libor_rate,9,OAS LIBOR RATE,The next three fields contain OAS LIBOR Rate data (effective 05/05/2017)
 L,125 - 125,X(01),AN,,oas_libor_rate_sign,,"OAS LIBOR RATE SIGN
 values include:
 “+” = Positive rate
@@ -549,16 +549,16 @@ M,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
 M,017 - 020,X(04),AN,,not_used,,Not Used,
 M,021 - 021,X(01),AN,,reserved_for_future_use_one,,Reserved for future use,First (Most Current) Upcoming Call
 M,022 - 029,9(08),N,,first_call_date,,"FIRST CALL DATE, in CCYYMMDD format",First (Most Current) Upcoming Call
-M,030 - 047,9(09)v9(09),N,,first_call_price,,FIRST CALL PRICE,First (Most Current) Upcoming Call
+M,030 - 047,9(09)v9(09),N,,first_call_price,9,FIRST CALL PRICE,First (Most Current) Upcoming Call
 M,048 - 048,X(01),AN,,reserved_for_future_use_two,,Reserved for future use,Second Call
 M,049 - 056,9(08),N,,second_call_date,,"SECOND CALL DATE, in CCYYMMDD format",Second Call
-M,057 - 074,9(09)v9(09),N,,second_call_price,,SECOND CALL PRICE,Second Call
+M,057 - 074,9(09)v9(09),N,,second_call_price,9,SECOND CALL PRICE,Second Call
 M,075 - 075,X(01),AN,,reserved_for_future_use_three,,Reserved for future use,Third Call
 M,076 - 083,9(08),N,,third_call_date,,"THIRD CALL DATE, in CCYYMMDD format",Third Call
-M,084 - 101,9(09)v9(09),N,,third_call_price,,THIRD CALL PRICE,Third Call
+M,084 - 101,9(09)v9(09),N,,third_call_price,9,THIRD CALL PRICE,Third Call
 M,102 - 102,X(01),AN,,reserved_for_future_use_four,,Reserved for future use,Fourth Call
 M,103 - 110,9(08),N,,fourth_call_date,,"FOURTH CALL DATE, in CCYYMMDD format",Fourth Call
-M,111 - 128,9(09)v9(09),N,,fourth_call_price,,FOURTH CALL PRICE,Fourth Call
+M,111 - 128,9(09)v9(09),N,,fourth_call_price,9,FOURTH CALL PRICE,Fourth Call
 M,129 - 131,X(03),AN,,not_used,,Not Used,
 M,132 - 132,X(01),AN,,the_end_of_record_m,,Literally “X”; indicates the end of record M,
 N,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “N”,
@@ -567,23 +567,23 @@ N,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
 N,017 - 020,X(04),AN,,not_used,,Not Used,
 N,021 - 021,X(01),AN,,reserved_for_future_use_one,,Reserved for future use,Coupon Interest Rate Schedule One
 N,022 - 029,9(08),N,,effective_date_of_the_rate_one,,"EFFECTIVE DATE OF THE RATE, in CCYYMMDD format",Coupon Interest Rate Schedule One
-N,030 - 047,9(09)v9(09),N,,coupon_interest_rate_one,,COUPON INTEREST RATE,Coupon Interest Rate Schedule One
+N,030 - 047,9(09)v9(09),N,,coupon_interest_rate_one,9,COUPON INTEREST RATE,Coupon Interest Rate Schedule One
 N,048 - 048,X(01),AN,,reserved_for_future_use_two,,Reserved for future use,Coupon Interest Rate Schedule Two
 N,049 - 056,9(08),N,,effective_date_of_the_rate_two,,"EFFECTIVE DATE OF THE RATE, in CCYYMMDD format",Coupon Interest Rate Schedule Two
-N,057 - 074,9(09)v9(09),N,,coupon_interest_rate_two,,COUPON INTEREST RATE,Coupon Interest Rate Schedule Two
+N,057 - 074,9(09)v9(09),N,,coupon_interest_rate_two,9,COUPON INTEREST RATE,Coupon Interest Rate Schedule Two
 N,075 - 075,X(01),AN,,reserved_for_future_use_three,,Reserved for future use,Coupon Interest Rate Schedule Three
 N,076 - 083,9(08),N,,effective_date_of_the_rate_three,,"EFFECTIVE DATE OF THE RATE, in CCYYMMDD format",Coupon Interest Rate Schedule Three
-N,084 - 101,9(09)v9(09),N,,coupon_interest_rate_three,,COUPON INTEREST RATE,Coupon Interest Rate Schedule Three
+N,084 - 101,9(09)v9(09),N,,coupon_interest_rate_three,9,COUPON INTEREST RATE,Coupon Interest Rate Schedule Three
 N,102 - 102,X(01),AN,,reserved_for_future_use_four,,Reserved for future use,Coupon Interest Rate Schedule Four
 N,103 - 110,9(08),N,,effective_date_of_the_rate_four,,"EFFECTIVE DATE OF THE RATE, in CCYYMMDD format",Coupon Interest Rate Schedule Four
-N,111 - 128,9(09)v9(09),N,,coupon_interest_rate_four,,COUPON INTEREST RATE,Coupon Interest Rate Schedule Four
+N,111 - 128,9(09)v9(09),N,,coupon_interest_rate_four,9,COUPON INTEREST RATE,Coupon Interest Rate Schedule Four
 N,129 - 131,X(03),AN,,not_used,,Not Used,
 N,132 - 132,X(01),AN,,the_end_of_record_n,,Literally “X”; indicates the end of record N,
 O,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “O”,
 O,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
 O,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
 O,017 - 020,X(04),AN,,not_used,,Not Used,
-O,021 - 038,9(09)v9(09),N,,oas_treasury_rate,,OAS TREASURY RATE,The following three fields are related to OAS Treasury Rate Information
+O,021 - 038,9(09)v9(09),N,,oas_treasury_rate,9,OAS TREASURY RATE,The following three fields are related to OAS Treasury Rate Information
 O,039 - 039,X(01),AN,,oas_treasury_rate_sign,,"OAS TREASURY RATE SIGN
 values include:
 “+” = Positive rate
@@ -591,8 +591,8 @@ values include:
 ” = Not applicable or available",The following three fields are related to OAS Treasury Rate Information
 O,040 - 047,9(08),N,,oas_treasury_effective_update_date,,"OAS TREASURY EFFECTIVE/UPDATE DATE, in
 CCYYMMDD format",The following three fields are related to OAS Treasury Rate Information
-O,048 - 062,9(12)v9(03),N,,minimum_piece,,MINIMUM PIECE; the minimum tradable quantity,The following two fields refer to the minimums associated with trading the instrument – this applies to all fixed income products
-O,063 - 077,9(12)v9(03),N,,minimum_increment,,MINIMUM INCREMENT; the minimum increment quantity in addition to the minimum piece,The following two fields refer to the minimums associated with trading the instrument – this applies to all fixed income products
+O,048 - 062,9(12)v9(03),N,,minimum_piece,3,MINIMUM PIECE; the minimum tradable quantity,The following two fields refer to the minimums associated with trading the instrument – this applies to all fixed income products
+O,063 - 077,9(12)v9(03),N,,minimum_increment,3,MINIMUM INCREMENT; the minimum increment quantity in addition to the minimum piece,The following two fields refer to the minimums associated with trading the instrument – this applies to all fixed income products
 O,078 - 131,X(54),AN,,not_used,,Not Used,
 O,132 - 132,X(01),AN,,the_end_of_record_o,,Literally “X”; indicates the end of record O,
 TRAILER,001 - 018,X(18),AN,,end_of_pershing_file,,Literally “EOF                           PERSHING     ” (end of Pershing file),
