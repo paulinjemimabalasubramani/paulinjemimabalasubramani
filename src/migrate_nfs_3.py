@@ -86,8 +86,8 @@ def select_files():
 
                 key_datetime = datetime.strptime(file_date_str, date_format)
                 if key_datetime < data_settings.key_datetime: continue
-            except:
-                logger.warning(f'Invalid Date Format: {file_path}')
+            except Exception as e:
+                logger.warning(f'Invalid Date Format: {file_path}. {str(e)}')
                 continue
 
             if file_meta_exists_for_select_files(file_path=file_path): continue
@@ -127,8 +127,8 @@ def extract_json_file_meta(file_path:str, zip_file_path:str=None):
 
     try:
         key_datetime = datetime.strptime(file_date_str, date_format)
-    except:
-        logger.warning(f'Invalid date format in file name: {file_path}')
+    except Exception as e:
+        logger.warning(f'Invalid date format in file name: {file_path}. {str(e)}')
         return
 
     file_meta = {

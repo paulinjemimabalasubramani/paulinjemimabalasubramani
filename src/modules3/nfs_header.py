@@ -93,8 +93,8 @@ def get_header_info(file_path:str):
 
     try:
         header_info['key_datetime'] = datetime.strptime(header_info['transmissioncreationdate'], r'%m%d%y')
-    except:
-        logger.warning(f"Cannot parse transmissioncreationdate: {header_info['transmissioncreationdate']}")
+    except Exception as e:
+        logger.warning(f"Cannot parse transmissioncreationdate: {header_info['transmissioncreationdate']}. {str(e)}")
         return
 
     header_info['target_file_name'] = header_info['table_name'] + '_' + header_info['key_datetime'].strftime(json_file_date_format) + json_file_ext
