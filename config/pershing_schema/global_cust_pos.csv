@@ -328,111 +328,111 @@ Values include:
 “M” = Letter of Credit (Put)
 “P” = Put",OCC DATA SET – The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol.  They apply only to Options Products.
 B,105-112,9(05)v9(03),N,,strike_price,3,STRIKE PRICE,OCC DATA SET – The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol.  They apply only to Options Products.
-B,113-130,9(13)v9(05),N,,trade_date_repo_quantity,,TRADE DATE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,113-130,9(13)v9(05),N,,trade_date_repo_quantity,5,TRADE DATE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,131-131,X(01),AN,,trade_date_repo_quantity_sign,,"TRADE DATE REPO QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,132-149,9(13)v9(05),N,,settlement_date_repo_quantity,,SETTLEMENT DATE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,132-149,9(13)v9(05),N,,settlement_date_repo_quantity,5,SETTLEMENT DATE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,150-150,X(01),AN,,settlement_date_repo_quantity_sign,,"SETTLEMENT DATE REPO QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,151-168,9(13)v9(05),N,,trade_date_reverse_repo_quantity,,TRADE DATE REVERSE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,151-168,9(13)v9(05),N,,trade_date_reverse_repo_quantity,5,TRADE DATE REVERSE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,169-169,X(01),AN,,trade_date_reverse_repo_quantity_sign,,"T/D REVERSE REPO QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,170-187,9(13)v9(05),N,,settlement_date_reverse_repo_quantity,,SETTLEMENT DATE REVERSE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,170-187,9(13)v9(05),N,,settlement_date_reverse_repo_quantity,5,SETTLEMENT DATE REVERSE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,188-188,X(01),AN,,settlement_date_reverse_repo_quantity_sign,,"S/D REVERSE REPO QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,189-206,9(13)v9(05),N,,collateral_pledge_quantity,,COLLATERAL PLEDGE QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,189-206,9(13)v9(05),N,,collateral_pledge_quantity,5,COLLATERAL PLEDGE QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,207-207,X(01),AN,,collateral_pledge_quantity_sign,,"COLLATERAL PLEDGE QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,208-225,9(13)v9(05),N,,corporate_executive_services_collateral_pledge_quantity,,CORPORATE EXECUTIVE SERVICES COLLATERAL PLEDGE QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,208-225,9(13)v9(05),N,,corporate_executive_services_collateral_pledge_quantity,5,CORPORATE EXECUTIVE SERVICES COLLATERAL PLEDGE QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,226-226,X(01),AN,,corporate_executive_services_collateral_pledge_quantity_sign,,"CORPORATE EXECUTIVE SERVICES COLLATERAL PLEDGE QUANTITY SIGN
 Values include:
 “+” = Long Quantity
 “-” = Short Quantity
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,227-244,9(15)v9(03),N,,trade_date_repo_liquidating_value,,TRADE DATE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,227-244,9(15)v9(03),N,,trade_date_repo_liquidating_value,3,TRADE DATE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,245-245,X(01),AN,,trade_date_repo_liquidating_value_sign,,"T/D REPO LIQUIDATING VALUE SIGN
 Values include:
 “+” = Long Market Value
 “-” = Short Market Value
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,246-263,9(15)v9(03),N,,settlement_date_repo_liquidating_value,,SETTLEMENT DATE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,246-263,9(15)v9(03),N,,settlement_date_repo_liquidating_value,3,SETTLEMENT DATE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,264-264,X(01),AN,,settlement_date_repo_liquidating_value_sign,,"S/D REPO LIQUIDATING VALUE SIGN
 Values include:
 “+” = Long Market Value
 “-” = Short Market Value
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,265-282,9(15)v9(03),N,,trade_date_reverse_repo_liquidating_value,,TRADE DATE REVERSE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,265-282,9(15)v9(03),N,,trade_date_reverse_repo_liquidating_value,3,TRADE DATE REVERSE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,283-283,X(01),AN,,trade_date_reverse_repo_liquidating_value_sign,,"T/D REVERSE REPO LIQUIDATING VALUE SIGN
 Values include:
 “+” = Long Market Value
 “-” = Short Market Value
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,284-301,9(15)v9(03),N,,settlement_date_reverse_repo_liquidating_value,,SETTLEMENT DATE REVERSE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,284-301,9(15)v9(03),N,,settlement_date_reverse_repo_liquidating_value,3,SETTLEMENT DATE REVERSE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,302-302,X(01),AN,,settlement_date_reverse_repo_liquidating_value_sign,,"SETTLEMENT DATE REVERSE REPO LIQUIDATING VALUE SIGN
 Values include:
 “+” = Long Market Value
 “-” = Short Market Value
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,303-320,9(15)v9(03),N,,collateral_pledge_liquidating_value,,COLLATERAL PLEDGE LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,303-320,9(15)v9(03),N,,collateral_pledge_liquidating_value,3,COLLATERAL PLEDGE LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,321-321,X(01),AN,,collateral_pledge_liquidating_value_sign,,"COLLATERAL PLEDGE LIQUIDATING VALUE SIGN
 Values include:
 “+” = Long Market Value
 “-” = Short Market Value
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,322-339,9(15)v9(03),N,,corporate_executive_services_collateral_pledge_liquidating_value,,CORPORATE EXECUTIVE SERVICES COLLATERAL PLEDGE LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,322-339,9(15)v9(03),N,,corporate_executive_services_collateral_pledge_liquidating_value,3,CORPORATE EXECUTIVE SERVICES COLLATERAL PLEDGE LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,340-340,X(01),AN,,corporate_executive_services_collateral_pledge_liquidating_value_sign,,"CORPORATE EXECUTIVE SERVICES COLLATERAL PLEDGE LIQUIDATING VALUE SIGN
 Values include:
 “+” = Long Market Value
 “-” = Short Market Value
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,341-358,9(15)v9(03),N,,trade_date_repo_loan_amount,,TRADE DATE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,341-358,9(15)v9(03),N,,trade_date_repo_loan_amount,3,TRADE DATE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,359-359,X(01),AN,,trade_date_repo_loan_amount_sign,,"T/D REPO LOAN AMOUNT SIGN
 Values include:
 “+” = Positive Amount
 “-” = Negative Amount
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,360-377,9(15)v9(03),N,,settlement_date_repo_loan_amount,,SETTLEMENT DATE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,360-377,9(15)v9(03),N,,settlement_date_repo_loan_amount,3,SETTLEMENT DATE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,378-378,X(01),AN,,settlement_date_repo_loan_amount_sign,,"S/D REPO LOAN AMOUNT SIGN
 Values include:
 “+” = Positive Amount
 “-” = Negative Amount
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,379-396,9(15)v9(03),N,,trade_date_reverse_repo_loan_amount,,TRADE DATE REVERSE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,379-396,9(15)v9(03),N,,trade_date_reverse_repo_loan_amount,3,TRADE DATE REVERSE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,397-397,X(01),AN,,trade_date_reverse_repo_loan_amount_sign,,"T/D REVERSE REPO LOAN AMOUNT SIGN
 Values include:
 “+” = Positive Amount
 “-” = Negative Amount
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,398-415,9(15)v9(03),N,,settlement_date_reverse_repo_loan_amount,,SETTLEMENT DATE REVERSE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,398-415,9(15)v9(03),N,,settlement_date_reverse_repo_loan_amount,3,SETTLEMENT DATE REVERSE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,416-416,X(01),AN,,settlement_date_reverse_repo_loan_amount_sign,,"S/D REVERSE REPO LOAN AMOUNT SIGN
 Values include:
 “+” = Positive Amount
 “-” = Negative Amount
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,417-434,9(15)v9(03),N,,accrued_interest_value_from_last_payable_date,,"ACCRUED INTEREST VALUE FROM LAST PAYABLE DATE
+B,417-434,9(15)v9(03),N,,accrued_interest_value_from_last_payable_date,3,"ACCRUED INTEREST VALUE FROM LAST PAYABLE DATE
 Based on trade date quantity",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,435-435,X(01),AN,,accrued_interest_value_sign,,"ACCRUED INTEREST VALUE SIGN
 Values include:
 “+” = Positive Value
 “-” = Negative Value
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,436-453,9(09)v9(09),N,,dividend_or_coupon_rate,,DIVIDEND or COUPON RATE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,454-471,9(15)v9(03),N,,pending_split_quantity_liquidating_value,,"PENDING SPLIT QUANTITY LIQUIDATING VALUE
+B,436-453,9(09)v9(09),N,,dividend_or_coupon_rate,9,DIVIDEND or COUPON RATE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,454-471,9(15)v9(03),N,,pending_split_quantity_liquidating_value,3,"PENDING SPLIT QUANTITY LIQUIDATING VALUE
 (add this value to T/D or S/D Liquidating Values in Record A to equal Market Value displayed on NetX360); 
 Effective 08/02/2013",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,472-472,X(01),AN,,pending_split_quantity_liquidating_value_sign,,"PENDING SPLIT QUANTITY LIQUIDATING VALUE SIGN
@@ -442,7 +442,7 @@ Values include:
 “” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,473-510,X(38),AN,,for_pershing_internal_use_only,,For Pershing Internal Use Only,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,511-526,X(16),AN,,international_non_dollar_symbol,,INTERNATIONAL NON-DOLLAR SYMBOL (effective 02/07/2014),REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
-B,527-544,9(13)v9(05),N,,pledged_quantity_memo,,"PLEDGED QUANTITY (MEMO), applies only to brokerage; effective mid-2nd  Q, 2017",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,527-544,9(13)v9(05),N,,pledged_quantity_memo,5,"PLEDGED QUANTITY (MEMO), applies only to brokerage; effective mid-2nd  Q, 2017",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
 B,545-545,X(01),AN,,pledged_quantity_sign,,"PLEDGED QUANTITY SIGN
 Values include:
 “+” = Long Quantity
