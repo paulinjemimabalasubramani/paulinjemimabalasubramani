@@ -357,19 +357,6 @@ VALUES
 ('ASSETS_MIGRATE_NFS_SPF', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP),
 
 
-
-('COPY_NFS', 'REMOTE_PATH_RAA', '', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'REMOTE_PATH_SPF', '', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'REMOTE_PATH_FSC', '', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'REMOTE_PATH_SAI', '', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'REMOTE_PATH_TRI', '', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'SOURCE_PATH_NAME_AND_ADDRESS', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'SOURCE_PATH_POSITION', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'SOURCE_PATH_ACTIVITY', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'FILE_HISTORY_START_DATE', '2021-10-15', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP),
-
-
 ('COPY_PERSHING', 'REMOTE_PATH_RAA', '', 'System', CURRENT_TIMESTAMP),
 ('COPY_PERSHING', 'REMOTE_PATH_SPF', '', 'System', CURRENT_TIMESTAMP),
 ('COPY_PERSHING', 'REMOTE_PATH_FSC', '', 'System', CURRENT_TIMESTAMP),
@@ -388,14 +375,29 @@ VALUES
 ('MAINTENANCE_AIRFLOW_LOG_CLEANUP', 'LOG_PATH_AIRFLOW', '/usr/local/spark/resources/logs', 'System', CURRENT_TIMESTAMP),
 ('MAINTENANCE_AIRFLOW_LOG_CLEANUP', 'LOG_DAYS_AIRFLOW', '30', 'System', CURRENT_TIMESTAMP),
 ('MAINTENANCE_AIRFLOW_LOG_CLEANUP', 'LOG_PATH_PYTHON_TEMP', '/usr/local/spark/resources/Shared/TEMP', 'System', CURRENT_TIMESTAMP),
-('MAINTENANCE_AIRFLOW_LOG_CLEANUP', 'LOG_DAYS_PYTHON_TEMP', '5', 'System', CURRENT_TIMESTAMP)
+('MAINTENANCE_AIRFLOW_LOG_CLEANUP', 'LOG_DAYS_PYTHON_TEMP', '5', 'System', CURRENT_TIMESTAMP),
+
+
+
+('COPY_NFS', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_NABASE', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_NAMED', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_SUITABL2', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_BENEFIT', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_ACTVYD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_ACCTBALD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_POSITD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_POSDELTA', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'SOURCE_PATH_SECMAST', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP)
+
 ;
 
 
 
 
 select * from metadata.PipelineConfiguration
-where PipelineKey = 'MAINTENANCE_AIRFLOW_LOG_CLEANUP'
+where PipelineKey = 'COPY_NFS'
 ;
 
 

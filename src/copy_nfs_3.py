@@ -19,11 +19,10 @@ if True: # Set to False for Debugging
 else:
     args = {
         'pipelinekey': 'COPY_NFS',
-        'remote_path_raa': r'C:\myworkdir\NFS',
-        'remote_path_spf': r'C:\myworkdir\NFS',
-        'source_path_name_and_address': r'C:\myworkdir\Shared\NFS-CA',
-        'source_path_position': r'C:\myworkdir\Shared\NFS-ASSETS',
-        'source_path_activity': r'C:\myworkdir\Shared\NFS-ASSETS',
+        'remote_path': r'C:\myworkdir\NFS',
+        'source_path_nabase': r'C:\myworkdir\Shared\NFS-CA',
+        'source_path_positd': r'C:\myworkdir\Shared\NFS-ASSETS',
+        'source_path_actvyd': r'C:\myworkdir\Shared\NFS-ASSETS',
         }
 
 
@@ -41,80 +40,60 @@ from modules3.common_functions import catch_error, data_settings, logger, mark_e
 from modules3.nfs_header import headerrecordclientid_map
 
 
-# %% Parameters
 
-file_name_map = {
-    'NABASE': 'name_and_address',
-    'POSITD': 'position',
-    'ACTVYD': 'activity',
-}
+# %% Parameters
 
 
 
 # %% Copy files and folders to the new location
 
 @catch_error(logger)
-def copy_files(firm:str, headerrecordclientid:str, firm_remote_path:str):
+def copy_files():
     """
     Copy files and folders to the new location
     """
-    if not os.path.isdir(firm_remote_path):
-        logger.warning(f'Not a folder path: {firm_remote_path}')
+    if not data_settings.remote_path:
+        logger.warning('Remote path does not exist')
         return
 
-    logger.info({
-        'firm': firm,
-        'headerrecordclientid': headerrecordclientid,
-        'firm_remote_path': firm_remote_path,
-        })
+    if not os.path.isdir(data_settings.remote_path):
+        logger.warning(f'Not a folder path: {data_settings.remote_path}')
+        return
 
-    allowed_files = dict()
-    for k, v in file_name_map.items():
-        if k.upper()=='NABASE':
-            allowed_files = {**allowed_files, '_'.join([headerrecordclientid, k]):v}
-        else:
-            allowed_files = {**allowed_files, k:v}
-
-    for file_name in os.listdir(firm_remote_path):
-        remote_file_path = os.path.join(firm_remote_path, file_name)
+    for file_name in os.listdir(data_settings.remote_path):
+        remote_file_path = os.path.join(data_settings.remote_path, file_name)
         if os.path.isfile(remote_file_path):
             file_name_noext, file_ext = os.path.splitext(file_name)
 
-            if file_name_noext not in allowed_files: continue
+            if '_' not in file_name_noext: continue
+            _index = file_name_noext.index('_')
+            headerrecordclientid = file_name_noext[:_index].upper()
+            file_name_no_firm_no_ext = file_name_noext[_index+1:].upper()
+
+            if headerrecordclientid not in headerrecordclientid_map:
+                logger.warning(f'Unknown headerrecordclientid: {remote_file_path}')
+                continue
 
             if file_ext.lower() != '.dat':
                 logger.warning(f'Not a .DAT file, not copying: {remote_file_path}')
                 continue
 
-            source_path_table = 'source_path_' + allowed_files[file_name_noext]
+            firm_name = headerrecordclientid_map[headerrecordclientid]
+
+            source_path_table = 'source_path_' + file_name_no_firm_no_ext.lower()
             if not hasattr(data_settings, source_path_table):
-                logger.warning(f'{source_path_table} is not defined in SQL PipelineConfig')
+                logger.warning(f'{source_path_table} is not defined in SQL PipelineConfig for {remote_file_path}')
                 continue
 
-            source_path = os.path.join(getattr(data_settings, source_path_table), firm)
+            source_path = os.path.join(getattr(data_settings, source_path_table), firm_name)
 
-            relative_copy_file(remote_path=firm_remote_path, dest_path=source_path, remote_file_path=remote_file_path)
+            relative_copy_file(remote_path=data_settings.remote_path, dest_path=source_path, remote_file_path=remote_file_path)
 
-    logger.info(f'Finished copying files for firm: {firm}')
-
-
-
-# %% Copy Files per firm
-
-@catch_error(logger)
-def copy_files_per_firm():
-    """
-    Copy Files per firm
-    """
-    remote_paths = collect_keys_from_config(prefix='remote_path_', uppercase_key=True)
-
-    for firm, firm_remote_path in remote_paths.items():
-        headerrecordclientid = [k for k, v in headerrecordclientid_map.items() if v.upper()==firm.upper()][0].upper()
-        copy_files(firm=firm, headerrecordclientid=headerrecordclientid, firm_remote_path=firm_remote_path)
+    logger.info(f'Finished copying all files')
 
 
 
-copy_files_per_firm()
+copy_files()
 
 
 
