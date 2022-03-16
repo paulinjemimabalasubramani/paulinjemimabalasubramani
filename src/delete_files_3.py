@@ -19,7 +19,7 @@ if True: # Set to False for Debugging
 else:
     args = {
         'pipelinekey': 'ASSETS_MIGRATE_ALBRIDGE_WFS',
-        'delete_files_after': '1',
+        'delete_files_after': 'TRUE',
         'source_path': r'C:\myworkdir\Shared\ALBRIDGE\WFS',
         }
 

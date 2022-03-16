@@ -129,8 +129,8 @@ def extract_data_from_finra_file_path(file_path:str, firm_crd_number:str):
         assert len(sp)==3 or (len(sp)==4 and sp[1].upper()==finra_individual_delta_name.upper())
 
         ans['table_name'] = ans['table_name'].lower()
-    except:
-        logger.warning(f'Cannot parse file name: {file_path}')
+    except Exception as e:
+        logger.warning(f'Cannot parse file name: {file_path}. {str(e)}')
         return
 
     return ans

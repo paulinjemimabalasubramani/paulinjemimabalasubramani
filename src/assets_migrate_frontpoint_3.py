@@ -125,8 +125,8 @@ def select_files():
                 year, month, day = file_name_list[2], file_name_list[3], file_name_list[4]
                 try:
                     key_datetime = datetime.strptime('-'.join([year, month, day]), r'%Y-%m-%d')
-                except:
-                    logger.warning(f'Invalid Date Format: {file_path}')
+                except Exception as e:
+                    logger.warning(f'Invalid Date Format: {file_path}. {str(e)}')
                     continue
 
             if file_meta_exists_for_select_files(file_path=file_path): continue
@@ -169,8 +169,8 @@ def extract_frontpoint_file_meta(file_path:str, zip_file_path:str=None):
     year, month, day = file_name_list[2], file_name_list[3], file_name_list[4]
     try:
         key_datetime = datetime.strptime('-'.join([year, month, day]), r'%Y-%m-%d')
-    except:
-        logger.warning(f'Cannot parse datetime for file: {file_path}')
+    except Exception as e:
+        logger.warning(f'Cannot parse datetime for file: {file_path}. {str(e)}')
         return
 
     sequence_number = file_name_list[5].lower()
