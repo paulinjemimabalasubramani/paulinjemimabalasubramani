@@ -415,17 +415,19 @@ def process_lines_activity(ftarget, lines:list, header_info:dict, schema, is_fir
 
 # %% Process all lines belonging to a single record
 
+process_lines_map = {
+    'name_and_address': process_lines_name_and_address,
+    'position': process_lines_position,
+    'activity': process_lines_activity,
+}
+
+
+
 @catch_error(logger)
 def process_lines(ftarget, lines:list, header_info:dict, schema, is_first_line:bool):
     """
     Process all lines belonging to a single record
     """
-    process_lines_map = {
-        'name_and_address': process_lines_name_and_address,
-        'position': process_lines_position,
-        'activity': process_lines_activity,
-    }
-
     process_lines_map[header_info['table_name_no_firm']](ftarget=ftarget, lines=lines, header_info=header_info, schema=schema, is_first_line=is_first_line)
 
 
@@ -451,7 +453,19 @@ def process_single_fwf(source_file_path:str):
     logger.info(f'Processing {source_file_path}')
 
     header_info = get_header_info(file_path=source_file_path)
+    if not header_info:
+        logger.warning(f'Unknown header_info. Skipping file {source_file_path}')
+        return
+
+    if header_info['table_name_no_firm'] not in process_lines_map:
+        logger.warning(f"Unknown Table Name: {header_info['table_name_no_firm']} -> Skipping")
+        return
+
     schema, header_schema, trailer_schema = get_nfs_schema(table_name_no_firm=header_info['table_name_no_firm'])
+
+    if not schema:
+        logger.warning(f'Could not retrieve schema for {source_file_path} -> Skipping')
+        return
 
     if data_settings.key_datetime > header_info['key_datetime']:
         logger.info(f'Skipping file due to older key_datetime: {source_file_path}')
