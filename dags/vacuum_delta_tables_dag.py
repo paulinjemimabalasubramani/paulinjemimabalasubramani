@@ -49,9 +49,9 @@ with DAG(
          jars = jars,
          conn_id = "spark_default",
          num_executors = 2,
-         executor_cores = 2,
-         executor_memory = "8G",
-         verbose = 1,
+         #executor_cores = 2,
+         #executor_memory = "8G",
+         #verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = None,
          dag = dag
