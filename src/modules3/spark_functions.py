@@ -80,7 +80,7 @@ def create_spark():
     Initiate a new spark session
     """
     def add_from_data_settings(spark, data_settings_name, spark_config_name):
-        if hasattr(data_settings, data_settings_name):
+        if hasattr(data_settings, data_settings_name) and getattr(data_settings, data_settings_name):
             data_settings_value = str(getattr(data_settings, data_settings_name))
             logger.info(f'Using {data_settings_name}: {data_settings_value}')
             spark = spark.config(spark_config_name, data_settings_value)
