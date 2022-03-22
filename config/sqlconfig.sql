@@ -185,6 +185,16 @@ VALUES
 ('METRICS_MIGRATE_ASSETS_RAA', 'SQL_FILE_HISTORY_TABLE', 'metrics_assets_file_history3', 'System', CURRENT_TIMESTAMP),
 
 
+INSERT INTO metadata.PipelineConfiguration 
+(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
+VALUES
+('METRICS_MIGRATE_ASSETS_RAA', 'OUTPUT_LOG_PATH', '/opt/airflow/ingestion/logs', 'System', CURRENT_TIMESTAMP),
+('METRICS_MIGRATE_ASSETS_RAA', 'OUTPUT_DDL_PATH', '/opt/airflow/ddl', 'System', CURRENT_TIMESTAMP),
+('METRICS_MIGRATE_ASSETS_RAA', 'TEMPORARY_FILE_PATH', '/opt/airflow/temp', 'System', CURRENT_TIMESTAMP),
+('METRICS_MIGRATE_ASSETS_RAA', 'APP_DATA_PATH', '/opt/airflow/appdata', 'System', CURRENT_TIMESTAMP),
+
+
+
 
 ('METRICS_MIGRATE_ASSETS_WFS', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
 ('METRICS_MIGRATE_ASSETS_WFS', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
