@@ -311,13 +311,6 @@ def read_csv(spark, file_path:str):
     with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as f:
         HEADER = f.readline()
 
-
-    print('Printing HEADER:')
-    print(HEADER)
-    print(f'Length of file_path: {len(file_path)}')
-    print(file_path[:7])
-
-
     delimiter = '|' if '|' in HEADER else ','
 
     csv_table = (spark.read # https://github.com/databricks/spark-csv
