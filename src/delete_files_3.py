@@ -52,10 +52,13 @@ def delete_files():
     """
     if not hasattr(data_settings, 'delete_files_after') or data_settings.delete_files_after.upper()!='TRUE':
         logger.info('DELETE_FILES_AFTER config is not enabled - Skipping Delete')
-    elif not os.path.isdir(data_settings.source_path):
+        return
+
+    if not os.path.isdir(data_settings.source_path):
         logger.info(f'Directory {data_settings.source_path} is not found - Skipping Delete')
-    else:
-        logger.info(f'Deleting files from {data_settings.source_path}')
+        return
+
+    logger.info(f'Deleting files from {data_settings.source_path}')
 
     for root, dirs, files in os.walk(data_settings.source_path):
         for file_name in files:
