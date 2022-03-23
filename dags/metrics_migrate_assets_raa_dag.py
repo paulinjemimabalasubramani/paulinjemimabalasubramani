@@ -26,20 +26,21 @@ default_args = {
     'depends_on_past': False,
 }
 
-src_path = '/opt/airflow/ingestion/src'
+src_path = '/opt/EDIP/ingestion/src'
 
 
 
 # %% Get Jars
 
-jars_path = '/opt/airflow/ingestion/drivers'
+jars_path = '/opt/EDIP/ingestion/drivers'
 
 jars = []
 
-for jar_file in os.listdir(jars_path):
-    full_jar_path = os.path.join(jars_path, jar_file)
-    if os.path.isfile(full_jar_path):
-        jars.append(full_jar_path)
+if os.path.isdir(jars_path):
+    for jar_file in os.listdir(jars_path):
+        full_jar_path = os.path.join(jars_path, jar_file)
+        if os.path.isfile(full_jar_path):
+            jars.append(full_jar_path)
 
 jars = ','.join(jars)
 
