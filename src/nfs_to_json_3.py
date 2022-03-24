@@ -257,11 +257,12 @@ def process_lines_name_and_address(ftarget, lines:list, header_info:dict, schema
                 record['firm'] = firm
                 record['branch'] = branch
                 record['accountnumber'] = account_number
-            else:
-                if fba != (firm, branch, account_number):
-                    raise ValueError(f'Values {(firm, branch, account_number)} in record {record_number} does not Match record 101 data {fba}')
 
         if standard_record_number == '900': continue # record_number 900 is empty - ignore
+
+        if fba != (firm, branch, account_number):
+            logger.warning(f'Values {(firm, branch, account_number)} in record {record_number} does not match record 101 data {fba}')
+            continue
 
         line_schema = schema[(standard_record_number, record_segment)]
         line_fields = dict()
