@@ -63,8 +63,8 @@ with DAG(
          jars = jars,
          conn_id = "spark_default",
          num_executors = spark_executor_instances,
-         #executor_cores = 4,
-         #executor_memory = "16G",
+         executor_cores = 4,
+         executor_memory = "16G",
          #verbose = 1,
          conf = {"spark.master": spark_master},
          application_args = [
