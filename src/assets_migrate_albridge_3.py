@@ -234,6 +234,7 @@ def extract_albridge_file_meta(file_path:str, zip_file_path:str=None):
 def create_table_from_albridge_file(file_meta:dict):
     file_schema = schema[file_meta['file_type']]
     text_file = read_text(spark=spark, file_path=file_meta['file_path'])
+    if not text_file: return None, None
 
     text_file = (text_file
         .where(col('value').substr(0, 2)==lit('D|'))

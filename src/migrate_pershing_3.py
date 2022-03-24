@@ -298,6 +298,7 @@ def create_table_from_fwt_file(file_meta:dict, key_column_names:list):
     if not schema: return
 
     text_file = read_text(spark=spark, file_path=data_file_path)
+    if not text_file: return
 
     tables = generate_tables_from_fwt(text_file=text_file, schema=schema, table_name=table_name)
     tables = union_tables_per_record(tables=tables)

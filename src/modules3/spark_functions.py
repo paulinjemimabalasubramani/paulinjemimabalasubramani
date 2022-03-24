@@ -191,6 +191,10 @@ def read_sql(spark, schema:str, table_name:str, database:str, server:str, user:s
             .load()
         )
 
+    if sql_table.rdd.isEmpty():
+        logger.warning(f'SQL table is empty. Skipping {database}.{sql_table_name}')
+        return
+
     return sql_table
 
 
@@ -251,6 +255,10 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
         .option(dbtable, table_name) \
         .load()
 
+    if table.rdd.isEmpty():
+        logger.warning(f'Snowflake table is empty. Skipping {database}.{schema}.{table_name}')
+        return
+
     logger.info('Finished Reading from Snowflake')
     return table
 
@@ -276,12 +284,14 @@ def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
     if schema:
         xml_table = xml_table.schema(schema=schema)
 
-    xml_table_load = xml_table.load(file_path)
+    xml_table = xml_table.load(file_path)
 
-    if is_pc: xml_table_load.show(5)
+    if xml_table.rdd.isEmpty():
+        logger.warning(f'XML file is empty. Skipping {file_path}')
+        return
 
     logger.info('Finished reading XML file')
-    return xml_table_load
+    return xml_table
 
 
 
@@ -328,10 +338,12 @@ def read_csv(spark, file_path:str):
         .load(file_path)
     )
 
+    if csv_table.rdd.isEmpty():
+        logger.warning(f'CSV file is empty. Skipping {file_path}')
+        return
+
     csv_table = remove_column_spaces(table=csv_table)
     csv_table = trim_string_columns(table=csv_table)
-
-    if is_pc: csv_table.show(5)
 
     logger.info('Finished reading CSV file')
     return csv_table
@@ -352,9 +364,12 @@ def read_text(spark, file_path:str):
         .load(file_path)
     )
 
+    if text_file.rdd.isEmpty():
+        logger.warning(f'Text file is empty. Skipping {file_path}')
+        return
+
     logger.info('Finished reading text file')
     return text_file
-
 
 
 
@@ -372,6 +387,10 @@ def read_json(spark, file_path:str):
         .option('multiLine', 'true')
         .load(file_path)
     )
+
+    if json_table.rdd.isEmpty():
+        logger.warning(f'JSON file is empty. Skipping {file_path}')
+        return
 
     logger.info('Finished reading JSON file')
     return json_table
