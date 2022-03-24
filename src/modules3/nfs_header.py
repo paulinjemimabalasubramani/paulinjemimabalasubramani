@@ -5,7 +5,7 @@ Common Library for extracting data from NFS files header.
 
 # %% Import Libraries
 
-import re
+import os, re
 
 from collections import defaultdict
 from datetime import datetime
@@ -97,7 +97,8 @@ def get_header_info(file_path:str):
         logger.warning(f"Cannot parse transmissioncreationdate: {header_info['transmissioncreationdate']}. {str(e)}")
         return
 
-    header_info['target_file_name'] = header_info['table_name'] + '_' + header_info['key_datetime'].strftime(json_file_date_format) + json_file_ext
+    file_name_noext = os.path.splitext(os.path.basename(file_path))[0].replace('.', '_')
+    header_info['target_file_name'] = file_name_noext + '.' + header_info['table_name'] + '_' + header_info['key_datetime'].strftime(json_file_date_format) + json_file_ext
 
     logger.info(header_info)
     return header_info

@@ -122,7 +122,15 @@ def extract_json_file_meta(file_path:str, zip_file_path:str=None):
         logger.warning(f'Could not find date stamp for the file or invalid file name: {file_path}')
         return
     file_date_str = file_name_noext[date_loc:]
-    table_name = file_name_noext[:date_loc-1]
+
+    file_name_noext_split = file_name_noext[:date_loc-1].split('.')
+    if len(file_name_noext_split) != 2:
+        logger.warning(f'Invalid file_name_noext_split: {file_path}')
+        return
+    table_name = file_name_noext_split[1].lower().strip()
+    if not table_name:
+        logger.warning(f'table_name not found: {file_path}')
+        return
     table_name = add_firm_to_table_name(table_name=table_name)
 
     try:

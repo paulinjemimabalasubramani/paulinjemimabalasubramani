@@ -196,6 +196,7 @@ def extract_frontpoint_file_meta(file_path:str, zip_file_path:str=None):
 @catch_error(logger)
 def create_table_from_frontpoint_file(file_path:str, file_schema):
     text_file = read_text(spark=spark, file_path=file_path)
+    if not text_file: return
 
     text_file = (text_file
         .withColumn('value', F.split(col('value'), data_separator))

@@ -477,13 +477,13 @@ def process_single_fwf(source_file_path:str):
         logger.info(f'Already ingested file: {source_file_path} -> skipping')
         return
 
+    is_first_line = True
     with open(source_file_path, mode='rt', encoding='ISO-8859-1', errors='ignore') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
             ftarget.write('[\n')
 
             first = file_has_header
             lines = []
-            is_first_line = True
             for line in fsource:
                 if first:
                     process_custom_line(ftarget=ftarget, line=line, header_info=header_info, custom=HEADER_record)
@@ -496,12 +496,22 @@ def process_single_fwf(source_file_path:str):
                     lines.append(line)
 
             if file_has_trailer:
-                if len(lines)>1: process_lines(ftarget=ftarget, lines=lines[:-1], header_info=header_info, schema=schema, is_first_line=is_first_line)
+                if len(lines)>1:
+                    process_lines(ftarget=ftarget, lines=lines[:-1], header_info=header_info, schema=schema, is_first_line=is_first_line)
+                    is_first_line = False
                 process_custom_line(ftarget=ftarget, line=lines[-1], header_info=header_info, custom=TRAILER_record)
-            else:
+            elif len(lines)>0:
                 process_lines(ftarget=ftarget, lines=lines, header_info=header_info, schema=schema, is_first_line=is_first_line)
+                is_first_line = False
 
             ftarget.write('\n]')
+
+    if is_first_line:
+        logger.warning(f'No Data in the file {source_file_path} -> Skipping conversion to JSON and deleting {target_file_path}.')
+        os.remove(target_file_path)
+        return
+
+    logger.info(f'Finished converting file {source_file_path} to JSON file {target_file_path}')
 
 
 
