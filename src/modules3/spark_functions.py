@@ -99,6 +99,8 @@ def create_spark():
         .config('spark.sql.extensions', 'io.delta.sql.DeltaSparkSessionExtension')
         .config('spark.sql.catalog.spark_catalog', 'org.apache.spark.sql.delta.catalog.DeltaCatalog')
         .config('spark.databricks.delta.vacuum.parallelDelete.enabled', 'true')
+        .config('spark.executor.heartbeatInterval', '250000')
+        .config('spark.network.timeout', '400000')
         )
 
     spark_data_settings = {
