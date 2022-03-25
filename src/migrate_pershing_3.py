@@ -156,8 +156,9 @@ def add_schema_fields_to_table(tables, table, schema, record_name:str, condition
     tables[(record_name, conditional_changes)] = table
 
     if is_pc:
-        print(f'\n\nrecord_name: {record_name}, conditional_changes: {conditional_changes}\n')
-        if False: table.show(5)
+        print(f'\n\nSchema: {schema}')
+        print(f'\n\nadd_schema_fields_to_table record_name: {record_name}, conditional_changes: {conditional_changes}\n')
+        if True: table.show(5)
         print('\n')
 
 
@@ -188,6 +189,11 @@ def generate_tables_from_fwt(
     """
     Generate list of sub-tables from a fixed width table file based on record_name and conditional_changes
     """
+    if table_name.lower().endswith('expanded_sec_desc'):
+        start_ = start_line_pos_start - 2
+    else: 
+        start_ = start_line_pos_start
+
     tables = dict()
     cv = col('value').substr
 
@@ -198,10 +204,10 @@ def generate_tables_from_fwt(
         if is_pc: print(f'Record Name: {record_name}\n')
         if record_name.upper() in [schema_header_str, schema_trailer_str]: continue
 
-        table = text_file.where((cv(start_line_pos_start, len(record_name))==lit(record_name)) & (cv(1, len(bulk_id_header))!=lit(bulk_id_header)) & (cv(1, len(bulk_id_trailer))!=lit(bulk_id_trailer)))
+        table = text_file.where((cv(start_, len(record_name))==lit(record_name)) & (cv(1, len(bulk_id_header))!=lit(bulk_id_header)) & (cv(1, len(bulk_id_trailer))!=lit(bulk_id_trailer)))
 
         if is_pc:
-            if False: table.show(5, False)
+            if True: table.show(5, False)
             print('\n')
 
         if record_name in special_records:
@@ -209,6 +215,12 @@ def generate_tables_from_fwt(
             add_sub_tables_to_table(tables=tables, schema=schema, sub_tables=sub_tables, record_name=record_name)
         else:
             add_schema_fields_to_table(tables=tables, table=table, schema=schema, record_name=record_name)
+
+    if is_pc:
+        print('\n\ngenerate_tables_from_fwt')
+        for (record_name, conditional_changes), table in tables.items():
+            print(f'\n\n\nrecord_name: {record_name}, conditional_changes: {conditional_changes}\n')
+            table.show(5)
 
     return tables
 
@@ -229,6 +241,12 @@ def union_tables_per_record(tables):
         else:
             table_per_record[record_name] = table
 
+    if is_pc:
+        print('\n\nunion_tables_per_record')
+        for record_name, table in tables.items():
+            print(f'\n\n\nrecord_name: {record_name}\n')
+            table.show(5)
+
     return table_per_record
 
 
@@ -247,6 +265,12 @@ def combine_rows_into_array(tables, key_column_names:list):
                 .groupBy(key_column_names)
                 .agg(F.collect_list('all_columns').alias(f'record_{record_name}'))
                 )
+
+    if is_pc:
+        print('\n\ncombine_rows_into_array')
+        for record_name, table in tables.items():
+            print(f'\n\n\nrecord_name: {record_name}\n')
+            table.show(5)
 
     return tables
 
@@ -299,6 +323,9 @@ def create_table_from_fwt_file(file_meta:dict, key_column_names:list):
 
     text_file = read_text(spark=spark, file_path=data_file_path)
     if not text_file: return
+
+    if is_pc:
+        text_file.show(5)
 
     tables = generate_tables_from_fwt(text_file=text_file, schema=schema, table_name=table_name)
     tables = union_tables_per_record(tables=tables)
@@ -415,7 +442,7 @@ def process_pershing_file(file_meta):
     dml_type = 'I' if file_meta['is_full_load'] else 'U'
     table = add_elt_columns(table=table, file_meta=file_meta, dml_type=dml_type)
 
-    if is_pc and False: table.show(5)
+    if is_pc and True: table.show(5)
 
     return {file_meta['table_name']: (table, key_column_names)}
 
