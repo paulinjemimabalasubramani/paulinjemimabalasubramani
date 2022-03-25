@@ -1,609 +1,167 @@
 ﻿record_name,position,picture,type,conditional_changes,field_name,scale,description,notes
-HEADER,001 - 018,X(18),AN,,b_of_pershing,,Literally “BOF                           PERSHING     ” (beginning of Pershing file),
-HEADER,019 - 036,X(18),AN,,expanded_sec_desc,,Literally “EXPANDED     SEC     DESC     ”,
-HEADER,037 - 046,X(10),AN,,data_of,,Literally “     DATA     OF         ”,
-HEADER,047 - 056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
-HEADER,057 - 067,X(11),AN,,to_remote,,Literally “     TO     REMOTE     ”,
-HEADER,068 - 071,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
-HEADER,072 - 085,X(14),AN,,begins_here,,Literally “     BEGINS     HERE         ”,
-HEADER,086 - 095,X(10),AN,,run_date,,RUN DATE = “MM/DD/CCYY”,
-HEADER,096 - 096,X(01),AN,,not_used,,Not Used,
-HEADER,097 - 104,X(08),AN,,run_time,,RUN TIME = “HH:MM:SS”,
-HEADER,105 - 118,X(14),AN,,not_used,,Not Used,
-HEADER,119 - 127,X(09),AN,,refreshed_or_updated,,Indicates if the file is REFRESHED or UPDATED; literally “REFRESHED” or “UPDATED         ”,
-HEADER,128 - 131,X(04),AN,,not_used,,Not Used,
-HEADER,132 - 132,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates the end of the header record,
-A,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “A”,
-A,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-A,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-A,017 - 017,X(01),AN,,security_type,,"SECURITY TYPE
-see Appendix B for values",
-A,018 - 018,X(01),AN,,security_modifier,,"SECURITY MODIFIER
-see Appendix B for values",
-A,019 - 019,X(01),AN,,security_calculation_code,,"SECURITY CALCULATION CODE
-see Appendix B",
-A,020 - 020,X(01),AN,,primary_exchange,,"PRIMARY EXCHANGE
-values include:
-“1” = New York Stock Exchange (NYSE)
-“2” = NYSE ALT (formerly AMEX)
-“3” = Philadelphia (PHIL)
-“4” = Over the Counter (OTC)
-“5” = Regional/Foreign
-“6” = Chicago Exchange (CHX)
-“7” = Chicago Board Options Exchange (CBOE)
-“8” = Over the Counter/NSCC, OTC/NASDAQ
-“9” = NYSE Arca (formerly PSE)
-“B” = BATS Exchange
-“E” = Investors Exchange (IEXG) (effective 3rd Q 2019)",
-A,021 - 027,s9(04)v9(03),N,,coupon_rate_for_fixed_income_securities_or_indicated_dividend_for_equities,3,COUPON RATE FOR FIXED INCOME SECURITIES or INDICATED DIVIDEND FOR EQUITIES,FOR FIXED INCOME SECURITIES or INDICATED DIVIDEND FOR EQUITIES
-A,028 - 034,9(07),N,,maturity_option_expire_date,,"MATURITY/OPTION EXPIRE DATE, in CCYYDDD format",
-A,035 - 043,X(09),AN,,underlying_security_cusip,,UNDERLYING SECURITY CUSIP,
-A,044 - 052,s9(05)v9(04),N,,first_call_price_for_fixed_income_or_strike_price_for_option,4,FIRST CALL PRICE FOR FIXED INCOME or STRIKE PRICE FOR OPTION,
-A,053 - 061,s9(05)v9(04),N,,first_par_call_price_for_fixed_income_or_units_for_option,4,FIRST PAR CALL PRICE FOR FIXED INCOME or UNITS FOR OPTION,
-A,062 - 071,X(10),AN,,primary_symbol,,PRIMARY SYMBOL,
-A,072 - 073,X(02),AN,,interest_frequency,,INTEREST FREQUENCY; see Appendix A for values,
-A,074 - 074,X(01),AN,,bond_class,,"BOND CLASS
-values include:
-“     ” = Non-bond
-“1” = Registered
-“2” = Coupon
-“4” = Interchangeable
-“6” = Book Entry Only",
-A,075 - 076,X(02),AN,,first_coupon_day,,FIRST COUPON DAY; values include: 01-31,
-A,077 - 077,X(01),AN,,call_indicator,,"CALL INDICATOR
-values include:
-“     ” = Non-bond
-“C” = Callable
-“E” = Called
-“H” = Prerefunded
-“M” = Matured
-“N” = Not Callable
-“S” = Escrowed to Maturity",
-A,078 - 078,X(01),AN,,put_indicator,,"PUT INDICATOR
-values include:
-“M” = Conditional or Limited Put
-“P” = Mandatory Put
-“1” = One Time Optional Put
-“     ” = Not Applicable",
-A,079 - 085,9(07),N,,next_par_call_date,,"NEXT PAR CALL DATE, in CCYYDDD format",
-A,086 - 092,9(07),N,,prerefunded_date,,"PREREFUNDED DATE, in CCYYDDD format",
-A,093 - 099,9(07),N,,next_premium_call_date,,"NEXT PREMIUM CALL DATE, in CCYYDDD format",
-A,100 - 106,9(07),N,,dated_date_for_fixed_income_or_ex_dividend_date_for_equity,,"DATED DATE FOR FIXED INCOME or EX- DIVIDEND DATE FOR EQUITY, in CCYYDDD format",
-A,107 - 113,9(07),N,,first_coupon_for_fixed_income_or_payable_date_for_equity,,"FIRST COUPON FOR FIXED INCOME or PAYABLE DATE
-FOR EQUITY, in CCYYDDD format",
-A,114 - 120,9(07),N,,for_pershing_internal_use,,For Pershing Internal Use,
-A,121 - 121,X(01),AN,,federal_marginable,,"FEDERAL MARGINABLE INDICATOR
-effective 4th Q 2020, TBA
-values include:
-“Y” = Marginable
-“N” = Not marginable",
-A,122 - 122,X(01),AN,,continuous_net_sett_cns_eligible_code,,"CONTINUOUS NET SETT. (CNS) ELIGIBLE CODE
-values:
-“1” = Eligible
-“     ” = Not Eligible",
-A,123 - 123,X(01),AN,,depository_trust_and_clearing_corporation_dtcc_eligible_code,,"DEPOSITORY TRUST & CLEARING CORPORATION (DTCC) ELIGIBLE CODE
-values include:
-“1” = Eligible
-“     ” = Not Eligible",
-A,124 - 124,X(01),AN,,national_securities_clearing_corporation_nscc_eligible_code,,"NATIONAL SECURITIES CLEARING CORPORATION (NSCC) ELIGIBLE CODE
-values include:
-“1” = Eligible
-“     ” = Not Eligible",
-A,125 - 125,X(01),AN,,foreign_security,,"FOREIGN SECURITY
-values include:
-“     ” = Domestic
-“1” = Foreign
-“2” = Canadian or American Depositary Receipt",
-A,126 - 127,X(02),AN,,second_coupon_day,,SECOND COUPON DAY; values include: 01-31 (only applicable to a semi-annual cycle),
-A,128 - 128,X(01),AN,,dividend_interest_payment_method,,"DIVIDEND/INTEREST PAYMENT METHOD
-values include:
-“     ” = No Announcement
-“3” = Cash
-“5” = Stock
-“7” = Spin-Off
-“8” = Bond Interest",
-A,129 - 131,X(03),AN,,minor_product_code,,MINOR PRODUCT CODE; see Appendix B for values,
-A,132 - 132,X(01),AN,,end_of_record_a,,Literally “X”; indicates the end of record A,
-B,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “B”,
-B,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-B,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-B,017 - 019,X(03),AN,,not_used,,Not Used,
-B,020 - 020,X(01),AN,,etf_indicator,,"ETF INDICATOR
-values include:
-“Y” = Exchange Traded Fund
-“N” = Not Exchange Traded Fund",
-B,021 - 029,s9(05)v9(04),N,,bid_price,4,BID PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
-We encourage you to use Record F for your prices. 
-This field is considerably larger."
-B,030 - 038,s9(05)v9(04),N,,ask_price,4,ASK PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
-We encourage you to use Record F for your prices. 
-This field is considerably larger."
-B,039 - 047,s9(05)v9(04),N,,previous_day_price,4,PREVIOUS DAY PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
-We encourage you to use Record F for your prices. 
-This field is considerably larger."
-B,048 - 056,s9(05)v9(04),N,,latest_price,4,LATEST PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
-We encourage you to use Record F for your prices. 
-This field is considerably larger."
-B,057 - 065,s9(05)v9(04),N,,end_of_month_price,4,END OF MONTH PRICE,"This field contains prices from our legacy system, which are not as robust as the fields found in Record F.
-We encourage you to use Record F for your prices. 
-This field is considerably larger."
-B,066 - 078,9(13),N,,round_lot_quantity,,ROUND LOT QUANTITY,
-B,079 - 079,X(01),AN,,dividend_reinvestment_eligibility_indicator,,"DIVIDEND REINVESTMENT ELIGIBILITY INDICATOR
-(for Mutual Funds please refer to the MFDS file)
-values include:
-“A” = Auto UIT Reinvestment (effective early 2nd Q 2016)
-“D” = DTC reinvestment
-“I” = Inactive
-“R” = Reinvest eligible
-“     ” = Not reinvest eligible",
-B,080 - 086,9(07),N,,previous_price_date,,"PREVIOUS PRICE DATE, in CCYYDDD format",
-B,087 - 093,9(07),N,,latest_price_date,,"LATEST PRICE DATE, in CCYYDDD format",
-B,094 - 100,9(07),N,,end_of_month_price_date,,"END OF MONTH PRICE DATE, in CCYYDDD format",
-B,101 - 107,9(07),N,,record_date,,"RECORD DATE, in CCYYDDD format",
-B,108 - 108,X(01),AN,,fundvest_indicator,,"FUNDVEST INDICATOR
-values include:
-“Y” = Yes; participates in FundVest program
-“N” = No; does not participate in FundVest program
-“     ” = Does not participate in FundVest program or N/A",
-B,109 - 111,X(03),AN,,country_code,,"COUNTRY CODE
-see Appendix Q for values",
-B,112 - 115,X(04),AN,,standard_and_poors_rating,,"STANDARD & POORS RATING
-values can be found from S&P website; 
-effective mid-March, 2012, values in this field will be displayed for customer destinations and only if the customer has a re-distribution agreement with S&P noted in Pershing’s BPAI application; 
-Pershing-specific internal values include:
-“007    ” = Non-rated
-“008    ” = No ratings available","Values can be found from S&P website; effective mid-March, 2012, values in this field will be displayed for customer destinations and only if the customer has a re-distribution agreement with S&P noted in Pershing’s BPAI application."
-B,116 - 120,X(05),AN,,moodys_rating,,"MOODYS RATING
-values can be found from Moody’s website; 
-Pershing-specific internal values include:
-“007         ” = Non-rated
-“008         ” = No ratings available",
-B,121 - 121,X(01),AN,,bond_sub_class,,"BOND SUB CLASS
-values include:
-“     ” = Normal
-“3” = Bond in Default
-“7” = Bond Trading Flat",
-B,122 - 125,X(04),AN,,restriction_number,,"RESTRICTION INDICATOR
-values include:
-“144A” = SEC Rule 144A
-“UNKN” = Unknown or Not Restricted",
-B,126 - 126,X(01),AN,,trace_indicator,,"TRACE INDICATOR
-values include:
-“Y” = Trace Security
-“N” = Non-Trace Security",
-B,127 - 127,X(01),AN,,new_interest_calculation_code,,"NEW INTEREST CALCULATION CODE
-(replacing Rec. A, pos. 121)
-values include:
-“     ” = Not Applicable
-“0” = Manually pre-figure coupon interest, if appropriate; otherwise, N/A
-“1” = 30/360
-“2” = 30/365
-“3” = 30/Actual
-“4” = Actual/360
-“5” = Actual/365
-“6” = Actual/Actual
-“A” = 30/360 ISMA (Int’l Securities Market Association)",
-B,128 - 131,X(04),AN,,standard_industrial_classification_sic_code,,STANDARD INDUSTRIAL CLASSIFICATION (SIC) CODE,
-B,132 - 132,X(01),AN,,end_of_record_b,,Literally “X”; indicates the end of record B,
-C,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “C”,
-C,002 - 007,9(06),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
-begins with “000001”",
-C,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-C,017 - 017,X(01),AN,,state_tax_indicator,,"STATE TAX INDICATOR
-values include:
-“Y” = State taxable
-“N” = Not state taxable
-“U” = Unknown
-“    ” = Not applicable",
-C,018 - 018,X(01),AN,,federal_taxable_status_indicator,,"FEDERAL TAXABLE STATUS INDICATOR
-values include:
-“Y” = Subject to Federal income tax
-“N” = Not subject to Federal income tax
-“U” = Unknown
-“    ” = Not applicable","The following two fields break out the characteristics of the information in position 131, to be retired TBA"
-C,019 - 019,X(01),AN,,alt_minimum_tax_amt_indicator,,"ALT. MINIMUM TAX (AMT) INDICATOR
-values include:
-“Y” = Subject to Alternative Minimum Tax
-“N” = Not subject to Alternative Minimum Tax
-“U” = Unknown
-“    ” = Not applicable","The following two fields break out the characteristics of the information in position 131, to be retired TBA"
-C,020 - 020,X(01),AN,,regulated_investment_company_ric_indicator,,"REGULATED INVESTMENT COMPANY (RIC) INDICATOR
-applies only to Equities, Mutual Funds and UITs
-values include:
-“Y” = Elected to be treated as a Regulated Inv. Company
-“N” = Elected not to be treated as a Regulated Inv. Company
-“U” = Unknown
-“    ” = Not applicable",
-C,021 - 021,X(01),AN,,number_of_description_lines,,NUMBER OF DESCRIPTION LINES,
-C,022 - 041,X(20),AN,,security_description_line_one,,SECURITY DESCRIPTION LINE 1,
-C,042 - 061,X(20),AN,,security_description_line_two,,SECURITY DESCRIPTION LINE 2,
-C,062 - 081,X(20),AN,,security_description_line_three,,SECURITY DESCRIPTION LINE 3,
-C,082 - 101,X(20),AN,,security_description_line_four,,SECURITY DESCRIPTION LINE 4,
-C,102 - 121,X(20),AN,,security_description_line_five,,SECURITY DESCRIPTION LINE 5,
-C,122 - 123,X(02),AN,,user_cusip_identifier,,"USER CUSIP IDENTIFIER
-values include:
-“UR” = Universally Recognized
-“UD” = User-Defined (User CUSIP)",
-C,124 - 130,9(07),N,,price_purge_date,,"PRICE PURGE DATE, in CCYYDDD format",
-C,131 - 131,X(01),AN,,taxable_indicator,,"TAXABLE INDICATOR
-values include ( pos. 18 & 19, will break out the data into two fields - to be retired, TBA):
-“Y” = Security is taxable
-“N” = Security is not taxable
-“A” = Security is subject to Alternative Min. Tax (AMT) Rate",
-C,132 - 132,X(01),AN,,the_end_of_record_c,,Literally “X”; indicates the end of record C,
-D,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “D”,
-D,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-D,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-D,017 - 020,X(04),AN,,not_used,,Not Used,
-D,021 - 040,X(20),AN,,security_description_line_six,,SECURITY DESCRIPTION LINE 6,
-D,041 - 049,s9(05)v9(04),N,,put_price,4,PUT PRICE,
-D,050 - 056,9(07),N,,put_date,,"PUT DATE, in CCYYDDD format",
-D,057 - 065,s9(05)v9(04),N,,second_premium_call_price,4,SECOND PREMIUM CALL PRICE,
-D,066 - 072,9(07),N,,second_premium_call_date,,"SECOND PREMIUM CALL DATE, in CCYYDDD format",
-D,073 - 079,9(07),N,,called_date,,"CALLED DATE, in CCYYDDD format (security that has been called)",
-D,080 - 087,X(08),AN,,pool_number,,POOL NUMBER,
-D,088 - 097,s9(02)v9(08),N,,factor,4,"FACTOR; displays the percentage value applied to a mortgage- backed pool, inflation protected bond, or other type of security to obtain a current amortized amount",
-D,098 - 104,9(07),N,,factor_date,,"FACTOR DATE, in CCYYDDD format",
-D,105 - 114,s9(02)v9(08),N,,previsous_factor,8,PREVIOUS FACTOR,
-D,115 - 121,9(07),N,,previsous_factor_date,,"PREVIOUS FACTOR DATE, in CCYYDDD format",
-D,122 - 122,X(01),AN,,variable_rate_indicator,,"VARIABLE RATE INDICATOR
-values include:
-“Y” = Variable Rate Security
-“N” = Not a Variable Rate Security
-“     ” = Not Applicable",
-D,123 - 129,9(07),N,,next_last_coupon_date,,"NEXT/LAST COUPON DATE, in CCYYDDD format",
-D,130 - 130,X(01),AN,,structured_product_indicator,,"STRUCTURED PRODUCT INDICATOR
-effective 12/01/2017;
-values include:
-“Y” = Structured product
-“N” = Not a structured product",
-D,131 - 131,X(01),AN,,perpetual_bond_indicator,,"PERPETUAL BOND INDICATOR
-values include:
-“Y” = Perpetual Bond
-“N” = Not a Perpetual Bond",
-D,132 - 132,X(01),AN,,the_end_of_record_d,,Literally “X”; indicates the end of record D,
-E,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “E”,
-E,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-E,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-E,017 - 020,X(04),AN,,not_used,,Not Used,
-E,021 - 038,s9(09)v9(09),N,,expanded_first_call_price_for_fixed_income_or_strike_price_for_option,8,EXPANDED FIRST CALL PRICE FOR FIXED INCOME OR STRIKE PRICE FOR OPTION,
-E,039 - 056,s9(09)v9(09),N,,expanded_first_par_call_price_for_fixed_income_or_exercise_quantity_for_option,9,EXPANDED FIRST PAR CALL PRICE FOR FIXED INCOME OR EXERCISE QUANTITY FOR OPTION,
-E,057 - 074,s9(09)v9(09),N,,expanded_put_price,9,EXPANDED PUT PRICE,
-E,075 - 092,s9(09)v9(09),N,,expanded_second_premium_call_price,9,EXPANDED SECOND PREMIUM CALL PRICE,
-E,093 - 124,X(32),AN,,name_of_the_issuer_of_the_security,,NAME OF THE ISSUER OF THE SECURITY,
-E,125 - 127,X(03),AN,,issuing_currency,,"ISSUING CURRENCY; see Appendix “N”, Currency Codes",
-E,128 - 128,X(01),AN,,globally_locked_security_indicator,,"GLOBALLY LOCKED SECURITY INDICATOR
-values include:
-“Y” = Security is Globally Locked
-“N” = Security is not Globally Locked",
-E,129 - 129,X(01),AN,,globally_locked_reason_code,,"GLOBALLY LOCKED REASON CODE
-values include:
-“0” = DTCC applied Global Lock
-“1” = DTCC applied Global Lock - Compliance-related
-“N” = Security not on DTCC",
-E,130 - 130,X(01),AN,,special_purpose_acquisition_company_spac_indicator,,"SPECIAL PURPOSE ACQUISITION COMPANY (SPAC) INDICATOR
-(applies to equity and unit securities); 
-Effective 3RD Q, 2021 TBA
-“Y” = SPAC
-“N” = Not SPAC
-“     ” = Not Applicable",
-E,131 - 131,X(01),AN,,not_used,,Not Used,
-E,132 - 132,X(01),AN,,the_end_of_record_e,,Literally “X”; indicates the end of record E,
-F,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “F”,
-F,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-F,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-F,017 - 020,X(04),AN,,not_used,,Not Used,
-F,021 - 038,s9(09)v9(09),N,,expanded_bid_price,9,EXPANDED BID PRICE,"Please use the prices on this record instead of those displayed in Record B.
-They are larger and can accommodate prices greater than 99,999.99, which record B cannot."
-F,039 - 056,s9(09)v9(09),N,,expanded_ask_price,9,EXPANDED ASK PRICE,"Please use the prices on this record instead of those displayed in Record B.
-They are larger and can accommodate prices greater than 99,999.99, which record B cannot."
-F,057 - 074,s9(09)v9(09),N,,expanded_previous_day_price,9,EXPANDED PREVIOUS DAY PRICE,"Please use the prices on this record instead of those displayed in Record B.
-They are larger and can accommodate prices greater than 99,999.99, which record B cannot."
-F,075 - 092,s9(09)v9(09),N,,expanded_latest_price,9,EXPANDED LATEST PRICE,"Please use the prices on this record instead of those displayed in Record B.
-They are larger and can accommodate prices greater than 99,999.99, which record B cannot."
-F,093 - 110,s9(09)v9(09),N,,expanded_end_of_month_price,9,EXPANDED END OF MONTH PRICE,"Please use the prices on this record instead of those displayed in Record B.
-They are larger and can accommodate prices greater than 99,999.99, which record B cannot."
-F,111 - 127,s9(15)v9(02),N,,contract_share_quantity,2,CONTRACT SHARE QUANTITY,
-F,128 - 131,9(04),N,,year_covered_under_cost_basis_rules,,"YEAR COVERED UNDER COST BASIS RULES
-in CCYY format;
-(effective 10/24/2014) other value includes:
-“0000” = Cost basis date not established",
-F,132 - 132,X(01),AN,,the_end_of_record_f,,Literally “X”; indicates the end of record F,
-G,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “G”,
-G,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-G,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-G,017 - 020,X(04),AN,,not_used,,Not Used,
-G,021 - 038,9(09)v9(09),N,,delta,9,DELTA; the ratio of the change in market price of an option relative to the change in the market price of its underlying instrument,"The following three fields are effective 2nd Q, 2020"
-G,039 - 039,X(01),AN,,delta_sign,,"DELTA SIGN
-values include:
-“+” = Positive Delta
-“-” = Negative Delta
-“     ” = Not Applicable","The following three fields are effective 2nd Q, 2020"
-G,040 - 040,X(01),AN,,delta_value_presence_indicator,,"DELTA VALUE PRESENCE INDICATOR
-values include:
-“Y” = Delta value present for this security
-“N” = Delta value not present for this security
-“     ” = Not Applicable","The following three fields are effective 2nd Q, 2020"
-G,041 - 052,X(12),AN,,not_used,,Not Used,
-G,053 - 064,X(12),AN,,isin_code,,ISIN CODE,
-G,065 - 079,X(15),AN,,issuer_identifier,,ISSUER IDENTIFIER,
-G,080 - 084,X(05),AN,,not_used,,Not Used,
-G,085 - 100,X(16),AN,,symbol_of_the_underlying_security,,SYMBOL OF THE UNDERLYING SECURITY,
-G,101 - 108,X(08),AN,,asset_type,,ASSET TYPE; see Appendix B for values,
-G,109 - 116,X(08),AN,,asset_subtype,,ASSET SUBTYPE; see Appendix B for values,
-G,117 - 124,X(08),AN,,asset_sub_subtype,,ASSET SUB-SUBTYPE; see Appendix B for values,
-G,125 - 127,9(03),N,,payment_day_delays,,PAYMENT DAY DELAYS; number of calendar days,
-G,128 - 131,X(04),AN,,reserved_for_future_rating,,Reserved for future Rating,
-G,132 - 132,X(01),AN,,the_end_of_record_g,,Literally “X”; indicates the end of record G,
-H,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “H”,
-H,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-H,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-H,017 - 020,X(04),AN,,not_used,,Not Used,
-H,021 - 038,9(08)v9(10),N,,exchange_rate_between_denom_curr_and_usd,10,EXCH. RATE BETWEEN DENOM CURR. and USD,
-H,039 - 047,X(09),AN,,underlying_cusip_one,,UNDERLYING CUSIP #1,
-H,048 - 051,X(04),AN,,not_used,,Not Used,
-H,052 - 056,9(05),N,,deliverable_unit_quantity_one,,DELIVERABLE UNIT QUANTITY,
-H,057 - 065,X(09),AN,,underlying_cusip_two,,UNDERLYING CUSIP #2,
-H,066 - 069,X(04),AN,,not_used,,Not Used,
-H,070 - 074,9(05),N,,deliverable_unit_quantity_two,,DELIVERABLE UNIT QUANTITY,
-H,075 - 083,X(09),AN,,underlying_cusip_three,,UNDERLYING CUSIP #3,
-H,084 - 087,X(04),AN,,not_used,,Not Used,
-H,088 - 092,9(05),N,,deliverable_unit_quantity_three,,DELIVERABLE UNIT QUANTITY,
-H,093 - 101,X(09),AN,,underlying_cusip_four,,UNDERLYING CUSIP #4,
-H,102 - 105,X(04),AN,,not_used,,Not Used,
-H,106 - 110,9(05),N,,deliverable_unit_quantity_four,,DELIVERABLE UNIT QUANTITY,
-H,111 - 113,X(03),AN,,annual_dividend_currency_code,,"ANNUAL DIVIDEND CURRENCY CODE, effective 3rd Q, 2016",
-H,114 - 131,9(16)v9(02),N,,outstanding_shares,2,OUTSTANDING SHARES,
-H,132 - 132,X(01),AN,,the_end_of_record_h,,Literally “X”; indicates the end of record H,
-I,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “I”,
-I,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-I,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-I,017 - 020,X(04),AN,,not_used,,Not Used,
-I,021 - 026,X(06),AN,,option_root_id,,OPTION ROOT ID,OCC DATA SET – The following four fields (in position 21 through 41) comprise the OCC DATA SET
-I,027 - 032,9(06),N,,expiration_date,,"EXPIRATION DATE, in YYMMDD format",OCC DATA SET – The following four fields (in position 21 through 41) comprise the OCC DATA SET
-I,033 - 033,X(01),AN,,call_put_indicator,,"CALL/PUT INDICATOR
-values include:
-“B” = Bank Pledge (Call)
-“C” = Call
-“D” = Bank Pledge (Put)
-“E” = Escrow Receipt
-“L” = Letter of Credit (Call)
-“M” = Letter of Credit (Put)
-“P” = Put",OCC DATA SET – The following four fields (in position 21 through 41) comprise the OCC DATA SET
-I,034 - 041,9(05)v9(03),N,,strike_price,3,STRIKE PRICE,OCC DATA SET – The following four fields (in position 21 through 41) comprise the OCC DATA SET
-I,042 - 042,X(01),AN,,fund_type,,"FUND TYPE
-fund is leveraged or short
-values include:
-“L” = Leveraged
-“S” = Short
-“     ” = Undefined or Not Applicable",
-I,043 - 043,X(01),AN,,broad_narrow_indicator,,"BROAD/NARROW INDICATOR
-the underlying index.
-Required to determine margin treatment
-values include:
-“B” = Broad based
-“N” = Narrow based
-“     ” = Undefined or Not Applicable",
-I,044 - 061,9(09)v9(09),N,,leverage_factor,9,LEVERAGE FACTOR; multiple of the performance of the underlying index or benchmark that fund is designed to generate,
-I,062 - 062,X(01),AN,,leverage_factor_sign,,"LEVERAGE FACTOR SIGN
-values include:
-“+” = Positive factor
-“-” = Negative Factor
-“     ” = Not Applicable",
-I,063 - 070,9(08),N,,outstanding_shares_update_date,,"OUTSTANDING SHARES UPDATE DATE, CCYYMMDD",
-I,071 - 086,X(16),AN,,expanded_symbol,,EXPANDED SYMBOL (effective 04/04/2014),
-I,087 - 088,X(02),AN,,state_of_issuance,,"STATE OF ISSUANCE (for Munis)
-see Appendix Q
-additional values include:
-“PH” = Public housing
-“TR” = Multi-state issuer",
-I,089 - 089,X(01),AN,,option_exercise_pricing_model_code,,"OPTION EXERCISE PRICING MODEL CODE
-(effective 11/3/2017)
-values include:
-“A” = American
-“E” = European
-“     ” = Not Applicable or populated",
-I,090 - 097,9(08),N,,first_accrual_date,,"FIRST ACCRUAL DATE, CCYYMMDD (effective 4/4/2014)",
-I,098 - 103,X(06),AN,,tranche_code,,TRANCHE CODE; see Appendix B for values (effective 6/20/14),
-I,104 - 105,X(02),AN,,not_used,,Not Used,
-I,106 - 106,X(01),AN,,worthless_security_indicator,,"WORTHLESS SECURITY INDICATOR
-(effective 02/2015)
-values include:
-“Y” = Security is worthless
-“N” = Security is not worthless",
-I,107 - 114,9(08),N,,uit_termination_date,,"UIT TERMINATION DATE, in CCYYMMDD format",
-I,115 - 122,X(08),AN,,fdic_certification_number,,FDIC CERTIFICATION NUMBER (applies to Certificate of Deposit Securities – update effective 1/22/2021),
-I,123 - 125,X(03),AN,,revenue_stream,,"REVENUE STREAM
-(applies to Municipal Securities only)
-effective late 2nd Q 2019
-values include:
-“DB” = Double barrel
-“GO” = General obligation
-“REV” = Revenue obligation
-“     ” = Not applicable or populated",
-I,126 - 126,X(01),AN,,restricted_marijuana_indicator,,"RESTRICTED MARIJUANA INDICATOR
-effective late 2nd Q 2019
-values include:
-“Y” = Restricted
-“     ” = No or not applicable",
-I,127 - 131,X(05),AN,,not_used,,Not Used,
-I,132 - 132,X(01),AN,,the_end_of_record_i,,Literally “X”; indicates the end of record I,
-J,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “J”,
-J,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-J,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-J,017 - 020,X(04),AN,,not_used,,Not Used,
-J,021 - 038,9(09)v9(09),N,,latest_price,9,LATEST PRICE,
-J,039 - 046,9(08),N,,latest_price_date,,"LATEST PRICE DATE, in CCYYMMDD format",
-J,047 - 064,9(06)v9(12),N,,factored_market_value_multiplier,12,"FACTORED MARKET VALUE MULTIPLIER
-(price * quantity * factored MV multiplier = Market Value)
-please note format changed to 9(06)v9(12) on the evening of 10/24/2014",
-J,065 - 082,9(09)v9(09),N,,current_yield,9,CURRENT YIELD (when available),
-J,083 - 100,9(09)v9(09),N,,yield,9,YIELD (when available),
-J,101 - 101,X(01),AN,,price_source,,"PRICE SOURCE
-values include:
-“V” = Vendor source
-“O” = Other source",
-J,102 - 103,X(02),AN,,country_of_origin,,"COUNTRY OF ORIGIN; see Appendix Q, “Country of Issuance Codes”",
-J,104 - 104,X(01),AN,,restricted_security_code,,"RESTRICTED SECURITY CODE
-values include:
-“R” = Security has a Restricted Legend
-“     ” = Not Applicable",
-J,105 - 120,X(16),AN,,international_non_dollar_symbol,,INTERNATIONAL NON-DOLLAR SYMBOL (effective 04/04/2014),
-J,121 - 126,X(06),AN,,international_exchange,,INTERNATIONAL EXCHANGE; see Appendix S for values,
-J,127 - 129,X(03),AN,,variable_rate_category_code,,"VARIABLE RATE CATEGORY CODE
-effective early 8/2017
-values include:
-“STP” = Step
-“FLT” = Floating
-“UNK” = Unknown
-“              ” = Not Applicable",
-J,130 - 130,X(01),AN,,interest_rate_completion_indicator,,"INTEREST RATE COMPLETION INDICATOR
-effective early 8/2017
-values include:
-“Y” = Includes a Step or Floating Interest Rate Schedule
-“N” = Does not include a Step or Floating Interest Rate Schedule
-“     ” = Not Applicable",
-J,131 - 131,X(01),AN,,not_used,,Not Used,
-J,132 - 132,X(01),AN,,the_end_of_record_j,,Literally “X”; indicates the end of record J,
-K,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “K”,
-K,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-K,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-K,017 - 019,X(03),AN,,exchange_code_for_sedol_one,,EXCHANGE CODE FOR SEDOL 1,
-K,020 - 026,X(07),AN,,sedol_one,,SEDOL 1,
-K,027 - 029,X(03),AN,,exchange_code_for_sedol_two,,EXCHANGE CODE FOR SEDOL 2,
-K,030 - 036,X(07),AN,,sedol_two,,SEDOL 2,
-K,037 - 039,X(03),AN,,exchange_code_for_sedol_three,,EXCHANGE CODE FOR SEDOL 3,
-K,040 - 046,X(07),AN,,sedol_three,,SEDOL 3,
-K,047 - 049,X(03),AN,,exchange_code_for_sedol_four,,EXCHANGE CODE FOR SEDOL 4,
-K,050 - 056,X(07),AN,,sedol_four,,SEDOL 4,
-K,057 - 059,X(03),AN,,exchange_code_for_sedol_five,,EXCHANGE CODE FOR SEDOL 5,
-K,060 - 066,X(07),AN,,sedol_five,,SEDOL 5,
-K,067 - 069,X(03),AN,,exchange_code_for_sedol_six,,EXCHANGE CODE FOR SEDOL 6,
-K,070 - 076,X(07),AN,,sedol_six,,SEDOL 6,
-K,077 - 079,X(03),AN,,exchange_code_for_sedol_seven,,EXCHANGE CODE FOR SEDOL 7,
-K,080 - 086,X(07),AN,,sedol_seven,,SEDOL 7,
-K,087 - 089,X(03),AN,,exchange_code_for_sedol_eight,,EXCHANGE CODE FOR SEDOL 8,
-K,090 - 096,X(07),AN,,sedol_eight,,SEDOL 8,
-K,097 - 099,X(03),AN,,exchange_code_for_sedol_nine,,EXCHANGE CODE FOR SEDOL 9,
-K,100 - 106,X(07),AN,,sedol_nine,,SEDOL 9,
-K,107 - 109,X(03),AN,,exchange_code_for_sedol_ten,,EXCHANGE CODE FOR SEDOL 10,
-K,110 - 116,X(07),AN,,sedol_ten,,SEDOL 10,
-K,117 - 119,X(03),AN,,exchange_code_for_sedol_eleven,,EXCHANGE CODE FOR SEDOL 11,
-K,120 - 126,X(07),AN,,sedol_eleven,,SEDOL 11,
-K,127 - 131,X(05),AN,,not_used,,Not Used,
-K,132 - 132,X(01),AN,,the_end_of_record_k,,Literally “X”; indicates the end of record K,
-L,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “L”,
-L,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-L,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-L,017 - 020,X(04),AN,,not_used,,Not Used,
-L,021 - 022,X(02),AN,,primary_idc_market_exchange,,PRIMARY IDC MARKET EXCHANGE; see Appendix 6 for values; space is a valid value,Primary Market Status
-L,023 - 023,X(01),AN,,primary_market_exchange_trading_status,,"PRIMARY MARKET EXCHANGE TRADING STATUS
-values include:
-“A” = Active
-“I” = Inactive
-” = Not applicable or available",Primary Market Status
-L,024 - 039,X(16),AN,,primary_market_symbol,,PRIMARY MARKET SYMBOL,Primary Market Status
-L,040 - 047,9(08),N,,primary_market_exchange_effective_date,,"PRIMARY MARKET EXCHANGE EFFECTIVE DATE
-in CCYYMMDD format",Primary Market Status
-L,048 - 050,X(03),AN,,primary_market_status_code,,"PRIMARY MARKET STATUS CODE
-values include:
-“DEL” = Delisted
-“SUS” = Suspended
-“              ” = Not applicable",Primary Market Status
-L,051 - 052,X(02),AN,,secondary_idc_market_exchange,,SECONDARY IDC MARKET EXCHANGE; see Appendix 6 for values; space is a valid value,Secondary Market Status
-L,053 - 053,X(01),AN,,secondary_market_exchange_trading_status,,"SECONDARY MARKET EXCHANGE TRADING STATUS
-values include:
-“A” = Active
-“I” = Inactive
-” = Not applicable or available",Secondary Market Status
-L,054 - 069,X(16),AN,,secondary_market_symbol,,SECONDARY MARKET SYMBOL,Secondary Market Status
-L,070 - 077,9(08),N,,secondary_market_exchange_effective_date,,"SECONDARY MARKET EXCHANGE EFFECTIVE DATE
-in CCYYMMDD format",Secondary Market Status
-L,078 - 080,X(03),AN,,secondary_market_status_code,,"SECONDARY MARKET STATUS CODE
-values include:
-“DEL” = Delisted
-“SUS” = Suspended
-“              ” = Not applicable",Secondary Market Status
-L,081 - 082,X(02),AN,,tick_size_plot_group,,"TICK SIZE PILOT GROUP
-effective 3rd Q, 2016
-values include:
-“C     ” = Control Group
-“G1” = Group One
-“G2” = Group Two
-“G3” =Group Three
-“         ” = Not applicable",
-L,083 - 090,9(08),N,,tick_size_effective_date,,"TICK SIZE EFFECTIVE DATE, effective 3rd Q, 2016, in CCYYMMDD format",
-L,091 - 098,9(08),N,,tick_size_change_date,,"TICK SIZE CHANGE DATE, effective 3rd Q, 2016, in CCYYMMDD format",
-L,099 - 106,9(08),N,,update_date,,"UPDATE DATE, in CCYYMMDD format",The next three fields contain OAS LIBOR Rate data (effective 05/05/2017)
-L,107 - 124,9(09)v9(09),N,,oas_libor_rate,9,OAS LIBOR RATE,The next three fields contain OAS LIBOR Rate data (effective 05/05/2017)
-L,125 - 125,X(01),AN,,oas_libor_rate_sign,,"OAS LIBOR RATE SIGN
-values include:
-“+” = Positive rate
-“-” = Negative rate
-” = Not applicable or available",The next three fields contain OAS LIBOR Rate data (effective 05/05/2017)
-L,126 - 131,X(06),AN,,not_used,,Not Used,
-L,132 - 132,X(01),AN,,the_end_of_record_l,,Literally “X”; indicates the end of record L,
-M,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “M”,
-M,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-M,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-M,017 - 020,X(04),AN,,not_used,,Not Used,
-M,021 - 021,X(01),AN,,reserved_for_future_use_one,,Reserved for future use,First (Most Current) Upcoming Call
-M,022 - 029,9(08),N,,first_call_date,,"FIRST CALL DATE, in CCYYMMDD format",First (Most Current) Upcoming Call
-M,030 - 047,9(09)v9(09),N,,first_call_price,9,FIRST CALL PRICE,First (Most Current) Upcoming Call
-M,048 - 048,X(01),AN,,reserved_for_future_use_two,,Reserved for future use,Second Call
-M,049 - 056,9(08),N,,second_call_date,,"SECOND CALL DATE, in CCYYMMDD format",Second Call
-M,057 - 074,9(09)v9(09),N,,second_call_price,9,SECOND CALL PRICE,Second Call
-M,075 - 075,X(01),AN,,reserved_for_future_use_three,,Reserved for future use,Third Call
-M,076 - 083,9(08),N,,third_call_date,,"THIRD CALL DATE, in CCYYMMDD format",Third Call
-M,084 - 101,9(09)v9(09),N,,third_call_price,9,THIRD CALL PRICE,Third Call
-M,102 - 102,X(01),AN,,reserved_for_future_use_four,,Reserved for future use,Fourth Call
-M,103 - 110,9(08),N,,fourth_call_date,,"FOURTH CALL DATE, in CCYYMMDD format",Fourth Call
-M,111 - 128,9(09)v9(09),N,,fourth_call_price,9,FOURTH CALL PRICE,Fourth Call
-M,129 - 131,X(03),AN,,not_used,,Not Used,
-M,132 - 132,X(01),AN,,the_end_of_record_m,,Literally “X”; indicates the end of record M,
-N,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “N”,
-N,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-N,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-N,017 - 020,X(04),AN,,not_used,,Not Used,
-N,021 - 021,X(01),AN,,reserved_for_future_use_one,,Reserved for future use,Coupon Interest Rate Schedule One
-N,022 - 029,9(08),N,,effective_date_of_the_rate_one,,"EFFECTIVE DATE OF THE RATE, in CCYYMMDD format",Coupon Interest Rate Schedule One
-N,030 - 047,9(09)v9(09),N,,coupon_interest_rate_one,9,COUPON INTEREST RATE,Coupon Interest Rate Schedule One
-N,048 - 048,X(01),AN,,reserved_for_future_use_two,,Reserved for future use,Coupon Interest Rate Schedule Two
-N,049 - 056,9(08),N,,effective_date_of_the_rate_two,,"EFFECTIVE DATE OF THE RATE, in CCYYMMDD format",Coupon Interest Rate Schedule Two
-N,057 - 074,9(09)v9(09),N,,coupon_interest_rate_two,9,COUPON INTEREST RATE,Coupon Interest Rate Schedule Two
-N,075 - 075,X(01),AN,,reserved_for_future_use_three,,Reserved for future use,Coupon Interest Rate Schedule Three
-N,076 - 083,9(08),N,,effective_date_of_the_rate_three,,"EFFECTIVE DATE OF THE RATE, in CCYYMMDD format",Coupon Interest Rate Schedule Three
-N,084 - 101,9(09)v9(09),N,,coupon_interest_rate_three,9,COUPON INTEREST RATE,Coupon Interest Rate Schedule Three
-N,102 - 102,X(01),AN,,reserved_for_future_use_four,,Reserved for future use,Coupon Interest Rate Schedule Four
-N,103 - 110,9(08),N,,effective_date_of_the_rate_four,,"EFFECTIVE DATE OF THE RATE, in CCYYMMDD format",Coupon Interest Rate Schedule Four
-N,111 - 128,9(09)v9(09),N,,coupon_interest_rate_four,9,COUPON INTEREST RATE,Coupon Interest Rate Schedule Four
-N,129 - 131,X(03),AN,,not_used,,Not Used,
-N,132 - 132,X(01),AN,,the_end_of_record_n,,Literally “X”; indicates the end of record N,
-O,001 - 001,X(01),AN,,record_indicator_value,,RECORD INDICATOR = “O”,
-O,002 - 007,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
-O,008 - 016,X(09),AN,,cusip_number,,CUSIP NUMBER,
-O,017 - 020,X(04),AN,,not_used,,Not Used,
-O,021 - 038,9(09)v9(09),N,,oas_treasury_rate,9,OAS TREASURY RATE,The following three fields are related to OAS Treasury Rate Information
-O,039 - 039,X(01),AN,,oas_treasury_rate_sign,,"OAS TREASURY RATE SIGN
-values include:
-“+” = Positive rate
-“-” = Negative rate
-” = Not applicable or available",The following three fields are related to OAS Treasury Rate Information
-O,040 - 047,9(08),N,,oas_treasury_effective_update_date,,"OAS TREASURY EFFECTIVE/UPDATE DATE, in
-CCYYMMDD format",The following three fields are related to OAS Treasury Rate Information
-O,048 - 062,9(12)v9(03),N,,minimum_piece,3,MINIMUM PIECE; the minimum tradable quantity,The following two fields refer to the minimums associated with trading the instrument – this applies to all fixed income products
-O,063 - 077,9(12)v9(03),N,,minimum_increment,3,MINIMUM INCREMENT; the minimum increment quantity in addition to the minimum piece,The following two fields refer to the minimums associated with trading the instrument – this applies to all fixed income products
-O,078 - 131,X(54),AN,,not_used,,Not Used,
-O,132 - 132,X(01),AN,,the_end_of_record_o,,Literally “X”; indicates the end of record O,
-TRAILER,001 - 018,X(18),AN,,end_of_pershing_file,,Literally “EOF                           PERSHING     ” (end of Pershing file),
-TRAILER,019 - 036,X(18),AN,,expanded_sec_desc,,Literally “EXPANDED     SEC     DESC     ”,
-TRAILER,037 - 046,X(10),AN,,data_of,,Literally “     DATA     OF         ”,
-TRAILER,047 - 056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
-TRAILER,057 - 067,X(11),AN,,to_remote,,Literally “     TO     REMOTE     ”,
-TRAILER,068 - 071,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
-TRAILER,072 - 105,X(34),AN,,ends_here_total_detail_records,,Literally “     END     HERE.      TOTAL     DETAIL RECORDS:      ”,
-TRAILER,106 - 115,9(10),N,,number_of_detail_records,,NUMBER OF DETAIL RECORDS,
-TRAILER,116 - 118,X(03),AN,,not_used,,Not Used,
-TRAILER,119 - 127,X(09),AN,,updated_or_refreshed,,Literally “UPDATED         ” or “REFRESHED” (this will indicate whether an updated or refreshed file was created on this day),
-TRAILER,128 - 131,X(04),AN,,not_used,,Not Used,
-TRAILER,132 - 132,X(01),AN,,end_of_the_trailer_record,,Literally “Z”; indicates the end of the trailer record,
+A,001 - 001,,Char,,RecordIndicator,,,
+A,002 - 007,,Char,,SequenceNumber,,,
+A,008 - 016,,Char,,CusipNumber,,,
+A,017 - 017,,Char,,SecurityType,,,
+A,018 - 018,,Char,,SecurityModifier,,,
+A,019 - 019,,Char,,SecurityCalculationCodes,,,
+A,020 - 020,,Char,,PrimaryExchange,,,
+A,021 - 027,,Decimal,,CouponOrDividend,,,
+A,028 - 034,,DateTime,,MaturityOn,,,
+A,035 - 043,,VarChar,,UnderlyingSecurity,,,
+A,044 - 052,,Decimal,,FirstCallPrice,,,
+A,053 - 061,,Decimal,,FirstPARCallPrice,,,
+A,062 - 071,,VarChar,,PrimarySymbol,,,
+A,072 - 073,,VarChar,,InterestFrequency,,,
+A,074 - 074,,Char,,BondClass,,,
+A,075 - 076,,VarChar,,FirstCouponDay,,,
+A,077 - 077,,Char,,CallIndicator,,,
+A,078 - 078,,Char,,PutIndicator,,,
+A,079 - 085,,DateTime,,NextPARCallDate,,,
+A,086 - 092,,DateTime,,PrerefundedDate,,,
+A,093 - 099,,DateTime,,NextPremiumCallDate,,,
+A,100 - 106,,DateTime,,DatedOrExdividendDate,,,
+A,107 - 113,,DateTime,,FirstCouponOrPayableDate,,,
+A,114 - 120,,Int,,PershingInternal,,,
+A,121 - 121,,Char,,NotUsed1A,,,
+A,122 - 122,,Char,,CNSEligibleCode,,,
+A,123 - 123,,Char,,DTCEligibleCode,,,
+A,124 - 124,,Char,,NSCCEligibleCode,,,
+A,125 - 125,,Char,,ForeignSecurity,,,
+A,126 - 127,,VarChar,,SecondCouponDay,,,
+A,128 - 128,,Char,,DividendPaymentMethod,,,
+A,129 - 131,,VarChar,,MinorProductCode,,,
+A,132 - 132,,Char,,RecordEnd,,,
+B,001 - 001,,Char,,RecordIndicatorB,,,
+B,002 - 007,,Char,,IDSequenceNumberB,,,
+B,008 - 016,,Char,,CusipNumberB,,,
+B,017 - 019,,VarChar,,NotUsed1B,,,
+B,020 - 020,,Char,,ETFIndicator,,,
+B,021 - 029,,Decimal,,BIDPrice,,,
+B,030 - 038,,Decimal,,AskPrice,,,
+B,039 - 047,,Decimal,,PreviousDayPrice,,,
+B,048 - 056,,Decimal,,LatestPrice,,,
+B,057 - 065,,Decimal,,EndOfMonthPrice,,,
+B,066 - 078,,Decimal,,RoundLotQuantity,,,
+B,079 - 079,,Char,,DividendReInvestmentEligibility,,,
+B,080 - 086,,DateTime,,PreviousPriceDate,,,
+B,087 - 093,,DateTime,,LatestPriceDate,,,
+B,094 - 100,,DateTime,,EndOfMonthPriceDate,,,
+B,101 - 107,,DateTime,,RecordDate,,,
+B,108 - 108,,Char,,NotUsed2B,,,
+B,109 - 111,,VarChar,,CountryCode,,,
+B,112 - 115,,VarChar,,StandardAndPoorsRating,,,
+B,116 - 120,,VarChar,,MoodysRating,,,
+B,121 - 121,,Char,,BondSubClass,,,
+B,122 - 125,,VarChar,,RestrictionIndicator,,,
+B,126 - 126,,VarChar,,TraceIndicator,,,
+B,127 - 127,,Char,,InterestCalulationMethodCode,,,
+B,128 - 131,,VarChar,,SICCode,,,
+B,132 - 132,,Char,,LiterallyB,,,
+C,001 - 001,,Char,,RecordIndicator,,,
+C,002 - 007,,Char,,IDSequenceNumber,,,
+C,008 - 016,,Char,,CusipNumber,,,
+C,017 - 020,,VarChar,,NotUsed1C,,,
+C,021 - 021,,VarChar,,NumberOfDescriptionLines,,,
+C,022 - 041,,VarChar,,SecurityDescriptionLine1,,,
+C,042 - 061,,VarChar,,SecurityDescriptionLine2,,,
+C,062 - 081,,VarChar,,SecurityDescriptionLine3,,,
+C,082 - 101,,VarChar,,SecurityDescriptionLine4,,,
+C,102 - 121,,VarChar,,SecurityDescriptionLine5,,,
+C,122 - 123,,VarChar,,CusipIdentifier,,,
+C,124 - 130,,DateTime,,PricePurgeDate,,,
+C,131 - 131,,VarChar,,NotUsed2C,,,
+C,132 - 132,,Char,,LiterallyC,,,
+D,001 - 001,,Char,,RecordIndicator,,,
+D,002 - 007,,Char,,IDSequenceNumber,,,
+D,008 - 016,,Char,,CusipNumber,,,
+D,017 - 020,,VarChar,,NotUsed1D,,,
+D,021 - 040,,VarChar,,SecurityDescriptionLine6,,,
+D,041 - 049,,Decimal,,PutPrice,,,
+D,050 - 056,,DateTime,,PutDate,,,
+D,057 - 065,,Decimal,,SecondPremiumCallPrice,,,
+D,066 - 072,,DateTime,,SecondPremiumCallDate,,,
+D,073 - 079,,DateTime,,CalledDate,,,
+D,080 - 087,,VarChar,,PoolNumber,,,
+D,088 - 097,,Int,,Factor,,,
+D,098 - 104,,DateTime,,FactorDate,,,
+D,105 - 114,,Int,,PreviousFactor,,,
+D,115 - 121,,DateTime,,PreviousFactorDate,,,
+D,122 - 122,,Char,,VariableRateIndicator,,,
+D,123 - 129,,DateTime,,NextLastCouponDate,,,
+D,130 - 130,,Char,,IsStructuredProduct,,,
+D,131 - 131,,VarChar,,Notused3D,,,
+D,132 - 132,,Char,,LiterallyD,,,
+E,001 - 001,,Char,,RecordIndicatorE,,,
+E,002 - 007,,Char,,IDSequenceNumberE,,,
+E,008 - 016,,Char,,CusipNumberE,,,
+E,017 - 020,,VarChar,,NotUsed1E,,,
+E,021 - 038,,Decimal,,ExpandedFirstCallPriceForFixed,,,
+E,039 - 056,,Decimal,,ExpandedFirstPARCallPriceForFixed,,,
+E,057 - 074,,Decimal,,ExpandedPutPrice,,,
+E,075 - 092,,Decimal,,ExpandedSecondPremiumCallPrice,,,
+E,093 - 124,,VarChar,,NameOfTheIssuerOfTheSecurity,,,
+E,125 - 127,,VarChar,,IssuingCurrency,,,
+E,128 - 131,,VarChar,,NotUsed2E,,,
+E,132 - 132,,Char,,LiterallyE,,,
+F,001 - 001,,Char,,RecordIndicatorF,,,
+F,002 - 007,,Char,,IDSequenceNumberF,,,
+F,008 - 016,,Char,,CusipNumberF,,,
+F,017 - 020,,VarChar,,NotUsed1F,,,
+F,021 - 038,,Decimal,,ExpandedBidPrice,,,
+F,039 - 056,,Decimal,,ExpandedAskPrice,,,
+F,057 - 074,,Decimal,,ExpandedPreviousDayPrice,,,
+F,075 - 092,,Decimal,,ExpandedLatestPrice,,,
+F,093 - 110,,Decimal,,ExpandedEndOfMonthPrice,,,
+F,111 - 127,,Int,,ContractShareQuantity,,,
+F,128 - 131,,VarChar,,NotUsed2F,,,
+F,132 - 132,,Char,,LiterallyF,,,
+G,001 - 001,,Char,,RecordIndicatorG,,,
+G,002 - 007,,Char,,IDSequenceNumberG,,,
+G,008 - 016,,Char,,CusipNumberG,,,
+G,017 - 020,,VarChar,,NotUsed1G,,,
+G,021 - 052,,VarChar,,SedolCode,,,
+G,053 - 064,,VarChar,,ISIN,,,
+G,065 - 079,,VarChar,,IssuerIdentifier,,,
+G,080 - 084,,Char,,NotUsed3G,,,
+G,085 - 100,,VarChar,,SymbolOfTheUnderlyingSecurity,,,
+G,101 - 108,,VarChar,,AssetType,,,
+G,109 - 116,,VarChar,,AssetSubtype,,,
+G,117 - 124,,VarChar,,AssetSub-Subtype,,,
+G,125 - 131,,VarChar,,NotUsed2G,,,
+G,132 - 132,,Char,,LiterallyG,,,
+H,001 - 001,,Char,,RecordIndicatorH,,,
+H,002 - 007,,Char,,IDSequenceNumberH,,,
+H,008 - 016,,Char,,CusipNumberH,,,
+H,017 - 020,,VarChar,,NotUsed1H,,,
+H,021 - 038,,Int,,ExchangeRateBetweenDenomCurrency,,,
+H,039 - 047,,VarChar,,UnderlyingCusip1,,,
+H,048 - 051,,VarChar,,NotUsed3H,,,
+H,052 - 056,,Int,,DeliverableUnitQuantity1,,,
+H,057 - 065,,VarChar,,UnderlyingCusip2,,,
+H,066 - 069,,VarChar,,NotUsed4H,,,
+H,070 - 074,,Int,,DeliverableUnitQuantity2,,,
+H,075 - 083,,VarChar,,UnderlyingCusip3,,,
+H,084 - 087,,VarChar,,NotUsed5H,,,
+H,088 - 092,,Int,,DeliverableUnitQuantity3,,,
+H,093 - 101,,VarChar,,UnderlyingCusip4,,,
+H,102 - 105,,VarChar,,NotUsed6H,,,
+H,106 - 110,,Int,,DeliverableUnitQuantity4,,,
+H,111 - 113,,VarChar,,NotUsed7H,,,
+H,114 - 131,,Decimal,,OustandingShares,,,
+H,132 - 132,,Char,,LiterallyH,,,
+I,001 - 001,,Char,,RecordIndicatorI,,,
+I,002 - 007,,Char,,IDSequenceNumberI,,,
+I,008 - 016,,Char,,CusipNumberI,,,
+I,017 - 020,,VarChar,,NotUsed1I,,,
+I,021 - 026,,Char,,OptionRootID,,,
+I,027 - 032,,DateTime,,ExpirationDate,,,
+I,033 - 033,,Char,,CallPutIndicator,,,
+I,034 - 041,,Decimal,,StrikePrice,,,
+I,042 - 042,,VarChar,,FundType,,,
+I,043 - 043,,VarChar,,BroadNarrowIndicator,,,
+I,044 - 061,,Decimal,,LeverageFactor,,,
+I,062 - 062,,VarChar,,LeverageFactorSign,,,
+I,063 - 070,,DateTime,,OutStandingSharesDate,,,
+I,071 - 131,,VarChar,,NotUsed2I,,,
+I,132 - 132,,Char,,LiterallyI,,,
