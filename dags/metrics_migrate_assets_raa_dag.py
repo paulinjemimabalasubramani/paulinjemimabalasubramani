@@ -1,58 +1,33 @@
 # %% Import Libraries
 
-import os
-
 from airflow import DAG
 
-from airflow.operators.bash_operator import BashOperator
-from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
+from airflow.operators.bash import BashOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.utils.dates import days_ago
 
+from dag_modules.dag_common import default_args, jars, executor_cores, executor_memory, num_executors, src_path, spark_conn_id, spark_conf
 
 
-# %% Parameters
+
+# %% Pipeline Parameters
 
 pipelinekey = 'METRICS_MIGRATE_ASSETS_RAA'
 python_spark_code = 'migrate_csv_with_date_3'
 
-airflow_app_name = pipelinekey.lower()
-spark_app_name = airflow_app_name
-description_DAG = 'Migrate Metrics-Assets Tables'
-
 tags = ['DB:Metrics', 'SC:Assets']
 
-default_args = {
-    'owner': 'EDIP',
-    'depends_on_past': False,
-}
-
-src_path = '/opt/EDIP/ingestion/src'
-
-
-
-# %% Get Jars
-
-jars_path = '/opt/EDIP/ingestion/drivers'
-
-jars = []
-
-if os.path.isdir(jars_path):
-    for jar_file in os.listdir(jars_path):
-        full_jar_path = os.path.join(jars_path, jar_file)
-        if os.path.isfile(full_jar_path):
-            jars.append(full_jar_path)
-
-jars = ','.join(jars)
+schedule_interval = '0 13 * * *', # https://crontab.guru/
 
 
 
 # %% Create DAG
 
 with DAG(
-    airflow_app_name,
+    dag_id = pipelinekey.lower(),
     default_args = default_args,
-    description = description_DAG,
-    schedule_interval = '0 13 * * *', # https://crontab.guru/
+    description = pipelinekey,
+    schedule_interval = schedule_interval,
     start_date = days_ago(1),
     tags = tags,
     catchup = False,
@@ -70,17 +45,20 @@ with DAG(
     )
 
     migrate_data = SparkSubmitOperator(
-         task_id = pipelinekey,
-         application = f"{src_path}/{python_spark_code}.py",
-         name = spark_app_name,
-         jars = jars,
-         conn_id = "spark_default",
-         conf = {},
-         application_args = [
-             '--pipelinekey', pipelinekey,
-         ],
-         dag = dag
-         )
+        task_id = pipelinekey,
+        application = f'{src_path}/{python_spark_code}.py',
+        name = pipelinekey.lower(),
+        jars = jars,
+        conn_id = spark_conn_id,
+        num_executors = num_executors,
+        executor_cores = executor_cores,
+        executor_memory = executor_memory,
+        conf = spark_conf,
+        application_args = [
+            '--pipelinekey', pipelinekey,
+            ],
+        dag = dag
+        )
 
     delete_files = BashOperator(
         task_id = f'DELETE_FILES_{pipelinekey}',
