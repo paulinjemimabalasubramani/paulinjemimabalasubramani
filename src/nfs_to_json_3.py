@@ -414,12 +414,54 @@ def process_lines_activity(ftarget, lines:list, header_info:dict, schema, is_fir
 
 
 
+# %% Process all lines belonging to a single record for NFS SEC Master file
+
+@catch_error(logger)
+def process_lines_security_master(ftarget, lines:list, header_info:dict, schema, is_first_line:bool):
+    """
+    Process all lines belonging to a single record for NFS Position file
+    """
+    if len(lines) == 0: return
+
+    record = {
+        'header_firm_name': header_info['firm_name'],
+        'headerrecordclientid': header_info['headerrecordclientid'],
+    }
+
+    standard_record_number = '1' # There is only one record_number for activity file
+
+    for line in lines:
+        record_segment = line[0:1]
+        if record_segment not in ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B']: raise ValueError(f'Invalid record_segment: {record_segment}')
+
+        line_schema = schema[(standard_record_number, record_segment)]
+        line_fields = dict()
+        for field, pos in line_schema.items():
+            field_name = field[0]
+            conditional_changes = field[1]
+            if conditional_changes:
+                raise ValueError(f'Unexpected conditional_changes for activity file {conditional_changes}')
+            field_value = extract_field_value(line=line, pos=pos, field_name=field_name)
+            line_fields = {**line_fields, field_name:field_value}
+
+        for field_name, field_value in line_fields.items():
+            if field_name.startswith('recordnumber') and len(field_name) == len('recordnumber') + 1: continue
+            add_field_to_record(record=record, field_name=field_name, field_value=field_value)
+
+    if not is_first_line:
+        ftarget.write(',\n')
+
+    ftarget.write(json.dumps(recursive_strip_json(record)))
+
+
+
 # %% Process all lines belonging to a single record
 
 process_lines_map = {
     'name_and_address': process_lines_name_and_address,
     'position': process_lines_position,
     'activity': process_lines_activity,
+    'security_master': process_lines_security_master,
 }
 
 

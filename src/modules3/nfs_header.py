@@ -20,6 +20,7 @@ table_name_map = {
     'name_addr_history': 'name_and_address',
     'position_extract': 'position',
     'bookkeeping': 'activity',
+    'security_master': 'security_master',
 }
 
 json_file_ext = '.json'
@@ -68,6 +69,10 @@ def get_header_info(file_path:str):
         master_header_schema['headerrecordclientid'] = {'position_start': 1, 'position_end': 4}
         master_header_schema['filetitle'] = {'position_start': 41, 'position_end': 58}
         master_header_schema['transmissioncreationdate'] = {'position_start': 62, 'position_end': 68}
+    elif HEADER[12:28].upper() == 'FIDELITY SYSTEMS':
+        master_header_schema['headerrecordclientid'] = {'position_start': 3, 'position_end': 6}
+        master_header_schema['filetitle'] = {'position_start': 32, 'position_end': 47}
+        master_header_schema['transmissioncreationdate'] = {'position_start': 6, 'position_end': 12}
     elif HEADER[36:48].upper() == 'NFSC SYSTEMS':
         master_header_schema['headerrecordclientid'] = {'position_start': 58, 'position_end': 61}
         master_header_schema['filetitle'] = {'position_start': 11, 'position_end': 22}
