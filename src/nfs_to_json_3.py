@@ -140,7 +140,7 @@ def is_start_line(line:str, header_info:dict):
         record_number = line[14:17]
         return record_segment == '1' and record_number == '101'
 
-    if table_name_no_firm in ['position', 'activity']:
+    if table_name_no_firm in ['position', 'activity', 'security_master']:
         record_segment = line[0:1]
         return record_segment == '1'
 
