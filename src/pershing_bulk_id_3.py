@@ -7,7 +7,7 @@ Add Bulk_id to Fixed Width Files
 
 # %% Parse Arguments
 
-if True: # Set to False for Debugging
+if False: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
@@ -62,11 +62,14 @@ os.makedirs(data_settings.target_path, exist_ok=True)
 # %% Determine Start Line
 
 @catch_error(logger)
-def is_start_line(line:str):
+def is_start_line(line:str, file_name:str):
     """
     Determine Start Line
     """
-    return line[start_line_pos_start:start_line_pos_end] == start_line_record_string
+    if file_name.upper().startswith('ISCA'):
+        return line[start_line_pos_start-2:start_line_pos_end-2] == start_line_record_string
+    else: 
+        return line[start_line_pos_start:start_line_pos_end] == start_line_record_string
 
 
 
@@ -114,7 +117,7 @@ def add_custom_txt_line(ftarget, line:str, txt:str):
 # %% Process single FWF
 
 @catch_error(logger)
-def process_single_fwf(source_file_path:str, target_file_path:str):
+def process_single_fwf(source_file_path:str, target_file_path:str, file_name:str):
     """
     Process single FWF
     """
@@ -127,7 +130,7 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
                     add_custom_txt_line(ftarget=ftarget, line=line, txt=HEADER_str)
                     first = False
                 else:
-                    if is_start_line(line=line) and lines:
+                    if is_start_line(line=line, file_name=file_name) and lines:
                         lines_to_hex(ftarget=ftarget, lines=lines)
                         lines = []
                     lines.append(line)
@@ -161,7 +164,7 @@ def iterate_over_all_fwf(source_path:str):
 
             target_file_path = os.path.join(data_settings.target_path, file_name + bulk_file_ext)
             logger.info(f'Processing {source_file_path}')
-            process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path)
+            process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path, file_name=file_name)
 
 
 

@@ -442,7 +442,9 @@ def process_pershing_file(file_meta):
     dml_type = 'I' if file_meta['is_full_load'] else 'U'
     table = add_elt_columns(table=table, file_meta=file_meta, dml_type=dml_type)
 
-    if is_pc and True: table.show(5)
+    if is_pc and True:
+        print('\n\nShowing Final Table: \n')
+        table.show(5)
 
     return {file_meta['table_name']: (table, key_column_names)}
 
