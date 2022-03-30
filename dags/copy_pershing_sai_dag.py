@@ -10,10 +10,10 @@ from airflow.utils.dates import days_ago
 
 # %% Parameters
 
-pipelinekey = 'COPY_PERSHING'
+pipelinekey = 'COPY_PERSHING_SAI'
 
 airflow_app_name = pipelinekey.lower()
-description_DAG = 'Copy Pershing Tables from Remote'
+description_DAG = 'Copy Pershing SAI Tables from Remote'
 
 tags = ['SC:Pershing']
 
@@ -43,7 +43,7 @@ with DAG(
 
     copy_files = BashOperator(
         task_id = pipelinekey,
-        bash_command = f'python /usr/local/spark/app/copy_pershing_3.py --pipelinekey {pipelinekey} --is_zip Y',
+        bash_command = f'python /usr/local/spark/app/copy_pershing_3.py --pipelinekey {pipelinekey} --is_zip N',
         dag = dag
     )
 
