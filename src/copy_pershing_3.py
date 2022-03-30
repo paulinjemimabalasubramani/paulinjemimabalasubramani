@@ -13,6 +13,7 @@ if True: # Set to False for Debugging
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
+    parser.add_argument('--is_zip', help='Check to copy zip files only or all the files. Possible Values: Y/N', required=True)
 
     args = parser.parse_args().__dict__
 
@@ -64,16 +65,17 @@ def copy_files(firm:str, firm_remote_path:str):
         remote_file_path = os.path.join(firm_remote_path, file_name)
         if os.path.isfile(remote_file_path):
             file_name_noext, file_ext = os.path.splitext(file_name)
+            source_type = file_name_noext.split('.')[0].upper()
 
-            if file_name_noext.upper() not in source_paths:
+            if source_type not in source_paths:
                 logger.info(f'File {file_name} is not in registered names: {list(source_paths)}')
                 continue
 
-            if file_ext.lower() != '.zip':
+            if data_settings.is_zip.upper() in ['Y', 'YES', 'TRUE', '1'] and file_ext.lower() != '.zip':
                 logger.warning(f'Not a .zip file, not copying: {remote_file_path}')
                 continue
 
-            source_path = os.path.join(source_paths[file_name_noext.upper()], firm)
+            source_path = os.path.join(source_paths[source_type], firm.upper())
 
             relative_copy_file(remote_path=firm_remote_path, dest_path=source_path, remote_file_path=remote_file_path)
 
