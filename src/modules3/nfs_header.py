@@ -66,7 +66,10 @@ def get_header_info(file_path:str):
     master_header_schema = defaultdict(dict)
 
     if HEADER[21:37].upper() == 'FIDELITY SYSTEMS':
-        master_header_schema['headerrecordclientid'] = {'position_start': 1, 'position_end': 4}
+        if HEADER[1:3] == '00':
+            master_header_schema['headerrecordclientid'] = {'position_start': 3, 'position_end': 6}
+        else:
+            master_header_schema['headerrecordclientid'] = {'position_start': 1, 'position_end': 4}
         master_header_schema['filetitle'] = {'position_start': 41, 'position_end': 58}
         master_header_schema['transmissioncreationdate'] = {'position_start': 62, 'position_end': 68}
     elif HEADER[12:28].upper() == 'FIDELITY SYSTEMS':
