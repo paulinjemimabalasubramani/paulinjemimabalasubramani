@@ -893,11 +893,22 @@ def relative_copy_file(remote_path:str, dest_path:str, remote_file_path:str, upd
     """
     root = os.path.dirname(remote_file_path)
     relpath = os.path.relpath(root, remote_path)
+
+    if os.path.isdir(dest_path):
+        dir_path = dest_path
+    else:
+        dir_path = os.path.dirname(dest_path)
+
     if relpath and relpath not in ['.', '..', '/', '//', '\\']:
-        dest_path = os.path.join(dest_path, relpath)
+        if os.path.isdir(dest_path):
+            dir_path = os.path.join(dest_path, relpath)
+            dest_path = dir_path
+        else:
+            dir_path = os.path.join(os.path.dirname(dest_path), relpath)
+            dest_path = os.path.join(dir_path, os.path.basename(dest_path))
 
     logger.info(f'Copying a file from {remote_file_path} to {dest_path}')
-    os.makedirs(dest_path, exist_ok=True)
+    os.makedirs(dir_path, exist_ok=True)
     copy_file( # https://docs.python.org/3/distutils/apiref.html#distutils.file_util.copy_file
         src = remote_file_path,
         dst = dest_path,
@@ -926,6 +937,32 @@ def collect_keys_from_config(prefix:str, uppercase_key:bool=True):
             if key1:
                 keys = {**keys, key1:val}
     return keys
+
+
+
+# %% Convert string mapping to dictionary
+
+@catch_error(logger)
+def convert_string_map_to_dict(map_str:str, uppercase_key:bool=True, uppercase_val:bool=True):
+    """
+    Convert string mapping to dictionary
+    """
+    dict_map = dict()
+    kvs = map_str.split(',')
+
+    for kv in kvs:
+        kv_split = kv.split(':')
+        key = kv_split[0].strip()
+        val = kv_split[1].strip()
+
+        if not key or not val: continue
+
+        if uppercase_key: key = key.upper()
+        if uppercase_val: val = val.upper()
+
+        dict_map = {**dict_map, key:val}
+
+    return dict_map
 
 
 

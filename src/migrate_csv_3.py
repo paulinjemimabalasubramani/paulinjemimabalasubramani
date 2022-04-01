@@ -1,6 +1,6 @@
 description = """
 
-Generic Code to Migrate any CSV type files with date info in file name to ADLS Gen 2
+Generic Code to Migrate any CSV type files to ADLS Gen 2
 
 """
 

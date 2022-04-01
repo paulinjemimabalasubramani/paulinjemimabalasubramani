@@ -54,7 +54,9 @@ VALUES
 
 ('AG_DATASOURCE_PERSHING_COPY', '', 'Pershing', '', 'copy_pershing', 'AG', 'System', CURRENT_TIMESTAMP),
 
-('MAINTENANCE_DATASOURCE_AIRFLOW_LOG_CLEANUP', '', '', '', 'log_cleanup', 'AG', 'System', CURRENT_TIMESTAMP)
+('MAINTENANCE_DATASOURCE_AIRFLOW_LOG_CLEANUP', '', '', '', 'log_cleanup', 'AG', 'System', CURRENT_TIMESTAMP),
+
+('AG_DATASOURCE_NFS_SAI_COPY', '', 'NFS', 'SAI', 'copy_nfs_sai', 'AG', 'System', CURRENT_TIMESTAMP)
 
 ;
 
@@ -121,7 +123,10 @@ VALUES
 
 ('COPY_PERSHING', 'copy', 'Pipeline to copy Pershing files from remote location', 'AG_DATASOURCE_PERSHING_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
-('MAINTENANCE_AIRFLOW_LOG_CLEANUP', 'maintenance', 'Cleanup of log files form Airflow server', 'MAINTENANCE_DATASOURCE_AIRFLOW_LOG_CLEANUP', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+('MAINTENANCE_AIRFLOW_LOG_CLEANUP', 'maintenance', 'Cleanup of log files form Airflow server', 'MAINTENANCE_DATASOURCE_AIRFLOW_LOG_CLEANUP', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+
+('COPY_NFS_SAI', 'copy', 'Pipeline to copy NFS SAI files from remote location', 'AG_DATASOURCE_NFS_SAI_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
 
 
 ;
@@ -177,9 +182,7 @@ VALUES
 ('GENERIC', 'AZURE_METADATA_FOLDER', 'metadata', 'System', CURRENT_TIMESTAMP),
 
 
-INSERT INTO metadata.PipelineConfiguration 
-(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
-VALUES
+
 ('METRICS_MIGRATE_ASSETS_RAA', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
 ('METRICS_MIGRATE_ASSETS_RAA', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
 ('METRICS_MIGRATE_ASSETS_RAA', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
@@ -421,7 +424,48 @@ VALUES
 ('COPY_NFS', 'SOURCE_PATH_POSITD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS', 'SOURCE_PATH_POSDELTA', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS', 'SOURCE_PATH_SECMAST', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
-('COPY_NFS', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP)
+('COPY_NFS', 'CLIENTID_MAP', 'MAJ:RAA,FXA:SPF,FL2:FSC', 'System', CURRENT_TIMESTAMP),
+
+
+
+
+('COPY_NFS_SAI', 'CLIENTID', '133', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'REMOTE_PATH_POSITD', '\\dpwoma01prd.sai.saionline.com\nfscreports\positd', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'REMOTE_PATH_ACTVYD', '\\dpwoma01prd.sai.saionline.com\nfscreports\bookkeep', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'REMOTE_PATH_SECMASTER', '\\dpwoma01prd.sai.saionline.com\nfscreports\secmast', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'REMOTE_PATH_TRDREV', '\\dpwoma01prd.sai.saionline.com\nfscreports\TRDREV_TD', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'REMOTE_PATH_ACCTBALD', '\\dpwoma01prd.sai.saionline.com\nfscreports\acctbald', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'SOURCE_PATH_POSITD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'SOURCE_PATH_ACTVYD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'SOURCE_PATH_SECMASTER', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'SOURCE_PATH_TRDREV', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'SOURCE_PATH_ACCTBALD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+
+
+
+
+
+INSERT INTO metadata.PipelineConfiguration 
+(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
+VALUES
+
+('FP_MIGRATE_FINRA_RAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/LR/23131', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'SCHEMA_NAME', 'FINRA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'AZURE_STORAGE_ACCOUNT_MID', 'raa', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'SNOWFLAKE_ROLE', 'AD_SNOWFLAKE_QA_DBA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'SNOWFLAKE_WAREHOUSE', 'QA_RAW_WH', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'FILE_HISTORY_START_DATE', '2021-08-15', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/finra_schema', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'FIRM_CRD_NUMBER', '23131', 'System', CURRENT_TIMESTAMP),
+
+
+
+
+
 
 ;
 

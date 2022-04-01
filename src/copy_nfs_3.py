@@ -36,7 +36,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file, collect_keys_from_config
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file
 from modules3.nfs_header import headerrecordclientid_map
 
 
