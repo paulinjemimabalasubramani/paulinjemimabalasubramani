@@ -54,7 +54,10 @@ def get_header_info(file_path:str):
         master_header_schema['filetitle'] = {'position_start': 32, 'position_end': 47}
         master_header_schema['transmissioncreationdate'] = {'position_start': 6, 'position_end': 12}
     elif HEADER[36:48].upper() == 'NFSC SYSTEMS':
-        master_header_schema['headerrecordclientid'] = {'position_start': 58, 'position_end': 61}
+        if HEADER[58:60] == '00':
+            master_header_schema['headerrecordclientid'] = {'position_start': 60, 'position_end': 63}
+        else:
+            master_header_schema['headerrecordclientid'] = {'position_start': 58, 'position_end': 61}
         master_header_schema['filetitle'] = {'position_start': 11, 'position_end': 22}
         master_header_schema['transmissioncreationdate'] = {'position_start': 71, 'position_end': 77}
     else:
@@ -70,7 +73,9 @@ def get_header_info(file_path:str):
         logger.warning(f'Unknown Table Name "{table_name}" in file {file_path}')
         return
 
-    firm_name = headerrecordclientid_map[header_info['headerrecordclientid'].upper()]
+    headerrecordclientid = header_info['headerrecordclientid'].upper().strip()
+    if not headerrecordclientid: headerrecordclientid = os.path.basename(file_path)[:3]
+    firm_name = headerrecordclientid_map[headerrecordclientid]
 
     header_info['table_name_no_firm'] = table_name_map[table_name].lower()
     header_info['table_name'] = '_'.join([firm_name, header_info['table_name_no_firm']]).lower()
