@@ -56,7 +56,11 @@ VALUES
 
 ('MAINTENANCE_DATASOURCE_AIRFLOW_LOG_CLEANUP', '', '', '', 'log_cleanup', 'AG', 'System', CURRENT_TIMESTAMP),
 
-('AG_DATASOURCE_NFS_SAI_COPY', '', 'NFS', 'SAI', 'copy_nfs_sai', 'AG', 'System', CURRENT_TIMESTAMP)
+('AG_DATASOURCE_NFS_SAI_COPY', '', 'NFS', 'SAI', 'copy_nfs_sai', 'AG', 'System', CURRENT_TIMESTAMP),
+
+
+('AG_DATASOURCE_NFS_TRI_COPY', '', 'NFS', 'TRI', 'copy_nfs_tri', 'AG', 'System', CURRENT_TIMESTAMP)
+
 
 ;
 
@@ -126,7 +130,11 @@ VALUES
 ('MAINTENANCE_AIRFLOW_LOG_CLEANUP', 'maintenance', 'Cleanup of log files form Airflow server', 'MAINTENANCE_DATASOURCE_AIRFLOW_LOG_CLEANUP', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
 
-('COPY_NFS_SAI', 'copy', 'Pipeline to copy NFS SAI files from remote location', 'AG_DATASOURCE_NFS_SAI_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+('COPY_NFS_SAI', 'copy', 'Pipeline to copy NFS SAI files from remote location', 'AG_DATASOURCE_NFS_SAI_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+
+('COPY_NFS_TRI', 'copy', 'Pipeline to copy NFS TRI files from remote location', 'AG_DATASOURCE_NFS_TRI_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+
 
 
 ;
@@ -429,7 +437,7 @@ VALUES
 
 
 
-('COPY_NFS_SAI', 'CLIENTID', '133', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'CLIENTID', '0KS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'REMOTE_PATH_POSITD', '\\dpwoma01prd.sai.saionline.com\nfscreports\positd', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'REMOTE_PATH_ACTVYD', '\\dpwoma01prd.sai.saionline.com\nfscreports\bookkeep', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'REMOTE_PATH_SECMASTER', '\\dpwoma01prd.sai.saionline.com\nfscreports\secmast', 'System', CURRENT_TIMESTAMP),
@@ -441,6 +449,16 @@ VALUES
 ('COPY_NFS_SAI', 'SOURCE_PATH_TRDREV', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'SOURCE_PATH_ACCTBALD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 
+
+
+('COPY_NFS_TRI', 'CLIENTID', 'TR1', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_TRI', 'REMOTE_PATH', '/usr/local/spark/resources/fileshare/fasoma05bprd/DownloadData/_TRI', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_TRI', 'SOURCE_PATH_POSITD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_TRI', 'SOURCE_PATH_ACTVYD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_TRI', 'SOURCE_PATH_SECMASTER', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_TRI', 'SOURCE_PATH_TRDREV', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_TRI', 'SOURCE_PATH_ACCTBALD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_TRI', 'PATH_SUFFIX', 'NFS/0231/RAWDATA', 'System', CURRENT_TIMESTAMP),
 
 
 

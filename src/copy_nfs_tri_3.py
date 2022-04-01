@@ -1,6 +1,6 @@
 description = """
 
-Copy NFS SAI files from remote location to source location
+Copy NFS TRI files from remote location to source location
 
 """
 
@@ -18,15 +18,12 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'COPY_NFS_SAI',
+        'pipelinekey': 'COPY_NFS_TRI',
 
-        'clientid': '0KS',
+        'clientid': 'TR1',
 
-        'remote_path_positd': r'C:\myworkdir\NFS',
-        'remote_path_actvyd': r'C:\myworkdir\NFS',
-        'remote_path_secmaster': r'C:\myworkdir\NFS',
-        'remote_path_trdrev': r'C:\myworkdir\NFS',
-        'remote_path_acctbald': r'C:\myworkdir\NFS',
+        'remote_path': r'C:\myworkdir\NFS',
+        'path_suffix': f'suffix',
 
         'source_path_positd': r'C:\myworkdir\Shared\NFS-ASSETS',
         'source_path_actvyd': r'C:\myworkdir\Shared\NFS-ASSETS',
@@ -56,26 +53,59 @@ from datetime import datetime
 
 firm_name = data_settings.pipeline_firm.upper()
 clientid = data_settings.clientid
+remote_path_suffix = data_settings.path_suffix
+
+date_levels = [r'%Y', r'%b', r'%Y%m%d']
+
+
+
+
+# %% Find Latest Folder
+
+@catch_error(logger)
+def find_latest_folder(remote_path:str, level:int=0):
+    """
+    Find Latest Folder
+    """
+    if level >= len(date_levels): return remote_path
+
+    paths = {}
+    for file_name in os.listdir(remote_path):
+        remote_file_path = os.path.join(remote_path, file_name)
+        if os.path.isdir(remote_file_path):
+            try:
+                dt = datetime.strptime(file_name, date_levels[level])
+            except:
+                continue
+            paths[dt] = remote_file_path
+
+    if not paths:
+        logger.warning(f'No Paths found in {remote_path}')
+        return
+
+    return find_latest_folder(remote_path=paths[max(paths)], level=level+1)
+
+
+
+remote_path = find_latest_folder(remote_path=data_settings.remote_path)
+logger.info(f'Latest path: {remote_path}')
 
 
 
 # %% Copy files and folders to the new location
 
 @catch_error(logger)
-def copy_file(file_type:str, remote_path:str):
+def copy_file(remote_path:str):
     """
     Copy files and folders to the new location
     """
+    if not remote_path: return
+    remote_path = os.path.join(remote_path, remote_path_suffix)
+
     if not os.path.isdir(remote_path):
         logger.warning(f'Remote path does not exist: {remote_path}')
         return
 
-    source_path_setting = 'source_path_' + file_type.lower()
-    if not hasattr(data_settings, source_path_setting):
-        logger.warning(f'{source_path_setting} is not defined in SQL PipelineConfig for file_type {file_type}')
-        return
-
-    files = {}
     for file_name in os.listdir(remote_path):
         remote_file_path = os.path.join(remote_path, file_name)
         if not os.path.isfile(remote_file_path): continue
@@ -86,42 +116,21 @@ def copy_file(file_type:str, remote_path:str):
             logger.warning(f'Not a .txt file, not copying: {remote_file_path}')
             continue
 
-        try:
-            file_date = datetime.strptime(file_name_noext[-8:], r"%m_%d_%y")
-        except:
-            logger.warning(f'Unable parse date from file name: {file_name}')
-            continue
-        files[file_date] = remote_file_path
+        source_path_setting = 'source_path_' + file_name_noext.lower()
+        if not hasattr(data_settings, source_path_setting):
+            logger.warning(f'{source_path_setting} is not defined in SQL PipelineConfig for {remote_file_path}')
+            return
 
-    if not files:
-        logger.warning(f'No files found in {remote_path}')
-        return
+        source_file_name = (clientid + '_' + file_name_noext + '.DAT').upper()
+        source_file_path = os.path.join(getattr(data_settings, source_path_setting), firm_name, source_file_name)
 
-    remote_file_path = files[max(files)]
-    source_file_name = (clientid + '_' + file_type + '.DAT').upper()
-    source_file_path = os.path.join(getattr(data_settings, source_path_setting), firm_name, source_file_name)
-
-    relative_copy_file(remote_path=remote_path, dest_path=source_file_path, remote_file_path=remote_file_path)
+        relative_copy_file(remote_path=remote_path, dest_path=source_file_path, remote_file_path=remote_file_path)
 
     logger.info(f'Finished copying {remote_file_path} to {source_file_path}')
 
 
 
-# %% Copy Files per Type
-
-@catch_error(logger)
-def copy_files_per_type():
-    """
-    Copy Files per type
-    """
-    remote_paths = collect_keys_from_config(prefix='remote_path_', uppercase_key=True)
-
-    for file_type, remote_path in remote_paths.items():
-        copy_file(file_type=file_type, remote_path=remote_path)
-
-
-
-copy_files_per_type()
+copy_file(remote_path=remote_path)
 
 
 
