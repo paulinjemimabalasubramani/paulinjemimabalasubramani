@@ -10,7 +10,7 @@ import os, re
 from collections import defaultdict
 from datetime import datetime
 
-from .common_functions import catch_error, data_settings, logger, column_regex
+from .common_functions import catch_error, data_settings, logger, column_regex, convert_string_map_to_dict
 
 
 
@@ -26,30 +26,7 @@ table_name_map = {
 json_file_ext = '.json'
 json_file_date_format = r'%Y%m%d'
 
-
-
-# %% Get Client ID Map
-
-@catch_error(logger)
-def get_headerrecordclientid_map():
-    """
-    Get Client ID Map
-    """
-    headerrecordclientid_map = dict()
-
-    cids = data_settings.clientid_map.split(',')
-
-    for cid in cids:
-        cid_split = cid.split(':')
-        headerrecordclientid = cid_split[0].strip().upper()
-        firm = cid_split[1].strip().upper()
-        headerrecordclientid_map = {**headerrecordclientid_map, headerrecordclientid:firm}
-
-    return headerrecordclientid_map
-
-
-
-headerrecordclientid_map = get_headerrecordclientid_map()
+headerrecordclientid_map = convert_string_map_to_dict(map_str=data_settings.clientid_map, uppercase_key=True, uppercase_val=True)
 
 
 

@@ -929,6 +929,32 @@ def collect_keys_from_config(prefix:str, uppercase_key:bool=True):
 
 
 
+# %% Convert string mapping to dictionary
+
+@catch_error(logger)
+def convert_string_map_to_dict(map_str:str, uppercase_key:bool=True, uppercase_val:bool=True):
+    """
+    Convert string mapping to dictionary
+    """
+    dict_map = dict()
+    kvs = map_str.split(',')
+
+    for kv in kvs:
+        kv_split = kv.split(':')
+        key = kv_split[0].strip()
+        val = kv_split[1].strip()
+
+        if not key or not val: continue
+
+        if uppercase_key: key = key.upper()
+        if uppercase_val: val = val.upper()
+
+        dict_map = {**dict_map, key:val}
+
+    return dict_map
+
+
+
 # %%
 
 
