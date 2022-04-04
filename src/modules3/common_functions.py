@@ -907,7 +907,7 @@ def relative_copy_file(remote_path:str, dest_path:str, remote_file_path:str, upd
             dir_path = os.path.join(os.path.dirname(dest_path), relpath)
             dest_path = os.path.join(dir_path, os.path.basename(dest_path))
 
-    logger.info(f'Copying a file from {remote_file_path} to {dest_path}')
+    logger.info(f'Copying from {remote_file_path} to {dest_path}')
     os.makedirs(dir_path, exist_ok=True)
     copy_file( # https://docs.python.org/3/distutils/apiref.html#distutils.file_util.copy_file
         src = remote_file_path,

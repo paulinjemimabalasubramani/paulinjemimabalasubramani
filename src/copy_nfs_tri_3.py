@@ -119,7 +119,7 @@ def copy_file(remote_path:str):
         source_path_setting = 'source_path_' + file_name_noext.lower()
         if not hasattr(data_settings, source_path_setting):
             logger.warning(f'{source_path_setting} is not defined in SQL PipelineConfig for {remote_file_path}')
-            return
+            continue
 
         source_file_name = (clientid + '_' + file_name_noext + '.DAT').upper()
         source_file_path = os.path.join(getattr(data_settings, source_path_setting), firm_name, source_file_name)
