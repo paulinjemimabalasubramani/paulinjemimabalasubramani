@@ -58,18 +58,18 @@ VALUES
 
 ('AG_DATASOURCE_NFS_SAI_COPY', '', 'NFS', 'SAI', 'copy_nfs_sai', 'AG', 'System', CURRENT_TIMESTAMP),
 
+('AG_DATASOURCE_NFS_TRI_COPY', '', 'NFS', 'TRI', 'copy_nfs_tri', 'AG', 'System', CURRENT_TIMESTAMP),
 
-('AG_DATASOURCE_NFS_TRI_COPY', '', 'NFS', 'TRI', 'copy_nfs_tri', 'AG', 'System', CURRENT_TIMESTAMP)
 
-
+INSERT INTO metadata.DataSource
+(DataSourceKey, Category, SubCategory, Firm, DataSourceType, DataProvider, UpdatedBy, UpdateTS, DataSourceUniqueKey)
+VALUES
+('FP_AG_DATASOURCE_FINRA_RAA', 'Financial Professional', 'FINRA', 'RAA', 'finra', 'FINRA', 'System', CURRENT_TIMESTAMP, 'FINRA')
 ;
 
 
-
-
-
 SELECT * FROM metadata.DataSource
-where DataSourceKey = 'ASSETS_AG_DATASOURCE_ALBRIDGE_COPY'
+where DataSourceKey = 'FP_AG_DATASOURCE_FINRA_RAA'
 ORDER BY DataSourceId DESC;
 
 
@@ -133,8 +133,10 @@ VALUES
 ('COPY_NFS_SAI', 'copy', 'Pipeline to copy NFS SAI files from remote location', 'AG_DATASOURCE_NFS_SAI_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
 
-('COPY_NFS_TRI', 'copy', 'Pipeline to copy NFS TRI files from remote location', 'AG_DATASOURCE_NFS_TRI_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+('COPY_NFS_TRI', 'copy', 'Pipeline to copy NFS TRI files from remote location', 'AG_DATASOURCE_NFS_TRI_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
+
+('FP_MIGRATE_FINRA_RAA', 'outbound_migration', 'Pipeline to migrate FP-FINRA files to Snowflake', 'FP_AG_DATASOURCE_FINRA_RAA', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
 
 
 ;
@@ -462,12 +464,16 @@ VALUES
 
 
 
+delete from metadata.PipelineConfiguration 
+where PipelineKey = 'FP_MIGRATE_FINRA_RAA'
+;
+
 
 INSERT INTO metadata.PipelineConfiguration 
 (PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
 VALUES
 
-('FP_MIGRATE_FINRA_RAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/LR/23131', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/FINRA/23131', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_RAA', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_RAA', 'SCHEMA_NAME', 'FINRA', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_RAA', 'AZURE_STORAGE_ACCOUNT_MID', 'raa', 'System', CURRENT_TIMESTAMP),
@@ -476,11 +482,10 @@ VALUES
 ('FP_MIGRATE_FINRA_RAA', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_RAA', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_RAA', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
-('FP_MIGRATE_FINRA_RAA', 'FILE_HISTORY_START_DATE', '2021-08-15', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_RAA', 'FILE_HISTORY_START_DATE', '2021-05-15', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_RAA', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/finra_schema', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_RAA', 'FIRM_CRD_NUMBER', '23131', 'System', CURRENT_TIMESTAMP),
-
-
+('FP_MIGRATE_FINRA_RAA', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP),
 
 
 
@@ -541,18 +546,18 @@ insert into metadata.PrimaryKey
 VALUES
 (
 1,
-'NFS',
-'NFS',
-'POSITION',
-'POSITION',
-'Firm,AccountNumber,AccountType,CUSIP,SecurityType',
+'FINRA',
+'FINRA',
+'BranchInformationReport',
+'BranchInformationReport',
+'firm_crd_number,branch_crd_number',
 '',
 CURRENT_TIMESTAMP,
 'System',
 CURRENT_TIMESTAMP,
 'System',
-'Assets',
-'NFS'
+'FP',
+'FINRA'
 )
 
 ;

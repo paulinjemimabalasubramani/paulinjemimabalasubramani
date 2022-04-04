@@ -75,7 +75,8 @@ def copy_file(file_type:str, remote_path:str):
         logger.warning(f'{source_path_setting} is not defined in SQL PipelineConfig for file_type {file_type}')
         return
 
-    files = {}
+    files, files_no_date = {}, {}
+
     for file_name in os.listdir(remote_path):
         remote_file_path = os.path.join(remote_path, file_name)
         if not os.path.isfile(remote_file_path): continue
@@ -88,22 +89,26 @@ def copy_file(file_type:str, remote_path:str):
 
         try:
             file_date = datetime.strptime(file_name_noext[-8:], r"%m_%d_%y")
+            files[file_date] = remote_file_path
         except:
-            logger.warning(f'Unable parse date from file name: {file_name}')
-            continue
-        files[file_date] = remote_file_path
+            files_no_date[file_name_noext] = remote_file_path
 
-    if not files:
-        logger.warning(f'No files found in {remote_path}')
-        return
 
-    remote_file_path = files[max(files)]
-    source_file_name = (clientid + '_' + file_type + '.DAT').upper()
-    source_file_path = os.path.join(getattr(data_settings, source_path_setting), firm_name, source_file_name)
-
-    relative_copy_file(remote_path=remote_path, dest_path=source_file_path, remote_file_path=remote_file_path)
-
-    logger.info(f'Finished copying {remote_file_path} to {source_file_path}')
+    if files:
+        remote_file_path = files[max(files)]
+        source_file_name = (clientid + '_' + file_type + '.DAT').upper()
+        source_file_path = os.path.join(getattr(data_settings, source_path_setting), firm_name, source_file_name)
+        relative_copy_file(remote_path=remote_path, dest_path=source_file_path, remote_file_path=remote_file_path)
+        logger.info(f'Finished copying {remote_file_path} to {source_file_path}')
+    elif files_no_date:
+        logger.info('No files with date found. Copying all available files.')
+        for file_name_noext, remote_file_path in files_no_date.items():
+            source_file_name = (clientid + '_' + file_name_noext + '.DAT').upper()
+            source_file_path = os.path.join(getattr(data_settings, source_path_setting), firm_name, source_file_name)
+            relative_copy_file(remote_path=remote_path, dest_path=source_file_path, remote_file_path=remote_file_path)
+        logger.info(f'Finished copying all files from {remote_path} to {os.path.join(getattr(data_settings, source_path_setting), firm_name)}')
+    else:
+        logger.warning(f'Path is empty. No Files found at {remote_path}')
 
 
 

@@ -11,7 +11,7 @@ https://www.finra.org/filing-reporting/web-crd/web-eft-schema-documentation-and-
 
 # %% Parse Arguments
 
-if False: # Set to False for Debugging
+if True: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
@@ -33,7 +33,7 @@ else:
 
 # %% Import Libraries
 
-import os, sys
+import os, sys, json
 from datetime import datetime
 
 class app: pass
@@ -42,22 +42,22 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, execution_date_start
-from modules3.spark_functions import add_id_key, create_spark, read_csv, remove_column_spaces, add_elt_columns
+from modules3.spark_functions import add_id_key, create_spark, remove_column_spaces, add_elt_columns, read_csv, read_xml, base_to_schema, flatten_table
 from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes, file_meta_exists_for_select_files, add_firm_to_table_name
 from modules3.build_finra_tables import build_branch_table, build_individual_table
 
-from string import ascii_letters, digits
+from pyspark.sql.functions import lit, from_json
+from pyspark.sql.types import StructType, StructField, StringType
 
 
 
 # %% Parameters
 
 finra_individual_delta_name = 'IndividualInformationReportDelta'
-reportDate_name = '_reportDate'
-firmCRDNumber_name = '_firmCRDNumber'
-
-DualRegistrations_file_name = 'INDIVIDUAL_-_DUAL_REGISTRATIONS_-_FIRMS_DOWNLOAD_-_'
-DualRegistrations_name = 'DualRegistrations'
+finra_individual_name = 'IndividualInformationReport'
+finra_branch_name = 'BranchInformationReport'
+finra_dualregistrations_file_name = 'INDIVIDUAL_-_DUAL_REGISTRATIONS_-_FIRMS_DOWNLOAD_-_'
+finra_dualregistrations_name = 'DualRegistrations'
 
 file_date_column_format = r'%Y-%m-%d'
 
@@ -85,8 +85,8 @@ def extract_data_from_finra_file_path(file_path:str):
         'firm_crd_number': data_settings.firm_crd_number,
     }
 
-    if file_name_noext.upper().startswith(DualRegistrations_file_name.upper()):
-        table_name = DualRegistrations_name.lower()
+    if file_name_noext.upper().startswith(finra_dualregistrations_file_name.upper()):
+        table_name = finra_dualregistrations_name.lower()
         file_date = execution_date_start
     else:
         sp = file_name_noext.split("_")
@@ -98,7 +98,7 @@ def extract_data_from_finra_file_path(file_path:str):
         try:
             table_name = sp[1].strip().lower()
             if table_name == finra_individual_delta_name.lower():
-                table_name = 'IndividualInformationReport'.lower()
+                table_name = finra_individual_name.lower()
 
             file_date = datetime.strptime(sp[2].rsplit('.', 1)[0].strip(), file_date_column_format)
 
@@ -108,9 +108,11 @@ def extract_data_from_finra_file_path(file_path:str):
             logger.warning(f'Cannot parse file name: {file_path}. {str(e)}')
             return
 
+    table_name_no_firm = table_name
     table_name = add_firm_to_table_name(table_name=table_name)
 
     file_meta = {**file_meta,
+        'table_name_no_firm': table_name_no_firm.lower(),
         'table_name': table_name.lower(),
         'file_date': file_date,
     }
@@ -126,7 +128,6 @@ def select_files():
     """
     Initial Selection of candidate files potentially to be ingested
     """
-    date_format = data_settings.date_format
     selected_file_paths = []
 
     file_count = 0
@@ -159,7 +160,7 @@ def get_xml_header(file_path:str):
 
     file_name = os.path.basename(file_path)
     file_name_noext, file_ext = os.path.splitext(file_name)
-    if file_name_noext.upper().startswith(DualRegistrations_file_name.upper()):
+    if file_name_noext.upper().startswith(finra_dualregistrations_file_name.upper()):
         return tagname, criteria_tag
 
     nchar = 1000
@@ -213,40 +214,115 @@ def extract_finra_file_meta(file_path:str, zip_file_path:str=None):
 
     tagname, criteria_tag = get_xml_header(file_path=file_path)
 
-
-
-
-
-
-
-    try:
-        key_datetime = datetime.strptime(file_date_str, date_format)
-    except Exception as e:
-        logger.warning(f'Invalid date format in file name: {file_path}. {str(e)}')
+    if file_meta['table_name_no_firm'].lower() in [finra_dualregistrations_name.lower()]:
+        key_datetime = file_meta['file_date']
+    elif criteria_tag:
+        if criteria_tag.get('firmCRDNumber') != data_settings.firm_crd_number:
+            logger.warning(f"File Firm CRD Number {criteria_tag.get('firmCRDNumber')} does not match with the CRD Number {data_settings.firm_crd_number} given in SQL Settings")
+            return
+        try:
+            key_datetime = criteria_tag['reportDate'] if criteria_tag.get('reportDate') else criteria_tag['postingDate']
+            key_datetime = datetime.strptime(key_datetime, file_date_column_format)
+        except Exception as e:
+            logger.warning(f'Invalid date format in file name: {file_path}. {str(e)}')
+            return
+    else:
+        logger.warning(f'No xml_criteria found: {file_path}')
         return
+
+    is_full_load = criteria_tag.get('IIRType') == 'FULL' or file_meta['table_name_no_firm'].lower() in [finra_branch_name.lower(), finra_dualregistrations_name.lower()]
 
     file_meta = {**file_meta,
         'zip_file_path': zip_file_path,
-        'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
+        'is_full_load': is_full_load,
         'key_datetime': key_datetime,
+        'xml_criteria': criteria_tag,
+        'xml_rowtag': tagname,
     }
 
     return file_meta
 
 
 
-
-# %% Main Processing of sinlge csv File
+# %% Read Finra File
 
 @catch_error(logger)
-def process_csv_file(file_meta):
+def read_finra_file(file_meta:dict):
     """
-    Main Processing of single csv file
+    Read Finra File
     """
-    table = read_csv(spark=spark, file_path=file_meta['file_path'])
+    if file_meta['table_name_no_firm'].lower() in [finra_dualregistrations_name.lower()]:
+        table = read_csv(spark=spark, file_path=file_meta['file_path'])
+    else:
+        schema_file = file_meta['table_name_no_firm'].lower() + '.json'
+        schema_path = os.path.join(data_settings.schema_file_path, schema_file)
+
+        if os.path.isfile(schema_path):
+            logger.info(f'Loading schema from file: {schema_file}')
+            with open(file=schema_path, mode='rt', encoding='utf-8', errors='ignore') as f: 
+                schema = base_to_schema(json.load(f))
+        else:
+            logger.warning(f"No manual schema defined for {file_meta['table_name_no_firm'].lower()} at Schema File Location {schema_path} -> Inferring schema from data.")
+            schema = None
+
+        table = read_xml(spark=spark, file_path=file_meta['file_path'], rowTag=file_meta['xml_rowtag'], schema=schema)
+
+    if is_pc: table.printSchema()
+    return table
+
+
+
+# %% Flatten Finra Table
+
+@catch_error(logger)
+def flatten_finra_table(table, file_meta:dict):
+    """
+    Flatten Finra Table
+    """
+    semi_flat_table = flatten_table(table=table)
+
+    if file_meta['table_name_no_firm'].lower() == finra_branch_name.lower():
+        semi_flat_table = build_branch_table(semi_flat_table=semi_flat_table)
+    elif file_meta['table_name_no_firm'].lower() == finra_individual_name.lower():
+        semi_flat_table = build_individual_table(semi_flat_table=semi_flat_table, crd_number=file_meta['firm_crd_number'])
+
+    return semi_flat_table
+
+
+
+# %% Add custom columns to Finra table
+
+@catch_error(logger)
+def add_custom_columns_to_finra_table(table, file_meta:dict):
+    """
+    Add custom columns to Finra table
+    """
+    table = table.withColumn('file_date', lit(str(file_meta['file_date'])))
+    table = table.withColumn('firm_crd_number', lit(str(file_meta['firm_crd_number'])))
+
+    if not file_meta['xml_criteria']: return table
+
+    xml_criteria_str = json.dumps(file_meta['xml_criteria'], ensure_ascii=True, skipkeys=True)
+    xml_criteria_schema = StructType([StructField(key, StringType(), True) for key in file_meta['xml_criteria']])
+
+    table = table.withColumn('xml_criteria', from_json(lit(xml_criteria_str), xml_criteria_schema))
+    return table
+
+
+
+# %% Main Processing of sinlge finra File
+
+@catch_error(logger)
+def process_finra_file(file_meta:dict):
+    """
+    Main Processing of single finra file
+    """
+    table = read_finra_file(file_meta=file_meta)
     if not table: return
 
+    table = flatten_finra_table(table=table, file_meta=file_meta)
     table = remove_column_spaces(table=table)
+    table = add_custom_columns_to_finra_table(table=table, file_meta=file_meta)
 
     key_column_names = get_key_column_names(table_name=file_meta['table_name'])
     table = add_id_key(table=table, key_column_names=key_column_names)
@@ -274,13 +350,17 @@ def get_dtypes(table, table_name:str):
 
 # %% Iterate over all the files in all the firms and process them.
 
-additional_file_meta_columns = []
+additional_file_meta_columns = [
+    ('file_date', 'datetime NULL'),
+    ('xml_rowtag', 'varchar(100) NULL'),
+    ('xml_criteria', 'varchar(2000) NULL'),
+    ]
 
 migrate_all_files(
     spark = spark,
-    fn_extract_file_meta = extract_csv_file_meta,
+    fn_extract_file_meta = extract_finra_file_meta,
     additional_file_meta_columns = additional_file_meta_columns,
-    fn_process_file = process_csv_file,
+    fn_process_file = process_finra_file,
     fn_select_files = select_files,
     fn_get_dtypes = get_dtypes,
     )
