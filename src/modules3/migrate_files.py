@@ -118,10 +118,12 @@ WHERE
 
     if not key_column_names:
         logger.warning(f'No Key Columns found for table {table_name} in {sql_pk_table}')
+        return []
 
     flatten = lambda t: [item.strip() for sublist in t for item in sublist if item.strip()]
     key_column_names = [c.lower().split(',') for c in key_column_names]
     key_column_names = flatten(key_column_names)
+    key_column_names = list(set(key_column_names))
 
     return sorted(key_column_names)
 
