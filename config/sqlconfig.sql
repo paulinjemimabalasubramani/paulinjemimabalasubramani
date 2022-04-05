@@ -445,11 +445,15 @@ VALUES
 ('COPY_NFS_SAI', 'REMOTE_PATH_SECMASTER', '\\dpwoma01prd.sai.saionline.com\nfscreports\secmast', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'REMOTE_PATH_TRDREV', '\\dpwoma01prd.sai.saionline.com\nfscreports\TRDREV_TD', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'REMOTE_PATH_ACCTBALD', '\\dpwoma01prd.sai.saionline.com\nfscreports\acctbald', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'REMOTE_PATH_ACCTNAMED', '', 'System', CURRENT_TIMESTAMP),
+
 ('COPY_NFS_SAI', 'SOURCE_PATH_POSITD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'SOURCE_PATH_ACTVYD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'SOURCE_PATH_SECMASTER', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'SOURCE_PATH_TRDREV', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'SOURCE_PATH_ACCTBALD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'SOURCE_PATH_ACCTNAMED', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
+
 
 
 
@@ -463,15 +467,6 @@ VALUES
 ('COPY_NFS_TRI', 'PATH_SUFFIX', 'NFS/0231/RAWDATA', 'System', CURRENT_TIMESTAMP),
 
 
-
-delete from metadata.PipelineConfiguration 
-where PipelineKey = 'FP_MIGRATE_FINRA_RAA'
-;
-
-
-INSERT INTO metadata.PipelineConfiguration 
-(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
-VALUES
 
 ('FP_MIGRATE_FINRA_RAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/FINRA/23131', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_RAA', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
