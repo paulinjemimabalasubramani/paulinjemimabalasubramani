@@ -201,7 +201,7 @@ class Config:
 
             if file_path:
                 try:
-                    with open(file_path, 'r') as f:
+                    with open(file=file_path, mode='rt', encoding='utf-8', errors='ignore') as f:
                         contents = yaml.load(f, Loader=yaml.SafeLoader)
                 except (BaseException, AssertionError) as e:
                     except_str = f'Error File was not read: {file_path}'
@@ -876,10 +876,19 @@ def get_csv_rows(csv_file_path:str, csv_encoding:str='utf-8-sig'):
     """
     Generator function to get csv file rows one by one
     """
-    with open(csv_file_path, mode='rt', newline='', encoding=csv_encoding, errors='ignore') as csvfile:
+    with open(file=csv_file_path, mode='rt', newline='', encoding=csv_encoding, errors='ignore') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            rowl = {re.sub(column_regex, '_', str(k).lower().strip()):str(v).strip() for k, v in row.items()}
+            rowl = {}
+            for k, v in row.items():
+                key = re.sub(column_regex, '_', str(k).lower().strip())
+
+                if v is not None: 
+                    val = str(v).strip()
+                else: 
+                    val = None
+
+                rowl[key] = val
             yield rowl
 
 

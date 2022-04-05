@@ -445,11 +445,15 @@ VALUES
 ('COPY_NFS_SAI', 'REMOTE_PATH_SECMASTER', '\\dpwoma01prd.sai.saionline.com\nfscreports\secmast', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'REMOTE_PATH_TRDREV', '\\dpwoma01prd.sai.saionline.com\nfscreports\TRDREV_TD', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'REMOTE_PATH_ACCTBALD', '\\dpwoma01prd.sai.saionline.com\nfscreports\acctbald', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'REMOTE_PATH_ACCTNAMED', '', 'System', CURRENT_TIMESTAMP),
+
 ('COPY_NFS_SAI', 'SOURCE_PATH_POSITD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'SOURCE_PATH_ACTVYD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'SOURCE_PATH_SECMASTER', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'SOURCE_PATH_TRDREV', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
 ('COPY_NFS_SAI', 'SOURCE_PATH_ACCTBALD', '/usr/local/spark/resources/fileshare/Shared/NFS-ASSETS', 'System', CURRENT_TIMESTAMP),
+('COPY_NFS_SAI', 'SOURCE_PATH_ACCTNAMED', '/usr/local/spark/resources/fileshare/Shared/NFS-CA', 'System', CURRENT_TIMESTAMP),
+
 
 
 
@@ -463,15 +467,6 @@ VALUES
 ('COPY_NFS_TRI', 'PATH_SUFFIX', 'NFS/0231/RAWDATA', 'System', CURRENT_TIMESTAMP),
 
 
-
-delete from metadata.PipelineConfiguration 
-where PipelineKey = 'FP_MIGRATE_FINRA_RAA'
-;
-
-
-INSERT INTO metadata.PipelineConfiguration 
-(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
-VALUES
 
 ('FP_MIGRATE_FINRA_RAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/FINRA/23131', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_RAA', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
@@ -487,7 +482,93 @@ VALUES
 ('FP_MIGRATE_FINRA_RAA', 'FIRM_CRD_NUMBER', '23131', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_RAA', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP),
 
+('FP_MIGRATE_FINRA_FSC', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/FINRA/7461', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'SCHEMA_NAME', 'FINRA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'AZURE_STORAGE_ACCOUNT_MID', 'fsc', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'SNOWFLAKE_ROLE', 'AD_SNOWFLAKE_QA_DBA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'SNOWFLAKE_WAREHOUSE', 'QA_RAW_WH', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'FILE_HISTORY_START_DATE', '2021-05-15', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/finra_schema', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'FIRM_CRD_NUMBER', '7461', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP),
 
+('FP_MIGRATE_FINRA_SPF', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/FINRA/133763', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'SCHEMA_NAME', 'FINRA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'AZURE_STORAGE_ACCOUNT_MID', 'spf', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'SNOWFLAKE_ROLE', 'AD_SNOWFLAKE_QA_DBA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'SNOWFLAKE_WAREHOUSE', 'QA_RAW_WH', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'FILE_HISTORY_START_DATE', '2021-05-15', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/finra_schema', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'FIRM_CRD_NUMBER', '133763', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP),
+
+('FP_MIGRATE_FINRA_WFS', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/FINRA/421', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'SCHEMA_NAME', 'FINRA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'AZURE_STORAGE_ACCOUNT_MID', 'wfs', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'SNOWFLAKE_ROLE', 'AD_SNOWFLAKE_QA_DBA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'SNOWFLAKE_WAREHOUSE', 'QA_RAW_WH', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'FILE_HISTORY_START_DATE', '2021-05-15', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/finra_schema', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'FIRM_CRD_NUMBER', '421', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP),
+
+('FP_MIGRATE_FINRA_SAI', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/FINRA/10205', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'SCHEMA_NAME', 'FINRA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'AZURE_STORAGE_ACCOUNT_MID', 'sai', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'SNOWFLAKE_ROLE', 'AD_SNOWFLAKE_QA_DBA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'SNOWFLAKE_WAREHOUSE', 'QA_RAW_WH', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'FILE_HISTORY_START_DATE', '2021-05-15', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/finra_schema', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'FIRM_CRD_NUMBER', '10205', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP),
+
+('FP_MIGRATE_FINRA_SAA', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/FINRA/110518', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'SCHEMA_NAME', 'FINRA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'AZURE_STORAGE_ACCOUNT_MID', 'sai', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'SNOWFLAKE_ROLE', 'AD_SNOWFLAKE_QA_DBA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'SNOWFLAKE_WAREHOUSE', 'QA_RAW_WH', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'FILE_HISTORY_START_DATE', '2021-05-15', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/finra_schema', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'FIRM_CRD_NUMBER', '110518', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP),
+
+('FP_MIGRATE_FINRA_TRD', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/FINRA/25803', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'SCHEMA_NAME', 'FINRA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'AZURE_STORAGE_ACCOUNT_MID', 'trd', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'SNOWFLAKE_ROLE', 'AD_SNOWFLAKE_QA_DBA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'SNOWFLAKE_WAREHOUSE', 'QA_RAW_WH', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'REMOTE_PATH', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'COPY_ONLY_FILES', '', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'DELETE_FILES_AFTER', 'FALSE', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'FILE_HISTORY_START_DATE', '2021-05-15', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'SCHEMA_FILE_PATH', '/usr/local/spark/resources/fileshare/EDIP-Code/config/finra_schema', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'FIRM_CRD_NUMBER', '25803', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP)
+
+INSERT INTO metadata.PipelineConfiguration 
+(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
+VALUES
 
 
 ;
@@ -495,8 +576,9 @@ VALUES
 
 
 
-select * from metadata.PipelineConfiguration
-where PipelineKey = 'COPY_NFS'
+select PipelineKey, count(1) from metadata.PipelineConfiguration
+where PipelineKey like 'FP_MIGRATE_FINRA_%'
+group by PipelineKey
 ;
 
 
@@ -515,11 +597,6 @@ ORDER BY p.UpdateTs DESC, p.PipelineId DESC
 
 
 
-update metadata.PrimaryKey
-set AssetSchema = 'NFS'
-where id = 459
-;
-
 
 
 select * from metadata.PrimaryKey
@@ -528,38 +605,9 @@ order by Id desc;
 
 
 insert into metadata.PrimaryKey
-(	[RevisionSeq],
-	[DataSource],
-	[AssetSchema],
-	[AssetName],
-	[AssetUniqueKey],
-	[SystemPrimaryKey],
-	[BusinessKey],
-	[CreateTS],
-	[CreatedBy],
-	[UpdateTS],
-	[UpdatedBy],
-	[DomainName],
-	[DataSourceUniqueKey]
-
-)
+([RevisionSeq],[DataSource],[AssetSchema],[AssetName],[AssetUniqueKey],[SystemPrimaryKey],[BusinessKey],[CreateTS],[CreatedBy],[UpdateTS],[UpdatedBy],[DomainName],[DataSourceUniqueKey])
 VALUES
-(
-1,
-'FINRA',
-'FINRA',
-'BranchInformationReport',
-'BranchInformationReport',
-'firm_crd_number,branch_crd_number',
-'',
-CURRENT_TIMESTAMP,
-'System',
-CURRENT_TIMESTAMP,
-'System',
-'FP',
-'FINRA'
-)
-
+(1,'FINRA','FINRA','BranchInformationReport','BranchInformationReport','firm_crd_number,branch_crd_number','',CURRENT_TIMESTAMP,'System',CURRENT_TIMESTAMP,'System','FP','FINRA')
 ;
 
 
