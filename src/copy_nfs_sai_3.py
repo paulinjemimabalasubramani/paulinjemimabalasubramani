@@ -93,7 +93,6 @@ def copy_file(file_type:str, remote_path:str):
         except:
             files_no_date[file_name_noext] = remote_file_path
 
-
     if files:
         remote_file_path = files[max(files)]
         source_file_name = (clientid + '_' + file_type + '.DAT').upper()

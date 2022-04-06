@@ -37,7 +37,6 @@ sys.app.parent_name = os.path.basename(__file__)
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file
 
 from distutils.dir_util import copy_tree
-from distutils.file_util import copy_file
 
 
 

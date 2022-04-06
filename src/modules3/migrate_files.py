@@ -354,7 +354,12 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
     file_meta = fn_extract_file_meta(file_path=file_path, zip_file_path=zip_file_path)
     if not file_meta or (data_settings.key_datetime > file_meta['key_datetime']): return
 
-    sys.app.error_file = file_meta['file_path']
+    if file_meta['file_path'] and os.path.isfile(file_meta['file_path']):
+        sys.app.error_file = file_meta['file_path']
+        file_size = os.path.getsize(file_meta['file_path'])
+    else:
+        sys.app.error_file = file_meta['table_name']
+        file_size = 0
 
     partition_by = '_'.join([datetime.strftime(file_meta['key_datetime'], r'%Y_%m_%d_%H_%M_%S'), uuid4().hex])
 
@@ -367,7 +372,7 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         ELT_PROCESS_ID_str.lower(): data_settings.elt_process_id,
         'pipelinekey': data_settings.pipelinekey,
         'datasourcekey': data_settings.pipeline_datasourcekey,
-        'file_size_kb': os.path.getsize(file_meta['file_path'])/1024,
+        'file_size_kb': file_size / 1024,
         'zip_file_fully_ingested': False if zip_file_path else True,
         'reingest_file': False,
         'partition_by': partition_by,

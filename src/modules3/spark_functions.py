@@ -15,7 +15,7 @@ https://spark.apache.org/docs/latest/configuration
 # %% libraries
 import os, re
 
-from .common_functions import logger, catch_error, is_pc, extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, ELT_PROCESS_ID_str, column_regex
+from .common_functions import logger, catch_error, is_pc, get_extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, ELT_PROCESS_ID_str, column_regex
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
@@ -113,6 +113,8 @@ def create_spark():
         spark = add_from_data_settings(spark=spark, data_settings_name=data_settings_name, spark_config_name=spark_config_name)
 
     if is_pc:
+        drivers_path = os.path.realpath(os.path.dirname(__file__) + '/../../drivers')
+        extraClassPath = get_extraClassPath(drivers_path=drivers_path)
         spark = (spark
         .config('spark.driver.extraClassPath', extraClassPath)
         .config('spark.dynamicAllocation.schedulerBacklogTimeout', '20s')
