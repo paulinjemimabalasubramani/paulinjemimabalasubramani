@@ -609,15 +609,15 @@ VALUES
 ('FP_MIGRATE_LR', 'SQL_SERVER', 'TSQLOLTP01', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_LR', 'SQL_DATABASE', 'LR', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_LR', 'SQL_TABLE_LIST', '/usr/local/spark/resources/fileshare/EDIP-Code/config/lookup_files/LNR_Tables.csv', 'System', CURRENT_TIMESTAMP),
-
+('FP_MIGRATE_LR', 'IS_FULL_LOAD', 'TRUE', 'System', CURRENT_TIMESTAMP),
 
 ;
 
 
 
-select distinct ConfigValue from metadata.PipelineConfiguration 
-where ConfigKey like 'SOURCE_PATH%'
-order by ConfigValue;
+select * from metadata.PipelineConfiguration 
+where PipelineKey = 'FP_MIGRATE_LR';
+
 
 
 
