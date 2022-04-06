@@ -5,31 +5,27 @@ from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
 from airflow.utils.dates import days_ago
 
+from dag_modules.dag_common import default_args, jars, executor_cores, executor_memory, num_executors, src_path, spark_conn_id, spark_conf
 
 
-# %% Parameters
+
+# %% Pipeline Parameters
 
 pipelinekey = 'MAINTENANCE_CREATE_SOURCE_PATHS'
 
-airflow_app_name = pipelinekey.lower()
-description_DAG = 'Create Paths for data source at the local server'
-
 tags = ['Maintenance']
 
-default_args = {
-    'owner': 'EDIP',
-    'depends_on_past': False,
-}
+schedule_interval = None # https://crontab.guru/
 
 
 
 # %% Create DAG
 
 with DAG(
-    airflow_app_name,
+    dag_id = pipelinekey.lower(),
     default_args = default_args,
-    description = description_DAG,
-    schedule_interval = None, # https://crontab.guru/
+    description = pipelinekey,
+    schedule_interval = schedule_interval,
     start_date = days_ago(1),
     tags = tags,
     catchup = False,
@@ -42,7 +38,7 @@ with DAG(
 
     copy_files = BashOperator(
         task_id = pipelinekey,
-        bash_command = f'python /usr/local/spark/app/create_source_paths_3.py',
+        bash_command = f'python {src_path}/create_source_paths_3.py',
         dag = dag
     )
 
