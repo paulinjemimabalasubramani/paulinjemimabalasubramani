@@ -58,13 +58,28 @@ VALUES
 
 ('AG_DATASOURCE_NFS_SAI_COPY', '', 'NFS', 'SAI', 'copy_nfs_sai', 'AG', 'System', CURRENT_TIMESTAMP),
 
-('AG_DATASOURCE_NFS_TRI_COPY', '', 'NFS', 'TRI', 'copy_nfs_tri', 'AG', 'System', CURRENT_TIMESTAMP),
+('AG_DATASOURCE_NFS_TRI_COPY', '', 'NFS', 'TRI', 'copy_nfs_tri', 'AG', 'System', CURRENT_TIMESTAMP)
+
+INSERT INTO metadata.DataSource
+(DataSourceKey, Category, SubCategory, Firm, DataSourceType, DataProvider, UpdatedBy, UpdateTS, DataSourceUniqueKey)
+VALUES
+('FP_AG_DATASOURCE_FINRA_RAA', 'Financial Professional', 'FINRA', 'RAA', 'finra', 'FINRA', 'System', CURRENT_TIMESTAMP, 'FINRA'),
+('FP_AG_DATASOURCE_FINRA_FSC', 'Financial Professional', 'FINRA', 'FSC', 'finra', 'FINRA', 'System', CURRENT_TIMESTAMP, 'FINRA'),
+('FP_AG_DATASOURCE_FINRA_SAA', 'Financial Professional', 'FINRA', 'SAA', 'finra', 'FINRA', 'System', CURRENT_TIMESTAMP, 'FINRA'),
+('FP_AG_DATASOURCE_FINRA_SAI', 'Financial Professional', 'FINRA', 'SAI', 'finra', 'FINRA', 'System', CURRENT_TIMESTAMP, 'FINRA'),
+('FP_AG_DATASOURCE_FINRA_SPF', 'Financial Professional', 'FINRA', 'SPF', 'finra', 'FINRA', 'System', CURRENT_TIMESTAMP, 'FINRA'),
+('FP_AG_DATASOURCE_FINRA_TRD', 'Financial Professional', 'FINRA', 'TRD', 'finra', 'FINRA', 'System', CURRENT_TIMESTAMP, 'FINRA'),
+('FP_AG_DATASOURCE_FINRA_WFS', 'Financial Professional', 'FINRA', 'WFS', 'finra', 'FINRA', 'System', CURRENT_TIMESTAMP, 'FINRA'),
 
 
 INSERT INTO metadata.DataSource
 (DataSourceKey, Category, SubCategory, Firm, DataSourceType, DataProvider, UpdatedBy, UpdateTS, DataSourceUniqueKey)
 VALUES
-('FP_AG_DATASOURCE_FINRA_RAA', 'Financial Professional', 'FINRA', 'RAA', 'finra', 'FINRA', 'System', CURRENT_TIMESTAMP, 'FINRA')
+('FP_AG_DATASOURCE_LR', 'Financial Professional', 'LR', '', 'sql', 'AG', 'System', CURRENT_TIMESTAMP, 'FP.LR'),
+
+
+
+
 ;
 
 
@@ -136,7 +151,20 @@ VALUES
 ('COPY_NFS_TRI', 'copy', 'Pipeline to copy NFS TRI files from remote location', 'AG_DATASOURCE_NFS_TRI_COPY', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
 
-('FP_MIGRATE_FINRA_RAA', 'outbound_migration', 'Pipeline to migrate FP-FINRA files to Snowflake', 'FP_AG_DATASOURCE_FINRA_RAA', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP)
+('FP_MIGRATE_FINRA_RAA', 'outbound_migration', 'Pipeline to migrate FP-FINRA files to Snowflake', 'FP_AG_DATASOURCE_FINRA_RAA', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_FSC', 'outbound_migration', 'Pipeline to migrate FP-FINRA files to Snowflake', 'FP_AG_DATASOURCE_FINRA_FSC', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAA', 'outbound_migration', 'Pipeline to migrate FP-FINRA files to Snowflake', 'FP_AG_DATASOURCE_FINRA_SAA', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SAI', 'outbound_migration', 'Pipeline to migrate FP-FINRA files to Snowflake', 'FP_AG_DATASOURCE_FINRA_SAI', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_SPF', 'outbound_migration', 'Pipeline to migrate FP-FINRA files to Snowflake', 'FP_AG_DATASOURCE_FINRA_SPF', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_TRD', 'outbound_migration', 'Pipeline to migrate FP-FINRA files to Snowflake', 'FP_AG_DATASOURCE_FINRA_TRD', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_FINRA_WFS', 'outbound_migration', 'Pipeline to migrate FP-FINRA files to Snowflake', 'FP_AG_DATASOURCE_FINRA_WFS', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+
+INSERT INTO metadata.Pipeline
+(PipelineKey, PipelineCategory, PipelineDescription, DataSourceKey, PreRunCode, Schedule, IsActive, UpdatedBy, UpdateTS)
+VALUES
+('FP_MIGRATE_LR', 'outbound_migration', 'Pipeline to migrate FP-LR files to Snowflake', 'FP_AG_DATASOURCE_LR', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
 
 
 ;
@@ -566,13 +594,30 @@ VALUES
 ('FP_MIGRATE_FINRA_TRD', 'FIRM_CRD_NUMBER', '25803', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_FINRA_TRD', 'ADD_FIRM_TO_TABLE_NAME', 'TRUE', 'System', CURRENT_TIMESTAMP)
 
+
+
 INSERT INTO metadata.PipelineConfiguration 
 (PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
 VALUES
+('FP_MIGRATE_LR', 'SOURCE_PATH', '/usr/local/spark/resources/fileshare/Shared/LR', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_LR', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_LR', 'SCHEMA_NAME', 'LR', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_LR', 'AZURE_STORAGE_ACCOUNT_MID', 'aggr', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_LR', 'SNOWFLAKE_ROLE', 'AD_SNOWFLAKE_QA_DBA', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_LR', 'SNOWFLAKE_WAREHOUSE', 'QA_RAW_WH', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_LR', 'SQL_KEY_VAULT_ACCOUNT', 'TSQLOLTP01', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_LR', 'SQL_SERVER', 'TSQLOLTP01', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_LR', 'SQL_DATABASE', 'LR', 'System', CURRENT_TIMESTAMP),
+('FP_MIGRATE_LR', 'SQL_TABLE_LIST', '/usr/local/spark/resources/fileshare/EDIP-Code/config/lookup_files/LNR_Tables.csv', 'System', CURRENT_TIMESTAMP),
 
 
 ;
 
+
+
+select distinct ConfigValue from metadata.PipelineConfiguration 
+where ConfigKey like 'SOURCE_PATH%'
+order by ConfigValue;
 
 
 

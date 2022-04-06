@@ -29,11 +29,24 @@ ELT_PROCESS_ID_str = 'elt_process_id'
 
 column_regex = r'[\W]+'
 
-is_pc = platform.system().lower() == 'windows'
+generic_pipelinekey = 'GENERIC'
 
-code_repo_path = '/usr/local/spark/resources/fileshare/EDIP-Code'
-drivers_path = os.path.join(code_repo_path, 'drivers')
-config_path = os.path.join(code_repo_path, 'config')
+file_hist_sql_schema = 'edip'
+metadata_sql_schema = 'metadata'
+
+metadata_sql_table_names = {
+    'primary_key': 'PrimaryKey',
+    'pipe_config': 'PipelineConfiguration',
+    'pipe_instance': 'PipelineInstance',
+    'pipeline': 'Pipeline',
+    'datasource': 'DataSource',
+}
+
+
+
+# %% Determine if is_pc (Debug Mode) or not (Prod Mode)
+
+is_pc = platform.system().lower() == 'windows'
 
 if is_pc:
     os.environ['SPARK_HOME']  = r'C:\Spark\spark-3.1.2-bin-hadoop3.2'
@@ -44,10 +57,6 @@ if is_pc:
     sys.path.insert(0, '%SPARK_HOME%\bin')
     sys.path.insert(0, '%HADOOP_HOME%\bin')
     sys.path.insert(0, '%JAVA_HOME%\bin')
-
-    python_dirname = os.path.dirname(__file__)
-    drivers_path = os.path.realpath(python_dirname + '/../../drivers')
-    config_path = os.path.realpath(python_dirname + '/../../config')
 
 
 
@@ -270,7 +279,6 @@ def get_data_settings(logger=None):
     Apply Data Settings from various environments
     Order of Command: CLI args > Environmental Variables > SQL Server Settings (Pipeline Specific > Generic)
     """
-    generic_pipelinekey = 'GENERIC'
     defaults = {
         'pipelinekey': generic_pipelinekey,
         'environment': sys.app.environment,
@@ -296,18 +304,15 @@ def get_data_settings(logger=None):
         'sql_key_vault_account': data_settings.metadata_sql_key_vault_account,
         'sql_server': data_settings.metadata_sql_server,
         'sql_database': data_settings.metadata_sql_database,
-        'sql_schema': 'edip',
+        'sql_schema': file_hist_sql_schema,
     }
 
     _, cloud_file_hist_conf['sql_id'], cloud_file_hist_conf['sql_pass'] = get_secrets(cloud_file_hist_conf['sql_key_vault_account'].lower(), logger=logger)
 
     pipeline_metadata_conf = cloud_file_hist_conf.copy()
-    pipeline_metadata_conf['sql_schema'] = 'metadata'
-    pipeline_metadata_conf['sql_table_name_primary_key'] = 'PrimaryKey'
-    pipeline_metadata_conf['sql_table_name_pipe_config'] = 'PipelineConfiguration'
-    pipeline_metadata_conf['sql_table_name_pipe_instance'] = 'PipelineInstance'
-    pipeline_metadata_conf['sql_table_name_pipeline'] = 'Pipeline'
-    pipeline_metadata_conf['sql_table_name_datasource'] = 'DataSource'
+    pipeline_metadata_conf['sql_schema'] = metadata_sql_schema
+    for k, v in metadata_sql_table_names.items():
+        pipeline_metadata_conf[f'sql_table_name_{k}'] = v
 
     add_PipelineConfiguration_to_data_settings(data_settings=data_settings, pipeline_metadata_conf=pipeline_metadata_conf, PipelineKey=data_settings.pipelinekey)
     add_PipelineConfiguration_to_data_settings(data_settings=data_settings, pipeline_metadata_conf=pipeline_metadata_conf, PipelineKey=generic_pipelinekey) # generic pipelinekeys have the lowest power.
@@ -329,7 +334,7 @@ def get_data_settings(logger=None):
         cloud_file_hist_conf['sql_file_history_table'] = sql_file_history_table
 
     if is_pc: # Read Data Settings from file
-        data_path = os.path.realpath(python_dirname + '/../../../Shared')
+        data_path = os.path.realpath(os.path.dirname(__file__) + '/../../../Output')
         data_settings.temporary_file_path = os.path.join(data_path, 'TEMP')
         data_settings.output_ddl_path = os.path.join(data_path, 'DDL')
         data_settings.output_log_path = os.path.join(data_path, 'logs')
@@ -558,10 +563,7 @@ class CreateLogger:
 
 
 
-
 logger = CreateLogger()
-
-
 logger.info({EXECUTION_DATE_str: execution_date})
 logger.info(system_info(logger=logger))
 
@@ -574,7 +576,7 @@ def get_pipeline_info():
     """
     Get Generic Information about the Pipeline
     """
-    if not hasattr(data_settings, 'pipelinekey'):
+    if not hasattr(data_settings, 'pipelinekey') or data_settings.pipelinekey.upper() == generic_pipelinekey.upper():
         return
 
     pipelinekey = data_settings.pipelinekey
@@ -583,9 +585,9 @@ def get_pipeline_info():
 
     sqlstr = f"""SELECT TOP 1 p.*, ds.Category, ds.SubCategory, ds.Firm, ds.DataSourceType, ds.DataProvider
 FROM {sql_pipeline_table} p
-    LEFT JOIN {sql_datasource_table} ds ON p.DataSourceKey = ds.DataSourceKey
+    LEFT JOIN {sql_datasource_table} ds ON UPPER(p.DataSourceKey) = UPPER(ds.DataSourceKey)
 WHERE p.IsActive = 1
-    and p.PipelineKey = '{pipelinekey}'
+    and UPPER(p.PipelineKey) = '{pipelinekey.upper()}'
 ORDER BY p.UpdateTs DESC, p.PipelineId DESC
 ;"""
 
@@ -601,7 +603,9 @@ ORDER BY p.UpdateTs DESC, p.PipelineId DESC
             cursor.execute(sqlstr)
             row = cursor.fetchone()
 
-    if not row: raise ValueError(f'Pipeline "{pipelinekey}" is not defined in metadata.Pipeline')
+    if not row:
+        logger.warning(f'Pipeline "{pipelinekey}" is not defined in metadata.Pipeline')
+        return
 
     for key, value in row.items():
         setattr(data_settings, 'pipeline_' + key.strip().lower(), value.strip() if isinstance(value, str) else value)
@@ -632,10 +636,6 @@ def get_extraClassPath(drivers_path:str):
 
     extraClassPath = join_drivers_by.join(drivers)
     return extraClassPath
-
-
-
-extraClassPath = get_extraClassPath(drivers_path=drivers_path)
 
 
 
@@ -726,7 +726,7 @@ def add_new_pipeline_instance():
 
     schema_name = pipeline_metadata_conf['sql_schema']
     table_name = pipeline_metadata_conf['sql_table_name_pipe_instance']
-    full_table_name = f"{schema_name}.{table_name}"
+    full_table_name = f'{schema_name}.{table_name}'
 
     sqlstr_table_exists = f"""SELECT COUNT(*) AS CNT
     FROM INFORMATION_SCHEMA.TABLES
@@ -795,7 +795,7 @@ def finalize_new_pipeline_instance(error_message:str=None):
     """
     schema_name = pipeline_metadata_conf['sql_schema']
     table_name = pipeline_metadata_conf['sql_table_name_pipe_instance']
-    full_table_name = f"{schema_name}.{table_name}"
+    full_table_name = f'{schema_name}.{table_name}'
     total_minutes = (datetime.now() - execution_date_start).seconds / 60
     run_status = 'Failed' if error_message else 'Succeeded'
 

@@ -59,7 +59,6 @@ date_levels = [r'%Y', r'%b', r'%Y%m%d']
 
 
 
-
 # %% Find Latest Folder
 
 @catch_error(logger)
