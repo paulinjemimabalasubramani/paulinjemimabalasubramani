@@ -38,12 +38,6 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    copy_files = BashOperator(
-        task_id = f'COPY_FILES_{pipelinekey}',
-        bash_command = f'python {src_path}/copy_files_3.py --pipelinekey {pipelinekey}',
-        dag = dag
-    )
-
     migrate_data = SparkSubmitOperator(
         task_id = pipelinekey,
         application = f'{src_path}/{python_spark_code}.py',
@@ -60,13 +54,7 @@ with DAG(
         dag = dag
         )
 
-    delete_files = BashOperator(
-        task_id = f'DELETE_FILES_{pipelinekey}',
-        bash_command = f'python {src_path}/delete_files_3.py --pipelinekey {pipelinekey}',
-        dag = dag
-    )
-
-    startpipe >> copy_files >> migrate_data >> delete_files
+    startpipe >> migrate_data
 
 
 
