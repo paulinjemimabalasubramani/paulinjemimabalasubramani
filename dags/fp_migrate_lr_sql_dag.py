@@ -24,7 +24,7 @@ schedule_interval = '0 12 * * *' # https://crontab.guru/
 # %% Create DAG
 
 with DAG(
-    dag_id = pipelinekey.lower()+'_sql',
+    dag_id = pipelinekey.lower() + '_sql',
     default_args = default_args,
     description = pipelinekey,
     schedule_interval = schedule_interval,
@@ -36,12 +36,6 @@ with DAG(
     startpipe = BashOperator(
         task_id = 'Start_Pipe',
         bash_command = 'echo "Start Pipeline"'
-    )
-
-    copy_files = BashOperator(
-        task_id = f'COPY_FILES_{pipelinekey}',
-        bash_command = f'python {src_path}/copy_files_3.py --pipelinekey {pipelinekey}',
-        dag = dag
     )
 
     migrate_data = SparkSubmitOperator(
@@ -60,13 +54,7 @@ with DAG(
         dag = dag
         )
 
-    delete_files = BashOperator(
-        task_id = f'DELETE_FILES_{pipelinekey}',
-        bash_command = f'python {src_path}/delete_files_3.py --pipelinekey {pipelinekey}',
-        dag = dag
-    )
-
-    startpipe >> copy_files >> migrate_data >> delete_files
+    startpipe >> migrate_data
 
 
 
