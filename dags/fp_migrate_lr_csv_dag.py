@@ -24,7 +24,7 @@ schedule_interval = '0 12 * * *' # https://crontab.guru/
 # %% Create DAG
 
 with DAG(
-    dag_id = pipelinekey.lower()+'_csv',
+    dag_id = pipelinekey.lower() + '_csv',
     default_args = default_args,
     description = pipelinekey,
     schedule_interval = schedule_interval,
