@@ -7,7 +7,7 @@ Generic Code to Migrate SQL Server Tables to ADLS Gen 2
 
 # %% Parse Arguments
 
-if False: # Set to False for Debugging
+if True: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
@@ -49,6 +49,8 @@ _, sql_user, sql_pass = get_secrets(data_settings.sql_key_vault_account.lower(),
 
 error_tables = []
 
+len_table_list = 0
+
 
 
 # %% Create Connections
@@ -64,6 +66,7 @@ def select_sql_tables():
     """
     Get list of tables to ingest
     """
+    global len_table_list
     table_list = []
 
     for row in get_csv_rows(csv_file_path=data_settings.sql_table_list):
@@ -71,6 +74,7 @@ def select_sql_tables():
             full_table_name = f"{row['schemaname']}.{row['tablename']}".lower()
             table_list.append(full_table_name)
 
+    len_table_list = len(table_list)
     return len(table_list), table_list
 
 
@@ -108,6 +112,8 @@ def process_sql_table(file_meta):
     Main Processing of single sql table
     """
     schema_name, table_name = file_meta['table_name'].split('.')
+    file_meta['table_name'] = f'{schema_name}_{table_name}'
+
     try:
         table = read_sql(
             spark = spark,
@@ -165,6 +171,15 @@ migrate_all_files(
     fn_select_files = select_sql_tables,
     fn_get_dtypes = get_dtypes,
     )
+
+
+
+# %%
+
+if error_tables:
+    logger.warning(f'Following {len(error_tables)} out of {len_table_list} tables were not migrated: {error_tables}')
+else:
+    logger.info(f'All {len_table_list} tables have been migrated')
 
 
 
