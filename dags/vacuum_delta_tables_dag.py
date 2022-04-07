@@ -15,7 +15,7 @@ from dag_modules.dag_common import default_args, jars, executor_cores, executor_
 pipelinekey = 'VACUUM_DELTA_TABLES'
 python_spark_code = 'vacuum_delta_tables'
 
-tags = ['DB:AZURE']
+tags = ['Maintenance']
 
 schedule_interval = None # https://crontab.guru/
 
