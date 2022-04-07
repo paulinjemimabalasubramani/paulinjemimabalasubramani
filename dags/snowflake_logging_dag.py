@@ -15,7 +15,7 @@ from dag_modules.dag_common import default_args, jars, executor_cores, executor_
 pipelinekey = 'SNOWFLAKE_LOGGING'
 python_spark_code = 'snowflake_logging'
 
-tags = ['DB:SNOWFLAKE']
+tags = ['Maintenance']
 
 schedule_interval = '0 */2 * * *' # https://crontab.guru/
 
