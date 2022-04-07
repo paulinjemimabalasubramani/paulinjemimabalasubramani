@@ -12,19 +12,19 @@ from dag_modules.dag_common import default_args, jars, executor_cores, executor_
 
 # %% Pipeline Parameters
 
-pipelinekey = 'CA_MIGRATE_NFS_FSC'
-python_spark_code = 'migrate_nfs_3'
+pipelinekey = 'FP_MIGRATE_LR'
+python_spark_code = 'migrate_csv_3'
 
-tags = ['DB:ClientAccount', 'SC:NFS']
+tags = ['DB:FP', 'SC:LR']
 
-schedule_interval = '0 13 * * *' # https://crontab.guru/
+schedule_interval = '0 12 * * *' # https://crontab.guru/
 
 
 
 # %% Create DAG
 
 with DAG(
-    dag_id = pipelinekey.lower(),
+    dag_id = pipelinekey.lower()+'_csv',
     default_args = default_args,
     description = pipelinekey,
     schedule_interval = schedule_interval,
@@ -41,12 +41,6 @@ with DAG(
     copy_files = BashOperator(
         task_id = f'COPY_FILES_{pipelinekey}',
         bash_command = f'python {src_path}/copy_files_3.py --pipelinekey {pipelinekey}',
-        dag = dag
-    )
-
-    convert_to_json = BashOperator(
-        task_id = f'CONVERT_TO_JSON_{pipelinekey}',
-        bash_command = f'python {src_path}/nfs_to_json_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
@@ -72,7 +66,7 @@ with DAG(
         dag = dag
     )
 
-    startpipe >> copy_files >> convert_to_json >> migrate_data >> delete_files
+    startpipe >> copy_files >> migrate_data >> delete_files
 
 
 

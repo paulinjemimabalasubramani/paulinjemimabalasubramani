@@ -2,39 +2,35 @@
 
 from airflow import DAG
 
-from airflow.operators.bash_operator import BashOperator
-from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
+from airflow.operators.bash import BashOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.utils.dates import days_ago
 
+from dag_modules.dag_common import default_args, jars, executor_cores, executor_memory, num_executors, src_path, spark_conn_id, spark_conf
 
 
-# %% Parameters
-spark_master = "spark://spark:7077"
 
+# %% Pipeline Parameters
 
-spark_app_name = "Vacuum Delta Tables"
-airflow_app_name = "vacuum_delta_tables"
-description_DAG = 'Vacuum Delta Tables'
+pipelinekey = 'VACUUM_DELTA_TABLES'
+python_spark_code = 'vacuum_delta_tables'
 
+tags = ['DB:AZURE']
 
-default_args = {
-    'owner': 'EDIP',
-    'depends_on_past': False,
-}
-
-
-jars = "/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar,/usr/local/spark/resources/jars/spark-xml_2.12-0.12.0.jar"
+schedule_interval = None # https://crontab.guru/
 
 
 
 # %% Create DAG
 
 with DAG(
-    airflow_app_name,
+    dag_id = pipelinekey.lower(),
     default_args = default_args,
-    description = description_DAG,
-    schedule_interval = None,
+    description = pipelinekey,
+    schedule_interval = schedule_interval,
     start_date = days_ago(1),
+    tags = tags,
+    catchup = False,
 ) as dag:
 
     startpipe = BashOperator(
@@ -43,23 +39,26 @@ with DAG(
     )
 
     vacuum_delta_tables = SparkSubmitOperator(
-         task_id = "vacuum_delta_tables",
-         application = "/usr/local/spark/app/vacuum_delta_tables.py",
-         name = spark_app_name,
-         jars = jars,
-         conn_id = "spark_default",
-         num_executors = 2,
-         executor_cores = 2,
-         executor_memory = "8G",
-         #verbose = 1,
-         conf = {"spark.master": spark_master},
-         application_args = None,
-         dag = dag
-         )
+        task_id = pipelinekey,
+        application = f'{src_path}/{python_spark_code}.py',
+        name = pipelinekey.lower(),
+        jars = jars,
+        conn_id = spark_conn_id,
+        num_executors = num_executors,
+        executor_cores = executor_cores,
+        executor_memory = executor_memory,
+        conf = spark_conf,
+        application_args = [
+            '--pipelinekey', pipelinekey,
+            ],
+        dag = dag
+        )
 
-    startpipe >> [vacuum_delta_tables]
+    startpipe >> vacuum_delta_tables
+
 
 
 
 # %%
+
 
