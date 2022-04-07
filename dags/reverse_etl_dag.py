@@ -2,39 +2,34 @@
 
 from airflow import DAG
 
-from airflow.operators.bash_operator import BashOperator
-from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
+from airflow.operators.bash import BashOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.utils.dates import days_ago
 
+from dag_modules.dag_common import default_args, jars, executor_cores, executor_memory, num_executors, src_path, spark_conn_id, spark_conf
 
 
-# %% Parameters
-spark_master = "spark://spark:7077"
+# %% Pipeline Parameters
 
+pipelinekey = 'REVERSE_ETL'
+python_spark_code = 'reverse_etl'
 
-spark_app_name = "Reverse ETL from Snowflake to SQL Server"
-airflow_app_name = "reverse_etl"
-description_DAG = 'Reverse ETL from Snowflake to SQL Server'
+tags = ['DB:SNOWFLAKE']
 
-
-default_args = {
-    'owner': 'EDIP',
-    'depends_on_past': False,
-}
-
-
-jars = "/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar,/usr/local/spark/resources/jars/spark-xml_2.12-0.12.0.jar,/usr/local/spark/resources/jars/spark-snowflake_2.12-2.9.1-spark_3.1.jar,/usr/local/spark/resources/jars/snowflake-jdbc-3.13.6.jar"
+schedule_interval = '0 2 * * *' # https://crontab.guru/
 
 
 
 # %% Create DAG
 
 with DAG(
-    airflow_app_name,
+    dag_id = pipelinekey.lower(),
     default_args = default_args,
-    description = description_DAG,
-    schedule_interval = '0 2 * * *', # https://crontab.guru/#0_2_*_*_*
+    description = pipelinekey,
+    schedule_interval = schedule_interval,
     start_date = days_ago(1),
+    tags = tags,
+    catchup = False,
 ) as dag:
 
     startpipe = BashOperator(
@@ -42,24 +37,27 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    reverse_etl_data = SparkSubmitOperator(
-         task_id = "reverse_etl",
-         application = "/usr/local/spark/app/reverse_etl.py",
-         name = spark_app_name,
-         jars = jars,
-         conn_id = "spark_default",
-         num_executors = 3,
-         executor_cores = 4,
-         executor_memory = "16G",
-         #verbose = 1,
-         conf = {"spark.master": spark_master},
-         application_args = None,
-         dag = dag
-         )
+    migrate_data = SparkSubmitOperator(
+        task_id = pipelinekey,
+        application = f'{src_path}/{python_spark_code}.py',
+        name = pipelinekey.lower(),
+        jars = jars,
+        conn_id = spark_conn_id,
+        num_executors = num_executors,
+        executor_cores = executor_cores,
+        executor_memory = executor_memory,
+        conf = spark_conf,
+        application_args = [
+            '--pipelinekey', pipelinekey,
+            ],
+        dag = dag
+        )
 
-    startpipe >> [reverse_etl_data] 
+    startpipe >> migrate_data
+
 
 
 
 # %%
+
 

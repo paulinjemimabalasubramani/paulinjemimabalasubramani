@@ -12,12 +12,12 @@ from dag_modules.dag_common import default_args, jars, executor_cores, executor_
 
 # %% Pipeline Parameters
 
-pipelinekey = 'CA_MIGRATE_NFS_FSC'
-python_spark_code = 'migrate_nfs_3'
+pipelinekey = 'FP_MIGRATE_SF'
+python_spark_code = 'migrate_csv_3'
 
-tags = ['DB:ClientAccount', 'SC:NFS']
+tags = ['DB:FP', 'SC:MIPS']
 
-schedule_interval = '0 13 * * *' # https://crontab.guru/
+schedule_interval = '30 12 * * *' # https://crontab.guru/
 
 
 
@@ -44,12 +44,6 @@ with DAG(
         dag = dag
     )
 
-    convert_to_json = BashOperator(
-        task_id = f'CONVERT_TO_JSON_{pipelinekey}',
-        bash_command = f'python {src_path}/nfs_to_json_3.py --pipelinekey {pipelinekey}',
-        dag = dag
-    )
-
     migrate_data = SparkSubmitOperator(
         task_id = pipelinekey,
         application = f'{src_path}/{python_spark_code}.py',
@@ -72,7 +66,7 @@ with DAG(
         dag = dag
     )
 
-    startpipe >> copy_files >> convert_to_json >> migrate_data >> delete_files
+    startpipe >> copy_files >> migrate_data >> delete_files
 
 
 

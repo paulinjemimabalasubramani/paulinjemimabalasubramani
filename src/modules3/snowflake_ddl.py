@@ -219,12 +219,12 @@ def create_ingest_data(table_name:str, partition_by:str):
 
 
 
-# %% Trigger snowpipe
+# %% Trigger Snowflake Procedure for ingestion
 
 @catch_error(logger)
-def trigger_snowpipe(table_name:str, partition_by:str):
+def trigger_snowflake_ingestion(table_name:str, partition_by:str):
     """
-    Trigger snowpipe to read INGEST_REQUEST files
+    Trigger Snowflake Procedure for ingestion
     """
     ingest_data = create_ingest_data(table_name=table_name, partition_by=partition_by)
     copy_command = ingest_data['COPY_COMMAND']
@@ -681,7 +681,7 @@ def create_snowflake_ddl(table, table_name:str, fn_get_dtypes, partition_by:str)
     step8(table_name=table_name)
 
     write_DDL_file_per_table(table_name=table_name)
-    copy_command = trigger_snowpipe(table_name=table_name, partition_by=partition_by)
+    copy_command = trigger_snowflake_ingestion(table_name=table_name, partition_by=partition_by)
     logger.info(f'Finished Creating Snowflake DDL for table {table_name}')
     return copy_command
 

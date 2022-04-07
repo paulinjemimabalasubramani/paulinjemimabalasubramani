@@ -2,35 +2,31 @@
 
 from airflow import DAG
 
-from airflow.operators.bash_operator import BashOperator
-from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
+from airflow.operators.bash import BashOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.utils.dates import days_ago
 
+from dag_modules.dag_common import default_args, jars, executor_cores, executor_memory, num_executors, src_path, spark_conn_id, spark_conf
 
 
-# %% Parameters
+
+# %% Pipeline Parameters
 
 pipelinekey = 'COPY_NFS_TRI'
 
-airflow_app_name = pipelinekey.lower()
-description_DAG = 'Copy NFS TRI Tables from Remote'
-
 tags = ['SC:NFS']
 
-default_args = {
-    'owner': 'EDIP',
-    'depends_on_past': False,
-}
+schedule_interval = '10 */1 * * *' # https://crontab.guru/
 
 
 
 # %% Create DAG
 
 with DAG(
-    airflow_app_name,
+    dag_id = pipelinekey.lower(),
     default_args = default_args,
-    description = description_DAG,
-    schedule_interval = '10 */1 * * *', # https://crontab.guru/
+    description = pipelinekey,
+    schedule_interval = schedule_interval,
     start_date = days_ago(1),
     tags = tags,
     catchup = False,
@@ -43,14 +39,15 @@ with DAG(
 
     copy_files = BashOperator(
         task_id = pipelinekey,
-        bash_command = f'python /usr/local/spark/app/copy_nfs_tri_3.py --pipelinekey {pipelinekey}',
+        bash_command = f'python {src_path}/copy_nfs_tri_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
-
 
     startpipe >> copy_files
 
 
 
+
 # %%
+
 

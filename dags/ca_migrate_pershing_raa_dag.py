@@ -2,42 +2,32 @@
 
 from airflow import DAG
 
-from airflow.operators.bash_operator import BashOperator
-from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
+from airflow.operators.bash import BashOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.utils.dates import days_ago
 
+from dag_modules.dag_common import default_args, jars, executor_cores, executor_memory, num_executors, src_path, spark_conn_id, spark_conf
 
 
-# %% Parameters
-spark_master = "spark://spark:7077"
-spark_executor_instances = 3
-spark_master_ip = '10.128.25.82'
+
+# %% Pipeline Parameters
 
 pipelinekey = 'CA_MIGRATE_PERSHING_RAA'
 python_spark_code = 'migrate_pershing_3'
 
-spark_app_name = pipelinekey.lower()
-airflow_app_name = spark_app_name
-description_DAG = 'Migrate ClientAccount-Pershing Tables'
-
 tags = ['DB:ClientAccount', 'SC:Pershing']
 
-default_args = {
-    'owner': 'EDIP',
-    'depends_on_past': False,
-}
+schedule_interval = '0 13 * * *' # https://crontab.guru/
 
-
-jars = "/usr/local/spark/resources/jars/delta-core_2.12-1.0.0.jar,/usr/local/spark/resources/jars/jetty-util-9.3.24.v20180605.jar,/usr/local/spark/resources/jars/hadoop-common-3.3.0.jar,/usr/local/spark/resources/jars/hadoop-azure-3.3.0.jar,/usr/local/spark/resources/jars/mssql-jdbc-9.2.1.jre8.jar,/usr/local/spark/resources/jars/spark-mssql-connector_2.12_3.0.1.jar,/usr/local/spark/resources/jars/azure-storage-8.6.6.jar,/usr/local/spark/resources/jars/spark-xml_2.12-0.12.0.jar"
 
 
 # %% Create DAG
 
 with DAG(
-    airflow_app_name,
+    dag_id = pipelinekey.lower(),
     default_args = default_args,
-    description = description_DAG,
-    schedule_interval = '0 13 * * *', # https://crontab.guru/
+    description = pipelinekey,
+    schedule_interval = schedule_interval,
     start_date = days_ago(1),
     tags = tags,
     catchup = False,
@@ -50,39 +40,35 @@ with DAG(
 
     copy_files = BashOperator(
         task_id = f'COPY_FILES_{pipelinekey}',
-        bash_command = f'python /usr/local/spark/app/copy_files_3.py --pipelinekey {pipelinekey}',
+        bash_command = f'python {src_path}/copy_files_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
     add_bulk_id = BashOperator(
         task_id = f'ADD_BULK_ID_{pipelinekey}',
-        bash_command = f'python /usr/local/spark/app/pershing_bulk_id_3.py --pipelinekey {pipelinekey}',
+        bash_command = f'python {src_path}/pershing_bulk_id_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
     migrate_data = SparkSubmitOperator(
-         task_id = pipelinekey,
-         application = f"/usr/local/spark/app/{python_spark_code}.py",
-         name = spark_app_name,
-         jars = jars,
-         conn_id = "spark_default",
-         num_executors = spark_executor_instances,
-         executor_cores = 4,
-         executor_memory = "16G",
-         #verbose = 1,
-         conf = {"spark.master": spark_master},
-         application_args = [
-             '--pipelinekey', pipelinekey,
-             '--spark_master', spark_master,
-             '--spark_executor_instances', str(spark_executor_instances),
-             #'--spark_master_ip', spark_master_ip,
-         ],
-         dag = dag
-         )
+        task_id = pipelinekey,
+        application = f'{src_path}/{python_spark_code}.py',
+        name = pipelinekey.lower(),
+        jars = jars,
+        conn_id = spark_conn_id,
+        num_executors = num_executors,
+        executor_cores = executor_cores,
+        executor_memory = executor_memory,
+        conf = spark_conf,
+        application_args = [
+            '--pipelinekey', pipelinekey,
+            ],
+        dag = dag
+        )
 
     delete_files = BashOperator(
         task_id = f'DELETE_FILES_{pipelinekey}',
-        bash_command = f'python /usr/local/spark/app/delete_files_3.py --pipelinekey {pipelinekey}',
+        bash_command = f'python {src_path}/delete_files_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
@@ -91,6 +77,6 @@ with DAG(
 
 
 
-
 # %%
+
 
