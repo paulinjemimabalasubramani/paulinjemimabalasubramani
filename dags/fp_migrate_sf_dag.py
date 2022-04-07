@@ -38,9 +38,9 @@ with DAG(
         bash_command = 'echo "Start Pipeline"'
     )
 
-    copy_files = BashOperator(
-        task_id = f'COPY_FILES_{pipelinekey}',
-        bash_command = f'python {src_path}/copy_files_3.py --pipelinekey {pipelinekey}',
+    extractdata = BashOperator(
+        task_id = f'EXTRACT_SALESFORCE_{pipelinekey}',
+        bash_command = f'python {src_path}/extract_sf.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
@@ -66,7 +66,7 @@ with DAG(
         dag = dag
     )
 
-    startpipe >> copy_files >> migrate_data >> delete_files
+    startpipe >> extractdata >> migrate_data >> delete_files
 
 
 
