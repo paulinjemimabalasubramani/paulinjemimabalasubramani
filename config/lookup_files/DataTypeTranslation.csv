@@ -32,3 +32,4 @@ snowflake_sqlserver,float,float,snowflake,sqlserver
 snowflake_sqlserver,timestamp_ntz,datetime,snowflake,sqlserver
 snowflake_sqlserver,timestamp_ltz,datetime,snowflake,sqlserver
 snowflake_sqlserver,array,varchar,snowflake,sqlserver
+snowflake_sqlserver,date,date,snowflake,sqlserver
