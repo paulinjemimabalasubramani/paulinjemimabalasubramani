@@ -17,7 +17,7 @@ python_spark_code = 'migrate_csv_with_date_3'
 
 tags = ['DB:Assets', 'SC:Datastore-Brokerage']
 
-schedule_interval = '0 7 * * *' # https://crontab.guru/
+schedule_interval = '20 7 * * *' # https://crontab.guru/
 
 
 

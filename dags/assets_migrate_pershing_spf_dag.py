@@ -17,7 +17,7 @@ python_spark_code = 'migrate_pershing_3'
 
 tags = ['DB:Assets', 'SC:Pershing']
 
-schedule_interval = '50 */2 * * *' # https://crontab.guru/
+schedule_interval = '40 */2 * * *' # https://crontab.guru/
 
 
 

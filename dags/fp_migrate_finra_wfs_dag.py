@@ -17,7 +17,7 @@ python_spark_code = 'migrate_finra_3'
 
 tags = ['DB:FP', 'SC:FINRA']
 
-schedule_interval = '0 10 * * *' # https://crontab.guru/
+schedule_interval = '50 10 * * *' # https://crontab.guru/
 
 
 

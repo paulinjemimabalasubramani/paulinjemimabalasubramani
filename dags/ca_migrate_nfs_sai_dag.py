@@ -17,7 +17,7 @@ python_spark_code = 'migrate_nfs_3'
 
 tags = ['DB:ClientAccount', 'SC:NFS']
 
-schedule_interval = '0 13 * * *' # https://crontab.guru/
+schedule_interval = '15 */1 * * *' # https://crontab.guru/
 
 
 
