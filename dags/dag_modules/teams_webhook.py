@@ -1,8 +1,5 @@
 
 # %% Import Libraries
-import os
-
-from urllib.parse import quote
 
 from airflow.providers.http.hooks.http import HttpHook
 from airflow.exceptions import AirflowException

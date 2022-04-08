@@ -74,7 +74,7 @@ def get_log_url(context):
     task_id = context['task_instance'].task_id
     execution_date = quote(context['ts'], safe='')
 
-    log_url = f"{host_connection_type}://{host_ip}:{port}/log?dag_id={dag_id}&task_id={task_id}&execution_date={execution_date}"
+    log_url = f'{host_connection_type}://{host_ip}:{port}/log?dag_id={dag_id}&task_id={task_id}&execution_date={execution_date}'
 
     return log_url
 
@@ -92,16 +92,16 @@ def on_failure(context):
     logs_url = get_log_url(context=context)
 
     teams_notification_hook = MSTeamsWebhookHook(
-        http_conn_id='msteams_webhook',
-        message=f"Failed Pipeline: {dag_id} Task: {task_id}",
-        subtitle="Pipeline Failure",
-        button_text="Logs",
-        button_url=logs_url,
-        theme_color="FF0000"
+        http_conn_id = 'msteams_webhook',
+        message = f'Failed Pipeline: {dag_id} Task: {task_id}',
+        subtitle = 'Pipeline Failure',
+        button_text = 'Logs',
+        button_url = logs_url,
+        theme_color = 'FF0000'
     )
     teams_notification_hook.execute()
 
-    title = f"Title {dag_id} - {task_id}"
+    title = f'Title {dag_id} - {task_id}'
     body = title
 
 
