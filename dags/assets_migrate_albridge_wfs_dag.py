@@ -17,7 +17,7 @@ python_spark_code = 'assets_migrate_albridge_3'
 
 tags = ['DB:Assets', 'SC:Albridge']
 
-schedule_interval = '15 */2 * * *' # https://crontab.guru/
+schedule_interval = '30 */2 * * *' # https://crontab.guru/
 
 
 

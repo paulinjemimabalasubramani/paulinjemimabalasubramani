@@ -17,7 +17,7 @@ python_spark_code = 'migrate_nfs_3'
 
 tags = ['DB:Assets', 'SC:NFS']
 
-schedule_interval = '35 */2 * * *' # https://crontab.guru/
+schedule_interval = '44 */2 * * *' # https://crontab.guru/
 
 
 

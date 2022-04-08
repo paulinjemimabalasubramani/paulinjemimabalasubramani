@@ -17,7 +17,7 @@ python_spark_code = 'migrate_csv_3'
 
 tags = ['DB:Assets', 'SC:Datastore']
 
-schedule_interval = '30 10 * * *' # https://crontab.guru/
+schedule_interval = '45 10 * * *' # https://crontab.guru/
 
 
 
