@@ -7,6 +7,31 @@ Library for common DAG settings and functions
 # %% Import Libraries
 import os
 
+from .msteams_webhook import on_failure
+
+
+
+# %% Host Address / Airflow Webserver
+
+host_connection_type = 'http'
+host_ip = os.environ.get(key='HOST_IP', default='')
+
+airflow_webserver_port = '8282'
+airflow_webserver_link = f'{host_connection_type}://{host_ip}:{airflow_webserver_port}'
+
+
+
+# %% Default Settings
+
+default_args = {
+    'owner': 'EDIP',
+    'depends_on_past': False,
+    'on_failure_callback': on_failure(airflow_webserver_link=airflow_webserver_link),
+}
+
+ingestion_path = '/opt/EDIP/ingestion'
+src_path = f'{ingestion_path}/src'
+
 
 
 # %% Spark Run Settings
@@ -16,18 +41,6 @@ num_executors = 3
 executor_cores = 4
 executor_memory = '16G'
 spark_conf = {}
-
-
-
-# %% Generic Parameters
-
-default_args = {
-    'owner': 'EDIP',
-    'depends_on_past': False,
-}
-
-ingestion_path = '/opt/EDIP/ingestion'
-src_path = f'{ingestion_path}/src'
 jars_path = f'{ingestion_path}/drivers'
 
 
