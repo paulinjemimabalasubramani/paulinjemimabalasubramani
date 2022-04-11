@@ -6,7 +6,7 @@ Library for common DAG settings and functions
 # %% Import Libraries
 import os
 
-from .msteams_webhook import on_failure
+from msteams_webhook import on_failure
 
 
 
