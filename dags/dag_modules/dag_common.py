@@ -11,13 +11,7 @@ from .msteams_webhook import on_failure
 
 
 
-# %% Spark Run Settings
-
-spark_conn_id = 'spark_default'
-num_executors = 3
-executor_cores = 4
-executor_memory = '16G'
-spark_conf = {}
+# %% Host Address / Airflow Webserver
 
 host_connection_type = 'http'
 host_ip = os.environ.get(key='HOST_IP', default='')
@@ -27,7 +21,7 @@ airflow_webserver_link = f'{host_connection_type}://{host_ip}:{airflow_webserver
 
 
 
-# %% Generic Parameters
+# %% Default Settings
 
 default_args = {
     'owner': 'EDIP',
@@ -37,6 +31,16 @@ default_args = {
 
 ingestion_path = '/opt/EDIP/ingestion'
 src_path = f'{ingestion_path}/src'
+
+
+
+# %% Spark Run Settings
+
+spark_conn_id = 'spark_default'
+num_executors = 3
+executor_cores = 4
+executor_memory = '16G'
+spark_conf = {}
 jars_path = f'{ingestion_path}/drivers'
 
 

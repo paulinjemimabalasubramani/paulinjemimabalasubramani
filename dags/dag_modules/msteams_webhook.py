@@ -5,6 +5,8 @@ from urllib.parse import quote
 
 from airflow.providers.http.hooks.http import HttpHook
 
+
+
 # %% Paramneters
 
 msteams_http_conn_id = 'msteams_webhook'
