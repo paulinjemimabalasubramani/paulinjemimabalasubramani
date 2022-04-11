@@ -5,17 +5,9 @@ Library for common DAG settings and functions
 
 # %% Import Libraries
 
-import os, sys
+import os
 
-
-
-# %% Import Local modules
-
-path = os.path.dirname(os.path.realpath(__file__))
-if not path in sys.path:
-    sys.path.append(path)
-
-from msteams_webhook import on_failure
+from dag_modules.msteams_webhook import on_failure
 
 
 
