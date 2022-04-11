@@ -76,30 +76,29 @@ class MSTeamsWebhookHook(HttpHook):
             raise AirflowException('Cannot get URL: No valid MS Teams webhook URL nor conn_id supplied')
 
     def build_message(self):
-        cardjson = """
+        cardjson = f"""
                 {{
             "@type": "MessageCard",
             "@context": "http://schema.org/extensions",
-            "themeColor": "{3}",
-            "summary": "{0}",
+            "themeColor": "{self.theme_color}",
+            "summary": "{self.message}",
             "sections": [{{
-                "activityTitle": "{1}",
-                "activitySubtitle": "{2}",
+                "activityTitle": "{self.message}",
+                "activitySubtitle": "{self.subtitle}",
                 "markdown": true,
                 "potentialAction": [
                     {{
                         "@type": "OpenUri",
-                        "name": "{4}",
+                        "name": "{self.button_text}",
                         "targets": [
-                            {{ "os": "default", "uri": "{5}" }}
+                            {{ "os": "default", "uri": "{self.button_url}" }}
                         ]
                     }}
                 ]
             }}]
             }}
                 """
-        return cardjson.format(self.message, self.message, self.subtitle, self.theme_color,
-                               self.button_text, self.button_url)
+        return cardjson
 
     def execute(self):
         """
