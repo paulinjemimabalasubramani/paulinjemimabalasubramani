@@ -109,7 +109,6 @@ def on_failure(airflow_webserver_link):
         logs_url = get_log_url(context=context, airflow_webserver_link=airflow_webserver_link)
 
         data = on_failure_card(
-            http_conn_id = msteams_http_conn_id,
             message = f'Failed: {dag_id} Task: {task_id}',
             subtitle = airflow_webserver_link,
             button_url = logs_url,
