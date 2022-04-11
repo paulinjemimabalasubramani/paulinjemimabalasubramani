@@ -4,9 +4,25 @@ Library for common DAG settings and functions
 """
 
 # %% Import Libraries
-import os
+
+import os, sys
+
+
+
+# %% Import Local modules
+
+path = os.path.dirname(os.path.realpath(__file__))
+if not path in sys.path:
+    sys.path.append(path)
 
 from msteams_webhook import on_failure
+
+
+
+# %% Ingestion Path
+
+ingestion_path = '/opt/EDIP/ingestion'
+src_path = f'{ingestion_path}/src'
 
 
 
@@ -27,9 +43,6 @@ default_args = {
     'depends_on_past': False,
     'on_failure_callback': on_failure(airflow_webserver_link=airflow_webserver_link),
 }
-
-ingestion_path = '/opt/EDIP/ingestion'
-src_path = f'{ingestion_path}/src'
 
 
 
