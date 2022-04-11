@@ -58,7 +58,7 @@ def msteams_httphook(http_conn_id:str, data):
     """
     httphook = HttpHook(method='POST', http_conn_id=http_conn_id)
 
-    conn = httphook.get_connection()
+    conn = httphook.get_connection(conn_id=http_conn_id)
     webhook_token = conn.extra_dejson.get('webhook_token', '')
 
     proxy_url = conn.extra_dejson.get("proxy", '')
