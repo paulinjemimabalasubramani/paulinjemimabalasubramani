@@ -1,3 +1,7 @@
+"""
+Library for sending messages to MS Teams
+
+"""
 
 # %% Import Libraries
 
