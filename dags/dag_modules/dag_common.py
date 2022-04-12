@@ -7,7 +7,9 @@ Library for common DAG settings and functions
 
 import os
 
-from dag_modules.msteams_webhook import on_failure
+from dag_modules.msteams_webhook import on_failure, on_success
+from airflow.operators.bash import BashOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
 
 
@@ -34,6 +36,7 @@ default_args = {
     'owner': 'EDIP',
     'depends_on_past': False,
     'on_failure_callback': on_failure(airflow_webserver_link=airflow_webserver_link),
+    'on_success_callback': on_success(airflow_webserver_link=airflow_webserver_link),
 }
 
 
@@ -70,6 +73,96 @@ def get_jars(jars_path:str):
 
 
 jars = get_jars(jars_path=jars_path)
+
+
+
+# %% Common start pipe task
+
+def start_pipe(dag):
+    """
+    Common start pipe task
+    """
+    startpipe = BashOperator(
+        task_id = 'START_PIPE',
+        bash_command = 'echo "Start Pipeline"',
+        dag = dag,
+    )
+
+    return startpipe
+
+
+
+# %% Common end pipe task
+
+def end_pipe(dag):
+    """
+    Common end pipe task
+    """
+    endpipe = BashOperator(
+        task_id = 'END_PIPE',
+        bash_command = 'echo "End Pipeline"',
+        dag = dag,
+    )
+
+    return endpipe
+
+
+
+# %% Common SparkSubmitOperator
+
+def migrate_data(dag, pipelinekey:str, python_spark_code:str):
+    """
+    Common SparkSubmitOperator
+    """
+    migrate_data = SparkSubmitOperator(
+        task_id = pipelinekey,
+        application = f'{src_path}/{python_spark_code}.py',
+        name = pipelinekey.lower(),
+        jars = jars,
+        conn_id = spark_conn_id,
+        num_executors = num_executors,
+        executor_cores = executor_cores,
+        executor_memory = executor_memory,
+        conf = spark_conf,
+        application_args = [
+            '--pipelinekey', pipelinekey,
+            ],
+        dag = dag
+        )
+
+    return migrate_data
+
+
+
+# %% Common copy_files
+
+def copy_files(dag, pipelinekey:str):
+    """
+    Common copy_files
+    """
+    copy_files = BashOperator(
+        task_id = f'COPY_FILES_{pipelinekey}',
+        bash_command = f'python {src_path}/copy_files_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
+
+    return copy_files
+
+
+
+# %% Common delete_files
+
+def delete_files(dag, pipelinekey:str):
+    """
+    Common delete_files
+    """
+    delete_files = BashOperator(
+        task_id = f'DELETE_FILES_{pipelinekey}',
+        bash_command = f'python {src_path}/delete_files_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
+
+    return delete_files
 
 
 
