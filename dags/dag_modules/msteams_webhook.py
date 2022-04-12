@@ -13,15 +13,16 @@ from airflow.providers.http.hooks.http import HttpHook
 
 # %% Paramneters
 
-msteams_http_conn_id = 'msteams_webhook'
+msteams_on_failure_conn_id = 'msteams_on_failure'
+msteams_on_success_conn_id = 'msteams_on_success'
 
 
 
-# %% Build On Failure Card
+# %% Build On MS Teams Card
 
-def on_failure_card(message:str, subtitle:str, button_url:str, button_text:str='Logs'):
+def msteams_card(message:str, subtitle:str, button_url:str, button_text:str='Logs'):
     """
-    Build On Failure Card
+    Build MS Teams Card
     """
     cardjson = f"""
     {{
@@ -87,8 +88,19 @@ def get_log_url(context, airflow_webserver_link):
     execution_date = quote(context['ts'], safe='')
 
     log_url = f'{airflow_webserver_link}/log?dag_id={dag_id}&task_id={task_id}&execution_date={execution_date}'
-
     return log_url
+
+
+
+# %% Construct Airflow dag url
+
+def get_dag_url(context, airflow_webserver_link):
+    """
+    Construct Airflow dag url
+    """
+    dag_id = context['dag_run'].dag_id
+    dag_url = f'{airflow_webserver_link}/tree?dag_id={dag_id}&root='
+    return dag_url
 
 
 
@@ -108,15 +120,46 @@ def on_failure(airflow_webserver_link):
 
         logs_url = get_log_url(context=context, airflow_webserver_link=airflow_webserver_link)
 
-        data = on_failure_card(
+        data = msteams_card(
             message = f'Failed: {dag_id} Task: {task_id}',
             subtitle = airflow_webserver_link,
             button_url = logs_url,
+            button_text = 'Logs',
             )
 
-        msteams_httphook(http_conn_id=msteams_http_conn_id, data=data)
+        msteams_httphook(http_conn_id=msteams_on_failure_conn_id, data=data)
 
     return on_failure_context
+
+
+
+# %% Function to run on task success
+
+def on_success(airflow_webserver_link):
+    """
+    Function to run on task success
+    """
+
+    def on_success_context(context):
+        """
+        Function to run on task success
+        """
+        dag_id = context['dag_run'].dag_id
+        task_id = context['task_instance'].task_id
+        if task_id.lower() not in ['end_pipe']: return
+
+        dag_url = get_dag_url(context=context, airflow_webserver_link=airflow_webserver_link)
+
+        data = msteams_card(
+            message = f'Success: {dag_id}',
+            subtitle = airflow_webserver_link,
+            button_url = dag_url,
+            button_text = 'Go to Pipeline',
+            )
+
+        msteams_httphook(http_conn_id=msteams_on_success_conn_id, data=data)
+
+    return on_success_context
 
 
 
