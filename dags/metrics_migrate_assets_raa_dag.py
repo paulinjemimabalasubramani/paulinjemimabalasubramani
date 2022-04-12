@@ -55,7 +55,7 @@ with DAG(
         executor_memory = executor_memory,
         conf = spark_conf,
         application_args = [
-            '--pipelinekey1', pipelinekey,
+            '--pipelinekey', pipelinekey,
             ],
         dag = dag
         )
