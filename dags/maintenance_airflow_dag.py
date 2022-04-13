@@ -1,12 +1,10 @@
 # %% Import Libraries
 
 from airflow import DAG
-
-from airflow.operators.bash import BashOperator
-from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.utils.dates import days_ago
+from airflow.operators.bash import BashOperator
 
-from dag_modules.dag_common import default_args, jars, executor_cores, executor_memory, num_executors, src_path, spark_conn_id, spark_conf
+from dag_modules.dag_common import default_args, start_pipe, end_pipe, src_path
 
 
 
@@ -32,19 +30,13 @@ with DAG(
     catchup = False,
 ) as dag:
 
-    startpipe = BashOperator(
-        task_id = 'Start_Pipe',
-        bash_command = 'echo "Start Pipeline"'
-    )
-
     log_cleanup = BashOperator(
         task_id = pipelinekey,
         bash_command = f'python {src_path}/log_cleanup_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
-    startpipe >> log_cleanup
-
+    start_pipe(dag) >> log_cleanup >> end_pipe(dag)
 
 
 

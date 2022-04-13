@@ -82,13 +82,13 @@ def start_pipe(dag):
     """
     Common start pipe task
     """
-    startpipe = BashOperator(
+    start_pipe_op = BashOperator(
         task_id = 'START_PIPE',
         bash_command = 'echo "Start Pipeline"',
         dag = dag,
     )
 
-    return startpipe
+    return start_pipe_op
 
 
 
@@ -98,13 +98,13 @@ def end_pipe(dag):
     """
     Common end pipe task
     """
-    endpipe = BashOperator(
+    end_pipe_op = BashOperator(
         task_id = 'END_PIPE',
         bash_command = 'echo "End Pipeline"',
         dag = dag,
     )
 
-    return endpipe
+    return end_pipe_op
 
 
 
@@ -114,7 +114,7 @@ def migrate_data(dag, pipelinekey:str, python_spark_code:str):
     """
     Common SparkSubmitOperator
     """
-    migrate_data = SparkSubmitOperator(
+    migrate_data_op = SparkSubmitOperator(
         task_id = pipelinekey,
         application = f'{src_path}/{python_spark_code}.py',
         name = pipelinekey.lower(),
@@ -130,7 +130,7 @@ def migrate_data(dag, pipelinekey:str, python_spark_code:str):
         dag = dag
         )
 
-    return migrate_data
+    return migrate_data_op
 
 
 
@@ -140,13 +140,13 @@ def copy_files(dag, pipelinekey:str):
     """
     Common copy_files
     """
-    copy_files = BashOperator(
+    copy_files_op = BashOperator(
         task_id = f'COPY_FILES_{pipelinekey}',
         bash_command = f'python {src_path}/copy_files_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
-    return copy_files
+    return copy_files_op
 
 
 
@@ -156,13 +156,13 @@ def delete_files(dag, pipelinekey:str):
     """
     Common delete_files
     """
-    delete_files = BashOperator(
+    delete_files_op = BashOperator(
         task_id = f'DELETE_FILES_{pipelinekey}',
         bash_command = f'python {src_path}/delete_files_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
-    return delete_files
+    return delete_files_op
 
 
 
