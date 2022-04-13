@@ -99,7 +99,7 @@ def get_dag_url(context, airflow_webserver_link):
     Construct Airflow dag url
     """
     dag_id = context['dag_run'].dag_id
-    dag_url = f'{airflow_webserver_link}/tree?dag_id={dag_id}&root='
+    dag_url = f'{airflow_webserver_link}/tree?dag_id={dag_id}'
     return dag_url
 
 

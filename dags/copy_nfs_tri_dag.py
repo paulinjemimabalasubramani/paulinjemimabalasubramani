@@ -2,11 +2,10 @@
 
 from airflow import DAG
 
-from airflow.operators.bash import BashOperator
-from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+from airflow.operators.bash_operator import BashOperator
 from airflow.utils.dates import days_ago
 
-from dag_modules.dag_common import default_args, jars, executor_cores, executor_memory, num_executors, src_path, spark_conn_id, spark_conf
+from dag_modules.dag_common import default_args, src_path, start_pipe, end_pipe
 
 
 
@@ -32,19 +31,13 @@ with DAG(
     catchup = False,
 ) as dag:
 
-    startpipe = BashOperator(
-        task_id = 'Start_Pipe',
-        bash_command = 'echo "Start Pipeline"'
-    )
-
     copy_files = BashOperator(
         task_id = pipelinekey,
         bash_command = f'python {src_path}/copy_nfs_tri_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
-    startpipe >> copy_files
-
+    start_pipe(dag) >> copy_files >> end_pipe(dag)
 
 
 
