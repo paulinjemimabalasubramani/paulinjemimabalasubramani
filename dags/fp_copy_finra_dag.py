@@ -33,7 +33,7 @@ with DAG(
 
     copy_files = BashOperator(
         task_id = pipelinekey,
-        bash_command = f'python {src_path}/fp_copy_firna_3.py --pipelinekey {pipelinekey}',
+        bash_command = f'python {src_path}/fp_copy_finra_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
