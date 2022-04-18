@@ -11,9 +11,9 @@ from dag_modules.dag_common import default_args, src_path, start_pipe, end_pipe
 
 # %% Pipeline Parameters
 
-pipelinekey = 'COPY_FINRA'
+pipelinekey = 'FP_COPY_FINRA'
 
-tags = ['SC:FINRA']
+tags = ['DB:FP', 'SC:FINRA']
 
 schedule_interval = '5 10 * * *' # https://crontab.guru/
 
@@ -33,7 +33,7 @@ with DAG(
 
     copy_files = BashOperator(
         task_id = pipelinekey,
-        bash_command = f'python {src_path}/copy_firna_3.py --pipelinekey {pipelinekey}',
+        bash_command = f'python {src_path}/fp_copy_firna_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
