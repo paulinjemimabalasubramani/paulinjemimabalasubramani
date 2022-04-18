@@ -18,7 +18,7 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'COPY_FINRA',
+        'pipelinekey': 'FP_COPY_FINRA',
 
         'remote_path_fsc': r'',
         'remote_path_raa': r'C:\myworkdir\FINRA',
