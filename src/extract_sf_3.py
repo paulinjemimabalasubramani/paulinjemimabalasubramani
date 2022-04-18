@@ -139,7 +139,7 @@ def download_all_salesforce_objects(salesforce_key_vault_account:str, salesforce
 download_all_salesforce_objects(
     salesforce_key_vault_account = data_settings.triad_salesforce_key_vault_account,
     salesforce_host = data_settings.triad_salesforce_host,
-    is_sandbox = data_settings.is_triad_salesforce_sandbox,
+    is_sandbox = data_settings.is_triad_salesforce_sandbox.upper()=='TRUE',
     )
 
 
