@@ -1,31 +1,37 @@
-"""
+description = """
 Extract data from Salesforce - Triad Data
 
-Spark Web UI:
-http://10.128.25.82:8181/
-
-Airflow:
-http://10.128.25.82:8282/
-
-
 """
+
+# %% Parse Arguments
+
+if True: # Set to False for Debugging
+    import argparse
+
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
+
+    args = parser.parse_args().__dict__
+
+else:
+    args = {
+        'pipelinekey': 'FP_MIGRATE_SF',
+        'source_path': r'C:\myworkdir\Shared\SF',
+        }
+
+
 
 # %% Import Libraries
 
 import os, sys, unicodecsv, csv
-sys.parent_name = os.path.basename(__file__)
-sys.domain_name = 'financial_professional'
-sys.domain_abbr = 'FP'
 
+class app: pass
+sys.app = app
+sys.app.args = args
+sys.app.parent_name = os.path.basename(__file__)
 
-# Add 'modules' path to the system environment - adjust or remove this as necessary
-sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
-sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
-
-
-from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end, catch_error, \
-    config_path
-
+from modules3.common_functions import data_settings, get_secrets, logger, mark_execution_end, catch_error
 
 from salesforce_bulk import SalesforceBulk # https://github.com/heroku/salesforce-bulk
 from time import sleep
@@ -34,24 +40,9 @@ from time import sleep
 
 # %% Parameters
 
-tableinfo_source = 'SF'
-
-salesforce_api_version = data_settings.salesforce_api_version
-triad_salesforce_host = data_settings.triad_salesforce_host
-is_triad_salesforce_sandbox = data_settings.is_triad_salesforce_sandbox
-triad_salesforce_key_vault_account = data_settings.triad_salesforce_key_vault_account
-
-data_path_folder = data_settings.get_value(attr_name=f'data_path_{tableinfo_source}', default_value=os.path.join(data_settings.data_path, tableinfo_source))
-salesforce_download_path_folder = os.path.join(config_path, 'salesforce_download')
-
-
 csv_encoding = 'utf-8'
 csv_delimiter = ','
 csv_quotechar = '"'
-
-logger.info({
-    'data_path_folder': data_path_folder,
-    })
 
 
 
@@ -116,24 +107,22 @@ def query_download_salesforce_csv(bulk, filter_query:str, salesforce_object:str,
 # %% Download all Salesforce Objects for given source/firm file
 
 @catch_error(logger)
-def download_all_salesforce_objects(download_file:str, salesforce_key_vault_account:str, salesforce_host:str, is_sandbox:bool):
+def download_all_salesforce_objects(salesforce_key_vault_account:str, salesforce_host:str, is_sandbox:bool):
     """
     Download all Salesforce Objects for given source/firm file
     """
-    download_file_full_path = os.path.join(salesforce_download_path_folder, download_file)
-
     _, salesforce_id, salesforce_pass, salesforce_token = get_secrets(salesforce_key_vault_account.lower(), logger=logger, additional_secrets=['token'])
 
     bulk = SalesforceBulk(
         username = salesforce_id,
         password = salesforce_pass,
         security_token = salesforce_token,
-        API_version = salesforce_api_version,
+        API_version = data_settings.salesforce_api_version.strip().strip('"'),
         host = salesforce_host,
         sandbox = is_sandbox,
         )
 
-    with open(download_file_full_path, newline='', mode='r', encoding='utf-8-sig') as csvfile:
+    with open(data_settings.salesforce_download_config, newline='', mode='r', encoding='utf-8-sig') as csvfile:
         csvreader = csv.DictReader(csvfile)
         for row in csvreader:
             query_download_salesforce_csv(
@@ -141,17 +130,16 @@ def download_all_salesforce_objects(download_file:str, salesforce_key_vault_acco
                 filter_query = row['filter_query'],
                 salesforce_object = row['object_name'],
                 csv_columns = row['csv_columns'],
-                data_path_folder = data_path_folder,
+                data_path_folder = data_settings.source_path,
                 output_table_name = row['table_name'],
                 )
 
 
 
 download_all_salesforce_objects(
-    download_file = 'triad.csv',
-    salesforce_key_vault_account = triad_salesforce_key_vault_account,
-    salesforce_host = triad_salesforce_host,
-    is_sandbox = is_triad_salesforce_sandbox,
+    salesforce_key_vault_account = data_settings.triad_salesforce_key_vault_account,
+    salesforce_host = data_settings.triad_salesforce_host,
+    is_sandbox = data_settings.is_triad_salesforce_sandbox,
     )
 
 
