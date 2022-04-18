@@ -78,6 +78,10 @@ VALUES
 ('FP_AG_DATASOURCE_LR', 'Financial Professional', 'LR', '', 'sql', 'AG', 'System', CURRENT_TIMESTAMP, 'FP.LR'),
 
 
+INSERT INTO metadata.DataSource
+(DataSourceKey, Category, SubCategory, Firm, DataSourceType, DataProvider, UpdatedBy, UpdateTS, DataSourceUniqueKey)
+VALUES
+('FP_AG_DATASOURCE_COPY_FINRA', 'Financial Professional', 'FINRA', '', 'copy_finra', 'AG', 'System', CURRENT_TIMESTAMP, NULL),
 
 
 ;
@@ -164,6 +168,11 @@ INSERT INTO metadata.Pipeline
 (PipelineKey, PipelineCategory, PipelineDescription, DataSourceKey, PreRunCode, Schedule, IsActive, UpdatedBy, UpdateTS)
 VALUES
 ('FP_MIGRATE_LR', 'outbound_migration', 'Pipeline to migrate FP-LR files to Snowflake', 'FP_AG_DATASOURCE_LR', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+INSERT INTO metadata.Pipeline
+(PipelineKey, PipelineCategory, PipelineDescription, DataSourceKey, PreRunCode, Schedule, IsActive, UpdatedBy, UpdateTS)
+VALUES
+('COPY_FINRA', 'outbound_migration', 'Pipeline to copy FINRA files from remote to source path', 'FP_AG_DATASOURCE_COPY_FINRA', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
 
 
@@ -611,7 +620,32 @@ VALUES
 ('FP_MIGRATE_LR', 'SQL_TABLE_LIST', '/usr/local/spark/resources/fileshare/EDIP-Code/config/lookup_files/LNR_Tables.csv', 'System', CURRENT_TIMESTAMP),
 ('FP_MIGRATE_LR', 'IS_FULL_LOAD', 'TRUE', 'System', CURRENT_TIMESTAMP),
 
+
+
+INSERT INTO metadata.PipelineConfiguration 
+(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
+VALUES
+('COPY_FINRA', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'SCHEMA_NAME', 'FINRA', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'FILE_HISTORY_START_DATE', '2021-05-15', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'REMOTE_PATH_FSC', '', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'REMOTE_PATH_RAA', '', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'REMOTE_PATH_SAA', '', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'REMOTE_PATH_SAI', '', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'REMOTE_PATH_SPF', '', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'REMOTE_PATH_TRD', '', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'REMOTE_PATH_WFS', '', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'SOURCE_PATH_FSC', '/opt/EDIP/data/FINRA/7461', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'SOURCE_PATH_RAA', '/opt/EDIP/data/FINRA/23131', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'SOURCE_PATH_SAA', '/opt/EDIP/data/FINRA/110518', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'SOURCE_PATH_SAI', '/opt/EDIP/data/FINRA/10205', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'SOURCE_PATH_SPF', '/opt/EDIP/data/FINRA/133763', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'SOURCE_PATH_TRD', '/opt/EDIP/data/FINRA/25803', 'System', CURRENT_TIMESTAMP),
+('COPY_FINRA', 'SOURCE_PATH_WFS', '/opt/EDIP/data/FINRA/421', 'System', CURRENT_TIMESTAMP),
+
 ;
+
+
 
 
 
