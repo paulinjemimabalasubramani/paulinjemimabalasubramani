@@ -41,10 +41,11 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, execution_date_start
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
 from modules3.spark_functions import add_id_key, create_spark, remove_column_spaces, add_elt_columns, read_csv, read_xml, base_to_schema, flatten_table
-from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes, file_meta_exists_for_select_files, add_firm_to_table_name
+from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes, file_meta_exists_for_select_files
 from modules3.build_finra_tables import build_branch_table, build_individual_table
+from modules3.finra_header import extract_data_from_finra_file_path, finra_dualregistrations_file_name, finra_branch_name, finra_dualregistrations_name, file_date_column_format, finra_individual_name
 
 from pyspark.sql.functions import lit, from_json
 from pyspark.sql.types import StructType, StructField, StringType
@@ -53,71 +54,11 @@ from pyspark.sql.types import StructType, StructField, StringType
 
 # %% Parameters
 
-finra_individual_delta_name = 'IndividualInformationReportDelta'
-finra_individual_name = 'IndividualInformationReport'
-finra_branch_name = 'BranchInformationReport'
-finra_dualregistrations_file_name = 'INDIVIDUAL_-_DUAL_REGISTRATIONS_-_FIRMS_DOWNLOAD_-_'
-finra_dualregistrations_name = 'DualRegistrations'
-
-file_date_column_format = r'%Y-%m-%d'
 
 
 # %% Create Connections
 
 spark = create_spark()
-
-
-
-# %% Extract metadata from finra file path
-
-@catch_error(logger)
-def extract_data_from_finra_file_path(file_path:str):
-    """"
-    Extract metadata from finra file path
-    """
-    file_name = os.path.basename(file_path)
-    file_name_noext, file_ext = os.path.splitext(file_name)
-
-    file_meta = {
-        'file_name': file_name,
-        'file_path': file_path,
-        'folder_path': os.path.dirname(file_path),
-        'firm_crd_number': data_settings.firm_crd_number,
-    }
-
-    if file_name_noext.upper().startswith(finra_dualregistrations_file_name.upper()):
-        table_name = finra_dualregistrations_name.lower()
-        file_date = execution_date_start
-    else:
-        sp = file_name_noext.split("_")
-
-        if sp[0].strip() != data_settings.firm_crd_number:
-            logger.warning(f'Wrong Firm CRD Number in file name. Expected {data_settings.firm_crd_number}. File: {file_path} -> SKIPPING')
-            return
-
-        try:
-            table_name = sp[1].strip().lower()
-            if table_name == finra_individual_delta_name.lower():
-                table_name = finra_individual_name.lower()
-
-            file_date = datetime.strptime(sp[2].rsplit('.', 1)[0].strip(), file_date_column_format)
-
-            assert len(sp)==3 or (len(sp)==4 and sp[1].strip().lower()==finra_individual_delta_name.lower())
-
-        except Exception as e:
-            logger.warning(f'Cannot parse file name: {file_path}. {str(e)}')
-            return
-
-    table_name_no_firm = table_name
-    table_name = add_firm_to_table_name(table_name=table_name)
-
-    file_meta = {**file_meta,
-        'table_name_no_firm': table_name_no_firm.lower(),
-        'table_name': table_name.lower(),
-        'file_date': file_date,
-    }
-
-    return file_meta
 
 
 
@@ -136,7 +77,7 @@ def select_files():
             file_count += 1
             file_path = os.path.join(root, file_name)
 
-            file_meta = extract_data_from_finra_file_path(file_path=file_path)
+            file_meta = extract_data_from_finra_file_path(file_path=file_path, get_firm_crd=True)
             if not file_meta or file_meta['file_date'] < data_settings.key_datetime: continue
 
             if file_meta_exists_for_select_files(file_path=file_path): continue
@@ -209,7 +150,7 @@ def extract_finra_file_meta(file_path:str, zip_file_path:str=None):
     """
     Extract Meta Data from finra file
     """
-    file_meta = extract_data_from_finra_file_path(file_path=file_path)
+    file_meta = extract_data_from_finra_file_path(file_path=file_path, get_firm_crd=True)
     if not file_meta or file_meta['file_date'] < data_settings.key_datetime: return
 
     tagname, criteria_tag = get_xml_header(file_path=file_path)
