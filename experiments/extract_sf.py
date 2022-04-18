@@ -1,4 +1,4 @@
-"""
+description = """
 Extract data from Salesforce - Triad Data
 
 Spark Web UI:
@@ -23,8 +23,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../../src'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__)+'/../src'))
 
 
-from modules.common_functions import data_settings, get_secrets, logger, mark_execution_end, catch_error, \
-    config_path
+from modules3.common_functions import data_settings, get_secrets, logger, mark_execution_end, catch_error, config_path
 
 
 from salesforce_bulk import SalesforceBulk # https://github.com/heroku/salesforce-bulk

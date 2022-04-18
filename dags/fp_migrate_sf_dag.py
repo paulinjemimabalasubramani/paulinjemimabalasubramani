@@ -33,7 +33,7 @@ with DAG(
 
     extractdata = BashOperator(
         task_id = f'EXTRACT_SALESFORCE_{pipelinekey}',
-        bash_command = f'python {src_path}/extract_sf.py --pipelinekey {pipelinekey}',
+        bash_command = f'python {src_path}/extract_sf_3.py --pipelinekey {pipelinekey}',
         dag = dag
     )
 
