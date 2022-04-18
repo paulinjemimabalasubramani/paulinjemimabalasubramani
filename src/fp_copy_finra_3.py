@@ -115,7 +115,7 @@ def copy_file(firm:str, remote_path:str):
 
         file_meta = extract_data_from_finra_file_path(file_path=remote_file_path, get_firm_crd=False)
         table_name = firm.lower() + '_' + file_meta['table_name_no_firm']
-        key_datetime = max_key_datetimes.get(table_name, data_settings.key_datetime)
+        key_datetime = max(max_key_datetimes.get(table_name, data_settings.key_datetime), data_settings.key_datetime)
         if key_datetime > file_meta['file_date']: continue
 
         source_file_path = os.path.join(getattr(data_settings, source_path_setting), file_name)
