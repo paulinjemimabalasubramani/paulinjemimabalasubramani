@@ -181,6 +181,10 @@ VALUES
 
 
 
+update metadata.Pipeline
+set PipelineCategory = 'copy'
+where PipelineKey = 'FP_COPY_FINRA';
+
 
 
 SELECT * FROM metadata.Pipeline
