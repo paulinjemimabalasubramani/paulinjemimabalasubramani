@@ -17,7 +17,7 @@ if True: # Set to False for Debugging
 else:
     args = {
         'pipelinekey': 'FP_MIGRATE_SF',
-        'source_path': r'C:\myworkdir\Shared\FINRA\23131',
+        'source_path': r'C:\myworkdir\Shared\SF',
         }
 
 
