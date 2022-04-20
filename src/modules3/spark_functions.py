@@ -1,4 +1,3 @@
-
 """
 Library for creating a Spark session and for other common Spark functions
 
