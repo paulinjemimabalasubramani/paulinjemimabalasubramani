@@ -13,7 +13,7 @@ from airflow.models import DagBag
 
 # %% Parameters
 
-dag_bag_root = './dag_bags'
+dag_bag_root = '/opt/EDIP/ingestion/dags/dag_bags'
 
 prod_exclude_folders = ['test_dags', 'metrics_dags']
 qa_exclude_folders = ['ca_dags', 'assets_dags']
