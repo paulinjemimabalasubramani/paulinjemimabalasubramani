@@ -6,10 +6,13 @@ Library for common DAG settings and functions
 # %% Import Libraries
 
 import os
+from datetime import timedelta
 
-from dag_modules.msteams_webhook import on_failure, on_success
 from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+
+from dag_modules.msteams_webhook import on_failure, on_success, sla_miss
 
 
 
@@ -37,6 +40,8 @@ default_args = {
     'depends_on_past': False,
     'on_failure_callback': on_failure(airflow_webserver_link=airflow_webserver_link),
     'on_success_callback': on_success(airflow_webserver_link=airflow_webserver_link),
+    'sla_miss_callback': sla_miss(airflow_webserver_link=airflow_webserver_link),
+    'sla': timedelta(hours=2),
 }
 
 
@@ -82,9 +87,21 @@ def start_pipe(dag):
     """
     Common start pipe task
     """
-    start_pipe_op = BashOperator(
+    def fail_if_dag_running(dag_id):
+        from airflow.models.dagrun import DagRun
+        from airflow.utils.state import State
+
+        dags_running = DagRun.find(dag_id=dag_id, state=State.RUNNING)
+        dags_queued = DagRun.find(dag_id=dag_id, state=State.QUEUED)
+        if len(dags_running)>1 or len(dags_queued)>0:
+            raise RuntimeError('There is more than 1 instance of the same Dag running')
+
+        return 'Start Pipeline'
+
+    start_pipe_op = PythonOperator(
         task_id = 'START_PIPE',
-        bash_command = 'echo "Start Pipeline"',
+        python_callable = fail_if_dag_running,
+        op_kwargs = {'dag_id' : dag.safe_dag_id},
         dag = dag,
     )
 
@@ -98,9 +115,9 @@ def end_pipe(dag):
     """
     Common end pipe task
     """
-    end_pipe_op = BashOperator(
+    end_pipe_op = PythonOperator(
         task_id = 'END_PIPE',
-        bash_command = 'echo "End Pipeline"',
+        python_callable = lambda: 'End Pipeline',
         dag = dag,
     )
 
