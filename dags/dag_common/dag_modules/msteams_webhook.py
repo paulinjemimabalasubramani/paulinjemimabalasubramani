@@ -15,6 +15,7 @@ from airflow.providers.http.hooks.http import HttpHook
 
 msteams_on_failure_conn_id = 'msteams_on_failure'
 msteams_on_success_conn_id = 'msteams_on_success'
+msteams_sla_miss_conn_id = msteams_on_failure_conn_id
 
 
 
@@ -160,6 +161,35 @@ def on_success(airflow_webserver_link):
         msteams_httphook(http_conn_id=msteams_on_success_conn_id, data=data)
 
     return on_success_context
+
+
+
+# %% Function to run on SLA miss
+
+def sla_miss(airflow_webserver_link):
+    """
+    Function to run on SLA miss
+    """
+
+    def sla_miss_context(context):
+        """
+        Function to run on SLA miss
+        """
+        dag_id = context['dag_run'].dag_id
+        task_id = context['task_instance'].task_id
+
+        logs_url = get_log_url(context=context, airflow_webserver_link=airflow_webserver_link)
+
+        data = msteams_card(
+            message = f'SLA Miss. Task is taking long time: {dag_id} Task: {task_id}',
+            subtitle = airflow_webserver_link,
+            button_url = logs_url,
+            button_text = 'Logs',
+            )
+
+        msteams_httphook(http_conn_id=msteams_sla_miss_conn_id, data=data)
+
+    return sla_miss_context
 
 
 
