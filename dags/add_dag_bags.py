@@ -16,6 +16,7 @@ from airflow.models import DagBag
 dag_bag_root = './dag_bags'
 
 prod_exclude_folders = ['test_dags', 'metrics_dags']
+qa_exclude_folders = ['ca_dags', 'assets_dags']
 
 
 
@@ -40,6 +41,7 @@ def get_dag_dirs(dag_bag_root:str):
         dir = os.path.join(dag_bag_root, dir_name)
         if os.path.isdir(dir):
             if environment.upper() in ['PROD'] and dir_name in prod_exclude_folders: continue
+            if environment.upper() in ['QA'] and dir_name in qa_exclude_folders: continue
             dags_dirs.append(dir)
 
     return dags_dirs
