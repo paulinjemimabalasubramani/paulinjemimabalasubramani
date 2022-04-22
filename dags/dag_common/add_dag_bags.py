@@ -20,7 +20,7 @@ environments = {
         'exclude_folders': ['test_dags', 'metrics_dags'],
         },
     'QA': {
-        'exclude_folders': ['ca_dags', 'assets_dags'],
+        'exclude_folders': [],
         },
 }
 
