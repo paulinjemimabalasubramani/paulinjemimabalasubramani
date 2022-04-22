@@ -15,8 +15,14 @@ from airflow.models import DagBag
 
 dag_bag_root = '/opt/EDIP/ingestion/dags/dag_bags'
 
-prod_exclude_folders = ['test_dags', 'metrics_dags']
-qa_exclude_folders = ['ca_dags', 'assets_dags']
+environments = {
+    'PROD': {
+        'exclude_folders': ['test_dags', 'metrics_dags'],
+        },
+    'QA': {
+        'exclude_folders': [],
+        },
+}
 
 
 
@@ -40,8 +46,7 @@ def get_dag_dirs(dag_bag_root:str):
     for dir_name in os.listdir(dag_bag_root):
         dir = os.path.join(dag_bag_root, dir_name)
         if os.path.isdir(dir):
-            if environment.upper() in ['PROD'] and dir_name in prod_exclude_folders: continue
-            if environment.upper() in ['QA'] and dir_name in qa_exclude_folders: continue
+            if dir_name in environments[environment.upper()]['exclude_folders']: continue
             dags_dirs.append(dir)
 
     return dags_dirs
