@@ -43,7 +43,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file, collect_keys_from_config
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file
 
 from datetime import datetime
 
@@ -55,7 +55,14 @@ firm_name = data_settings.pipeline_firm.upper()
 clientid = data_settings.clientid
 remote_path_suffix = data_settings.path_suffix
 
-date_levels = [r'%Y', r'%b', r'%Y%m%d']
+
+
+# %% Get Folder Levels
+
+suffix_folder_list = remote_path_suffix.split('/0231/')
+max_folder_name = r'{{ MAX }}'
+
+folder_levels = [r'%Y', r'%b', r'%Y%m%d', suffix_folder_list[0], max_folder_name ,suffix_folder_list[1]]
 
 
 
@@ -66,21 +73,29 @@ def find_latest_folder(remote_path:str, level:int=0):
     """
     Find Latest Folder
     """
-    if level >= len(date_levels): return remote_path
+    if level >= len(folder_levels): return remote_path
 
     paths = {}
     for file_name in os.listdir(remote_path):
         remote_file_path = os.path.join(remote_path, file_name)
         if os.path.isdir(remote_file_path):
-            try:
-                dt = datetime.strptime(file_name, date_levels[level])
-            except:
-                continue
-            paths[dt] = remote_file_path
+            if folder_levels[level][0] == '%':
+                try:
+                    path_key = datetime.strptime(file_name, folder_levels[level])
+                except:
+                    continue
+            elif folder_levels[level] == max_folder_name:
+                path_key = file_name
+            else:
+                path_key = folder_levels[level]
+                remote_file_path = os.path.join(remote_path, folder_levels[level])
+                paths[path_key] = remote_file_path
+                break
+
+            paths[path_key] = remote_file_path
 
     if not paths:
-        logger.warning(f'No Paths found in {remote_path}')
-        return
+        raise ValueError(f'No Paths found in {remote_path}')
 
     return find_latest_folder(remote_path=paths[max(paths)], level=level+1)
 
@@ -98,12 +113,8 @@ def copy_file(remote_path:str):
     """
     Copy files and folders to the new location
     """
-    if not remote_path: return
-    remote_path = os.path.join(remote_path, remote_path_suffix)
-
     if not os.path.isdir(remote_path):
-        logger.warning(f'Remote path does not exist: {remote_path}')
-        return
+        raise ValueError(f'Remote path does not exist: {remote_path}')
 
     for file_name in os.listdir(remote_path):
         remote_file_path = os.path.join(remote_path, file_name)
