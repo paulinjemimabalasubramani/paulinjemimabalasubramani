@@ -9,7 +9,7 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_d
 
 # %% Pipeline Parameters
 
-pipelinekey_prefix = 'ASSETS_MIGRATE_ACTIVITY_PLAID_'
+pipelinekey_prefix = 'ASSETS_MIGRATE_PLAID_ACTIVITY_'
 python_spark_code = 'migrate_csv_3'
 
 tags = ['DB:Assets', 'SC:Plaid']
