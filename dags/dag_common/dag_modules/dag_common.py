@@ -52,8 +52,11 @@ spark_conn_id = 'spark_default'
 num_executors = 3
 executor_cores = 4
 executor_memory = '16G'
-spark_conf = {}
 jars_path = f'{ingestion_path}/drivers'
+
+spark_conf = {
+    'deploy-mode': 'cluster',
+    }
 
 
 
