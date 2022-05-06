@@ -10,8 +10,7 @@ from datetime import datetime
 from collections import OrderedDict
 from uuid import uuid4
 
-from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, \
-    pipeline_metadata_conf, execution_date, execution_date_start, to_sql_value
+from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, pipeline_metadata_conf, execution_date_start, to_sql_value, get_csv_rows
 from .azure_functions import save_adls_gen2, setup_spark_adls_gen2_connection
 from .spark_functions import ELT_PROCESS_ID_str, partitionBy_str, elt_audit_columns
 from .snowflake_ddl import connect_to_snowflake, snowflake_ddl_params, create_snowflake_ddl, write_DDL_file_per_step
@@ -223,6 +222,22 @@ def default_table_dtypes(table, use_varchar:bool=True):
 
     dtypes = OrderedDict(sorted(dtypes, key=lambda k: k[0]))
     return dtypes
+
+
+
+# %% Get Data Type Translation
+
+@catch_error(logger)
+def get_data_type_translation(data_type_translation_id:str):
+    """
+    Get Data Type Translation
+    """
+    translation = dict()
+    for row in get_csv_rows(csv_file_path=data_settings.data_type_translation_file):
+        if row['datatypetranslationid'] == data_type_translation_id.lower():
+            translation[row['datatypefrom']] = row['datatypeto']
+
+    return translation
 
 
 
