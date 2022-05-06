@@ -236,6 +236,9 @@ def reverse_etl_all_tables():
 
         columns = get_table_columns(table_name=table_name)
         primary_keys = get_table_primary_keys(table_name=table_name)
+        if not primary_keys:
+            logger.warning(f'No primary keys found for table {table_name}')
+            continue
 
         try:
             table = read_snowflake(
@@ -251,7 +254,7 @@ def reverse_etl_all_tables():
                 is_query = True,
                 )
 
-            column_list = recreate_raw_sql_table(
+            recreate_raw_sql_table(
                 table_name = table_name,
                 columns = columns,
                 primary_keys = primary_keys,
