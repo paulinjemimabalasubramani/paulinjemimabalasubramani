@@ -54,6 +54,9 @@ raw_schema_suffix = '_raw'
 
 hard_exclude_table_names = ['CICD_CHANGE_HISTORY']
 
+ddl_folder_path = os.path.join(data_settings.output_ddl_path, 'reverse_etl', data_settings.pipelinekey.upper())
+os.makedirs(name=ddl_folder_path, exist_ok=True)
+
 
 
 # %% Create Connections
@@ -168,6 +171,13 @@ def recreate_raw_sql_table(table_name:str, columns:list, primary_keys:list, max_
     sqlstr_drop = f'DROP TABLE IF EXISTS {sql_table_full_name};'
     sqlstr = f'CREATE TABLE {sql_table_full_name} ({column_list});'
 
+    file_path = os.path.join(ddl_folder_path, f'recreate_{table_name.lower()}.sql')
+    logger.info(f'Writing: {file_path}')
+    with open(file_path, 'w') as f:
+        f.write(sqlstr_drop)
+        f.write()
+        f.write(sqlstr)
+
     pymssql_execute_non_query(
         sqlstr_list = [sqlstr_drop, sqlstr],
         sql_server = data_settings.sql_server,
@@ -206,10 +216,7 @@ WHEN NOT MATCHED BY SOURCE THEN
 ;
 """
 
-    file_folder_path = os.path.join(data_settings.output_ddl_path, 'reverse_etl', data_settings.pipelinekey.upper())
-    os.makedirs(name=file_folder_path, exist_ok=True)
-    file_path = os.path.join(file_folder_path, f'{table_name.lower()}.sql')
-
+    file_path = os.path.join(ddl_folder_path, f'merge_{table_name.lower()}.sql')
     logger.info(f'Writing: {file_path}')
     with open(file_path, 'w') as f:
         f.write(sqlstr)
@@ -239,6 +246,7 @@ def reverse_etl_all_tables():
         logger.info(f'Processing table {k+1} of {len(tables)}: {table_name}')
         if table_name in hard_exclude_table_names:
             error_tables.append((table_name, 'Table is excluded'))
+            print('\n'*2)
             continue
 
         columns = get_table_columns(table_name=table_name)
@@ -247,12 +255,13 @@ def reverse_etl_all_tables():
             warning_msg = f'No primary keys found for table {table_name}'
             logger.warning(warning_msg)
             error_tables.append((table_name, warning_msg))
+            print('\n'*2)
             continue
 
         try:
             table = read_snowflake(
                 spark = spark,
-                table_name = f'SELECT * FROM {table_name} WHERE SCD_IS_CURRENT=1;',
+                table_name = f'SELECT * FROM {table_name} WHERE SCD_IS_CURRENT_RECORD=1;',
                 schema = data_settings.schema_name,
                 database = snowflake_ddl_params.snowflake_database,
                 warehouse = data_settings.snowflake_warehouse,
@@ -267,12 +276,13 @@ def reverse_etl_all_tables():
                 table_name = table_name,
                 columns = columns,
                 primary_keys = primary_keys,
-            )
+                )
 
             if not table:
                 warning_msg = f'Table is empty: {table_name} -> Skipping.'
                 logger.warning(warning_msg)
                 error_tables.append((table_name, warning_msg))
+                print('\n'*2)
                 continue
 
             write_sql(
@@ -284,7 +294,7 @@ def reverse_etl_all_tables():
                 user = sql_id,
                 password = sql_pass,
                 mode = 'append',
-            )
+                )
 
             merge_sql_table(
                 table_name = table_name,
