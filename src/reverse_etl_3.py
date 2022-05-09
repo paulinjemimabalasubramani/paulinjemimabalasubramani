@@ -189,7 +189,6 @@ def merge_sql_table(table_name:str, columns:list, primary_keys:list):
 
     merge_on = '\n    AND '.join([f"{trim_coalesce('src', c)} = {trim_coalesce('tgt', c)}" for c in primary_keys])
     check_na_src = '\n    '.join([f"AND {trim_coalesce('src', c)} != 'N/A'" for c in primary_keys])
-    check_na_tgt = '\n    '.join([f"AND {trim_coalesce('tgt', c)} != 'N/A'" for c in primary_keys])
     update_set = '\n   ,'.join([f"tgt.[{c['COLUMN_NAME']}]=src.[{c['COLUMN_NAME']}]" for c in columns])
     insert_columns = '\n   ,'.join([f"[{c['COLUMN_NAME']}]" for c in columns])
     insert_values = '\n   ,'.join([f"src.[{c['COLUMN_NAME']}]" for c in columns])
@@ -202,7 +201,7 @@ WHEN MATCHED {check_na_src} THEN
 WHEN NOT MATCHED BY TARGET {check_na_src} THEN
   INSERT ({insert_columns})
   VALUES ({insert_values})
-WHEN NOT MATCHED BY SOURCE {check_na_tgt} THEN
+WHEN NOT MATCHED BY SOURCE THEN
   DELETE
 ;
 """
