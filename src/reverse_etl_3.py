@@ -50,7 +50,7 @@ from modules3.snowflake_ddl import snowflake_ddl_params, connect_to_snowflake, f
 data_type_translation_id = 'snowflake_sqlserver'
 translation = get_data_type_translation(data_type_translation_id=data_type_translation_id)
 
-raw_schema_suffix = '_RAW'
+raw_schema_suffix = '_raw'
 
 hard_exclude_table_names = ['CICD_CHANGE_HISTORY']
 
@@ -164,8 +164,9 @@ def recreate_raw_sql_table(table_name:str, columns:list, primary_keys:list, max_
     column_list.append(f"CONSTRAINT PK_{table_name.upper()} PRIMARY KEY ({', '.join(primary_keys)})")
     column_list = '\n  ' + '\n ,'.join(column_list)
 
-    sqlstr_drop = f'DROP TABLE IF EXISTS [{data_settings.sql_schema_name}{raw_schema_suffix}].[{table_name}];'
-    sqlstr = f'CREATE TABLE [{data_settings.sql_schema_name}{raw_schema_suffix}].[{table_name}] ({column_list});'
+    sql_table_full_name = f'[{data_settings.sql_schema_name}{raw_schema_suffix}].[{table_name}]'.lower()
+    sqlstr_drop = f'DROP TABLE IF EXISTS {sql_table_full_name};'
+    sqlstr = f'CREATE TABLE {sql_table_full_name} ({column_list});'
 
     pymssql_execute_non_query(
         sqlstr_list = [sqlstr_drop, sqlstr],
@@ -184,10 +185,11 @@ def merge_sql_table(table_name:str, columns:list, primary_keys:list):
     """
     Merge Raw SQL Table to final SQL Table
     """
-    trim_coalesce = lambda x: f"LTRIM(RTRIM(COALESCE({x},'N/A')))"
+    trim_coalesce = lambda t, x: f"LTRIM(RTRIM(COALESCE({t}.[{x}],'N/A')))"
 
-    merge_on = '\n    AND '.join([f"{trim_coalesce('src.['+c+']')} = {trim_coalesce('tgt.['+c+']')}" for c in primary_keys])
-    check_na = '\n    '.join([f"AND {trim_coalesce('src.['+c+']')} != 'N/A'" for c in primary_keys])
+    merge_on = '\n    AND '.join([f"{trim_coalesce('src', c)} = {trim_coalesce('tgt', c)}" for c in primary_keys])
+    check_na_src = '\n    '.join([f"AND {trim_coalesce('src', c)} != 'N/A'" for c in primary_keys])
+    check_na_tgt = '\n    '.join([f"AND {trim_coalesce('tgt', c)} != 'N/A'" for c in primary_keys])
     update_set = '\n   ,'.join([f"tgt.[{c['COLUMN_NAME']}]=src.[{c['COLUMN_NAME']}]" for c in columns])
     insert_columns = '\n   ,'.join([f"[{c['COLUMN_NAME']}]" for c in columns])
     insert_values = '\n   ,'.join([f"src.[{c['COLUMN_NAME']}]" for c in columns])
@@ -195,18 +197,19 @@ def merge_sql_table(table_name:str, columns:list, primary_keys:list):
     sqlstr = f"""MERGE INTO [{data_settings.sql_schema_name}].[{table_name}] tgt
 USING [{data_settings.sql_schema_name}{raw_schema_suffix}].[{table_name}] src
 ON {merge_on}
-WHEN MATCHED {check_na}
-THEN UPDATE SET {update_set}
-WHEN NOT MATCHED {check_na}
-THEN
+WHEN MATCHED {check_na_src} THEN
+  UPDATE SET {update_set}
+WHEN NOT MATCHED BY TARGET {check_na_src} THEN
   INSERT ({insert_columns})
   VALUES ({insert_values})
+WHEN NOT MATCHED BY SOURCE {check_na_tgt} THEN
+  DELETE
 ;
 """
 
     file_folder_path = os.path.join(data_settings.output_ddl_path, 'reverse_etl', data_settings.pipelinekey.upper())
     os.makedirs(name=file_folder_path, exist_ok=True)
-    file_path = os.path.join(file_folder_path, f'{table_name}.sql')
+    file_path = os.path.join(file_folder_path, f'{table_name.lower()}.sql')
 
     logger.info(f'Writing: {file_path}')
     with open(file_path, 'w') as f:
@@ -231,19 +234,26 @@ def reverse_etl_all_tables():
     """
     _, snowflake_user, snowflake_pass = get_secrets(data_settings.snowflake_key_vault_account)
 
-    for table_name in tables:
-        if table_name in hard_exclude_table_names: continue
+    print('\n'*2)
+    error_tables = []
+    for k, table_name in enumerate(tables):
+        logger.info(f'Processing table {k+1} of {len(tables)}: {table_name}')
+        if table_name in hard_exclude_table_names:
+            error_tables.append((table_name, 'Table is excluded'))
+            continue
 
         columns = get_table_columns(table_name=table_name)
         primary_keys = get_table_primary_keys(table_name=table_name)
         if not primary_keys:
-            logger.warning(f'No primary keys found for table {table_name}')
+            warning_msg = f'No primary keys found for table {table_name}'
+            logger.warning(warning_msg)
+            error_tables.append((table_name, warning_msg))
             continue
 
         try:
             table = read_snowflake(
                 spark = spark,
-                table_name = f'SELECT * FROM {table_name} WHERE SCD_IS_CURRENT_RECORD=1;',
+                table_name = f'SELECT * FROM {table_name} WHERE SCD_IS_CURRENT=1;',
                 schema = data_settings.schema_name,
                 database = snowflake_ddl_params.snowflake_database,
                 warehouse = data_settings.snowflake_warehouse,
@@ -259,6 +269,12 @@ def reverse_etl_all_tables():
                 columns = columns,
                 primary_keys = primary_keys,
             )
+
+            if not table:
+                warning_msg = f'Table is empty: {table_name} -> Skipping.'
+                logger.warning(warning_msg)
+                error_tables.append((table_name, warning_msg))
+                continue
 
             write_sql(
                 table = table,
@@ -277,10 +293,23 @@ def reverse_etl_all_tables():
                 primary_keys = primary_keys,
                 )
 
+            logger.info(f'Finished Reverse ETL {table_name}')
+            print('\n'*2)
+
         except Exception as e:
             logger.error(str(e))
+            error_tables.append((table_name, str(e)))
+            print('\n'*2)
 
     logger.info(f'Finished Reverse ETL for all tables for {snowflake_ddl_params.snowflake_database}.{data_settings.schema_name}')
+
+    if error_tables:
+        error_tables_str = '\n'.join([f'Table: {table_name} Error: {error_code}' for (table_name, error_code) in error_tables])
+        warning_msg = f'Following {len(error_tables)} tables out of {len(tables)} had error:\n{error_tables_str}'
+        logger.warning(warning_msg)
+        print(f'\n\n{warning_msg}\n\n')
+    else:
+        logger.info('No errors detected')
 
 
 
