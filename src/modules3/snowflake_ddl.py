@@ -687,6 +687,24 @@ def create_snowflake_ddl(table, table_name:str, fn_get_dtypes, partition_by:str)
 
 
 
+# %% Fetch All Data from Snowflake Execution
+
+@catch_error(logger)
+def fetchall_snowflake(sqlstr:str):
+    """
+    Fetch All Data from Snowflake Execution
+    """
+    cur = snowflake_ddl_params.snowflake_connection.cursor()
+    cur.execute(sqlstr)
+    results = cur.fetchall()
+    column_names = [c[0] for c in cur.description]
+    cur.close()
+
+    results_with_column_names = [{column_names[i].upper():x[i] for i in range(len(column_names))} for x in results]
+    return results_with_column_names
+
+
+
 # %%
 
 

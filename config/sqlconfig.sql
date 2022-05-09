@@ -84,11 +84,17 @@ VALUES
 ('FP_AG_DATASOURCE_COPY_FINRA', 'Financial Professional', 'FINRA', '', 'copy_finra', 'AG', 'System', CURRENT_TIMESTAMP, NULL),
 
 
+INSERT INTO metadata.DataSource
+(DataSourceKey, Category, SubCategory, Firm, DataSourceType, DataProvider, UpdatedBy, UpdateTS, DataSourceUniqueKey)
+VALUES
+('REVERSE_ETL_DATASOURCE', 'SNOWFLAKE', 'EDIP', '', 'reverse_etl', 'AG', 'System', CURRENT_TIMESTAMP, NULL),
+
+
 ;
 
 
 SELECT * FROM metadata.DataSource
-where DataSourceKey = 'FP_AG_DATASOURCE_FINRA_RAA'
+where DataSourceKey = 'REVERSE_ETL_DATASOURCE'
 ORDER BY DataSourceId DESC;
 
 
@@ -174,6 +180,10 @@ INSERT INTO metadata.Pipeline
 VALUES
 ('FP_COPY_FINRA', 'outbound_migration', 'Pipeline to copy FINRA files from remote to source path', 'FP_AG_DATASOURCE_COPY_FINRA', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
+INSERT INTO metadata.Pipeline
+(PipelineKey, PipelineCategory, PipelineDescription, DataSourceKey, PreRunCode, Schedule, IsActive, UpdatedBy, UpdateTS)
+VALUES
+('REVERSE_ETL_FP_EDIP', 'inbound_migration', 'Pipeline to copy Snowflake data to on-prem SQL Server', 'REVERSE_ETL_DATASOURCE', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
 
 ;
@@ -182,8 +192,8 @@ VALUES
 
 
 update metadata.Pipeline
-set PipelineCategory = 'copy'
-where PipelineKey = 'FP_COPY_FINRA';
+set PipelineKey = 'REVERSE_ETL_FP_EDIP'
+where PipelineKey = 'REVERSE_ETL_FP_EDIP';
 
 
 
@@ -646,6 +656,19 @@ VALUES
 ('FP_COPY_FINRA', 'SOURCE_PATH_TRD', '/opt/EDIP/data/FINRA/25803', 'System', CURRENT_TIMESTAMP),
 ('FP_COPY_FINRA', 'SOURCE_PATH_WFS', '/opt/EDIP/data/FINRA/421', 'System', CURRENT_TIMESTAMP),
 
+
+INSERT INTO metadata.PipelineConfiguration 
+(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
+VALUES
+('REVERSE_ETL_FP_EDIP', 'DB_NAME', 'FP', 'System', CURRENT_TIMESTAMP),
+('REVERSE_ETL_FP_EDIP', 'SCHEMA_NAME', 'EDIP', 'System', CURRENT_TIMESTAMP),
+('REVERSE_ETL_FP_EDIP', 'SQL_SERVER', 'DW1SQLOLTP02', 'System', CURRENT_TIMESTAMP),
+('REVERSE_ETL_FP_EDIP', 'SQL_KEY_VAULT_ACCOUNT', 'DSQLOLTP02', 'System', CURRENT_TIMESTAMP),
+('REVERSE_ETL_FP_EDIP', 'SQL_DB_NAME', 'FinancialProfessional', 'System', CURRENT_TIMESTAMP),
+('REVERSE_ETL_FP_EDIP', 'SQL_SCHEMA_NAME', 'EDIP', 'System', CURRENT_TIMESTAMP),
+('REVERSE_ETL_FP_EDIP', 'TABLES', '%', 'System', CURRENT_TIMESTAMP),
+('REVERSE_ETL_FP_EDIP', 'VIEWS', 'VW_CURATION_AG_CONTACTINFORMATION_FP,VW_CURATION_AG_REPHIERARCHY', 'System', CURRENT_TIMESTAMP),
+('REVERSE_ETL_FP_EDIP', 'DATA_TYPE_TRANSLATION_FILE', '/opt/EDIP/ingestion/config/lookup_files/DataTypeTranslation.csv', 'System', CURRENT_TIMESTAMP),
 ;
 
 
@@ -653,7 +676,8 @@ VALUES
 
 
 select * from metadata.PipelineConfiguration 
-where PipelineKey = 'FP_MIGRATE_LR';
+where PipelineKey = 'REVERSE_ETL_FP_EDIP';
+
 
 
 
