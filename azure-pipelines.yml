@@ -14,6 +14,11 @@ steps:
 
 - script: |
     echo ""
+    echo "System.TeamProject: $(System.TeamProject)"
+    echo "Build.Repository.Name: $(Build.Repository.Name)"
+    echo "Build.BuildId: $(Build.BuildId)"
+    echo "Build.BuildNumber: $(Build.BuildNumber)"
+    echo ""
     echo "Agent.BuildDirectory: $(Agent.BuildDirectory)"
     echo "Build.ArtifactStagingDirectory: $(Build.ArtifactStagingDirectory)"
     echo "Build.BinariesDirectory: $(Build.BinariesDirectory)"
@@ -37,15 +42,13 @@ steps:
     CleanTargetFolder: true
     OverWrite: true
 
-
-- task: ArchiveFiles@2
+- task: Veracode@3
   inputs:
-    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/s'
-    includeRootFolder: false
-    archiveType: '7z'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)_$(Build.BuildId).zip'
-    replaceExistingArchive: true
-
+    ConnectionDetailsSelection: 'Endpoint'
+    AnalysisService: 'DA Veracode'
+    veracodeAppProfile: 'EDIP-Code'
+    version: '$(Build.Repository.Name)_$(build.buildNumber)'
+    filepath: '$(build.artifactstagingdirectory)/s'
 
 
 - task: PublishBuildArtifacts@1
