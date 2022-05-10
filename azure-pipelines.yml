@@ -12,12 +12,32 @@ pool:
 
 steps:
 
+- script: |
+    echo ""
+    echo "Agent.BuildDirectory: $(Agent.BuildDirectory)"
+    echo "Build.ArtifactStagingDirectory: $(Build.ArtifactStagingDirectory)"
+    echo "Build.BinariesDirectory: $(Build.BinariesDirectory)"
+    echo "Build.SourcesDirectory: $(Build.SourcesDirectory)"
+    echo ""
+    echo "Initial Structure of BuildDirectory folder of this pipeline:"
+    find $(Agent.BuildDirectory) -print | sed -e "s;[^/]*/;|____;g;s;____|; |;g"
+  displayName: 'Check Initial Structure of BuildDirectory folder'
+
+
 - task: CopyFiles@2
   displayName: "Copy Code Files"
   inputs:
-    SourceFolder: '$(agent.builddirectory)'
-    Contents: '**'
-    TargetFolder: '$(build.artifactstagingdirectory)'
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: |
+      src/**
+      dags/**
+      drivers/**
+      config/**
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/s'
+    CleanTargetFolder: true
+    OverWrite: true
+
+
 
 
 - task: PublishBuildArtifacts@1
@@ -36,3 +56,11 @@ steps:
   inputs:
     pathToPublish: $(build.artifactstagingdirectory)/s/config
     artifactName: CONFIG
+
+
+
+- script: |
+    echo ""
+    echo "Final Structure of BuildDirectory folder of this pipeline:"
+    find $(Agent.BuildDirectory) -print | sed -e "s;[^/]*/;|____;g;s;____|; |;g"
+  displayName: 'Check Final Structure of BuildDirectory folder'
