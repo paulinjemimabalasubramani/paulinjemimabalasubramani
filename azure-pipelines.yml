@@ -42,13 +42,6 @@ steps:
     CleanTargetFolder: true
     OverWrite: true
 
-- task: Veracode@3
-  inputs:
-    ConnectionDetailsSelection: 'Endpoint'
-    AnalysisService: 'DA Veracode'
-    veracodeAppProfile: 'EDIP-Code'
-    version: '$(Build.Repository.Name)_$(build.buildNumber)'
-    filepath: '$(build.artifactstagingdirectory)/s'
 
 
 - task: PublishBuildArtifacts@1
