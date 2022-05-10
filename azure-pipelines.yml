@@ -42,7 +42,7 @@ steps:
   inputs:
     rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/s'
     includeRootFolder: false
-    archiveType: 'zip'
+    archiveType: '7z'
     archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)_$(Build.BuildId).zip'
     replaceExistingArchive: true
 
