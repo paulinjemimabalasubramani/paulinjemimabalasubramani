@@ -38,6 +38,8 @@ steps:
       dags/**
       drivers/**
       config/**
+      Pipfile
+      Pipfile.lock
     TargetFolder: '$(Build.ArtifactStagingDirectory)/s'
     CleanTargetFolder: true
     OverWrite: true
