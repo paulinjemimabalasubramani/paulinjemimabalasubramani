@@ -89,6 +89,10 @@ INSERT INTO metadata.DataSource
 VALUES
 ('REVERSE_ETL_DATASOURCE', 'SNOWFLAKE', 'EDIP', '', 'reverse_etl', 'AG', 'System', CURRENT_TIMESTAMP, NULL),
 
+INSERT INTO metadata.DataSource
+(DataSourceKey, Category, SubCategory, Firm, DataSourceType, DataProvider, UpdatedBy, UpdateTS, DataSourceUniqueKey)
+VALUES
+('SANDBOX_CSV_DATASOURCE', 'SANDBOX', 'SANDBOX', '', 'sandbox_csv', 'AG', 'System', CURRENT_TIMESTAMP, NULL),
 
 ;
 
@@ -184,6 +188,11 @@ INSERT INTO metadata.Pipeline
 (PipelineKey, PipelineCategory, PipelineDescription, DataSourceKey, PreRunCode, Schedule, IsActive, UpdatedBy, UpdateTS)
 VALUES
 ('REVERSE_ETL_FP_EDIP', 'inbound_migration', 'Pipeline to copy Snowflake data to on-prem SQL Server', 'REVERSE_ETL_DATASOURCE', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
+
+INSERT INTO metadata.Pipeline
+(PipelineKey, PipelineCategory, PipelineDescription, DataSourceKey, PreRunCode, Schedule, IsActive, UpdatedBy, UpdateTS)
+VALUES
+('SANDBOX_MIGRATE_CSV', 'outbound_migration', 'Pipeline to migrate Ad-Hoc CSV files to Snowflake Sandbox', 'SANDBOX_CSV_DATASOURCE', '', '0 13 * * *', '1', 'System', CURRENT_TIMESTAMP),
 
 
 ;
@@ -669,6 +678,16 @@ VALUES
 ('REVERSE_ETL_FP_EDIP', 'TABLES', '%', 'System', CURRENT_TIMESTAMP),
 ('REVERSE_ETL_FP_EDIP', 'VIEWS', 'VW_CURATION_AG_CONTACTINFORMATION_FP,VW_CURATION_AG_REPHIERARCHY', 'System', CURRENT_TIMESTAMP),
 ('REVERSE_ETL_FP_EDIP', 'DATA_TYPE_TRANSLATION_FILE', '/opt/EDIP/ingestion/config/lookup_files/DataTypeTranslation.csv', 'System', CURRENT_TIMESTAMP),
+
+
+INSERT INTO metadata.PipelineConfiguration 
+(PipelineKey, ConfigKey, ConfigValue, UpdatedBy, UpdateTS)
+VALUES
+('SANDBOX_MIGRATE_CSV', 'SOURCE_PATH', '/opt/EDIP/data/sandbox/csv', 'System', CURRENT_TIMESTAMP),
+('SANDBOX_MIGRATE_CSV', 'DB_NAME', 'METRICS', 'System', CURRENT_TIMESTAMP),
+('SANDBOX_MIGRATE_CSV', 'SCHEMA_NAME', 'EDIP', 'System', CURRENT_TIMESTAMP),
+('SANDBOX_MIGRATE_CSV', 'IS_SANDBOX', 'TRUE', 'System', CURRENT_TIMESTAMP),
+('SANDBOX_MIGRATE_CSV', 'DELETE_FILES_AFTER', 'TRUE', 'System', CURRENT_TIMESTAMP),
 ;
 
 
