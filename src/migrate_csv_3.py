@@ -21,8 +21,8 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'ASSETS_MIGRATE_PRODUCT',
-        'source_path': r'C:\myworkdir\Shared\AG_ASSETS_PRODUCT',
+        'pipelinekey': 'SANDBOX_MIGRATE_CSV',
+        'source_path': r'C:\myworkdir\Shared\sandbox',
         }
 
 
@@ -98,13 +98,15 @@ def extract_csv_file_meta(file_path:str, zip_file_path:str=None):
     table_name = add_firm_to_table_name(table_name=table_name)
     key_datetime = execution_date_start
 
+    is_full_load = getattr(data_settings, 'is_full_load', 'TRUE').upper() == 'TRUE'
+
     file_meta = {
         'table_name': table_name.lower(), # table name should always be lower
         'file_name': file_name,
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
         'zip_file_path': zip_file_path,
-        'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
+        'is_full_load': is_full_load,
         'key_datetime': key_datetime,
     }
 

@@ -237,6 +237,7 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
     Read from Snowflake Table or Query
     """
     logger.info(f"Reading Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', schema='{schema}', table='{table_name}'")
+
     sf_options = {
         'sfUrl': f'{account}.snowflakecomputing.com',
         'sfUser': user,
@@ -264,6 +265,35 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
 
     logger.info('Finished Reading from Snowflake')
     return table
+
+
+
+# %% Write PySpark table directly to Snowflake
+
+@catch_error(logger)
+def write_snowflake(table, table_name:str, schema:str, database:str, warehouse:str, role:str, account:str, user:str, password:str, mode:str='overwrite'):
+    """
+    Write PySpark table directly to Snowflake
+    """
+    logger.info(f"Writing to Snowflake: role='{role}', warehouse='{warehouse}', database='{database}', schema='{schema}', table='{table_name}'")
+
+    sf_options = {
+        'sfUrl': f'{account}.snowflakecomputing.com',
+        'sfUser': user,
+        'sfPassword': password,
+        'sfRole': role,
+        'sfWarehouse': warehouse,
+        'sfDatabase': database,
+        'sfSchema': schema,
+        }
+
+    table.write.mode(mode) \
+        .format('snowflake') \
+        .options(**sf_options) \
+        .option('dbtable', table_name) \
+        .save()
+
+    logger.info(f'Finished Writing {database}.{schema}.{table_name} to Snowflake')
 
 
 

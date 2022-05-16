@@ -10,9 +10,10 @@ from datetime import datetime
 from collections import OrderedDict
 from uuid import uuid4
 
-from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, pipeline_metadata_conf, execution_date_start, to_sql_value, get_csv_rows
+from .common_functions import logger, catch_error, is_pc, data_settings, EXECUTION_DATE_str, cloud_file_hist_conf, \
+    pipeline_metadata_conf, execution_date_start, to_sql_value, get_csv_rows, get_secrets
 from .azure_functions import save_adls_gen2, setup_spark_adls_gen2_connection
-from .spark_functions import ELT_PROCESS_ID_str, partitionBy_str, elt_audit_columns
+from .spark_functions import ELT_PROCESS_ID_str, partitionBy_str, elt_audit_columns, write_snowflake
 from .snowflake_ddl import connect_to_snowflake, snowflake_ddl_params, create_snowflake_ddl, write_DDL_file_per_step
 
 
@@ -362,7 +363,10 @@ def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list
 # %% Migrate Single File
 
 @catch_error(logger)
-def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, fn_process_file, fn_get_dtypes, additional_file_meta_columns:list):
+def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, fn_process_file, fn_get_dtypes, additional_file_meta_columns:list, skip_datalake:bool=False):
+    """
+    Migrate Single File
+    """
     logger.info(f'Extract File Meta: {file_path}')
     start_total_seconds = datetime.now()
 
@@ -417,11 +421,26 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         else: 
             key_column_names_list.append('No Primary Key')
 
-        setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.storage_account_name) # for data
-        if not save_adls_gen2(table=table, table_name=table_name, is_metadata=False): continue
+        if not skip_datalake:
+            setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.storage_account_name) # for data
+            if not save_adls_gen2(table=table, table_name=table_name, is_metadata=False): continue
 
-        setup_spark_adls_gen2_connection(spark=snowflake_ddl_params.spark, storage_account_name=data_settings.default_storage_account_name) # for metadata
-        copy_commands.append(create_snowflake_ddl(table=table, table_name=table_name, fn_get_dtypes=fn_get_dtypes, partition_by=partition_by))
+            copy_commands.append(create_snowflake_ddl(table=table, table_name=table_name, fn_get_dtypes=fn_get_dtypes, partition_by=partition_by))
+        else:
+            _, snowflake_user, snowflake_pass = get_secrets(data_settings.snowflake_key_vault_account)
+
+            write_snowflake(
+                table = table,
+                table_name = table_name,
+                schema = data_settings.schema_name,
+                database = snowflake_ddl_params.snowflake_database,
+                warehouse = data_settings.snowflake_warehouse,
+                role = data_settings.snowflake_role,
+                account = data_settings.snowflake_account,
+                user = snowflake_user,
+                password = snowflake_pass,
+                mode = 'overwrite',
+                )
 
     file_meta['copy_command'] = ' '.join(copy_commands)
     file_meta['total_seconds'] = (datetime.now() - start_total_seconds).seconds
@@ -442,6 +461,9 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
 # %% Update SQL Zip File Path - Fully Ingested to True
 
 def update_sql_zip_file_path(zip_file_path:str):
+    """
+    Update SQL Zip File Path - Fully Ingested to True
+    """
     full_table_name = f"{cloud_file_hist_conf['sql_schema']}.{cloud_file_hist_conf['sql_file_history_table']}".lower()
 
     sqlstr_update = f"""UPDATE {full_table_name}
@@ -467,7 +489,7 @@ def update_sql_zip_file_path(zip_file_path:str):
 # %% Mirgate all files recursively unzipping any files
 
 @catch_error(logger)
-def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, fn_get_dtypes, zip_file_path:str=None, selected_file_paths:list=[]):
+def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, fn_get_dtypes, zip_file_path:str=None, selected_file_paths:list=[], skip_datalake:bool=False):
     """
     Mirgate all files recursively unzipping any files
     """
@@ -503,6 +525,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
                     fn_get_dtypes = fn_get_dtypes,
                     zip_file_path = zip_file_path,
                     selected_file_paths = [],
+                    skip_datalake = skip_datalake,
                     )
                 update_sql_zip_file_path(zip_file_path=zip_file_path)
             continue
@@ -514,6 +537,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
             fn_process_file = fn_process_file,
             fn_get_dtypes = fn_get_dtypes,
             additional_file_meta_columns = additional_file_meta_columns,
+            skip_datalake = skip_datalake,
             )
 
 
@@ -526,6 +550,10 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:
     Migrate All Files
     """
     create_file_meta_table_if_not_exists(additional_file_meta_columns)
+
+    skip_datalake = getattr(data_settings, 'is_sandbox', 'FALSE').upper() == 'TRUE'
+    if skip_datalake:
+        logger.info('Sandbox environment, skip writing to Data Lake')
 
     file_count, selected_file_paths = fn_select_files()
 
@@ -550,9 +578,10 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:
         fn_process_file = fn_process_file,
         fn_get_dtypes = fn_get_dtypes,
         selected_file_paths = selected_file_paths,
+        skip_datalake = skip_datalake,
         )
 
-    write_DDL_file_per_step()
+    if not skip_datalake: write_DDL_file_per_step()
 
     snowflake_ddl_params.snowflake_connection.close()
 
