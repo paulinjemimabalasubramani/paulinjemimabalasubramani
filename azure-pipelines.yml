@@ -45,6 +45,24 @@ steps:
     OverWrite: true
 
 
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/s'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)_$(Build.buildNumber).zip'
+    replaceExistingArchive: true
+
+
+- task: Veracode@3
+  inputs:
+    ConnectionDetailsSelection: 'Endpoint'
+    AnalysisService: 'DA Veracode'
+    veracodeAppProfile: 'EDIP-Code'
+    version: '$(Build.Repository.Name)_$(build.buildNumber)'
+    filepath: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)_$(Build.buildNumber).zip'
+
+
 
 - task: PublishBuildArtifacts@1
   inputs:
