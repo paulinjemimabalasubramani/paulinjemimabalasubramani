@@ -118,6 +118,7 @@ def select_files():
 
             if file_ext.lower() == '.zip':
                 key_datetime = execution_date_start
+                filter_table = file_name
             else:
                 file_name_list = file_name_noext.split('_')
                 if not len(file_name_list) == 6: continue
@@ -129,13 +130,24 @@ def select_files():
                     logger.warning(f'Invalid Date Format: {file_path}. {str(e)}')
                     continue
 
+                filter_table = "_".join([file_name_list[0], file_name_list[1], file_name_list[5]]).lower()
+
             if file_meta_exists_for_select_files(file_path=file_path): continue
 
-            selected_file_paths.append((file_path, key_datetime))
+            selected_file_paths.append((file_path, key_datetime, filter_table))
 
-    selected_file_paths = sorted(selected_file_paths, key=lambda c: (c[1], c[0]))
-    selected_file_paths = [c[0] for c in selected_file_paths]
-    return file_count, selected_file_paths
+    selected_file_paths = sorted(selected_file_paths, key=lambda c: (c[2], c[1], c[0]))
+
+    if len(selected_file_paths)>0:
+        filter_tables = []
+        for k in range(len(selected_file_paths)-1):
+            if selected_file_paths[k][2] == selected_file_paths[k+1][2]:
+                continue # Take only the latest dates for a given filter_table
+            filter_tables.append(selected_file_paths[k][0])
+
+        filter_tables.append(selected_file_paths[-1][0])
+
+    return file_count, filter_tables
 
 
 
