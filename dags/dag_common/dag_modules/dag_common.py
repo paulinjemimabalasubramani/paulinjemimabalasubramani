@@ -23,6 +23,13 @@ src_path = f'{ingestion_path}/src'
 
 
 
+# %% Get Environment Variables
+
+environment = os.environ.get(key='ENVIRONMENT', default='').upper()
+is_prod_env = environment == 'PROD'
+
+
+
 # %% Host Address / Airflow Webserver
 
 host_connection_type = 'http'
@@ -38,11 +45,16 @@ airflow_webserver_link = f'{host_connection_type}://{host_ip}:{airflow_webserver
 default_args = {
     'owner': 'EDIP',
     'depends_on_past': False,
-    'on_failure_callback': on_failure(airflow_webserver_link=airflow_webserver_link),
-    'on_success_callback': on_success(airflow_webserver_link=airflow_webserver_link),
-    'sla_miss_callback': sla_miss(airflow_webserver_link=airflow_webserver_link),
     'sla': timedelta(hours=2),
-}
+    }
+
+if is_prod_env:
+    default_args = {
+        **default_args,
+        'on_failure_callback': on_failure(airflow_webserver_link=airflow_webserver_link),
+        'on_success_callback': on_success(airflow_webserver_link=airflow_webserver_link),
+        'sla_miss_callback': sla_miss(airflow_webserver_link=airflow_webserver_link),
+    }
 
 
 
