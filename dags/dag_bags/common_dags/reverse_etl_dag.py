@@ -9,7 +9,7 @@ from dag_modules.dag_common import default_args, migrate_data, start_pipe, end_p
 
 # %% Pipeline Parameters
 
-pipelinekey = 'REVERSE_ETL'
+pipelinekey = 'REVERSE_ETL_FP_EDIP'
 python_spark_code = 'reverse_etl_3'
 
 tags = ['DB:SNOWFLAKE']
