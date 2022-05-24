@@ -175,7 +175,7 @@ def recreate_raw_sql_table(table_name:str, columns:list, primary_keys:list, max_
     logger.info(f'Writing: {file_path}')
     with open(file_path, 'w') as f:
         f.write(sqlstr_drop)
-        f.write()
+        f.write('')
         f.write(sqlstr)
 
     pymssql_execute_non_query(
