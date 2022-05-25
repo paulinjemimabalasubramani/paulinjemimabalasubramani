@@ -174,9 +174,7 @@ def recreate_raw_sql_table(table_name:str, columns:list, primary_keys:list, max_
     file_path = os.path.join(ddl_folder_path, f'recreate_{table_name.lower()}.sql')
     logger.info(f'Writing: {file_path}')
     with open(file_path, 'w') as f:
-        f.write(sqlstr_drop)
-        f.write('')
-        f.write(sqlstr)
+        f.write(f'{sqlstr_drop}\n\n{sqlstr}')
 
     pymssql_execute_non_query(
         sqlstr_list = [sqlstr_drop, sqlstr],
@@ -261,7 +259,7 @@ def reverse_etl_all_tables():
         try:
             table = read_snowflake(
                 spark = spark,
-                table_name = f'SELECT * FROM {table_name} WHERE SCD_IS_CURRENT_RECORD=1;',
+                table_name = f'SELECT * FROM {table_name}', # WHERE SCD_IS_CURRENT_RECORD=1;',
                 schema = data_settings.schema_name,
                 database = snowflake_ddl_params.snowflake_database,
                 warehouse = data_settings.snowflake_warehouse,
