@@ -253,11 +253,12 @@ def read_snowflake(spark, table_name:str, schema:str, database:str, warehouse:st
     else:
         dbtable = 'dbtable'
 
-    table = spark.read \
-        .format('snowflake') \
-        .options(**sf_options) \
-        .option(dbtable, table_name) \
+    table = (spark.read
+        .format('snowflake')
+        .options(**sf_options)
+        .option(dbtable, table_name)
         .load()
+    )
 
     if table.rdd.isEmpty():
         logger.warning(f'Snowflake table is empty. Skipping {database}.{schema}.{table_name}')
@@ -300,18 +301,18 @@ def write_snowflake(table, table_name:str, schema:str, database:str, warehouse:s
 # %% Read XML File
 
 @catch_error(logger)
-def read_xml(spark, file_path:str, rowTag:str="?xml", schema=None):
+def read_xml(spark, file_path:str, rowTag:str='?xml', schema=None):
     """
     Read XML Files using PySpark
     """
     logger.info(f'Reading XML file: {file_path}')
     xml_table = (spark.read
-        .format("com.databricks.spark.xml")
-        .option("rowTag", rowTag)
-        .option("inferSchema", 'false')
-        .option("excludeAttribute", 'false')
-        .option("ignoreSurroundingSpaces", 'true')
-        .option("mode", "PERMISSIVE")
+        .format('com.databricks.spark.xml')
+        .option('rowTag', rowTag)
+        .option('inferSchema', 'false')
+        .option('excludeAttribute', 'false')
+        .option('ignoreSurroundingSpaces', 'true')
+        .option('mode', 'PERMISSIVE')
     )
 
     if schema:
@@ -394,6 +395,7 @@ def read_text(spark, file_path:str):
 
     text_file = (spark.read
         .format('text')
+        .option('mode', 'PERMISSIVE')
         .load(file_path)
     )
 
@@ -418,6 +420,7 @@ def read_json(spark, file_path:str):
     json_table = (spark.read
         .format('json')
         .option('multiLine', 'true')
+        .option('mode', 'PERMISSIVE')
         .load(file_path)
     )
 
