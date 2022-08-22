@@ -8,7 +8,7 @@ trigger:
 - master
 
 pool:
-  name: EDIP_Agents
+  name: EDIP_Agents2
 
 steps:
 
