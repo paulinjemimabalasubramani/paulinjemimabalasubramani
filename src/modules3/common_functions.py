@@ -49,14 +49,16 @@ metadata_sql_table_names = {
 is_pc = platform.system().lower() == 'windows'
 
 if is_pc:
-    os.environ['SPARK_HOME']  = r'C:\Spark\spark-3.1.2-bin-hadoop3.2'
-    os.environ['HADOOP_HOME'] = r'C:\Spark\Hadoop'
-    os.environ['JAVA_HOME']   = r'C:\Program Files\Java\jre1.8.0_311'
+    #os.environ['SPARK_HOME']  = r'C:\Spark\spark-3.1.2-bin-hadoop3.2'
+    #os.environ['HADOOP_HOME'] = r'C:\Spark\Hadoop'
+    #os.environ['JAVA_HOME']   = r'C:\Program Files\Java\jre1.8.0_311'
     #os.environ['PYSPARK_PYTHON'] = r'~\.venv\Scripts\python.exe' # add this line as necessary
 
-    sys.path.insert(0, '%SPARK_HOME%\bin')
-    sys.path.insert(0, '%HADOOP_HOME%\bin')
-    sys.path.insert(0, '%JAVA_HOME%\bin')
+    #sys.path.insert(0, '%SPARK_HOME%\bin')
+    #sys.path.insert(0, '%HADOOP_HOME%\bin')
+    #sys.path.insert(0, '%JAVA_HOME%\bin')
+
+    pass
 
 
 

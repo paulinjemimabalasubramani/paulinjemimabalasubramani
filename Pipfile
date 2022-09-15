@@ -4,18 +4,19 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pyspark = "==3.1.2"
-azure-identity = "==1.6.0"
-azure-keyvault = "==4.1.0"
-azure-storage-file-datalake = "==12.4.0"
-snowflake-connector-python = "==2.4.5"
-snowflake-sqlalchemy = "==1.2.4"
-pymssql = "==2.2.2"
+azure-identity = "==1.10.0"
+azure-keyvault = "==4.2.0"
+azure-storage-file-datalake = "==12.8.0"
+pymssql = "==2.2.5"
+pyspark = "==3.3.0"
+pyyaml = "==6.0"
 salesforce-bulk = "==2.2.0"
-SQLAlchemy = "==1.3.18"
-PyYAML = "==5.4.1"
+snowflake-connector-python = "==2.7.12"
+snowflake-sqlalchemy = "==1.4.1"
+sqlalchemy = "==1.4.41"
 
 [dev-packages]
+ipykernel = "*"
 
 [requires]
-python_version = "3.8"
+python_version = "3.10"
