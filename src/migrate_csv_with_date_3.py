@@ -7,7 +7,7 @@ Generic Code to Migrate any CSV type files with date info in file name to ADLS G
 
 # %% Parse Arguments
 
-if False: # Set to False for Debugging
+if True: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
