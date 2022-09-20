@@ -15,9 +15,9 @@ python_spark_code = 'migrate_finra_3'
 tags = ['DB:FP', 'SC:FINRA']
 
 firm_map = {
-    'FSC': '20 10 * * *',
-    'RAA': '25 10 * * *',
-    'SAA': '30 10 * * *',
+    'FSC': '20 */2 * * *',
+    'RAA': '25 */2 * * *',
+    'SAA': '30 */2 * * *',
     'SAI': '35 */2 * * *',
     'SPF': '40 */2 * * *',
     'TRI': '45 */2 * * *',
