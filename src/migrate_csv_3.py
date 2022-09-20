@@ -7,7 +7,7 @@ Generic Code to Migrate any CSV type files to ADLS Gen 2
 
 # %% Parse Arguments
 
-if True: # Set to False for Debugging
+if False: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
@@ -21,8 +21,8 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'SANDBOX_MIGRATE_CSV',
-        'source_path': r'C:\myworkdir\Shared\sandbox',
+        'pipelinekey': 'FP_MIGRATE_SF',
+        'source_path': r'C:\myworkdir\data\FP_SF_TRI',
         }
 
 
