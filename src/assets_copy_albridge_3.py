@@ -79,6 +79,7 @@ def copy_files():
     for file_name in os.listdir(data_settings.remote_path):
         remote_file_path = os.path.join(data_settings.remote_path, file_name)
         if os.path.isfile(remote_file_path):
+            print(f'File: {remote_file_path}')
             file_name_noext, file_ext = os.path.splitext(file_name)
 
             if file_ext.lower() != '.zip':
@@ -89,8 +90,13 @@ def copy_files():
                 logger.info(f'zip file {remote_file_path} should start with "S", skipping copy')
                 continue
 
-            file_date_str = file_name_noext[-8:]
-            key_datetime = datetime.strptime(file_date_str, data_settings.date_format)
+            try:
+                file_date_str = file_name_noext[-8:]
+                key_datetime = datetime.strptime(file_date_str, data_settings.date_format)
+            except Exception as e:
+                print(str(e))
+                continue
+
             if key_datetime < data_settings.key_datetime:
                 logger.info(f'Older date in file name: {remote_file_path} -> skipping copy')
                 continue
