@@ -32,8 +32,8 @@ with DAG(
 ) as dag:
 
     download_markets = BashOperator(
-        task_id = f'CONVERT_TO_JSON_{pipelinekey}',
-        bash_command = f'python {src_path}/nfs_to_json_3.py --pipelinekey {pipelinekey}',
+        task_id = f'{pipelinekey}_DOWNLOAD',
+        bash_command = f'python {src_path}/assets_download_markets_3.py --pipelinekey {pipelinekey}',
         dag = dag,
         )
 
