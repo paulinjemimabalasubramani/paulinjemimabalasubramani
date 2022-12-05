@@ -55,7 +55,8 @@ def clean_dictionary(src_dict:dict):
     """
     for key in src_dict:
         if src_dict[key] is not None:
-            src_dict[key] = src_dict[key].replace('\n',"").replace('\t',"").replace('\r',"")
+            #src_dict[key] = src_dict[key].replace('\n',"").replace('\t',"").replace('\r',"")
+            pass
     return src_dict
 
 
