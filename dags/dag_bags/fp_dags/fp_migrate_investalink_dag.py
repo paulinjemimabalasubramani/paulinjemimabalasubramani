@@ -14,7 +14,7 @@ python_spark_code = 'migrate_csv_3'
 
 tags = ['DB:FP', 'SC:INVESTALINK']
 
-schedule_interval = '0 13 * * *' # https://crontab.guru/
+schedule_interval = '1 */6 * * *' # https://crontab.guru/
 
 
 
