@@ -41,7 +41,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, column_regex
 from modules3.spark_functions import add_id_key, create_spark, remove_column_spaces, add_elt_columns, read_text
 from modules3.migrate_files import migrate_all_files, default_table_dtypes, add_firm_to_table_name, get_key_column_names
 from modules3.pershing_header import bulk_file_ext, schema_header_str, schema_trailer_str, total_prefix_length, bulk_id_header, \
@@ -403,7 +403,8 @@ def extract_pershing_file_meta(file_path:str, zip_file_path:str=None):
 
     header_info = get_header_info(file_path=file_path)
 
-    schema_file_name = re.sub(' ', '_', header_info['form_name'].lower())
+    schema_file_name = re.sub(column_regex, ' ', header_info['form_name'].lower()).strip()
+    schema_file_name = re.sub(' ', '_', schema_file_name)
     table_name = add_firm_to_table_name(table_name=schema_file_name)
 
     file_meta = {

@@ -1,0 +1,628 @@
+record_name,position,picture,type,conditional_changes,field_name,scale,description,notes,,,,,,,,
+HEADER,001-018,X(18),AN,,not_used,,Literally “BOFPERSHING” (beginning of Pershing file),,,,,,,,,
+HEADER,019-036,X(18),AN,,not_used,,"Literally GTDE = “GLBL/DOMESTIC TRDS”
+GSDE = “GLBL/DOMESTIC S/D”",,,,,,,,,
+HEADER,037-046,X(10),AN,,not_used,,Literally “DATAOF”,,,,,,,,,
+HEADER,047-056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,,,,,,,,,
+HEADER,057-067,X(11),AN,,not_used,,Literally “TOREMOTE”,,,,,,,,,
+HEADER,068-071,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,,,,,,,,,
+HEADER,072-085,X(14),AN,,not_used,,Literally “BEGINSHERE”,,,,,,,,,
+HEADER,086-095,X(10),AN,,run_date,,RUN DATE = “MM/DD/CCYY”,,,,,,,,,
+HEADER,096-096,X(01),AN,,not_used,,Not Used,,,,,,,,,
+HEADER,097-104,X(08),AN,,run_time,,RUN TIME = “HH:MM:SS”,,,,,,,,,
+HEADER,105-1249,X(1145),AN,,not_used,,Not Used,,,,,,,,,
+HEADER,1250-1250,X(01),AN,,not_used,,Literally “A”; indicates the end of the header record,,,,,,,,,
+A,001-002,X(02),AN,,transaction_code,,"TRANSACTION CODE; values include:
+“GE” = GTDE
+“GS” = GSDE",,,,,,,,,
+A,003-003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “A”,,,,,,,,,
+A,004-011,9(08),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “00000001”,,,,,,,,,
+A,012-021,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); values for Type include:
+“0” = COD
+“1” = Cash/Principal Accounting for Bank Custody
+“2” = Margin
+“3” = Short
+“4” = Special Subs
+“5” = Arbitrage
+“6” = Market Function
+“7” = Good Faith
+“8” = Precious Metal
+“9” = Income/Income Accounting for Bank Custody",,,,,,,,,
+A,022-022,X(01),AN,,not_used,,Not Used,,,,,,,,,
+A,023-025,X(03),AN,,ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,,,,,,,,,
+A,026-028,X(03),AN,,not_used,,Not Used,,,,,,,,,
+A,029-042,X(14),AN,,not_used,,Not Used,,,,,,,,,
+A,043-062,X(20),AN,,pershing_internal_order_reference_number,,PERSHING INTERNAL ORDER REFERENCE NUMBER,,,,,,,,,
+A,063-082,X(20),AN,,pershing_internal_trade_reference_number,,PERSHING INTERNAL TRADE REFERENCE NUMBER,,,,,,,,,
+A,083-086,9(04),N,,pershing_internal_version,,PERSHING INTERNAL VERSION,,,,,,,,,
+A,087-106,X(20),AN,,ibd_trade_id,,INTRODUCING BROKER/DEALER (IBD) TRADE ID,,,,,,,,,
+A,107-126,X(20),AN,,unique_order_id,,UNIQUE ORDER ID,,,,,,,,,
+A,127-146,X(20),AN,,allocation_block_id,,ALLOCATION BLOCK ID,,,,,,,,,
+A,147-166,X(20),AN,,external_reference_number,,EXTERNAL REFERENCE NUMBER,,,,,,,,,
+A,167-186,X(20),AN,,block_trade_id,,BLOCK TRADE ID; used for FX trades,,,,,,,,,
+A,187-192,X(06),AN,,p_s_reference_number,,P&S REFERENCE NUMBER,,,,,,,,,
+A,193-198,X(06),AN,,trade_area_id,,TRADE AREA ID; free-form text,,,,,,,,,
+A,199-206,9(08),N,,trade_date,,"TRADE DATE, in CCYYMMDD format",,,,,,,,,
+A,207-212,9(06),N,,execution_time,,"EXECUTION TIME, when available = “HHMISS”; see position 1137 for expanded execution time",,,,,,,,,
+A,213-220,9(08),N,,settlement_date,,"SETTLEMENT DATE, in CCYYMMDD format",,,,,,,,,
+A,221-228,9(08),N,,process_date,,"PROCESS DATE, in CCYYMMDD format",,,,,,,,,
+A,229-244,X(16),AN,,not_used,,Not Used,,,,,,,,,
+A,245-247,X(03),AN,,not_used,,Not Used,,,,,,,,,
+A,248-248,X(01),AN,,buy_sell_code,,"BUY/SELL CODE; values include:
+“B” = Buy
+“S” = Sell",,,,,,,,,
+A,249-257,X(09),AN,,cusip_number,,CUSIP NUMBER,,,,,,,,,
+A,258-264,X(07),AN,,not_used,,Not Used,,,,,,,,,
+A,265-265,X(01),AN,,international_security_identifier_type,,"INTERNATIONAL SECURITY IDENTIFIER TYPE; values include:
+“C” = CUSIP
+“S” = Symbol
+“I” = ISIN
+“E” = SEDOL
+“R” = Reuters Identification Code",,,,,,,,,
+A,266-277,X(12),AN,,international_security_identifier_as_entered,,INTERNATIONAL SECURITY IDENTIFIER AS ENTERED ON TRANSACTION,,,,,,,,,
+A,278-293,X(16),AN,,security_symbol,,SECURITY SYMBOL,,,,,,,,,
+A,294-311,9(13)v9(05),N,,order_quantity,,ORDER QUANTITY,,,,,,,,,
+A,312-312,X(01),AN,,order_quantity_sign,,"ORDER QUANTITY SIGN; values include:
+“+” = Positive Quantity
+“-” = Negative Quantity
+“” = Not Available or Zeroes",,,,,,,,,
+A,313-321,9(09),N,,pricing_group_quantity,,"PRICING GROUP QUANTITY; total quantity used for grouping trades (same Account, Security Identifier, side) for pricing purposes",,,,,,,,,
+A,322-322,X(01),AN,,market_code,,"MARKET CODE; values include:
+“1” = New York Stock Exchange® (NYSE)
+“2” = NYSE ALT (formerly AMEX)
+“3” = Philadelphia (PHLX)
+“4” = Over the Counter (OTC)
+“5” = Boston (BSE)
+“6” = Chicago Exchange (CHX)
+“7” = Chicago Board Options Exchange (CBOE)
+“8” = Over the Counter/NSCC, NASDAQ (OTC/NSCC, OTC/NASDAQ)
+“9” = Pacific (PSE)
+“7” + BLOT “1” = Exercised and Assigned Equity Options",,,,,,,,,
+A,323-337,X(15),AN,,not_used,,Not Used,,,,,,,,,
+A,338-341,X(04),AN,,market_mnemonic_code,,MARKET MNEMONIC CODE; see Appendix S for values,,,,,,,,,
+A,342-342,X(01),AN,,blotter_code,,"BLOTTER CODE; values include:
+“0” = Average Price, Allocated, Block, or Agent Cross Trade
+“1” = Customer vs. the Street
+“2” = Option
+“3” = Agency, but used for Cash, Special Settlement next day trades
+“5” = Principal Cross Trade
+“6” = Syndicate Cross Trade
+“8” = Principal Cross Trade/Over the Counter
+“9” = Agency Cross Trade",,,,,,,,,
+A,343-345,X(03),AN,,not_used,,Not Used,,,,,,,,,
+A,346-349,X(04),AN,,settlement_location_code,,SETTLEMENT LOCATION CODE; see Appendix S for values,,,,,,,,,
+A,350-353,X(04),AN,,counter_party_client,,COUNTER PARTY (CLIENT),,,,,,,,,
+A,354-354,X(01),AN,,cancel_code,,"CANCEL CODE; values include:
+“1” = Cancel
+“” = Not Applicable",,,,,,,,,
+A,355-355,X(01),AN,,correction_code,,"CORRECTION CODE; values include:
+“1” = Correction
+“5” = Post Settlement Cancel (CANCEL CODE = “1” in position 354 to be valid)
+“” = Not Applicable",,,,,,,,,
+A,356-356,X(01),AN,,open_close_indicator_for_options,,"OPEN/CLOSE INDICATOR FOR OPTIONS; values include:
+“O” = Open
+“C” = Close
+“” = Not Applicable",,,,,,,,,
+A,357-357,X(01),AN,,type_of_order,,"TYPE OF ORDER; values include:
+“M” = Market
+“L” = Limit
+“D” = DOT (indicates via the computer system of the NYSE)
+“P” = PER (indicates via the computer system of the AMEX)
+“Z” = Derived (omnibus account, market, product)
+Type of Order field will be blank if Cancel Code = “1”, Correction Code = “1”, Blotter Code = “4”, Trace/Treasury When-issued Indicator = “Y”, or if international transaction; type of Order would not apply or was not passed from the previous transaction",,,,,,,,,
+A,358-358,X(01),AN,,discretion_exercised,,"DISCRETION EXERCISED; values include:
+“Y” = Discretion exercised
+“N” = Discretion not exercised
+“” = Not Provided",,,,,,,,,
+A,359-359,X(01),AN,,solicited_indicator,,"SOLICITED INDICATOR; values include:
+“U” = Unsolicited
+“S” = Solicited
+“” = Not Provided",,,,,,,,,
+A,360-360,X(01),AN,,fx_forward,,"FX FORWARD; FX trade tied to Equity or Fixed Income trade; applies only to FX transactions; values include:
+“Y” = Yes, FX trade is tied to Equity or Fixed Income trade
+“” = No, or not applicable",,,,,,,,,
+A,361-368,X(08),AN,,user_id_of_person_who_entered_the_order,,USER ID OF PERSON WHO ENTERED THE ORDER; when available,,,,,,,,,
+A,369-369,X(01),AN,,source_of_input,,SOURCE OF INPUT; see Appendix P for values,,,,,,,,,
+A,370-370,X(01),AN,,no_transaction_fee_ntf_for_etf,,"NO TRANSACTION FEE (NTF) FOR EXCHANGE TRADED FUNDS (ETFs); values include
+“E” = NTF ETF transaction
+“” = Not an NTF transaction",,,,,,,,,
+A,371-378,X(08),AN,,order_terminal_id,,ORDER TERMINAL ID,,,,,,,,,
+A,379-383,9(05),N,,order_sequence_number,,ORDER SEQUENCE NUMBER,,,,,,,,,
+A,384-384,X(01),AN,,capacity_code,,"CAPACITY CODE; values include:
+“A” = Agency transaction
+“M” = Mixed capacity
+“P” = Principal transaction
+“” = Not Available",,,,,,,,,
+A,385-385,X(01),AN,,account_type_indicator_for_blue_sheet_reporting,,ACCOUNT TYPE INDICATOR FOR BLUE SHEET REPORTING; see Appendix S for values,,,,,,,,,
+A,386-386,X(01),AN,,riskless_principal_indicator,,"RISKLESS PRINCIPAL INDICATOR; values include:
+“R” = Riskless Principal Trade
+“” = Not a Riskless Principal Trade",,,,,,,,,
+A,387-387,X(01),AN,,trace_treasury_when_issued_indicator,,"TRACE/TREASURY WHEN-ISSUED INDICATOR; values include:
+“Y” = When-issued security
+“” = Not applicable or populated",,,,,,,,,
+A,388-388,X(01),AN,,short_trade,,"SHORT TRADE; indicates a short sale trade; values include:
+“O” = Short Sale on offset side of trade (indicated on BUY side of linked cross trade)
+“S” = Short and Non-Exempt (indicated on the SELL side)
+“X” = Short and Exempt (indicated on the SELL side)
+“Y” = Short and Exempt on offset of trade (indicated on BUY side of linked cross trade)
+“” = Not applicable",,,,,,,,,
+A,389-389,X(01),AN,,syndicate_indicator,,"SYNDICATE INDICATOR; values include:
+“Y” = Syndicate Trade
+“N” or “” = Non-syndicate Trade",,,,,,,,,
+A,390-390,X(01),AN,,odd_lot_code,,"ODD LOT CODE; identifies an odd-lot trade; values include:
+“Y” = Odd-Lot trade
+“N” or “” = Not an Odd-Lot Trade",,,,,,,,,
+A,391-391,X(01),AN,,mutual_fund_values,,"MUTUAL FUND VALUES; values include:
+“” = Load or No Load, Networked or non-Networked Trade, or Not Applicable if not a Mutual Fund
+“A” = Load, FundServ, Networked Exchange; if security is an equity, used to suppress automated trade submissions to SIAC. If a trade was executed on AMEX or NYSE and executed through DOT or is an OTC trade and security is ACT-eligible, an “A” is populated. Automated trades are submitted to SIAC upon execution, preventing duplicated streetside submission.
+“B” = Load, FundServ, non-Networked Exchange
+“C” = Load, FundServ, Networked Trade
+“D” = Load, FundServ, non-Networked Trade
+“E” = Load or No-Load, non-FundServ, Networked or non-Networked Exchange
+“F” = Load, non-FundServ Surcharge
+“G” = No-Load, FundServ, Networked Exchange
+“H” = No-Load, FundServ, non-Networked Exchange
+“I” = No-Load, FundServ, Networked Trade
+“J” = No-Load, FundServ, non-Networked Trade
+“K” = No Transaction Fee (NTF), Load or No-Load, FundServ or non-FundServ, Networked or non-Networked Trade
+“L” = No Transaction Fee (NTF), Below Minimum Load or No-Load, FundServ, or non-FundServ, Networked or non-Networked Trade
+“M” = No Transaction Fee (NTF), Short Term Redemption Load or No-Load, FundServ or non-FundServ, Networked or non-Networked Trade
+“N” = No Transaction Fee (NTF), SRS Load or No-Load, FundServ or non-FundServ, Networked or non-Networked Trade
+“O” = NTF, Systematic Reinvestment System (SRS) Load or No-Load, FundServ or non-FundServ, Networked or non-Networked Exchange
+“P” = NTF, SRS Below Minimum Load or No-Load, FundServ or non-FundServ, Networked or non-Networked Trade
+“Q” = NTF, SRS Short Term Redemption Load or No-Load, FundServ or non-FundServ, Networked or non-Networked Trade
+“R” = Systematic Reinvestment System (SRS) Reinvestment Trade
+“S” = SRS Trade
+“T” = SRS Exchange
+“U” = NTF, SRS Short Term Redemption Load or No-Load, Fund or non-FundServ, Networked/non Exchange
+“Z” = No-Load, FundServ, non-Exchange, non-SRS, non-NTF trade for eligible surcharge fund
+“0” = No-Load, non-FundServ, non-Exchange, non-SRS, non-NTF trade for eligible surcharge fund
+“9” = Load, FundServ Surcharge
+“$” = Offshore Flex, Load or No-Load, SRS, Exchange, FundServ or non-FundServ, Networked or non-Networked Trade",,,,,,,,,
+A,392-392,X(01),AN,,spread_straddle_indicator,,"SPREAD/STRADDLE INDICATOR; for options only; values include:
+“S” = Spread
+“T” = Straddle
+“” = Not Applicable",,,,,,,,,
+A,393-397,X(05),AN,,batch_code,,BATCH CODE,,,,,,,,,
+A,398-405,X(08),AN,,investment_manager_code,,INVESTMENT MANAGER CODE,,,,,,,,,
+A,406-406,X(01),AN,,dollar_roll_indicator,,"DOLLAR ROLL INDICATOR; defines a type of trading strategy used in a given transaction; values include:
+“B” = Series futures contracts (applies to Treasury trades)
+“D” = Dollar roll (applies to MBS trades)
+“S” = Series away from market (applies to Treasury trades)
+“W” = Weighted average price (applies to MBS trades)",,,,,,,,,
+A,407-407,X(01),AN,,hedged_transaction_indicator,,"HEDGED TRANSACTION INDICATOR; values include:
+“H” = Hedged transaction
+“ ” = Not Applicable",,,,,,,,,
+A,408-409,X(02),AN,,not_used,,Not Used,,,,,,,,,
+A,410-419,X(10),AN,,offset_account,,OFFSET ACCOUNT; street-side account,,,,,,,,,
+A,420-426,X(07),AN,,not_used,,Not Used,,,,,,,,,
+A,427-430,X(04),AN,,executing_broker,,EXECUTING BROKER,,,,,,,,,
+A,431-434,X(04),AN,,major_brokerage_badge_number,,MAJOR BROKERAGE BADGE NUMBER,,,,,,,,,
+A,435-438,X(04),AN,,contra_broker,,"CONTRA BROKER; broker-dealer, market maker, broker acting as an agent, or
+dealer acting as principal offset account; street-side account",,,,,,,,,
+A,439-442,X(04),AN,,minor_brokerage_badge_number,,MINOR BROKERAGE BADGE NUMBER,,,,,,,,,
+A,443-445,X(03),AN,,trader_initials,,TRADER INITIALS,,,,,,,,,
+A,446-446,X(01),AN,,step_in_step_out_indicator,,"STEP IN/STEP OUT INDICATOR; values include:
+“I” = Step In
+“O” = Step Out
+“ ” = Not Applicable",,,,,,,,,
+A,447-448,X(02),AN,,execution_terminal,,EXECUTION TERMINAL,,,,,,,,,
+A,449-454,X(06),AN,,not_used,,Not Used,,,,,,,,,
+A,455-459,9(05),N,,execution_sequence_number,,EXECUTION SEQUENCE NUMBER,,,,,,,,,
+A,460-465,X(06),AN,,not_used,,Not Used,,,,,,,,,
+A,466-466,X(01),AN,,prime_broker_indicator,,"PRIME BROKER INDICATOR; values include:
+“P” = Prime Broker
+“Q” = Prime Broker; COD Account
+“ ” = Not Applicable",,,,,,,,,
+A,467-469,X(03),AN,,country_of_citizenship,,COUNTRY OF CITIZENSHIP; see Appendix Q for values,,,,,,,,,
+A,470-472,X(03),AN,,country_state_of_residence,,COUNTRY/STATE OF RESIDENCE; see Appendix Q for values,,,,,,,,,
+A,473-473,X(01),AN,,withholding_code_tax_exempt_indicator,,"WITHHOLDING CODE/TAX EXEMPT INDICATOR; values include:
+“0” = No Adoption Agreement
+“1” = Adoption Agreement
+“ ” = Non-custodian",,,,,,,,,
+A,474-476,X(03),AN,,base_currency,,BASE CURRENCY; see Appendix N for values,,,,,,,,,
+A,477-494,9(09)v9(09),N,,base_currency_exchange_rate,,BASE CURRENCY EXCHANGE RATE,,,,,,,,,
+A,495-495,X(01),AN,,base_currency_multiply_divide_code,,"BASE CURRENCY MULTIPLY/DIVIDE CODE; values include:
+“M” = Multiply
+“D” = Divide",,,,,,,,,
+A,496-505,X(10),AN,,not_used,,Not Used,,,,,,,,,
+A,506-508,X(03),AN,,primary_execution_investment_professional,,PRIMARY EXECUTION INVESTMENT PROFESSIONAL,,,,,,,,,
+A,509-509,X(01),AN,,not_used,,Not Used,,,,,,,,,
+A,510-512,X(03),AN,,investment_professional_2_override,,INVESTMENT PROFESSIONAL 2 OVERRIDE,,,,,,,,,
+A,513-513,X(01),AN,,not_used,,Not Used,,,,,,,,,
+A,514-531,9(09)v9(09),N,,investment_professional_2_percentage,,INVESTMENT PROFESSIONAL 2 PERCENTAGE,,,,,,,,,
+A,532-534,X(03),AN,,investment_professional_3_override,,INVESTMENT PROFESSIONAL 3 OVERRIDE,,,,,,,,,
+A,535-535,X(01),AN,,not_used,,Not Used,,,,,,,,,
+A,536-553,9(09)v9(09),N,,investment_professional_3_percentage,,INVESTMENT PROFESSIONAL 3 PERCENTAGE,,,,,,,,,
+A,554-558,X(05),AN,,not_used,,Not Used,,,,,,,,,
+A,559-559,X(01),AN,,security_type_code,,SECURITY TYPE CODE; see Appendix B for values,,,,,,,,,
+A,560-560,X(01),AN,,security_modifier_code,,SECURITY MODIFIER CODE; see Appendix B for values,,,,,,,,,
+A,561-561,X(01),AN,,security_calculation_code,,SECURITY CALCULATION CODE; see Appendix B for values,,,,,,,,,
+A,562-564,X(03),AN,,minor_product_code,,MINOR PRODUCT CODE; see Appendix B for values,,,,,,,,,
+A,565-572,X(08),AN,,asset_type,,ASSET TYPE; see Appendix B for values,,,,,,,,,
+A,573-580,X(08),AN,,asset_subtype,,ASSET SUBTYPE; see Appendix B for values,,,,,,,,,
+A,581-588,X(08),AN,,asset_sub_subtype,,ASSET SUB-SUBTYPE; see Appendix B for values,,,,,,,,,
+A,589-590,X(02),AN,,not_used,,Not Used,,,,,,,,,
+A,591-594,X(04),AN,,international_exchange_code,,INTERNATIONAL EXCHANGE CODE; see Appendix S for values,,,,,,,,,
+A,595-603,X(09),AN,,underlying_cusip,,UNDERLYING CUSIP,,,,,,,,,
+A,604-610,X(07),AN,,not_used,,Not Used,,,,,,,,,
+A,611-628,9(09)v9(09),N,,strike_price,,STRIKE PRICE; the price at which an option can be exercised,,,,,,,,,
+A,629-643,9(03)v9(12),N,,pool_factor,,POOL FACTOR,,,,,,,,,
+A,644-644,X(01),AN,,non_us_security_indicator,,"NON-US SECURITY INDICATOR; values include:
+“1” = Non-US Security
+“2” = ADR/Canadian
+“” = US Security",,,,,,,,,
+A,645-645,X(01),AN,,continuous_net_settlement_cns_eligibility,,"CONTINUOUS NET SETTLEMENT (CNS) ELIGIBILITY; values include:
+“1” = CNS Eligible
+“” = Not CNS Eligible",,,,,,,,,
+A,646-646,X(01),AN,,depository_trust_company_dtc_eligibilty,,"DEPOSITORY TRUST COMPANY (DTC) ELIGIBILTY; values include:
+“1” = DTC Eligible
+“” = Not DTC Eligible",,,,,,,,,
+A,647-647,X(01),AN,,buy_in_trade_execution_indicator,,"BUY-IN TRADE EXECUTION INDICATOR, effective Q1 2022
+Y = Buy-in Execution
+N = Not Buy-in Execution
+“” = Not populated or applicable",,,,,,,,,
+A,648-655,9(08),N,,ex_dividend_date,,"EX-DIVIDEND DATE, in CCYYMMDD format",,,,,,,,,
+A,656-663,9(08),N,,record_date,,"RECORD DATE, in CCYYMMDD format",,,,,,,,,
+A,664-665,9(02),N,,number_of_description_lines,,NUMBER OF DESCRIPTION LINES,,,,,,,,,
+A,666-685,X(20),AN,,description_line_1,,DESCRIPTION LINE 1,,,,,,,,,
+A,686-705,X(20),AN,,description_line_2,,DESCRIPTION LINE 2,,,,,,,,,
+A,706-725,X(20),AN,,description_line_3,,DESCRIPTION LINE 3,,,,,,,,,
+A,726-745,X(20),AN,,description_line_4,,DESCRIPTION LINE 4,,,,,,,,,
+A,746-765,X(20),AN,,description_line_5,,DESCRIPTION LINE 5,,,,,,,,,
+A,766-785,X(20),AN,,description_line_6,,DESCRIPTION LINE 6,,,,,,,,,
+A,786-786,X(01),AN,,legend_code_1,,LEGEND CODE 1; see Appendix K for values,,,,,,,,,
+A,787-787,X(01),AN,,not_used,,Not Used,,,,,,,,,
+A,788-788,X(01),AN,,legend_code_2,,LEGEND CODE 2; see Appendix K for values,,,,,,,,,
+A,789-795,X(07),AN,,not_used,,Not Used,,,,,,,,,
+A,796-797,X(02),AN,,legend_code_one,,LEGEND CODE ONE; see Appendix K for values,,,,,,,,,
+A,798-799,X(02),AN,,legend_code_two,,LEGEND CODE TWO; see Appendix K for values,,,,,,,,,
+A,800-801,X(02),AN,,legend_code_three,,LEGEND CODE THREE; see Appendix K for values,,,,,,,,,
+A,802-803,X(02),AN,,legend_code_four,,LEGEND CODE FOUR; see Appendix K for values,,,,,,,,,
+A,804-805,X(02),AN,,legend_code_five,,LEGEND CODE FIVE; see Appendix K for values,,,,,,,,,
+A,806-807,X(02),AN,,legend_code_six,,LEGEND CODE SIX; see Appendix K for values,,,,,,,,,
+A,808-809,X(02),AN,,not_used,,Not Used,,,,,,,,,
+A,810-829,X(20),AN,,trailer_line_one,,TRAILER LINE ONE,,,,,,,,,
+A,830-849,X(20),AN,,trailer_line_two,,TRAILER LINE TWO,,,,,,,,,
+A,850-869,X(20),AN,,trailer_line_three,,TRAILER LINE THREE,,,,,,,,,
+A,870-889,X(20),AN,,trailer_line_four,,TRAILER LINE FOUR,,,,,,,,,
+A,890-909,X(20),AN,,trailer_line_five,,TRAILER LINE FIVE,,,,,,,,,
+A,910-929,X(20),AN,,trailer_line_six,,TRAILER LINE SIX,,,,,,,,,
+A,930-949,X(20),AN,,trailer_line_seven,,TRAILER LINE SEVEN,,,,,,,,,
+A,950-969,X(20),AN,,trailer_line_eight,,TRAILER LINE EIGHT,,,,,,,,,
+A,970-989,X(20),AN,,trailer_line_nine,,TRAILER LINE NINE,,,,,,,,,
+A,990-996,X(07),AN,,mips_comment_rules_engine,,MIPS COMMENT; reserved for Rules Engine message; will display “RE-APRV” if systematically approved,,,,,,,,,
+A,997-1012,X(16),AN,,mips_comment_netx360,,MIPS COMMENT; free-formatted information that was entered in NetX360,,,,,,,,,
+A,1013-1013,X(01),AN,,source_of_initial_funds_purchase_indicator,,"SOURCE OF INITIAL FUNDS PURCHASE INDICATOR; values include:
+“0” = Not Initial Purchase
+“1” = Initial Purchase
+“2” = Not Initial Purchase – Share Class Not Reviewed
+“3” = Initial Purchase – Share Class Not Reviewed
+“4” = Not Initial Purchase – Share Class Reviewed
+“5” = Initial Purchase – Share Class Reviewed
+“6” = Share Class Reviewed
+“7” = Share Class Not Reviewed",,,,,,,,,
+A,1014-1014,X(01),AN,,source_of_funds,,"SOURCE OF FUNDS; values include:
+“2” = Account Credit Balance/Money Market
+“3” = MF/UIT Redemption
+“4” = Annuity Redemption
+“5” = New Monies
+“6” = Other Advisory Account
+“7” = Rollover/Qualified Account
+“8” = Securities Liquidation",,,,,,,,,
+A,1015-1034,X(20),AN,,mips_comment,,MIPS COMMENT,,,,,,,,,
+A,1035-1040,X(06),AN,,option_root_id,,OPTION ROOT ID,,,,,,,,,
+A,1041-1046,9(06),N,,expiration_date,,"EXPIRATION DATE, in YYMMDD format",,,,,,,,,
+A,1047-1047,X(01),AN,,call_put_indicator,,"CALL/PUT INDICATOR; values include:
+“B” = Bank Pledge (Call)
+“C” = Call
+“D” = Bank Pledge (Put)
+“E” = Escrow Receipt
+“L” = Letter of Credit (Call)
+“M” = Letter of Credit (Put)
+“P” = Put",,,,,,,,,
+A,1048-1055,05)v9(03),N,,strike_price,,STRIKE PRICE,,,,,,,,,
+A,1056-1059,X(04),AN,,mbs_mpid,,MORTGAGE-BACKED SECURITIES MARKET PARTICIPANT IDENTIFICATION (MBS MPID),,,,,,,,,
+A,1060-1060,X(01),AN,,bunched_trade_indicator,,"BUNCHED TRADE INDICATOR; values include:
+“Y” = Bunched trade
+“N” = Not a bunched trade",,,,,,,,,
+A,1061-1061,X(01),AN,,confirm_print_indicator,,"CONFIRM PRINT INDICATOR; values include:
+“Y” = Duplicate corrected confirm generated
+“N” = Not applicable",,,,,,,,,
+A,1062-1077,X(16),AN,,international_non_dollar_symbol,,INTERNATIONAL NON-DOLLAR SYMBOL,,,,,,,,,
+A,1078-1078,X(01),AN,,cmta_indicator,,"CMTA INDICATOR; values include:
+“1” = CMTA out
+“2” = CMTA in
+“” = Not Applicable",,,,,,,,,
+A,1079-1082,X(04),AN,,cmta_broker_number,,CMTA BROKER NUMBER,,,,,,,,,
+A,1083-1084,X(02),AN,,confirmation_code_one,,CONFIRMATION CODE ONE; see Appendix S for values,,,,,,,,,
+A,1085-1086,X(02),AN,,confirmation_code_two,,CONFIRMATION CODE TWO; see Appendix S for values,,,,,,,,,
+A,1087-1088,X(02),AN,,confirmation_code_three,,CONFIRMATION CODE THREE; see Appendix S for values,,,,,,,,,
+A,1089-1090,X(02),AN,,confirmation_code_four,,CONFIRMATION CODE FOUR; see Appendix S for values,,,,,,,,,
+A,1091-1108,9(09)v9(09),N,,prevailing_market_price,,PREVAILING MARKET PRICE (PMP); applies to Brokerage only; all zeroes represents “not provided”,,,,,,,,,
+A,1109-1126,9(16)v9(02),N,,total_amount_of_mark_up_down,,TOTAL AMOUNT OF MARK UP/DOWN; applies to Brokerage only; this is the mark up amount for a buy trade or the mark down amount for a sell trade,,,,,,,,,
+A,1127-1127,X(01),AN,,total_amount_of_mark_up_down_sign,,"TOTAL AMOUNT OF MARK UP/DOWN SIGN; applies to Brokerage only; values include:
+“+” = Positive value
+“-” = Negative value
+“” = Not Applicable or Zeroes",,,,,,,,,
+A,1128-1136,9(04)v9(05),N,,prevailing_market_price_percent,,PREVAILING MARKET PRICE PERCENT; applies to Brokerage only; the sign for the percentage is the same as the sign for the Mark Up/Mark Down in position 1127,,,,,,,,,
+A,1137-1148,9(12),N,,expanded_execution_time,,"EXPANDED EXECUTION TIME, in HHMISSNNNNNN format",,,,,,,,,
+A,1149-1157,X(09),AN,,error_account_number,,ERROR ACCOUNT NUMBER; for cancels and corrections,,,,,,,,,
+A,1158-1158,X(01),AN,,reserved,,Reserved,,,,,,,,,
+A,1159-1241,X(83),AN,,not_used,,Not Used,,,,,,,,,
+A,1242-1249,X(08),AN,,for_pershing_internal_use_only_fist,,For Pershing Internal Use Only (FIST),,,,,,,,,
+A,1250-1250,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record A,,,,,,,,,
+B,001-002,X(02),AN,,transaction_code,,"TRANSACTION CODE; values include:
+“GE” = GTDE
+“GS” = GSDE",,,,,,,,,
+B,003-003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “B”,,,,,,,,,
+B,004-011,9(08),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “00000001”,,,,,,,,,
+B,012-021,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (5), Check Digit (1), Type (1); see Record A position 012-021 for Type values",,,,,,,,,
+B,022 - 022,X(01),AN,,not_used,,Not Used,,,,,,,,,
+B,023 - 025,X(03),AN,,ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,,,,,,,,,
+B,026-042,X(17),AN,,not_used,,Not Used,,,,,,,,,
+B,043 - 060,9(13)v9(05),N,,quantity,,QUANTITY,,,,,,,,,
+B,061 - 061,X(01),AN,,quantity_sign,,"QUANTITY SIGN; values include:
+“+” = Positive Quantity
+“-” = Negative Quantity
+“ ” = Not Applicable or Zeroes",,,,,,,,,
+B,062 - 079,9(09)v9(09),N,,price,,PRICE; the actual price of the customer transaction; displays on confirmations,,,,,,,,,
+B,080 - 082,X(03),AN,,trade_currency,,"TRADE CURRENCY; see Appendix N, “Currency Codes”",,,,,,,,,
+B,083 - 083,X(01),AN,,basis_price_indicator,,"BASIS PRICE INDICATOR; indicates how the price was entered; values include:
+“ ” = Dollar Price
+“1” = Yield
+“D” = Discount
+“2” = Mutual Fund",,,,,,,,,
+B,084 - 100,9(08)v9(09),N,,yield,,YIELD,,,,,,,,,
+B,101 - 101,X(01),AN,,yield_sign,,"YIELD SIGN; values include:
+“+” = Positive Yield
+“-” = Negative Yield
+“ ” = Not Applicable",,,,,,,,,
+B,102 - 118,9(08)v9(09),N,,yield_to_worst,,YIELD TO WORST,,,,,,,,,
+B,119 - 119,X(01),AN,,yield_to_worst_sign,,"YIELD TO WORST SIGN; values include:
+“+” = Positive Yield to Worst
+“-” = Negative Yield to Worst
+“” = Not Applicable",,,,,,,,,
+B,120 - 121,X(02),AN,,yield_to_worst_code,,"YIELD TO WORST CODE; values include:
+“M” = Yield to Maturity
+“O” = Yield to Par
+“C” = Yield to Call
+“P” = Yield to Put
+“R” = Yield to Pre-refunded
+“” = Not Applicable",,,,,,,,,
+B,122 - 139,9(16)v9(02),N,,pershing_charge,,PERSHING CHARGE; contractual fee rendered based on Pershing relationship,,,,,,,,,
+B,140 - 140,X(01),AN,,pershing_charge_sign,,"PERSHING CHARGE SIGN; values include:
+“+” = Amount Charged
+“-” = Amount Credited
+“ ” = Not Applicable or Zeroes",,,,,,,,,
+B,141 - 158,9(16)v9(02),N,,transaction_fee,,TRANSACTION FEE (SEC FEE),,,,,,,,,
+B,159 - 159,X(01),AN,,transaction_fee_sign,,"TRANSACTION FEE SIGN
+“+” = Amount Charged
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,160 - 177,9(16)v9(02),N,,rebate_amount,,REBATE AMOUNT; amount rebated to your firm,,,,,,,,,
+B,178 - 178,X(01),AN,,rebate_amount_sign,,"REBATE AMOUNT SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,179 - 196,9(16)v9(02),N,,net_amount,,"NET AMOUNT; principal, plus/minus interest, plus/minus fees. Note: This amount is in settlement currency.",,,,,,,,,
+B,197 - 197,X(01),AN,,net_amount_sign,,"NET AMOUNT SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,198 - 200,X(03),AN,,settlement_currency,,"SETTLEMENT CURRENCY; see Appendix N, “Currency Codes”",,,,,,,,,
+B,201 - 218,9(09)v9(09),N,,settlement_currency_exchange_rate,,SETTLEMENT CURRENCY EXCHANGE RATE,,,,,,,,,
+B,219 - 219,X(01),AN,,settlement_currency_multiply_divide_code,,"SETTLEMENT CURRENCY MULTIPLY/DIVIDE CODE;
+values include:
+“M” = Multiply
+“D” = Divide",,,,,,,,,
+B,220 - 237,9(13)v9(05),N,,accrued_interest,,ACCRUED INTEREST (Fixed Income products only),,,,,,,,,
+B,238 - 238,X(01),AN,,accrued_interest_sign,,"ACCRUED INTEREST SIGN; values include:
+“+” = Amount Charged
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,239 - 256,9(16)v9(02),N,,service_charge_for_ibd,,SERVICE CHARGE FOR IBD,,,,,,,,,
+B,257 - 257,X(01),AN,,service_charge_sign,,"SERVICE CHARGE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“
+” = Not Applicable or Zeroes",,,,,,,,,
+B,258 - 275,9(16)v9(02),N,,postage,,POSTAGE (sometimes referred to as CONFIRM FEE),,,,,,,,,
+B,276 - 276,X(01),AN,,postage_sign,,"POSTAGE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,277 - 277,X(01),AN,,commission_sales_credit_type,,"COMMISSION/SALES CREDIT TYPE; values include:
+“1” = Sales Credit Rate
+“2” = Commission by Discount
+“3” = Commission by Rate
+“4” or “A” = Commission by Amount
+“5” = Zero Commission
+“6” = Sales Credit Flat Amount
+“7” = Percentage of Principal
+“” = Not Applicable",,,,,,,,,
+B,278 - 295,9(16)v9(02),N,,commission,,COMMISSION,,,,,,,,,
+B,296 - 296,X(01),AN,,commission_sign,,"COMMISSION SIGN; values include:
+“+” = Amount charged (same for Buy or Sell)
+“ ” = Not Applicable or Zeroes",,,,,,,,,
+B,297 - 303,9(03)v9(04),N,,commission_percent_discount,,COMMISSION PERCENT DISCOUNT,,,,,,,,,
+B,304 - 314,X(11),AN,,not_used,,Not Used,,,,,,,,,
+B,315 - 332,9(16)v9(02),N,,sales_credit,,SALES CREDIT,,,,,,,,,
+B,333 - 333,X(01),AN,,sales_credit_sign,,"SALES CREDIT SIGN; values include:
+“+” = Amount charged (same for Buy or Sell)
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,334 - 351,9(16)v9(02),N,,contingent_deferred_sales_charge_cdsc,,CONTINGENT DEFERRED SALES CHARGE (CDSC),,,,,,,,,
+B,352 - 352,X(01),AN,,cdsc_sign,,"CDSC SIGN; values include:
+“+” = Positive
+“-” = Negative
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,353 - 370,9(16)v9(02),N,,base_commission,,BASE COMMISSION (This is what the commission would be without any discounts applied.),,,,,,,,,
+B,371 - 371,X(01),AN,,base_commission_sign,,"BASE COMMISSION SIGN; values include:
+“+” = Amount Debited (same for Buy or Sell)
+“-” = Amount Credited (same for Buy or Sell)
+“ ” = Not Applicable or Zeroes",,,,,,,,,
+B,372 - 389,9(16)v9(02),N,,equity_mark_up_mark_down,,EQUITY MARK UP/MARK DOWN; the difference between the customer’s price (062-079) and the dealer’s purchase/sale (reported) price (784-811),,,,,,,,,
+B,390 - 390,X(01),AN,,equity_mark_up_mark_down_sign,,"EQUITY MARK UP/MARK DOWN SIGN; values include:
+“+” = Mark Down Amount
+“-” = Mark Up Amount
+“
+” = Not Applicable or Zeroes",,,,,,,,,
+B,391 - 408,9(16)v9(02),N,,principal,,PRINCIPAL,,,,,,,,,
+B,409 - 409,X(01),AN,,principal_sign,,"PRINCIPAL SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,410 - 427,9(16)v9(02),N,,execution_charge,,EXECUTION CHARGE,,,,,,,,,
+B,428 - 428,X(01),AN,,execution_charge_sign,,"EXECUTION CHARGE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,429 - 429,X(01),AN,,execution_only_indicator,,"EXECUTION ONLY INDICATOR; values include:
+“Y” = Execution Only
+“” = Not Applicable",,,,,,,,,
+B,430 - 447,9(16)v9(02),N,,settlement_fee,,SETTLEMENT FEE – CUSTOMER (Clearance Charge),,,,,,,,,
+B,448 - 448,X(01),AN,,settlement_fee_sign,,"SETTLEMENT FEE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,449 - 449,X(01),AN,,clearance_only_indicator,,"CLEARANCE ONLY INDICATOR; values include:
+“Y” = Clearance Only
+“N” = Pershing execution",,,,,,,,,
+B,450 - 467,9(16)v9(02),N,,foreign_receive_deliver_charge,,FOREIGN RECEIVE/DELIVER CHARGE,,,,,,,,,
+B,468 - 468,X(01),AN,,foreign_receive_deliver_charge_sign,,"FGN RECEIVE/DELIVER CHARGE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,469 - 486,9(16)v9(02),N,,ntf_redemption_fee,,NTF REDEMPTION FEE; includes base redemption fee for NTF eligible trades and add-on fee,,,,,,,,,
+B,487 - 487,X(01),AN,,ntf_redemption_fee_sign,,"NTF REDEMPTION FEE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,488 - 505,9(16)v9(02),N,,ntf_redemption_add_on_fee,,NTF REDEMPTION ADD-ON FEE,,,,,,,,,
+B,506 - 506,X(01),AN,,ntf_redemption_add_on_fee_sign,,"NTF REDEMPTION ADD-ON SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,507 - 524,9(16)v9(02),N,,mutual_fund_exchange_fee,,MUTUAL FUND EXCHANGE FEE,,,,,,,,,
+B,525 - 525,X(01),AN,,mutual_fund_exchange_fee_sign,,"MF EXCHANGE FEE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,526 - 543,9(16)v9(02),N,,srs_fund_exchange_fee,,SRS FUND EXCHANGE FEE,,,,,,,,,
+B,544 - 544,X(01),AN,,srs_fund_exchange_fee_sign,,"SRS FUND EXCHANGE FEE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,545 - 562,9(16)v9(02),N,,handling_fee,,HANDLING FEE,,,,,,,,,
+B,563 - 563,X(01),AN,,handling_fee_sign,,"HANDLING FEE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,564 - 581,9(16)v9(02),N,,stamp_duty,,STAMP DUTY,,,,,,,,,
+B,582 - 582,X(01),AN,,stamp_duty_sign,,"STAMP DUTY SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,583 - 600,9(16)v9(02),N,,prime_broker_fee,,PRIME BROKER FEE,,,,,,,,,
+B,601 - 601,X(01),AN,,prime_broker_fee_sign,,"PRIME BROKER FEE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,602 - 621,X(20),AN,,ibd_misc_charge_label,,IBD MISCELLANEOUS CHARGE LABEL,,,,,,,,,
+B,622 - 639,9(16)v9(02),N,,ibd_misc_charge,,IBD MISCELLANEOUS CHARGE,,,,,,,,,
+B,640 - 640,X(01),AN,,ibd_misc_charge_sign,,"IBD MISCELLANEOUS CHARGE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,641 - 660,X(20),AN,,streetside_misc_charge_label,,STREETSIDE MISCELLANEOUS CHARGE LABEL,,,,,,,,,
+B,661 - 678,9(16)v9(02),N,,streetside_misc_charge,,STREETSIDE MISCELLANEOUS CHARGE,,,,,,,,,
+B,679 - 679,X(01),AN,,streetside_misc_charge_sign,,"STREETSIDE MISC. CHARGE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,680 - 697,9(16)v9(02),N,,transaction_levy,,TRANSACTION LEVY,,,,,,,,,
+B,698 - 698,X(01),AN,,transaction_levy_sign,,"TRANSACTION LEVY SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,699 - 716,9(16)v9(02),N,,transfer_stamp_fee,,TRANSFER STAMP FEE,,,,,,,,,
+B,717 - 717,X(01),AN,,transfer_stamp_fee_sign,,"TRANSFER STAMP FEE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,718 - 735,9(16)v9(02),N,,transfer_tax,,TRANSFER TAX,,,,,,,,,
+B,736 - 736,X(01),AN,,transfer_tax_sign,,"TRANSFER TAX SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,737 - 754,9(16)v9(02),N,,customer_confirm_fee,,CUSTOMER CONFIRM FEE,,,,,,,,,
+B,755 - 755,X(01),AN,,customer_confirm_fee_sign,,"CUSTOMER CONFIRM FEE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,756 - 773,9(16)v9(02),N,,ibd_confirm_fee,,IBD CONFIRM FEE,,,,,,,,,
+B,774 - 774,X(01),AN,,ibd_confirm_fee_sign,,"IBD CONFIRM FEE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,775 - 792,9(16)v9(02),N,,foreign_financial_transaction_tax,,FOREIGN FINANCIAL TRANSACTION TAX (was “VALUE ADDED TAX”),,,,,,,,,
+B,793 - 793,X(01),AN,,foreign_financial_transaction_tax_sign,,"FOREIGN FINANCIAL TRANSACTION TAX SIGN; values:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,794 - 811,9(09)v9(09),N,,reported_price,,REPORTED PRICE; the dealer’s purchase/sale price,,,,,,,,,
+B,812 - 815,X(04),AN,,not_used,,Not Used,,,,,,,,,
+B,816 - 835,X(20),AN,,additional_trailer_line_one,,ADDITIONAL TRAILER LINE ONE,,,,,,,,,
+B,836 - 855,X(20),AN,,additional_trailer_line_two,,ADDITIONAL TRAILER LINE TWO,,,,,,,,,
+B,856 - 875,X(20),AN,,additional_trailer_line_three,,ADDITIONAL TRAILER LINE THREE,,,,,,,,,
+B,876 - 895,X(20),AN,,additional_trailer_line_four,,ADDITIONAL TRAILER LINE FOUR,,,,,,,,,
+B,896 - 915,X(20),AN,,additional_trailer_line_five,,ADDITIONAL TRAILER LINE FIVE,,,,,,,,,
+B,916 - 935,X(20),AN,,additional_trailer_line_six,,ADDITIONAL TRAILER LINE SIX,,,,,,,,,
+B,936 - 955,X(20),AN,,freeform_lot_information_1,,FREEFORM LOT INFORMATION (1),,,,,,,,,
+B,956 - 975,X(20),AN,,freeform_lot_information_2,,FREEFORM LOT INFORMATION (2),,,,,,,,,
+B,976 - 995,X(20),AN,,freeform_lot_information_3,,FREEFORM LOT INFORMATION (3),,,,,,,,,
+B,996 - 1013,9(16)v9(02),N,,transaction_sec_fee,,TRANSACTION (SEC) FEE (less option regulatory fee),,,,,,,,,
+B,1014 - 1014,X(01),AN,,transaction_sec_fee_sign,,"TRANSACTION (SEC) FEE (less option regulatory fee) SIGN; values include:
+“+” = Amount Charged
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,1015 - 1032,9(16)v9(02),N,,option_regulatory_fee,,OPTION REGULATORY FEE,,,,,,,,,
+B,1033 - 1033,X(01),AN,,option_regulatory_fee_sign,,"OPTION REGULATORY FEE SIGN; values include:
+“+” = Amount Charged
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,1034 - 1034,X(01),AN,,alternate_security_id_1_type,,"ALTERNATE SECURITY ID #1 TYPE, value includes:
+“I” = ISIN",,,,,,,,,
+B,1035 - 1046,X(12),AN,,alternate_security_id_1,,ALTERNATE SECURITY ID #1,,,,,,,,,
+B,1047 - 1047,X(01),AN,,alternate_security_id_2_type,,Reserved for ALTERNATE SECURITY ID #2 TYPE,,,,,,,,,
+B,1048 - 1059,X(12),AN,,alternate_security_id_2,,Reserved for ALTERNATE SECURITY ID #2,,,,,,,,,
+B,1060 - 1077,9(16)v9(02),N,,net_amount_in_usde,,NET AMOUNT IN USDE,,,,,,,,,
+B,1078 - 1078,X(01),AN,,net_amount_in_usde_sign,,"NET AMOUNT IN USDE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,1079 - 1096,9(16)v9(02),N,,international_foreign_trading_fee,,INTERNATIONAL FOREIGN TRADING FEE,,,,,,,,,
+B,1097 - 1097,X(01),AN,,international_foreign_trading_fee_sign,,"INTL. FOREIGN TRADING FEE SIGN; values include:
+“+” = Amount Debited
+“-” = Amount Credited
+“” = Not Applicable or Zeroes",,,,,,,,,
+B,1098 - 1098,X(01),AN,,alternative_trading_system_ats_indicator,,"ALTERNATIVE TRADING SYSTEM (ATS) INDICATOR; for MSRB reporting (effective 3Q 2018, TBA); values include:
+“Y” = Yes
+“” = Not Applicable",,,,,,,,,
+B,1099 - 1102,X(04),AN,,alternative_trading_system_ats_mpid,,ALT. TRADING SYSTEM (ATS) MPID; for TRACE reporting,,,,,,,,,
+B,1103 - 1224,X(122),AN,,not_used,,Not Used,,,,,,,,,
+B,1225 - 1228,9(04),N,,pershing_internal_version_number,,PERSHING INTERNAL VERSION NUMBER,,,,,,,,,
+B,1229 - 1248,X(20),AN,,pershing_internal_trade_reference_number,,PERSHING INTERNAL TRADE REFERENCE NUMBER,,,,,,,,,
+B,1249 - 1249,X(01),AN,,pershing_internal_use,,Pershing Internal Use,,,,,,,,,
+B,1250 - 1250,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record B,,,,,,,,,
+TRAILER,001-018,X(18),AN,,not_used,,Literally “EOFPERSHING” (end of Pershing file),,,,,,,,,
+TRAILER,019-036,X(18),AN,,not_used,,"Literally GTDE = “GLBL/DOMESTIC TRDS”
+GSDE = “GLBL/DOMESTIC S/D”",,,,,,,,,
+TRAILER,037-046,X(10),AN,,not_used,,Literally “DATA OF”,,,,,,,,,
+TRAILER,047-056,X(10),AN,,date_of,,DATE OF DATA = “MM/DD/CCYY”,,,,,,,,,
+TRAILER,057-067,X(11),AN,,not_used,,Literally “TO REMOTE”,,,,,,,,,
+TRAILER,068-071,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,,,,,,,,,
+TRAILER,072-105,X(34),AN,,not_used,,Literally“ENDS HERE. TOTAL DETAIL RECORDS:”,,,,,,,,,
+TRAILER,106-115,9(10),N,,number_of_detail_records,,NUMBER OF DETAIL RECORDS,,,,,,,,,
+TRAILER,116-1249,"X(1,134)",AN,,not_used,,Not Used,,,,,,,,,
+TRAILER,1250-1250,X(01),AN,,not_used,,Literally “Z”; indicates the end of the trailer record,,,,,,,,,
