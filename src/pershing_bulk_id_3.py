@@ -160,11 +160,14 @@ def iterate_over_all_fwf(source_path:str):
                     logger.info(f'Extracting {source_file_path} to {extract_dir}')
                     shutil.unpack_archive(filename=source_file_path, extract_dir=extract_dir, format='zip')
                     iterate_over_all_fwf(source_path=extract_dir)
-                continue
+            else:
+                target_file_path = os.path.join(data_settings.target_path, file_name + bulk_file_ext)
+                logger.info(f'Processing {source_file_path}')
+                process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path, file_name=file_name)
 
-            target_file_path = os.path.join(data_settings.target_path, file_name + bulk_file_ext)
-            logger.info(f'Processing {source_file_path}')
-            process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path, file_name=file_name)
+            if hasattr(data_settings, 'delete_files_after') and data_settings.delete_files_after.upper()=='TRUE':
+                logger.info(f'Deleting {source_file_path}')
+                os.remove(source_file_path)
 
 
 
