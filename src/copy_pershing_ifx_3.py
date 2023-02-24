@@ -13,6 +13,7 @@ if True: # Set to False for Debugging
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
+    parser.add_argument('--is_zip', help='Check to copy zip files only or all the files. Possible Values: Y/N', required=True)
 
     args = parser.parse_args().__dict__
 
