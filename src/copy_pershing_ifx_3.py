@@ -1,0 +1,160 @@
+description = """
+
+Copy Pershing IFX files from remote location to source location
+
+"""
+
+
+# %% Parse Arguments
+
+if True: # Set to False for Debugging
+    import argparse
+
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
+
+    args = parser.parse_args().__dict__
+
+else:
+    args = {
+        'pipelinekey': 'COPY_PERSHING_IFX',
+        'remote_path_raa': r'C:\myworkdir\PERSHING',
+        'remote_path_spf': r'C:\myworkdir\PERSHING-SPF',
+        'source_path_acct': r'C:\myworkdir\Shared\PERSHING-CA',
+        'source_path_accf': r'C:\myworkdir\Shared\PERSHING-CA',
+        'source_path_gact': r'C:\myworkdir\Shared\PERSHING-ASSETS',
+        'source_path_gcus': r'C:\myworkdir\Shared\PERSHING-ASSETS',
+        'source_path_gmon': r'C:\myworkdir\Shared\PERSHING-ASSETS',
+        }
+
+
+
+# %% Import Libraries
+
+import os, sys
+
+class app: pass
+sys.app = app
+sys.app.args = args
+sys.app.parent_name = os.path.basename(__file__)
+
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file, collect_keys_from_config
+
+from datetime import datetime
+
+
+
+# %% Parameters
+
+source_paths = collect_keys_from_config(prefix='source_path_', uppercase_key=True)
+
+
+
+# %% Get Folder Levels
+
+max_folder_name = r'{{ MAX }}'
+
+folder_levels = [r'%Y-%m-%d']
+
+
+
+# %% Find Latest Folder
+
+@catch_error(logger)
+def find_latest_folder(remote_path:str, level:int=0):
+    """
+    Find Latest Folder
+    """
+    if level >= len(folder_levels): return remote_path
+
+    paths = {}
+    for file_name in os.listdir(remote_path):
+        remote_file_path = os.path.join(remote_path, file_name)
+        if os.path.isdir(remote_file_path):
+            if folder_levels[level][0] == '%':
+                try:
+                    path_key = datetime.strptime(file_name, folder_levels[level])
+                except:
+                    continue
+            elif folder_levels[level] == max_folder_name:
+                path_key = file_name
+            else:
+                path_key = folder_levels[level]
+                remote_file_path = os.path.join(remote_path, folder_levels[level])
+                paths[path_key] = remote_file_path
+                break
+
+            paths[path_key] = remote_file_path
+
+    if not paths:
+        raise ValueError(f'No Paths found in {remote_path}')
+
+    return find_latest_folder(remote_path=paths[max(paths)], level=level+1)
+
+
+
+# %% Copy files and folders to the new location
+
+@catch_error(logger)
+def copy_files(firm:str, firm_remote_path:str):
+    """
+    Copy files and folders to the new location
+    """
+    if not os.path.isdir(firm_remote_path):
+        logger.warning(f'Not a folder path: {firm_remote_path}')
+        return
+
+    for file_name in os.listdir(firm_remote_path):
+        remote_file_path = os.path.join(firm_remote_path, file_name)
+        if os.path.isfile(remote_file_path):
+            file_name_noext, file_ext = os.path.splitext(file_name)
+            source_type = file_name_noext.split('.')[0].upper()
+
+            if source_type not in source_paths:
+                logger.info(f'File {file_name} is not in registered names: {list(source_paths)}')
+                continue
+
+            if data_settings.is_zip.upper() in ['Y', 'YES', 'TRUE', '1'] and file_ext.lower() != '.zip':
+                logger.warning(f'Not a .zip file, not copying: {remote_file_path}')
+                continue
+
+            source_path = os.path.join(source_paths[source_type], firm.upper())
+
+            relative_copy_file(remote_path=firm_remote_path, dest_path=source_path, remote_file_path=remote_file_path)
+
+    logger.info(f'Finished copying files for firm: {firm}')
+
+
+
+# %% Copy Files per firm
+
+@catch_error(logger)
+def copy_files_per_firm():
+    """
+    Copy Files per firm
+    """
+    remote_paths = collect_keys_from_config(prefix='remote_path_', uppercase_key=True)
+
+    for firm, firm_remote_path in remote_paths.items():
+        latest_remote_path = find_latest_folder(remote_path=firm_remote_path)
+        if latest_remote_path:
+            logger.info(f'Latest path: {latest_remote_path}')
+            copy_files(firm=firm, firm_remote_path=latest_remote_path)
+        else:
+            logger.warning(f'No latest path found for {firm_remote_path}')
+
+
+
+copy_files_per_firm()
+
+
+
+# %% Close Connections / End Program
+
+mark_execution_end()
+
+
+# %%
+
+
