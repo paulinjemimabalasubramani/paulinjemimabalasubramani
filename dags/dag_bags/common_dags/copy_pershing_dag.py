@@ -91,7 +91,7 @@ with DAG(
 
     copy_files = BashOperator(
         task_id = pipelinekey,
-        bash_command = f'python {src_path}/copy_pershing_ifx_3.py --pipelinekey {pipelinekey}',
+        bash_command = f'python {src_path}/copy_pershing_ifx_3.py --pipelinekey {pipelinekey} --is_zip Y',
         dag = dag
     )
 
