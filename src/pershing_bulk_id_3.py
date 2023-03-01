@@ -95,7 +95,7 @@ def lines_to_hex(ftarget, lines:list):
 
     hash = hash_func()
     for line in lines:
-        hash.update(line.encode('ascii'))
+        hash.update(line.encode('utf-8'))
     hex = hash.hexdigest()
 
     for line in lines:
