@@ -60,7 +60,7 @@ def get_metadata_key_column_names(
     """
     Get Key Column Names for sorting the data files for uniqueness
     """
-    key_column_names = dict() 
+    key_column_names = dict()
     key_column_names['base'] = base
     key_column_names['with_load'] = key_column_names['base'] + with_load
     key_column_names['with_load_n_date'] = key_column_names['with_load'] + with_load_n_date

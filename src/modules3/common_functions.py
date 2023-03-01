@@ -871,6 +871,16 @@ def json_to_spark(spark, json_data):
 
 
 
+# %%
+
+def normalize_name(name):
+    """
+    Clean up column/table name and make it standard looking
+    """
+    return re.sub(column_regex, '_', str(name).lower().strip())
+
+
+
 # %% Get CSV rows
 
 @catch_error(logger)
@@ -883,7 +893,7 @@ def get_csv_rows(csv_file_path:str, csv_encoding:str='utf-8-sig'):
         for row in reader:
             rowl = {}
             for k, v in row.items():
-                key = re.sub(column_regex, '_', str(k).lower().strip())
+                key = normalize_name(name=k)
 
                 if v is not None: 
                     val = str(v).strip()
