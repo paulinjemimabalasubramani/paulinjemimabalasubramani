@@ -53,13 +53,13 @@ steps:
     replaceExistingArchive: true
 
 
-- task: Veracode@3
-  inputs:
-    ConnectionDetailsSelection: 'Endpoint'
-    AnalysisService: 'DA Veracode'
-    veracodeAppProfile: 'EDIP-Code'
-    version: '$(Build.Repository.Name)_$(build.buildNumber)'
-    filepath: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)_$(Build.buildNumber).zip'
+#- task: Veracode@3
+#  inputs:
+#    ConnectionDetailsSelection: 'Endpoint'
+#    AnalysisService: 'DA Veracode'
+#    veracodeAppProfile: 'EDIP-Code'
+#    version: '$(Build.Repository.Name)_$(build.buildNumber)'
+#    filepath: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)_$(Build.buildNumber).zip'
 
 
 
