@@ -77,6 +77,20 @@ def clean_row(row):
     if not row:
         return {}
 
+    pic = row['source_field_pic'].upper().replace('PIC','').replace(' ','').split('V')
+    if len(pic)<=1:
+        decimals = 0
+    else:
+        d = pic[-1]
+        if any(x.isalpha() for x in d):
+            decimals = 0
+        elif '(' in d:
+            dx = d.split('(')
+            dx = dx[1].split(')')
+            decimals = int(dx[0])
+        else:
+            decimals = d.count('9')
+
     clean_row = {
         'file_type': normalize_name(row['source_file_description']),
         'column_name': normalize_name(row['business_name']),
@@ -86,6 +100,7 @@ def clean_row(row):
         'pos_start': int(row['source_field_start_pos']) - 1,
         'pos_end': int(row['source_field_end_pos']),
         'format': row['format'].strip(),
+        'decimals': decimals,
     }
     return clean_row
 
@@ -156,67 +171,193 @@ def convert_header_datetime(datetime_str:str, format:str):
 # %%
 
 @catch_error(logger)
-def get_header_info(source_file_path):
+def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
     """
     Get file header info, and filter unwanted files.
     """
-    with open(file=source_file_path, mode='rt') as f:
+    file_name = os.path.basename(file_path)
+
+    with open(file=file_path, mode='rt') as f:
         HEADER = f.readline()
 
-    header_info = None
+    file_meta = None
     for file_type, row in file_titles.items():
         file_title = HEADER[row['pos_start']:row['pos_end']].strip().lower()
         if file_title == row['file_title']:
             header_schema = all_schema[(file_type, 'header')]
 
-            header_info = {
+            file_meta = {
                 'database_name': data_settings.domain_name,
                 'schema_name': data_settings.schema_name,
                 'firm_name': data_settings.pipeline_firm.upper(),
                 'table_name_no_firm': row['table_name'].lower(),
                 'table_name': '_'.join([data_settings.pipeline_firm, row['table_name']]).lower(),
+                'file_type': row['file_type'],
                 'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
+                'file_name': file_name,
+                'file_path': file_path,
+                'folder_path': os.path.dirname(file_path),
+                'zip_file_path': zip_file_path,
+                'json_file_path': os.path.join(data_settings.target_path, file_name + '.json'),
             }
 
             header_info_format = dict()
             for h in header_schema:
                 val = HEADER[h['pos_start']:h['pos_end']].strip()
-                header_info = {**header_info, h['column_name']:val}
+                file_meta = {**file_meta, h['column_name']:val}
                 header_info_format = {**header_info_format, h['column_name']:h['format']}
 
             for x in ['transmission_creation_date', 'run_date', 'header_date']:
-                if header_info.get(x):
-                    key_datetime = header_info[x]
+                if file_meta.get(x):
+                    key_datetime = file_meta[x]
                     key_datetime_format = header_info_format[x]
                     break
 
-            header_info['key_datetime'] = convert_header_datetime(datetime_str=key_datetime, format=key_datetime_format)
+            file_meta['key_datetime'] = convert_header_datetime(datetime_str=key_datetime, format=key_datetime_format)
             break
 
-    return header_info
+    return file_meta
 
 
-get_header_info(source_file_path = r'C:\myworkdir\data\NFS2_FSC\FSC_NFS_BOOK_S_230224.DAT')
+file_path = r'C:\myworkdir\data\NFS2_FSC\FSC_NFS_BOOK_S_230224.DAT'
+file_meta = extract_nfs2_file_meta(file_path=file_path)
+
 
 
 
 # %%
 
 @catch_error(logger)
-def process_single_nfs2(source_file_path:str):
+def new_record(file_meta:dict):
+    """
+    Create new record with basic info
+    """
+    record = {
+        'header_firm_name': file_meta['firm_name'],
+    }
+
+    if 'header_record_client_id' in file_meta:
+        record['header_client_id'] = file_meta['header_record_client_id']
+
+    return record
+
+
+
+# %%
+
+def extract_values_from_line(line:str, record_schema:list):
+    """
+    Extract all values from single line string based on its schema
+    """
+    field_values = dict()
+    for field in record_schema:
+        field_value = line[field['pos_start']:field['pos_end']]
+        field_value = re.sub(' +', ' ', field_value.strip())
+
+        if field['decimals']>0:
+            if not field_value.isdigit():
+                raise ValueError(f'Schema Scale mismatch for field "{field["column_name"]}" field value "{field_value}". Field Value should be all digits!')
+            x = len(field_value) - field['decimals']
+            if x<0:
+                raise ValueError(f'Length of number {field_value} is less than the decimal number {field["decimals"]} for field "{field["column_name"]}"')
+            field_value = float(field_value[:x] + '.' + field_value[x:])
+
+        field_values[field['column_name']] = field_value
+
+    return field_values
+
+
+
+# %%
+
+@catch_error(logger)
+def process_lines_bookkeeping(fsource, ftarget, file_meta:dict):
+    """
+    Process all lines for bookkeeping table
+    """
+    record_schema = all_schema[(file_meta['file_type'], 'record')]
+
+    first = True
+    for line in fsource:
+        if line[0]!='D':
+            continue
+
+        record = new_record(file_meta=file_meta)
+        record = {**record, **extract_values_from_line(line=line, record_schema=record_schema)}
+
+        if not first:
+            ftarget.write(',\n')
+
+        ftarget.write(json.dumps(record))
+        first = False
+
+    return not first
+
+
+
+process_lines_map = {
+    'bookkeeping': process_lines_bookkeeping,
+}
+
+
+@catch_error(logger)
+def convert_nfs2_to_json(file_meta:dict):
+    """
+    Convert given NFS2 DAT file to Json format.
+    """
+    source_file_path = file_meta['file_path']
+    target_file_path = file_meta['json_file_path']
+
+    logger.info(f'Converting to JSON: {source_file_path}')
+    with open(source_file_path, mode='rt', encoding='ISO-8859-1', errors='ignore') as fsource:
+        with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
+            ftarget.write('[\n')
+            data_exists = process_lines_map[file_meta['table_name_no_firm']](fsource=fsource, ftarget=ftarget, file_meta=file_meta)
+            ftarget.write('\n]')
+
+    if not data_exists:
+        logger.warning(f'No Data in the file {source_file_path} -> Skipping conversion to JSON and deleting {target_file_path}.')
+        os.remove(target_file_path)
+        return
+
+    logger.info(f'Finished converting file {source_file_path} to JSON file {target_file_path}')
+
+
+
+convert_nfs2_to_json(file_meta=file_meta)
+
+
+
+# %%
+
+@catch_error(logger)
+def process_single_nfs2(file_path:str):
     """
     Process single nfs2 file
     """
-    if not get_header_info(source_file_path=source_file_path):
-        logger.warning(f'Unable to get header info for file: {source_file_path} -> skipping')
+    file_meta = extract_nfs2_file_meta(file_path=file_path)
+    if not file_meta:
+        logger.warning(f'Unable to get header info for file: {file_path} -> skipping')
         return
 
     if file_meta_exists_in_history(file_meta=file_meta):
         logger.info(f'File already exists, skipping: {file_path}')
         return
 
+    if data_settings.key_datetime > file_meta['key_datetime']:
+        logger.info(f'File datetime {file_meta["key_datetime"]} is older than the datetime threshold {data_settings.key_datetime}, skipping {file_path}')
+        return
+
+    if ('header_record_client_id' in file_meta and
+            headerrecordclientid_map[file_meta['header_record_client_id'].upper()] != file_meta['firm_name'].upper()):
+        logger.info(f'File header_record_client_id {file_meta["header_record_client_id"]} is not mathing with expected Firm name {file_meta["firm_name"]}, skipping {file_path}')
+        return
+
+    convert_nfs2_to_json(file_meta=file_meta)
 
 
+
+process_single_nfs2(file_path=file_path)
 
 
 
@@ -230,22 +371,22 @@ def iterate_over_all_nfs2(source_path:str):
     """
     for root, dirs, files in os.walk(source_path):
         for file_name in files:
-            source_file_path = os.path.join(root, file_name)
+            file_path = os.path.join(root, file_name)
             file_name_noext, file_ext = os.path.splitext(file_name)
 
             if file_ext.lower() == '.zip':
                 with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
                     extract_dir = tmpdir
-                    logger.info(f'Extracting {source_file_path} to {extract_dir}')
-                    shutil.unpack_archive(filename=source_file_path, extract_dir=extract_dir, format='zip')
+                    logger.info(f'Extracting {file_path} to {extract_dir}')
+                    shutil.unpack_archive(filename=file_path, extract_dir=extract_dir, format='zip')
                     iterate_over_all_nfs2(source_path=extract_dir)
                 continue
 
             if file_ext.lower() != '.dat':
-                logger.warning(f'Not a .DAT file: {source_file_path}')
+                logger.warning(f'Not a .DAT file: {file_path}')
                 continue
 
-            process_single_nfs2(source_file_path=source_file_path)
+            process_single_nfs2(file_path=file_path)
 
 
 
@@ -254,9 +395,11 @@ iterate_over_all_nfs2(source_path=data_settings.source_path)
 
 
 
+# %% Close Connections / End Program
+
+mark_execution_end()
 
 
 # %%
-
 
 
