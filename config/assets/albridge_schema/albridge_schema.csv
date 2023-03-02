@@ -103,7 +103,7 @@ T,Activity Transaction,,RECON_FLAG,Char,1,Y,"„Y‟ =Yes, „N‟ = No, „G‟
 "S,R",Activity Position,Y,SSN_TIN,Char,23,N,Investor's SSN or Tax Identification Number
 "S,R",Activity Position,Y,ACCT_NUMBER,Char,20,N,Account Number
 "S,R",Activity Position,Y,FUND_ID,Char,22,N,"Fund or Asset ID, CUSIP Number"
-"S,R",Activity Position,,POSITION_DATE,Char,8,N,Position Date (YYYYMMDD).
+"S,R",Activity Position,Y,POSITION_DATE,Char,8,N,Position Date (YYYYMMDD).
 "S,R",Activity Position,,QUANTITY_ASD,Num,"17,6",N,Total Quantity of the Asset as of the Position Date.
 "S,R",Activity Position,Y,FUND_CODE,Char,15,Y,DST Specific Fund_Code (this field is an extra option)
 "S,R",Activity Position,,RECON_FLAG,Char,1,Y,"Recon flag Y=Yes, N=No, H=Hanging Position Recon"
