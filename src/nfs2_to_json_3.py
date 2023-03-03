@@ -7,7 +7,7 @@ Convert NFS2 fixed-width files to json format
 
 # %% Parse Arguments
 
-if False: # Set to False for Debugging
+if True: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
@@ -26,7 +26,6 @@ else:
         'clientid_map': 'MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS',
         'file_history_start_date': '2023-01-15',
         'pipeline_firm': 'FSC',
-        'add_firm_to_table_name': 'TRUE',
         'is_full_load': 'FALSE',
         }
 
@@ -198,7 +197,6 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
                 'file_path': file_path,
                 'folder_path': os.path.dirname(file_path),
                 'zip_file_path': zip_file_path,
-                'json_file_path': os.path.join(data_settings.target_path, file_name + '.json'),
             }
 
             header_info_format = dict()
@@ -213,15 +211,15 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
                     key_datetime_format = header_info_format[x]
                     break
 
+            file_name_noext = os.path.splitext(os.path.basename(file_path))[0].replace('.', '_')
             file_meta['key_datetime'] = convert_header_datetime(datetime_str=key_datetime, format=key_datetime_format)
+            file_meta['json_file_path'] = os.path.join(data_settings.target_path, file_name_noext
+                                                       + '.' + file_meta['table_name']
+                                                       + '_' + file_meta['key_datetime'].strftime(json_file_date_format)
+                                                       + json_file_ext)
             break
 
     return file_meta
-
-
-file_path = r'C:\myworkdir\data\NFS2_FSC\FSC_NFS_BOOK_S_230224.DAT'
-file_meta = extract_nfs2_file_meta(file_path=file_path)
-
 
 
 
@@ -295,10 +293,15 @@ def process_lines_bookkeeping(fsource, ftarget, file_meta:dict):
 
 
 
+# %%
+
 process_lines_map = {
     'bookkeeping': process_lines_bookkeeping,
 }
 
+
+
+# %%
 
 @catch_error(logger)
 def convert_nfs2_to_json(file_meta:dict):
@@ -324,10 +327,6 @@ def convert_nfs2_to_json(file_meta:dict):
 
 
 
-convert_nfs2_to_json(file_meta=file_meta)
-
-
-
 # %%
 
 @catch_error(logger)
@@ -350,15 +349,10 @@ def process_single_nfs2(file_path:str):
 
     if ('header_record_client_id' in file_meta and
             headerrecordclientid_map[file_meta['header_record_client_id'].upper()] != file_meta['firm_name'].upper()):
-        logger.info(f'File header_record_client_id {file_meta["header_record_client_id"]} is not mathing with expected Firm name {file_meta["firm_name"]}, skipping {file_path}')
+        logger.warning(f'File header_record_client_id {file_meta["header_record_client_id"]} is not mathing with expected Firm name {file_meta["firm_name"]}, skipping {file_path}')
         return
 
     convert_nfs2_to_json(file_meta=file_meta)
-
-
-
-process_single_nfs2(file_path=file_path)
-
 
 
 
@@ -391,7 +385,6 @@ def iterate_over_all_nfs2(source_path:str):
 
 
 iterate_over_all_nfs2(source_path=data_settings.source_path)
-
 
 
 
