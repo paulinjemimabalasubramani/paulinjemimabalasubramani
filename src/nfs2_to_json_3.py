@@ -190,14 +190,14 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
             if row['table_name'] == 'bookkeeping':
                 client_id = HEADER[1:6].strip() # get client id for IWS files (different from NFS headers).
                 if len(client_id)>3:
-                    table_suffix = 'iws'
+                    table_suffix = '_iws'
 
             file_meta = {
                 'database_name': data_settings.domain_name,
                 'schema_name': data_settings.schema_name,
                 'firm_name': data_settings.pipeline_firm.upper(),
-                'table_name_no_firm': '_'.join([row['table_name'], table_suffix]).lower(),
-                'table_name': '_'.join([data_settings.pipeline_firm, row['table_name'], table_suffix]).lower(),
+                'table_name_no_firm': row['table_name'].lower() + table_suffix,
+                'table_name': '_'.join([data_settings.pipeline_firm, row['table_name']]).lower() + table_suffix,
                 'file_type': row['file_type'],
                 'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
                 'file_name': file_name,
