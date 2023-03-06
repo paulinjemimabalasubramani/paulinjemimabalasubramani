@@ -23,7 +23,7 @@ else:
         'source_path': r'C:\myworkdir\data\NFS2_FSC',
         'db_name': 'ASSETS',
         'schema_name': 'NFS2',
-        'clientid_map': 'MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS',
+        'clientid_map': 'MAJ:RAA,FXA:SPF,FL2:FSC,00133:SAI,00436:TRI,WDB:WFS,0KS:SAI,TR1:TRI',
         'file_history_start_date': '2023-01-15',
         'pipeline_firm': 'FSC',
         'is_full_load': 'FALSE',
@@ -185,12 +185,19 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
         if file_title == row['file_title']:
             header_schema = all_schema[(file_type, 'header')]
 
+            table_suffix = ''
+            client_id = ''
+            if row['table_name'] == 'bookkeeping':
+                client_id = HEADER[1:6].strip() # get client id for IWS files (different from NFS headers).
+                if len(client_id)>3:
+                    table_suffix = 'iws'
+
             file_meta = {
                 'database_name': data_settings.domain_name,
                 'schema_name': data_settings.schema_name,
                 'firm_name': data_settings.pipeline_firm.upper(),
-                'table_name_no_firm': row['table_name'].lower(),
-                'table_name': '_'.join([data_settings.pipeline_firm, row['table_name']]).lower(),
+                'table_name_no_firm': '_'.join([row['table_name'], table_suffix]).lower(),
+                'table_name': '_'.join([data_settings.pipeline_firm, row['table_name'], table_suffix]).lower(),
                 'file_type': row['file_type'],
                 'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
                 'file_name': file_name,
@@ -204,6 +211,9 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
                 val = HEADER[h['pos_start']:h['pos_end']].strip()
                 file_meta = {**file_meta, h['column_name']:val}
                 header_info_format = {**header_info_format, h['column_name']:h['format']}
+
+            if client_id: # overwirte client_id for select files
+                file_meta['header_record_client_id'] = client_id
 
             for x in ['transmission_creation_date', 'run_date', 'header_date']:
                 if file_meta.get(x):
