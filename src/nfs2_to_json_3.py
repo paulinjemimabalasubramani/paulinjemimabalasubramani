@@ -307,6 +307,7 @@ def process_lines_bookkeeping(fsource, ftarget, file_meta:dict):
 
 process_lines_map = {
     'bookkeeping': process_lines_bookkeeping,
+    'bookkeeping_iws': process_lines_bookkeeping,
 }
 
 
