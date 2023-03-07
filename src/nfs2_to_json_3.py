@@ -95,9 +95,9 @@ def clean_row(row):
         'column_name': normalize_name(row['business_name']),
         'record_number': normalize_name(row['record_number']),
         'table_name': normalize_name(row['table_name']),
-        'file_title': row['file_title'],
-        'pos_start': int(row['source_field_start_pos']) - 1,
-        'pos_end': int(row['source_field_end_pos']),
+        'file_title': row['file_title'].strip().lower(),
+        'pos_start': int(row['source_field_start_pos'].strip()) - 1,
+        'pos_end': int(row['source_field_end_pos'].strip()),
         'format': row['format'].strip(),
         'decimals': decimals,
     }
