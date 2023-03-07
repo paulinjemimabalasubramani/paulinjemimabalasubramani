@@ -187,7 +187,7 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
 
             table_suffix = ''
             client_id = ''
-            if row['table_name'] == 'bookkeeping':
+            if row['table_name'] in ['bookkeeping', 'account_balance']:
                 client_id = HEADER[1:6].strip() # get client id for IWS files (different from NFS headers).
                 if len(client_id)>3:
                     table_suffix = '_iws'
@@ -308,6 +308,8 @@ def process_lines_bookkeeping(fsource, ftarget, file_meta:dict):
 process_lines_map = {
     'bookkeeping': process_lines_bookkeeping,
     'bookkeeping_iws': process_lines_bookkeeping,
+    'account_balance': process_lines_bookkeeping,
+    'account_balance_iws': process_lines_bookkeeping,
 }
 
 

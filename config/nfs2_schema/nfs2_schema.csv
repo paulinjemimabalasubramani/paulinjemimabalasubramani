@@ -4,7 +4,7 @@ Account Balance Transmission,HEADER RECORD CLIENT ID,Header,,,PIC X(03),3,4-Feb,
 Account Balance Transmission,FILLER,Header,,,PIC X(17),17,21-May,5,21,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
 Account Balance Transmission,FILE ORIGIN,Header,,,PIC X(16),16,22-37,22,37,NOT DISPLAYED,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
 Account Balance Transmission,FILLER,Header,,,PIC X(04),4,38-41,38,41,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
-Account Balance Transmission,FILE TITLE,Header,,,PIC X(17),17,42-58,42,58,NOT DISPLAYED,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
+Account Balance Transmission,FILE TITLE,Header,account_balance,account_balance,PIC X(17),17,42-58,42,58,NOT DISPLAYED,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
 Account Balance Transmission,FILLER,Header,,,PIC X(04),4,59-62,59,62,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
 Account Balance Transmission,TRANSMISSION CREATION DATE,Header,,,PIC X(06),6,63-68,63,68,NOT DISPLAYED,,MMDDYY,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
 Account Balance Transmission,FILLER,Header,,,PIC X(1432),1432,69-1500,69,1500,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
@@ -12,56 +12,56 @@ Account Balance Transmission,RECORD NUMBER,Record,,,PIC X(1),1,1-Jan,1,1,,,AN,5.
 Account Balance Transmission,BRANCH,Record,,,PIC X(3),3,4-Feb,2,4,BSUM,BRANCH,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
 Account Balance Transmission,ACCOUNT NUMBER,Record,,,PIC X(6),6,10-May,5,10,BSUM,ACCT,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,9/13/2001,TRUE
 Account Balance Transmission,LAST UPDATE DATE,Record,,,PIC 9(6),6,16-Nov,11,16,BSUM,AS OF,YYMMDD,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,17-17,17,17,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,NETWORTH SIGN,Record,,,PIC X(1),1,17-17,17,17,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,NETWORTH,Record,,,PIC 9(15)V9(02),17,18-34,18,34,BSUM,NETWORTH / DEFICIT NETWORTH,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,35-35,35,35,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,CASH COLLECTED BALANCE SIGN,Record,,,PIC X(1),1,35-35,35,35,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,CASH COLLECTED BALANCE,Record,,,PIC 9(15)V9(02),17,36-52,36,52,BSUM,CASH COLL BALANCE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,11/11/2015 - Updated in accordance with IN 15-182,11/17/2015,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,53-53,53,53,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,COLLECTED BALANCE SIGN,Record,,,PIC X(1),1,53-53,53,53,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,COLLECTED BALANCE,Record,,,PIC 9(15)V9(02),17,54-70,54,70,BSUM,COLLECTED BALANCE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,8/28/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,71-71,71,71,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,NET TRADE DATE BALANCE SIGN,Record,,,PIC X(1),1,71-71,71,71,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,NET TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,72-88,72,88,BBAL,TRADE DATE BAL TOTALS,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,89-89,89,89,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,NETWORTH MARKET VALUE SIGN,Record,,,PIC X(1),1,89-89,89,89,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,NETWORTH MARKET VALUE,Record,,,PIC 9(15)V9(02),17,90-106,90,106,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,107-107,107,107,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,CASH MONEY MARKETS SIGN,Record,,,PIC X(1),1,107-107,107,107,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,CASH MONEY MARKETS,Record,,,PIC 9(15)V9(02),17,108-124,108,124,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,125-125,125,125,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,OPTION MARKET VALUE SIGN,Record,,,PIC X(1),1,125-125,125,125,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,OPTION MARKET VALUE,Record,,,PIC 9(15)V9(02),17,126-142,126,142,BSUM,OPTION MKT VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,143-143,143,143,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,OPTION IN MONEY AMT SIGN,Record,,,PIC X(1),1,143-143,143,143,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,OPTION IN MONEY AMT,Record,,,PIC 9(15)V9(02),17,144-160,144,160,BSUM,OPTION IN MONEY AMT,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,161-161,161,161,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MEMO ADJUSTMENTS SIGN,Record,,,PIC X(1),1,161-161,161,161,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,MEMO ADJUSTMENTS,Record,,,PIC 9(15)V9(02),17,162-178,162,178,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,2/15/2005,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,179-179,179,179,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,AVAILABLE TO PURCHASE: MARGIN SIGN,Record,,,PIC X(1),1,179-179,179,179,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,AVAILABLE TO PURCHASE: MARGIN,Record,,,PIC 9(15)V9(02),17,180-196,180,196,BSUM,AVAILABLE TO PURCHASE: MARGIN,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,197-197,197,197,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,BUYING POWER / CORP BONDS SIGN,Record,,,PIC X(1),1,197-197,197,197,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,BUYING POWER / CORP BONDS,Record,,,PIC 9(15)V9(02),17,198-214,198,214,BSUM FB,FIXED INCOME BUYING POWER - CORP BONDS,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,11/11/2015 - Updated in accordance with IN 15-182,11/11/2015,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,215-215,215,215,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,BUYING POWER / MUNI BONDS SIGN,Record,,,PIC X(1),1,215-215,215,215,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,BUYING POWER / MUNI BONDS,Record,,,PIC 9(15)V9(02),17,216-232,216,232,BSUM FB,FIXED INCOME BUYING POWER - MUNI BONDS,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,11/11/2015 - Updated in accordance with IN 15-182,11/11/2015,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,233-233,233,233,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,BUYING POWER / GOVT BONDS SIGN,Record,,,PIC X(1),1,233-233,233,233,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,BUYING POWER / GOVT BONDS,Record,,,PIC 9(15)V9(02),17,234-250,234,250,BSUM FB,FIXED INCOME BUYING POWER - GOVT BONDS,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,11/11/2015 - Updated in accordance with IN 15-182,11/11/2015,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,251-251,251,251,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,HOUSE SURPLUS / CALL SIGN,Record,,,PIC X(1),1,251-251,251,251,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,HOUSE SURPLUS / CALL,Record,,,PIC 9(15)V9(02),17,252-268,252,268,BSUM/BMGS (NPL),HOUSE SURPLUS / HOUSE CALL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,269-269,269,269,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,NYSE SURPLUS / CALL SIGN,Record,,,PIC X(1),1,269-269,269,269,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,NYSE SURPLUS / CALL,Record,,,PIC 9(15)V9(02),17,270-286,270,286,BSUM,NYSE SURPLUS / NYSE CALL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,287-287,287,287,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SMA / FED CALL SIGN,Record,,,PIC X(1),1,287-287,287,287,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,SMA / FED CALL,Record,,,PIC 9(15)V9(02),17,288-304,288,304,BSUM,SMA / FED CALL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,305-305,305,305,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MINIMUM EQUITY CALL SIGN,Record,,,PIC X(1),1,305-305,305,305,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,MINIMUM EQUITY CALL,Record,,,PIC 9(15)V9(02),17,306-322,306,322,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,323-323,323,323,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TOTAL CORE MONEY MARKETS SIGN,Record,,,PIC X(1),1,323-323,323,323,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,TOTAL CORE MONEY MARKETS,Record,,,PIC 9(15)V9(02),17,324-340,324,340,BSUM,CORE MONEY MARKET,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/17/2015,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,341-341,341,341,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARGIN EQUITY SIGN,Record,,,PIC X(1),1,341-341,341,341,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,MARGIN EQUITY,Record,,,PIC 9(15)V9(02),17,342-358,342,358,BSUM,MARGIN EQUITY / DEFICIT MGN EQ,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,359-359,359,359,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARGIN LIQUIDATING EQUITY SIGN,Record,,,PIC X(1),1,359-359,359,359,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,MARGIN LIQUIDATING EQUITY,Record,,,PIC 9(15)V9(02),17,360-376,360,376,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,MARGIN EQUITY PERCENTAGE,Record,,,PIC 9(3)V99,5,377-381,377,381,BSUM,MARGIN EQUITY / %,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,382-382,382,382,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,FED CALL REDUCTION SIGN,Record,,,PIC X(1),1,382-382,382,382,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,FED CALL REDUCTION,Record,,,PIC 9(15)V9(02),17,383-399,383,399,BSUM,SMA INCREASE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,400-400,400,400,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,HOUSE CALL REDUCTION SIGN,Record,,,PIC X(1),1,400-400,400,400,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,HOUSE CALL REDUCTION,Record,,,PIC 9(15)V9(02),17,401-417,401,417,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,418-418,418,418,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,NYSE CALL REDUCTION SIGN,Record,,,PIC X(1),1,418-418,418,418,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,NYSE CALL REDUCTION,Record,,,PIC 9(15)V9(02),17,419-435,419,435,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,436-436,436,436,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,UNCOLLECTED BALANCE SIGN,Record,,,PIC X(1),1,436-436,436,436,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,UNCOLLECTED BALANCE,Record,,,PIC 9(15)V9(02),17,437-453,437,453,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,TOA'S HAVE AN IMPACT ON THE UNCOLLECTED AND COLLECTED BALANCE FIELDS.,8/28/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,454-454,454,454,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MINIMUM EQUITY CALL REDUCTION SIGN,Record,,,PIC X(1),1,454-454,454,454,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,MINIMUM EQUITY CALL REDUCTION,Record,,,PIC 9(15)V9(02),17,455-471,455,471,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,8/24/2001,TRUE
 Account Balance Transmission,TRANSFER LEGEND CODE,Record,,,PIC X(1),1,472-472,472,472,BNAM DISP CUST,LEG:,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
 Account Balance Transmission,MARGIN PAPERS SWITCH,Record,,,PIC X(1),1,473-473,473,473,NOT DISPLAYED,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
@@ -77,86 +77,86 @@ Account Balance Transmission,POSSIBLE LIQUIDATIONS SWITCH,Record,,,PIC X(1),1,48
 Account Balance Transmission,MINIMUM FEDCALL TRANS SWITCH,Record,,,PIC X(1),1,483-483,483,483,NOT DISPLAYED,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,BAL ACCT TYPE RECORD COUNT,Record,,,PIC 9(3),3,484-486,484,486,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,SUPER BRANCH,Record,,,PIC X(3),3,487-489,487,489,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,1/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,490-490,490,490,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,AVAILABLE TO PURCHASE: CASH SIGN,Record,,,PIC X(1),1,490-490,490,490,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,AVAILABLE TO PURCHASE: CASH,Record,,,PIC 9(15)V9(02),17,491-507,491,507,BSUM,AVAILABLE TO PURCHASE: CASH,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,8/28/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,508-508,508,508,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,AVAILABLE TO PURCHASE: CASH/MGN SIGN,Record,,,PIC X(1),1,508-508,508,508,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,AVAILABLE TO PURCHASE: CASH/MGN,Record,,,PIC 9(15)V9(02),17,509-525,509,525,BSUM,AVAILABLE TO PURCHASE: CASH / MARGIN,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,8/28/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,526-526,526,526,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,AVAILABLE TO PURCHASE: NON-MGN SIGN,Record,,,PIC X(1),1,526-526,526,526,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,AVAILABLE TO PURCHASE: NON-MGN,Record,,,PIC 9(15)V9(02),17,527-543,527,543,BSUM,AVAILABLE TO PURCHASE: NON-MGN SECURITY,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,8/28/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,544-544,544,544,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/10/2009,TRUE
+Account Balance Transmission,CUSTOMER-FACING NETWORTH SIGN,Record,,,PIC X(1),1,544-544,544,544,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/10/2009,TRUE
 Account Balance Transmission,CUSTOMER-FACING NETWORTH,Record,,,PIC 9(15)V9(02),17,545-561,545,561,NOT DISPLAYED,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/10/2009,TRUE
-Account Balance Transmission,ACCOUNT TYPE,Record,,,PIC X(1),1,562-562,562,562,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,563-563,563,563,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,MARKET VALUE,Record,,,PIC 9(15)V9(02),17,564-580,564,580,BBAL,MARKET VALUE + CORE MONEY MARKET (Type 1),N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,581-581,581,581,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,582-598,582,598,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,599-599,599,599,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,SETTLEMENT DATE BALANCE,Record,,,PIC 9(15)V9(02),17,600-616,600,616,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,ACCOUNT TYPE,Record,,,PIC X(1),1,617-617,617,617,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,618-618,618,618,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,MARKET VALUE,Record,,,PIC 9(15)V9(02),17,619-635,619,635,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,636-636,636,636,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,637-653,637,653,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,654-654,654,654,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,SETTLEMENT DATE BALANCE,Record,,,PIC 9(15)V9(02),17,655-671,655,671,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,ACCOUNT TYPE,Record,,,PIC X(1),1,672-672,672,672,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,673-673,673,673,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,MARKET VALUE,Record,,,PIC 9(15)V9(02),17,674-690,674,690,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,691-691,691,691,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,692-708,692,708,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,709-709,709,709,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,SETTLEMENT DATE BALANCE,Record,,,PIC 9(15)V9(02),17,710-726,710,726,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,ACCOUNT TYPE,Record,,,PIC X(1),1,727-727,727,727,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,728-728,728,728,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,MARKET VALUE,Record,,,PIC 9(15)V9(02),17,729-745,729,745,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,746-746,746,746,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,747-763,747,763,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,764-764,764,764,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,SETTLEMENT DATE BALANCE,Record,,,PIC 9(15)V9(02),17,765-781,765,781,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,ACCOUNT TYPE,Record,,,PIC X(1),1,782-782,782,782,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,783-783,783,783,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,MARKET VALUE,Record,,,PIC 9(15)V9(02),17,784-800,784,800,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,801-801,801,801,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,802-818,802,818,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,819-819,819,819,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,SETTLEMENT DATE BALANCE,Record,,,PIC 9(15)V9(02),17,820-836,820,836,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,ACCOUNT TYPE,Record,,,PIC X(1),1,837-837,837,837,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,838-838,838,838,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,MARKET VALUE,Record,,,PIC 9(15)V9(02),17,839-855,839,855,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,856-856,856,856,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,857-873,857,873,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,874-874,874,874,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,SETTLEMENT DATE BALANCE,Record,,,PIC 9(15)V9(02),17,875-891,875,891,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,ACCOUNT TYPE,Record,,,PIC X(1),1,892-892,892,892,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,893-893,893,893,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,MARKET VALUE,Record,,,PIC 9(15)V9(02),17,894-910,894,910,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,911-911,911,911,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,912-928,912,928,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,929-929,929,929,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,SETTLEMENT DATE BALANCE,Record,,,PIC 9(15)V9(02),17,930-946,930,946,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,ACCOUNT TYPE,Record,,,PIC X(1),1,947-947,947,947,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,948-948,948,948,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,MARKET VALUE,Record,,,PIC 9(15)V9(02),17,949-965,949,965,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,966-966,966,966,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,967-983,967,983,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,984-984,984,984,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,SETTLEMENT DATE BALANCE,Record,,,PIC 9(15)V9(02),17,985-1001,985,1001,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,ACCOUNT TYPE,Record,,,PIC X(1),1,1002-1002,1002,1002,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1003-1003,1003,1003,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,MARKET VALUE,Record,,,PIC 9(15)V9(02),17,1004-1020,1004,1020,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1021-1021,1021,1021,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,1022-1038,1022,1038,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1039-1039,1039,1039,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,SETTLEMENT DATE BALANCE,Record,,,PIC 9(15)V9(02),17,1040-1056,1040,1056,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,ACCOUNT TYPE,Record,,,PIC X(1),1,1057-1057,1057,1057,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1058-1058,1058,1058,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,MARKET VALUE,Record,,,PIC 9(15)V9(02),17,1059-1075,1059,1075,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1076-1076,1076,1076,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,TRADE DATE BALANCE,Record,,,PIC 9(15)V9(02),17,1077-1093,1077,1093,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1094-1094,1094,1094,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
-Account Balance Transmission,SETTLEMENT DATE BALANCE,Record,,,PIC 9(15)V9(02),17,1095-1111,1095,1111,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,ACCOUNT TYPE 1,Record,,,PIC X(1),1,562-562,562,562,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE SIGN 1,Record,,,PIC X(1),1,563-563,563,563,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE 1,Record,,,PIC 9(15)V9(02),17,564-580,564,580,BBAL,MARKET VALUE + CORE MONEY MARKET (Type 1),N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE SIGN 1,Record,,,PIC X(1),1,581-581,581,581,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE 1,Record,,,PIC 9(15)V9(02),17,582-598,582,598,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE SIGN 1,Record,,,PIC X(1),1,599-599,599,599,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE 1,Record,,,PIC 9(15)V9(02),17,600-616,600,616,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,ACCOUNT TYPE 2,Record,,,PIC X(1),1,617-617,617,617,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE SIGN 2,Record,,,PIC X(1),1,618-618,618,618,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE 2,Record,,,PIC 9(15)V9(02),17,619-635,619,635,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE SIGN 2,Record,,,PIC X(1),1,636-636,636,636,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE 2,Record,,,PIC 9(15)V9(02),17,637-653,637,653,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE SIGN 2,Record,,,PIC X(1),1,654-654,654,654,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE 2,Record,,,PIC 9(15)V9(02),17,655-671,655,671,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,ACCOUNT TYPE 3,Record,,,PIC X(1),1,672-672,672,672,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE SIGN 3,Record,,,PIC X(1),1,673-673,673,673,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE 3,Record,,,PIC 9(15)V9(02),17,674-690,674,690,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE SIGN 3,Record,,,PIC X(1),1,691-691,691,691,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE 3,Record,,,PIC 9(15)V9(02),17,692-708,692,708,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE SIGN 3,Record,,,PIC X(1),1,709-709,709,709,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE 3,Record,,,PIC 9(15)V9(02),17,710-726,710,726,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,ACCOUNT TYPE 4,Record,,,PIC X(1),1,727-727,727,727,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE SIGN 4,Record,,,PIC X(1),1,728-728,728,728,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE 4,Record,,,PIC 9(15)V9(02),17,729-745,729,745,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE SIGN 4,Record,,,PIC X(1),1,746-746,746,746,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE 4,Record,,,PIC 9(15)V9(02),17,747-763,747,763,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE SIGN 4,Record,,,PIC X(1),1,764-764,764,764,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE 4,Record,,,PIC 9(15)V9(02),17,765-781,765,781,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,ACCOUNT TYPE 5,Record,,,PIC X(1),1,782-782,782,782,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE SIGN 5,Record,,,PIC X(1),1,783-783,783,783,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE 5,Record,,,PIC 9(15)V9(02),17,784-800,784,800,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE SIGN 5,Record,,,PIC X(1),1,801-801,801,801,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE 5,Record,,,PIC 9(15)V9(02),17,802-818,802,818,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE SIGN 5,Record,,,PIC X(1),1,819-819,819,819,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE 5,Record,,,PIC 9(15)V9(02),17,820-836,820,836,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,ACCOUNT TYPE 6,Record,,,PIC X(1),1,837-837,837,837,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE SIGN 6,Record,,,PIC X(1),1,838-838,838,838,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE 6,Record,,,PIC 9(15)V9(02),17,839-855,839,855,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE SIGN 6,Record,,,PIC X(1),1,856-856,856,856,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE 6,Record,,,PIC 9(15)V9(02),17,857-873,857,873,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE SIGN 6,Record,,,PIC X(1),1,874-874,874,874,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE 6,Record,,,PIC 9(15)V9(02),17,875-891,875,891,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,ACCOUNT TYPE 7,Record,,,PIC X(1),1,892-892,892,892,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE SIGN 7,Record,,,PIC X(1),1,893-893,893,893,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE 7,Record,,,PIC 9(15)V9(02),17,894-910,894,910,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE SIGN 7,Record,,,PIC X(1),1,911-911,911,911,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE 7,Record,,,PIC 9(15)V9(02),17,912-928,912,928,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE SIGN 7,Record,,,PIC X(1),1,929-929,929,929,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE 7,Record,,,PIC 9(15)V9(02),17,930-946,930,946,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,ACCOUNT TYPE 8,Record,,,PIC X(1),1,947-947,947,947,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE SIGN 8,Record,,,PIC X(1),1,948-948,948,948,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE 8,Record,,,PIC 9(15)V9(02),17,949-965,949,965,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE SIGN 8,Record,,,PIC X(1),1,966-966,966,966,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE 8,Record,,,PIC 9(15)V9(02),17,967-983,967,983,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE SIGN 8,Record,,,PIC X(1),1,984-984,984,984,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE 8,Record,,,PIC 9(15)V9(02),17,985-1001,985,1001,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,ACCOUNT TYPE 9,Record,,,PIC X(1),1,1002-1002,1002,1002,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE SIGN 9,Record,,,PIC X(1),1,1003-1003,1003,1003,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE 9,Record,,,PIC 9(15)V9(02),17,1004-1020,1004,1020,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE SIGN 9,Record,,,PIC X(1),1,1021-1021,1021,1021,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE 9,Record,,,PIC 9(15)V9(02),17,1022-1038,1022,1038,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE SIGN 9,Record,,,PIC X(1),1,1039-1039,1039,1039,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE 9,Record,,,PIC 9(15)V9(02),17,1040-1056,1040,1056,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,ACCOUNT TYPE 10,Record,,,PIC X(1),1,1057-1057,1057,1057,BBAL,T,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE SIGN 10,Record,,,PIC X(1),1,1058-1058,1058,1058,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,MARKET VALUE 10,Record,,,PIC 9(15)V9(02),17,1059-1075,1059,1075,BBAL,MARKET VALUE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE SIGN 10,Record,,,PIC X(1),1,1076-1076,1076,1076,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,TRADE DATE BALANCE 10,Record,,,PIC 9(15)V9(02),17,1077-1093,1077,1093,BBAL/IBAL,TRADE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE SIGN 10,Record,,,PIC X(1),1,1094-1094,1094,1094,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
+Account Balance Transmission,SETTLEMENT DATE BALANCE 10,Record,,,PIC 9(15)V9(02),17,1095-1111,1095,1111,BBAL/IBAL,SETTLE DATE BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
 Account Balance Transmission,PORTFOLIO MARGIN INDICATOR,Record,,,PIC X(1),1,1112-1112,1112,1112,BNAM DISP MANT,SPC MARGIN:,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
-Account Balance Transmission,MASTER SECURITY LENDING AGREEMENT (“MSLA”) INDICATOR,Record,,,PIC X(1),1,1113-1113,1113,1113,BNAM DISP MANT,MSLA:,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
+Account Balance Transmission,MASTER SECURITY LENDING AGREEMENT INDICATOR,Record,,,PIC X(1),1,1113-1113,1113,1113,BNAM DISP MANT,MSLA:,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,RELATIONSHIP TYPE CODE,Record,,,PIC X(1),1,1114-1114,1114,1114,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,MULTI CURRENCY ACCOUNT INDICATOR,Record,,,PIC X(1),1,1115-1115,1115,1115,BNAM DISP MANT,INTL TRDG:,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,TRUST ACCOUNTING,Record,,,PIC X(1),1,1116-1116,1116,1116,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
@@ -164,21 +164,21 @@ Account Balance Transmission,NON-PURPOSE LOAN INDICATOR,Record,,,PIC X(1),1,1117
 Account Balance Transmission,NET CASH SETTLEMENT INDICATOR,Record,,,PIC X(1),1,1118-1118,1118,1118,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,WHEN-ISSUED INDICATOR,Record,,,PIC X(1),1,1119-1119,1119,1119,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,ACCOUNT TYPE 5 INDICATOR,Record,,,PIC X(1),1,1120-1120,1120,1120,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1121-1121,1121,1121,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
+Account Balance Transmission,AVAILABLE TO BORROW SIGN,Record,,,PIC X(1),1,1121-1121,1121,1121,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,AVAILABLE TO BORROW,Record,,,PIC 9(15)V9(02),17,1122-1138,1122,1138,,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1139-1139,1139,1139,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
+Account Balance Transmission,CASH AVAILABLE TO WITHDRAW SIGN,Record,,,PIC X(1),1,1139-1139,1139,1139,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,CASH AVAILABLE TO WITHDRAW,Record,,,PIC 9(15)V9(02),17,1140-1156,1140,1156,BSUM,CASH COLL BALANCE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,11/11/2015 - Updated in accordance with IN 15-182,11/17/2015,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1157-1157,1157,1157,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
+Account Balance Transmission,SETTLED CASH SIGN,Record,,,PIC X(1),1,1157-1157,1157,1157,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,SETTLED CASH,Record,,,PIC 9(15)V9(02),17,1158-1174,1158,1174,,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,11/11/2015 - Updated in accordance with IN 15-182,11/11/2015,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1175-1175,1175,1175,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
+Account Balance Transmission,UNSETTLED CASH CREDIT SIGN,Record,,,PIC X(1),1,1175-1175,1175,1175,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,UNSETTLED CASH CREDIT,Record,,,PIC 9(15)V9(02),17,1176-1192,1176,1192,,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1193-1193,1193,1193,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
+Account Balance Transmission,UNSETTLED CASH DEBIT SIGN,Record,,,PIC X(1),1,1193-1193,1193,1193,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,UNSETTLED CASH DEBIT,Record,,,PIC 9(15)V9(02),17,1194-1210,1194,1210,,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(1),1,1211-1211,1211,1211,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
+Account Balance Transmission,AVAILABLE TO PAY SIGN,Record,,,PIC X(1),1,1211-1211,1211,1211,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
 Account Balance Transmission,AVAILABLE TO PAY,Record,,,PIC 9(15)V9(02),17,1212-1228,1212,1228,,,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/12/2012,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(01),1,1229-1229,1229,1229,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/11/2015,TRUE
+Account Balance Transmission,CORE SWEEP/FUND AMOUNT SIGN,Record,,,PIC X(01),1,1229-1229,1229,1229,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/11/2015,TRUE
 Account Balance Transmission,CORE SWEEP/FUND AMOUNT,Record,,,PIC 9(15)V9(02),17,1230-1246,1230,1246,BSUM,PRIMARY CORE,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/11/2015,TRUE
-Account Balance Transmission,BAL SIGN,Record,,,PIC X(01),1,1247-1247,1247,1247,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/11/2015,TRUE
+Account Balance Transmission,NON CORE MONEY MARKET AMOUNT SIGN,Record,,,PIC X(01),1,1247-1247,1247,1247,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/11/2015,TRUE
 Account Balance Transmission,NON CORE MONEY MARKET AMOUNT,Record,,,PIC 9(15)V9(02),17,1248-1264,1248,1264,BAAR,NONCORE MNY MKT BAL,N,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/11/2015,TRUE
 Account Balance Transmission,FILLER,Record,,,PIC X(236),236,1265-1500,1265,1500,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,11/17/2015,TRUE
 Account Balance Transmission,RECORD NUMBER,Trailer,,,PIC X(1),1,1-Jan,1,1,,,AN,5.1.3,06/22/2022 - Updated CASH MONEY MARKETS Business Definition,6/22/2022,,6/1/2001,TRUE
