@@ -7,7 +7,7 @@ Convert NFS2 fixed-width files to json format
 
 # %% Parse Arguments
 
-if True: # Set to False for Debugging
+if False: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
@@ -262,7 +262,7 @@ def extract_values_from_line(line:str, record_schema:list):
         field_value = line[field['pos_start']:field['pos_end']]
         field_value = re.sub(' +', ' ', field_value.strip())
 
-        if field['decimals']>0:
+        if field['decimals']>0 and field_value:
             if not field_value.isdigit():
                 raise ValueError(f'Schema Scale mismatch for field "{field["column_name"]}" field value "{field_value}". Field Value should be all digits!')
             x = len(field_value) - field['decimals']
@@ -366,6 +366,11 @@ def process_single_nfs2(file_path:str):
         return
 
     convert_nfs2_to_json(file_meta=file_meta)
+
+
+
+process_single_nfs2(file_path=r'C:\myworkdir\data\NFS2_FSC\FSC_NFS_ACCTBALD_S_230224.DAT')
+
 
 
 
