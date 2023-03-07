@@ -7,7 +7,7 @@ Convert NFS2 fixed-width files to json format
 
 # %% Parse Arguments
 
-if False: # Set to False for Debugging
+if True: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
@@ -366,11 +366,6 @@ def process_single_nfs2(file_path:str):
         return
 
     convert_nfs2_to_json(file_meta=file_meta)
-
-
-
-process_single_nfs2(file_path=r'C:\myworkdir\data\NFS2_FSC\FSC_NFS_ACCTBALD_S_230224.DAT')
-
 
 
 
