@@ -262,7 +262,7 @@ def extract_values_from_line(line:str, record_schema:list):
         field_value = line[field['pos_start']:field['pos_end']]
         field_value = re.sub(' +', ' ', field_value.strip())
 
-        if field['decimals']>0:
+        if field['decimals']>0 and field_value:
             if not field_value.isdigit():
                 raise ValueError(f'Schema Scale mismatch for field "{field["column_name"]}" field value "{field_value}". Field Value should be all digits!')
             x = len(field_value) - field['decimals']
