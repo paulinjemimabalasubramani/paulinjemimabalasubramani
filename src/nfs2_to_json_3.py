@@ -268,7 +268,7 @@ def extract_values_from_line(line:str, record_schema:list):
             x = len(field_value) - field['decimals']
             if x<0:
                 raise ValueError(f'Length of number {field_value} is less than the decimal number {field["decimals"]} for field "{field["column_name"]}"')
-            field_value = float(field_value[:x] + '.' + field_value[x:])
+            field_value = str(float(field_value[:x] + '.' + field_value[x:]))
 
         field_values[field['column_name']] = field_value
 
