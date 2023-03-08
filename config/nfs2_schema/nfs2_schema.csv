@@ -7830,7 +7830,7 @@ Trade Revenue Transmission,REGISTERED REP OWNING REP,Record,,,PIC X(03),3,698-70
 Trade Revenue Transmission,FUND LOAD PERCENT,Record,,,PIC 9(02)V9(02),4,701-704,701,704,BFIG I,FND LOAD,N,5.3.3,06/22/2022 - New SOLICITED CODE value 'B',6/22/2022,,10/19/2004,TRUE
 Trade Revenue Transmission,PRODUCT CODE,Record,,,PIC X(12),12,705-716,705,716,,,AN,5.3.3,06/22/2022 - New SOLICITED CODE value 'B',6/22/2022,,10/19/2004,TRUE
 Trade Revenue Transmission,TRADING FLAT CODE,Record,,,PIC X(01),1,717-717,717,717,,,AN,5.3.3,06/22/2022 - New SOLICITED CODE value 'B',6/22/2022,,10/19/2004,TRUE
-Trade Revenue Transmission,12B1 CODE,Record,,,PIC X(01),1,718-718,718,718,,,AN,5.3.3,06/22/2022 - New SOLICITED CODE value 'B',6/22/2022,,10/19/2004,TRUE
+Trade Revenue Transmission,CODE 12B1,Record,,,PIC X(01),1,718-718,718,718,,,AN,5.3.3,06/22/2022 - New SOLICITED CODE value 'B',6/22/2022,,10/19/2004,TRUE
 Trade Revenue Transmission,ADDITIONAL FEE CODE 1,Record,,,PIC X(02),2,719-720,719,720,BFIG I,M1,AN,5.3.3,06/22/2022 - New SOLICITED CODE value 'B',6/22/2022,8/04/2016 - Fixed for research item 082 added 04 - International tax,8/4/2016,TRUE
 Trade Revenue Transmission,ADDITIONAL FEE AMOUNT 1,Record,,,PIC 9(10)V9(02),12,721-732,721,732,BFIG I,M1,N,5.3.3,06/22/2022 - New SOLICITED CODE value 'B',6/22/2022,04/24/2015 - Changed from PIC 9(7)V(02) to PIC 9(10)V99 with the cut to 1600-byte file. - Important Notice: 15-067,4/24/2015,TRUE
 Trade Revenue Transmission,ADDITIONAL FEE CODE 2,Record,,,PIC X(02),2,733-734,733,734,BFIG I,M2,AN,5.3.3,06/22/2022 - New SOLICITED CODE value 'B',6/22/2022,8/04/2016 - Fixed for research item 082 added 04 - International tax,10/19/2004,TRUE
