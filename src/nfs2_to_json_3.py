@@ -25,7 +25,7 @@ else:
         'schema_name': 'NFS2',
         'clientid_map': 'MAJ:RAA,FXA:SPF,FL2:FSC,00133:SAI,00436:TRI,WDB:WFS,0KS:SAI,TR1:TRI',
         'file_history_start_date': '2023-01-15',
-        'pipeline_firm': 'FSC',
+        'pipeline_firm': 'RAA',
         'is_full_load': 'FALSE',
         }
 
@@ -187,7 +187,7 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
 
             table_suffix = ''
             client_id = ''
-            if row['table_name'] in ['bookkeeping', 'account_balance']:
+            if row['table_name'] in ['bookkeeping', 'account_balance', 'trade_revenue']:
                 client_id = HEADER[1:6].strip() # get client id for IWS files (different from NFS headers).
                 if len(client_id)>3:
                     table_suffix = '_iws'
@@ -279,9 +279,9 @@ def extract_values_from_line(line:str, record_schema:list):
 # %%
 
 @catch_error(logger)
-def process_lines_bookkeeping(fsource, ftarget, file_meta:dict):
+def process_lines_1_record(fsource, ftarget, file_meta:dict):
     """
-    Process all lines for bookkeeping table
+    Process all lines for files that has only 1 record type
     """
     record_schema = all_schema[(file_meta['file_type'], 'record')]
 
@@ -306,10 +306,12 @@ def process_lines_bookkeeping(fsource, ftarget, file_meta:dict):
 # %%
 
 process_lines_map = {
-    'bookkeeping': process_lines_bookkeeping,
-    'bookkeeping_iws': process_lines_bookkeeping,
-    'account_balance': process_lines_bookkeeping,
-    'account_balance_iws': process_lines_bookkeeping,
+    'bookkeeping': process_lines_1_record,
+    'bookkeeping_iws': process_lines_1_record,
+    'account_balance': process_lines_1_record,
+    'account_balance_iws': process_lines_1_record,
+    'trade_revenue': process_lines_1_record,
+    'trade_revenue_iws': process_lines_1_record,
 }
 
 
