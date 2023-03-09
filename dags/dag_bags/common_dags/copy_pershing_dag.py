@@ -103,4 +103,33 @@ with DAG(
 
 # %%
 
+pipelinekey = 'COPY_PERSHING_APH'
+
+schedule_interval = '15 */1 * * *' # https://crontab.guru/
+
+
+with DAG(
+    dag_id = pipelinekey.lower(),
+    default_args = default_args,
+    description = pipelinekey,
+    schedule_interval = schedule_interval,
+    start_date = days_ago(1),
+    tags = tags,
+    catchup = False,
+) as dag:
+
+    copy_files = BashOperator(
+        task_id = pipelinekey,
+        bash_command = f'python {src_path}/copy_pershing_aph_3.py --pipelinekey {pipelinekey} --is_zip Y',
+        dag = dag
+    )
+
+    start_pipe(dag) >> copy_files >> end_pipe(dag)
+
+    globals()[dag.safe_dag_id] = dag
+
+
+
+# %%
+
 
