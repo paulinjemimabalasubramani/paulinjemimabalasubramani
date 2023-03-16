@@ -19,14 +19,9 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'COPY_PERSHING_IFX',
-        'remote_path_raa': r'C:\myworkdir\PERSHING',
-        'remote_path_spf': r'C:\myworkdir\PERSHING-SPF',
-        'source_path_acct': r'C:\myworkdir\Shared\PERSHING-CA',
-        'source_path_accf': r'C:\myworkdir\Shared\PERSHING-CA',
-        'source_path_gact': r'C:\myworkdir\Shared\PERSHING-ASSETS',
-        'source_path_gcus': r'C:\myworkdir\Shared\PERSHING-ASSETS',
-        'source_path_gmon': r'C:\myworkdir\Shared\PERSHING-ASSETS',
+        'pipelinekey': 'COPY_PERSHING_APH',
+        'remote_path_aph': r'C:\myworkdir\data\pershing',
+        'source_path_acct': r'C:\myworkdir\data\pershing2',
         }
 
 
@@ -56,7 +51,7 @@ source_paths = collect_keys_from_config(prefix='source_path_', uppercase_key=Tru
 
 max_folder_name = r'{{ MAX }}'
 
-folder_levels = [r'%m%d%y.Pershingfiles']
+folder_levels = [r'%m%d%y_Pershing']
 
 
 
