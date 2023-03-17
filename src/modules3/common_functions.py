@@ -908,28 +908,23 @@ def get_csv_rows(csv_file_path:str, csv_encoding:str='utf-8-sig'):
 # %% Relative Copy File
 
 @catch_error(logger)
-def relative_copy_file(remote_path:str, dest_path:str, remote_file_path:str, update:int=1):
+def relative_copy_file(remote_path:str, dest_path:str, remote_file_path:str, update:int=1, dest_is_folder:bool=False):
     """
     Relative Copy File
     """
-    root = os.path.dirname(remote_file_path)
-    relpath = os.path.relpath(root, remote_path)
+    logger.info(f'Copying from {remote_file_path} to {dest_path}')
 
-    if os.path.isdir(dest_path):
+    remote_file_root = os.path.dirname(remote_file_path)
+    relpath = os.path.relpath(remote_file_root, remote_path)
+    if relpath and relpath not in ['.', '..', '/', '//', '\\']:
+        dest_path = os.path.join(dest_path, relpath)
+
+    if dest_is_folder or os.path.isdir(dest_path) or (not os.path.isfile(dest_path) and os.path.basename(dest_path).find('.')<0):
         dir_path = dest_path
     else:
         dir_path = os.path.dirname(dest_path)
-
-    if relpath and relpath not in ['.', '..', '/', '//', '\\']:
-        if os.path.isdir(dest_path):
-            dir_path = os.path.join(dest_path, relpath)
-            dest_path = dir_path
-        else:
-            dir_path = os.path.join(os.path.dirname(dest_path), relpath)
-            dest_path = os.path.join(dir_path, os.path.basename(dest_path))
-
-    logger.info(f'Copying from {remote_file_path} to {dest_path}')
     os.makedirs(dir_path, exist_ok=True)
+
     copy_file( # https://docs.python.org/3/distutils/apiref.html#distutils.file_util.copy_file
         src = remote_file_path,
         dst = dest_path,

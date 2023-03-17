@@ -62,11 +62,11 @@ os.makedirs(data_settings.target_path, exist_ok=True)
 # %% Determine Start Line
 
 @catch_error(logger)
-def is_start_line(line:str, file_name:str):
+def is_start_line(line:str, header_line:str):
     """
     Determine Start Line
     """
-    if file_name.upper().startswith('ISCA'):
+    if header_line.upper().find('EXPANDED SEC DESC')>=0:
         return line[start_line_pos_start-2:start_line_pos_end-2] == start_line_record_string
     else: 
         return line[start_line_pos_start:start_line_pos_end] == start_line_record_string
@@ -117,20 +117,22 @@ def add_custom_txt_line(ftarget, line:str, txt:str):
 # %% Process single FWF
 
 @catch_error(logger)
-def process_single_fwf(source_file_path:str, target_file_path:str, file_name:str):
+def process_single_fwf(source_file_path:str, target_file_path:str):
     """
     Process single FWF
     """
     with open(source_file_path, mode='rt', encoding='utf-8', errors='ignore') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
             first = file_has_header
+            header_line = ''
             lines = []
             for line in fsource:
                 if first:
                     add_custom_txt_line(ftarget=ftarget, line=line, txt=HEADER_str)
+                    header_line = line
                     first = False
                 else:
-                    if is_start_line(line=line, file_name=file_name) and lines:
+                    if is_start_line(line=line, header_line=header_line) and lines:
                         lines_to_hex(ftarget=ftarget, lines=lines)
                         lines = []
                     lines.append(line)
@@ -163,7 +165,7 @@ def iterate_over_all_fwf(source_path:str):
             else:
                 target_file_path = os.path.join(data_settings.target_path, file_name + bulk_file_ext)
                 logger.info(f'Processing {source_file_path}')
-                process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path, file_name=file_name)
+                process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path)
 
             if hasattr(data_settings, 'delete_files_after') and data_settings.delete_files_after.upper()=='TRUE':
                 logger.info(f'Deleting {source_file_path}')
