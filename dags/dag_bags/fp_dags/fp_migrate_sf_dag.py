@@ -13,7 +13,7 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_d
 pipelinekey = 'FP_MIGRATE_SF'
 python_spark_code = 'migrate_csv_3'
 
-tags = ['DB:FP', 'SC:MIPS']
+tags = ['DB:FP', 'SC:SF']
 
 schedule_interval = '30 12 * * *' # https://crontab.guru/
 
