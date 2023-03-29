@@ -376,7 +376,7 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
             }
 
         is_data_record_type = common_records['record_type'] == 'D'
-        if (not is_data_record_type) and first:
+        if (not is_data_record_type) and (not main_record):
             continue
 
         record_number = common_records['record_number']
