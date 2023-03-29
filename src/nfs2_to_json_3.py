@@ -342,7 +342,7 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
     """
     Process all lines for name_and_address file
     """
-    get_record_schema = lambda file_meta, record_number: all_schema[(file_meta['file_type'], 'record_'+record_number.lower())]
+    get_record_schema = lambda record_number: all_schema[(file_meta['file_type'], 'record_'+record_number.lower())]
 
     record_descriptions = {
         '101': ('Customer', None),
@@ -387,14 +387,14 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
                 ftarget.write(json.dumps(main_record))
                 if not is_data_record_type: break
 
-            record_schema = get_record_schema(file_meta=file_meta, record_number=record_number)
+            record_schema = get_record_schema(record_number=record_number)
             main_record = new_record(file_meta=file_meta)
             main_record = {**main_record, **extract_values_from_line(line=line, record_schema=record_schema)}
             main_record = {**main_record, **{v[0]:v[1]() for k, v in record_descriptions.items() if v[1]}}
             main_record['ffr']['ffr_name_count'] = 0
 
         elif record_number in ['102', '103', '113']:
-            record_schema = get_record_schema(file_meta=file_meta, record_number=record_number)
+            record_schema = get_record_schema(record_number=record_number)
             ffr_record = extract_values_from_line(line=line, record_schema=record_schema)
 
             ffr_prefix = ['x1', 'x2', 'x3']
@@ -434,7 +434,7 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
                     ffr_list.append(val2)
 
         elif record_number in ['104', '107', '115']: # dict records
-            record_schema = get_record_schema(file_meta=file_meta, record_number=record_number)
+            record_schema = get_record_schema(record_number=record_number)
             record = extract_values_from_line(line=line, record_schema=record_schema)
 
             rdict = main_record[record_descriptions[record_number][0]]
@@ -455,7 +455,7 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
             else:
                 raise ValueError(f'Unknown Record Number: {record_number} for line {line}')
 
-            record_schema = get_record_schema(file_meta=file_meta, record_number=record_numberx)
+            record_schema = get_record_schema(record_number=record_numberx)
             record = extract_values_from_line(line=line, record_schema=record_schema)
 
             rlist = main_record[record_descriptions[record_numberx][0]]
