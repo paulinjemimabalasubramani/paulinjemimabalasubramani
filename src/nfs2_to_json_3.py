@@ -364,7 +364,7 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
     }
     record_descriptions = {k.strip():(normalize_name(v[0]),v[1]) for k, v in record_descriptions.items()}
 
-    first = True
+    main_record = {}
     firstln = True
     for line in fsource:
         common_records = {
@@ -381,7 +381,7 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
 
         record_number = common_records['record_number']
         if record_number == '101' or not is_data_record_type:
-            if not first or not is_data_record_type:
+            if main_record:
                 if not firstln: ftarget.write(',\n')
                 firstln = False
                 ftarget.write(json.dumps(main_record))
@@ -393,6 +393,16 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
             main_record = {**main_record, **{v[0]:v[1]() for k, v in record_descriptions.items() if v[1]}}
             main_record['ffr']['ffr_name_count'] = 0
 
+        if not main_record:
+            logger.warning(f'Found line with no 101 record: {line}')
+            continue
+
+        if any(common_records[k]!=main_record[k] for k in ['firm', 'branch', 'account_number']):
+            logger.warning(f'Firm, Branch or Account Number does not match for the same record: {main_record}\nline: {line}')
+            continue
+
+        if record_number == '101' or not is_data_record_type:
+            pass # placeholder as the condition has already been evaluated above
         elif record_number in ['102', '103', '113']:
             record_schema = get_record_schema(record_number=record_number)
             ffr_record = extract_values_from_line(line=line, record_schema=record_schema)
@@ -462,14 +472,10 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
             rlist.append(record)
 
         else:
-            raise ValueError(f'Unknown Record Number: {record_number} for line {line}')
+            logger.warning(f'Unknown Record Number: {record_number} for line {line}')
+            continue
 
-        if any(common_records[k]!=main_record[k] for k in ['firm', 'branch', 'account_number']):
-            raise ValueError(f'Firm, Branch or Account Number does not match for the same record: {main_record}\nline: {line}')
-
-        first = False
-
-    return not first
+    return True if main_record else False
 
 
 
