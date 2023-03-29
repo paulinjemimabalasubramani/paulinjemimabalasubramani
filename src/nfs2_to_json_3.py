@@ -163,7 +163,10 @@ def convert_header_datetime(datetime_str:str, format:str):
     YYMMDD
     YYYYMMDD
     """
-    f = format.upper().replace('YYYY', r'%Y').replace('YY', r'%y').replace('MM', r'%m').replace('DD', r'%d')
+    if len(datetime_str.strip())==8 and 'YYYY' not in format.upper():
+        format = format.strip().upper().replace('YY', 'YYYY')
+
+    f = format.strip().upper().replace('YYYY', r'%Y').replace('YY', r'%y').replace('MM', r'%m').replace('DD', r'%d')
     return datetime.strptime(datetime_str, f)
 
 

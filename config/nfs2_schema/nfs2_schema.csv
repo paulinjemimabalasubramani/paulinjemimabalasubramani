@@ -2701,8 +2701,8 @@ Name and Address Transmission,FILE ORIGIN,,Header,,,PIC X(16),16,22-37,22,37,,,A
 Name and Address Transmission,FILLER,,Header,,,PIC X(4),4,38-41,38,41,,,AN,5.9.0,12/30/2022 - New CAIS and Mobile Telephone Number fields,12/30/2022,,1/1/2001,TRUE
 Name and Address Transmission,FILE TITLE,,Header,name_and_address,NAME/ADDR HISTORY,PIC X(17),17,42-58,42,58,,,AN,5.9.0,12/30/2022 - New CAIS and Mobile Telephone Number fields,12/30/2022,,1/1/2001,TRUE
 Name and Address Transmission,FILLER,,Header,,,PIC X(4),4,59-62,59,62,,,AN,5.9.0,12/30/2022 - New CAIS and Mobile Telephone Number fields,12/30/2022,,1/1/2001,TRUE
-Name and Address Transmission,TRANSMISSION CREATION DATE,,Header,,,PIC X(6),6,63-68,63,68,,,MMDDYY,5.9.0,12/30/2022 - New CAIS and Mobile Telephone Number fields,12/30/2022,,1/1/2001,TRUE
-Name and Address Transmission,FILLER,,Header,,,PIC X(632),632,69-700,69,700,,,AN,5.9.0,12/30/2022 - New CAIS and Mobile Telephone Number fields,12/30/2022,,1/1/2001,TRUE
+Name and Address Transmission,TRANSMISSION CREATION DATE,,Header,,,PIC X(6),8,63-70,63,70,,,MMDDYY,5.9.0,12/30/2022 - New CAIS and Mobile Telephone Number fields,12/30/2022,,1/1/2001,TRUE
+Name and Address Transmission,FILLER,,Header,,,PIC X(632),632,69-700,71,700,,,AN,5.9.0,12/30/2022 - New CAIS and Mobile Telephone Number fields,12/30/2022,,1/1/2001,TRUE
 Name and Address Transmission,RECORD TYPE,,Record 101,,,PIC X(1),1,1-Jan,1,1,,,AN,5.9.0,12/30/2022 - New CAIS and Mobile Telephone Number fields,12/30/2022,,4/29/2013,TRUE
 Name and Address Transmission,RECORD NUMBER,,Record 101,,,PIC X(3),3,4-Feb,2,4,,,AN,5.9.0,12/30/2022 - New CAIS and Mobile Telephone Number fields,12/30/2022,,9/24/2001,TRUE
 Name and Address Transmission,FIRM,,Record 101,,,PIC X(4),4,8-May,5,8,NOT DISPLAYED,,AN,5.9.0,12/30/2022 - New CAIS and Mobile Telephone Number fields,12/30/2022,,8/1/2001,TRUE
