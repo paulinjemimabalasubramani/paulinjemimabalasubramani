@@ -25,7 +25,7 @@ else:
         'schema_name': 'NFS2',
         'clientid_map': 'MAJ:RAA,FXA:SPF,FL2:FSC,00133:SAI,00436:TRI,WDB:WFS,0KS:SAI,TR1:TRI',
         'file_history_start_date': '2023-01-15',
-        'pipeline_firm': 'RAA',
+        'pipeline_firm': 'FSC',
         'is_full_load': 'FALSE',
         }
 
@@ -100,6 +100,7 @@ def clean_row(row):
         'pos_end': int(row['source_field_end_pos'].strip()),
         'format': row['format'].strip(),
         'decimals': decimals,
+        'overlap': row['overlap'].strip().lower(),
     }
     return clean_row
 
@@ -178,18 +179,29 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
 
     with open(file=file_path, mode='rt') as f:
         HEADER = f.readline()
+        HEADER2 = f.readline()
 
     file_meta = None
     for file_type, row in file_titles.items():
         file_title = HEADER[row['pos_start']:row['pos_end']].strip().lower()
-        if file_title == row['file_title']:
+        if file_title == 'NAME AND ADDRESS'.lower(): file_title = 'NAME/ADDR HISTORY'.lower() # Fix for SAI and TRI IWS files
+
+        if file_title.lower() == row['file_title'].lower():
             header_schema = all_schema[(file_type, 'header')]
 
             table_suffix = ''
-            client_id = ''
+            client_id_iws = ''
             if row['table_name'] in ['bookkeeping', 'account_balance', 'trade_revenue']:
-                client_id = HEADER[1:6].strip() # get client id for IWS files (different from NFS headers).
-                if len(client_id)>3:
+                client_id_iws = HEADER[1:6].strip() # get client id for IWS files (different from NFS headers).
+                if len(client_id_iws)>3:
+                    table_suffix = '_iws'
+            elif row['table_name'] in ['name_and_address']:
+                H2 = HEADER2[:50].strip().upper() 
+                if H2 == 'CH SECURITIESAMERICA':
+                    client_id_iws = '00133'
+                    table_suffix = '_iws'
+                elif H2 == 'CH TRIAD ADVISORS':
+                    client_id_iws = '00436'
                     table_suffix = '_iws'
 
             file_meta = {
@@ -212,8 +224,8 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
                 file_meta = {**file_meta, h['column_name']:val}
                 header_info_format = {**header_info_format, h['column_name']:h['format']}
 
-            if client_id: # overwirte client_id for select files
-                file_meta['header_record_client_id'] = client_id
+            if client_id_iws: # overwirte client_id for select files
+                file_meta['header_record_client_id'] = client_id_iws
 
             for x in ['transmission_creation_date', 'run_date', 'header_date']:
                 if file_meta.get(x):
@@ -253,10 +265,14 @@ def new_record(file_meta:dict):
 
 # %%
 
+@catch_error(logger)
 def extract_values_from_line(line:str, record_schema:list):
     """
     Extract all values from single line string based on its schema
     """
+    if not record_schema:
+        raise ValueError(f'record_schema is empty for line {line}')
+
     field_values = dict()
     for field in record_schema:
         field_value = line[field['pos_start']:field['pos_end']]
@@ -273,6 +289,22 @@ def extract_values_from_line(line:str, record_schema:list):
         field_values[field['column_name']] = field_value
 
     return field_values
+
+
+
+# %%
+
+@catch_error(logger)
+def get_field_properties(column_name:str, record_schema:list):
+    """
+    Extract all the properties of field for given column_name
+    """
+    field_properties = {}
+    for field in record_schema:
+        if field['column_name'].lower() == column_name.lower():
+            field_properties = field
+            break
+    return field_properties
 
 
 
@@ -305,6 +337,144 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
 
 # %%
 
+@catch_error(logger)
+def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
+    """
+    Process all lines for name_and_address file
+    """
+    get_record_schema = lambda file_meta, record_number: all_schema[(file_meta['file_type'], 'record_'+record_number.lower())]
+
+    record_descriptions = {
+        '101': ('Customer', None),
+        '102': ('FFR list', list),
+        '102x': ('FFR', dict),
+        '103': ('FFR list', list),
+        '104': ('FBSI', dict),
+        '107': ('Employer', dict),
+        '113': ('FFR list', list),
+        '115': ('Legal', dict),
+        '2X0': ('Customer', list),
+        '2X1': ('Mailing address', list),
+        '2X2': ('Legal address', list),
+        '2X3': ('Affiliation address', list),
+        '3X0': ('Email', list),
+        '900': ('ASTK_TCPN', list), # Account Stakeholder / Trusted Contact Person
+        '901': ('IPCS', list),
+        '998': ('IPID', list),
+    }
+    record_descriptions = {k.strip():(normalize_name(v[0]),v[1]) for k, v in record_descriptions.items()}
+
+    first = True
+    firstln = True
+    for line in fsource:
+        common_records = {
+            'record_type': line[0:1],
+            'record_number':line[1:4],
+            'firm': line[4:8],
+            'branch': line[8:11],
+            'account_number': line[11:17],
+            }
+
+        is_data_record_type = common_records['record_type'] == 'D'
+        if (not is_data_record_type) and first:
+            continue
+
+        record_number = common_records['record_number']
+        if record_number == '101' or not is_data_record_type:
+            if not first or not is_data_record_type:
+                if not firstln: ftarget.write(',\n')
+                firstln = False
+                ftarget.write(json.dumps(main_record))
+                if not is_data_record_type: break
+
+            record_schema = get_record_schema(file_meta=file_meta, record_number=record_number)
+            main_record = new_record(file_meta=file_meta)
+            main_record = {**main_record, **extract_values_from_line(line=line, record_schema=record_schema)}
+            main_record = {**main_record, **{v[0]:v[1]() for k, v in record_descriptions.items() if v[1]}}
+            main_record['ffr']['ffr_name_count'] = 0
+
+        elif record_number in ['102', '103', '113']:
+            record_schema = get_record_schema(file_meta=file_meta, record_number=record_number)
+            ffr_record = extract_values_from_line(line=line, record_schema=record_schema)
+
+            ffr_prefix = ['x1', 'x2', 'x3']
+            ffr_record_prefix = defaultdict(dict)
+
+            for rkey, rval in ffr_record.items():
+                if rkey in common_records:
+                    continue
+
+                if rkey == 'ffr_name_count':
+                    main_record['ffr']['ffr_name_count']  += int(rval if rval else 0)
+                    continue
+
+                prefix = rkey[:2].lower()
+                if prefix in ffr_prefix:
+                    suffix = rkey[2:]
+                    is_business = ffr_record[prefix+'ffr_name_type'].upper() == 'B'
+                    field_properties = get_field_properties(column_name=rkey, record_schema=record_schema)
+                    overlap_value = field_properties['overlap'].upper()
+                    if (is_business and overlap_value != 'P') or (not is_business and overlap_value != 'B'):
+                        ffr_record_prefix[prefix][suffix] = rval
+                else:
+                    rkey1 = rkey
+                    ffr_str = 'ffr_'.lower()
+                    if rkey1[:len(ffr_str)].lower() != ffr_str:
+                        rkey1 = ffr_str + rkey1
+
+                    if main_record['ffr'].get(rkey1):
+                        raise ValueError(f'Name "{rkey1}" already exists in Main Record {main_record["ffr"]} , check line {line}')
+                    main_record['ffr'][rkey1] = rval
+
+            ffr_list = main_record[record_descriptions['102'][0]]
+            for _, val in ffr_record_prefix.items():
+                if val['ffr_primary_acct_name'] or val['ffr_ssn_number'] or val['ffr_xref']:
+                    val2 = {'ffr_'+k:v for k,v in common_records.items()}
+                    val2 = {**val2, **val}
+                    ffr_list.append(val2)
+
+        elif record_number in ['104', '107', '115']: # dict records
+            record_schema = get_record_schema(file_meta=file_meta, record_number=record_number)
+            record = extract_values_from_line(line=line, record_schema=record_schema)
+
+            rdict = main_record[record_descriptions[record_number][0]]
+            for key, val in record.items():
+                if rdict.get(key):
+                    raise ValueError(f'Name "{key}" already exists in Main Record {rdict} , check line {line}')
+                rdict[key] = val
+
+        elif record_number[0] in ['2', '3', '9']: # list records
+            if record_number[0] in ['2', '3']:
+                record_numberx = record_number[0] + 'X' + record_number[2]
+            elif record_number in ['900']:
+                record_numberx = record_number
+            elif '901' <= record_number <= '997':
+                record_numberx = '901'
+            elif record_number in ['998', '999']:
+                record_numberx = '998'
+            else:
+                raise ValueError(f'Unknown Record Number: {record_number} for line {line}')
+
+            record_schema = get_record_schema(file_meta=file_meta, record_number=record_numberx)
+            record = extract_values_from_line(line=line, record_schema=record_schema)
+
+            rlist = main_record[record_descriptions[record_numberx][0]]
+            rlist.append(record)
+
+        else:
+            raise ValueError(f'Unknown Record Number: {record_number} for line {line}')
+
+        if any(common_records[k]!=main_record[k] for k in ['firm', 'branch', 'account_number']):
+            raise ValueError(f'Firm, Branch or Account Number does not match for the same record: {main_record}\nline: {line}')
+
+        first = False
+
+    return not first
+
+
+
+# %%
+
 process_lines_map = {
     'bookkeeping': process_lines_1_record,
     'bookkeeping_iws': process_lines_1_record,
@@ -312,6 +482,8 @@ process_lines_map = {
     'account_balance_iws': process_lines_1_record,
     'trade_revenue': process_lines_1_record,
     'trade_revenue_iws': process_lines_1_record,
+    'name_and_address': process_lines_name_and_address,
+    'name_and_address_iws': process_lines_name_and_address,
 }
 
 
