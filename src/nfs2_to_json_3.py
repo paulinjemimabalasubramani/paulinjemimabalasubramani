@@ -401,7 +401,7 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
             continue
 
         if any(common_records[k]!=main_record[k] for k in ['firm', 'branch', 'account_number']):
-            if record_number!='900':
+            if record_number[0]!='9':
                 logger.warning(f'Firm, Branch or Account Number does not match for the same record: {main_record}\nline: {line}')
             continue
 
