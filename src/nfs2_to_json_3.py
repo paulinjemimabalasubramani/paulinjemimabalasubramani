@@ -468,14 +468,14 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
             elif '901' <= record_number <= '997':
                 record_numberx = '901'
             elif record_number in ['998', '999']:
-                record_numberx = '998'
+                record_numberx = '901' # 998 - Manual override - since there is no specific schema for 998, use 901 schema instead
             else:
                 raise ValueError(f'Unknown Record Number: {record_number} for line {line}')
 
             record_schema = get_record_schema(record_number=record_numberx)
             record = extract_values_from_line(line=line, record_schema=record_schema)
 
-            rlist = main_record[record_descriptions[record_numberx][0]]
+            rlist = main_record[record_descriptions['998'][0]]
             rlist.append(record)
 
         else:
