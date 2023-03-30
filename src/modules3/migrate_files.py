@@ -508,6 +508,10 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
 
     zip_file_path_exists = True if zip_file_path else False
     for file_path in selected_file_paths:
+        if not os.path.isfile(file_path):
+            logger.warning(f'File not found, skipping -> {file_path}')
+            continue
+
         file_name = os.path.basename(file_path)
         file_name_noext, file_ext = os.path.splitext(file_name)
 
