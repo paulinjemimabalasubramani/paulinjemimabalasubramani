@@ -5,11 +5,11 @@ Appointment,OLTP,Yes,
 AppointmentLOA,OLTP,Yes,
 AuditTrax_Branch,dbo,,
 AuditTrax_Individual,dbo,,
-AvailableBranchCodes,OLTP,,Operational
-AvailableCustodians,OLTP,,Operational
-AvailableMBOCode,OLTP,,Operational
-AvailableRepCode,OLTP,,Operational
-AvailableRIACodes,OLTP,,Operational
+AvailableBranchCodes,OLTP,Yes,Operational
+AvailableCustodians,OLTP,Yes,Operational
+AvailableMBOCode,OLTP,Yes,Operational
+AvailableRepCode,OLTP,Yes,Operational
+AvailableRIACodes,OLTP,Yes,Operational
 BDAnnouncement,dbo,,
 BDL_RepCode,dbo,,
 Branch,OLTP,Yes,
