@@ -489,7 +489,7 @@ def update_sql_zip_file_path(zip_file_path:str):
 # %% Mirgate all files recursively unzipping any files
 
 @catch_error(logger)
-def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, fn_get_dtypes, zip_file_path:str=None, selected_file_paths:list=[], skip_datalake:bool=False):
+def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additional_file_meta_columns:list, fn_process_file, fn_get_dtypes, zip_file_path:str=None, selected_file_paths:list=[], skip_datalake:bool=False, skip_file_check:bool=False):
     """
     Mirgate all files recursively unzipping any files
     """
@@ -508,7 +508,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
 
     zip_file_path_exists = True if zip_file_path else False
     for file_path in selected_file_paths:
-        if not os.path.isfile(file_path):
+        if not skip_file_check and not os.path.isfile(file_path):
             logger.warning(f'File not found, skipping -> {file_path}')
             continue
 
@@ -530,6 +530,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
                     zip_file_path = zip_file_path,
                     selected_file_paths = [],
                     skip_datalake = skip_datalake,
+                    skip_file_check = skip_file_check,
                     )
                 update_sql_zip_file_path(zip_file_path=zip_file_path)
             continue
@@ -559,6 +560,10 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:
     if skip_datalake:
         logger.info('Sandbox environment, skip writing to Data Lake')
 
+    skip_file_check = getattr(data_settings, 'skip_file_check', 'FALSE').upper() == 'TRUE'
+    if skip_file_check:
+        logger.info('Skipping File Check')
+
     file_count, selected_file_paths = fn_select_files()
 
     if file_count == 0:
@@ -583,6 +588,7 @@ def migrate_all_files(spark, fn_extract_file_meta, additional_file_meta_columns:
         fn_get_dtypes = fn_get_dtypes,
         selected_file_paths = selected_file_paths,
         skip_datalake = skip_datalake,
+        skip_file_check = skip_file_check,
         )
 
     if not skip_datalake: write_DDL_file_per_step()

@@ -51,6 +51,8 @@ error_tables = []
 
 len_table_list = 0
 
+data_settings.skip_file_check = 'TRUE'
+
 
 
 # %% Create Connections
