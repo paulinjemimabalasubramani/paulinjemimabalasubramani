@@ -19,9 +19,9 @@ if True: # Set to False for Debugging
 else:
     args = {
         'pipelinekey': 'ASSETS_MIGRATE_ENVESTNET',
-        'remote_path': r'C:\myworkdir\data\envestnet', # /opt/EDIP/remote/APP01/ftproot/LocalUser/wmp/envestnet_edip
+        'remote_path': r'C:\myworkdir\data\envestnet_v35', # /opt/EDIP/remote/APP01/ftproot/LocalUser/wmp/envestnet_v35
         'source_path': r'C:\myworkdir\Shared\envestnet',
-        'schema_file_copy_path': r'C:\myworkdir\EDIP-Code\config\envestnet\envestnet_files.csv',
+        'schema_path': r'C:\myworkdir\EDIP-Code\config\envestnet\envestnet_schema.csv',
         }
 
 
@@ -35,33 +35,76 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, get_csv_rows
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, get_csv_rows, normalize_name, remove_last_line_from_file
 
 from datetime import datetime
 from zipfile import ZipFile
+from collections import defaultdict
+import shutil
 
 
 
 # %% Parameters
+
+final_file_ext = '.txt'
+
+last_line_text_seek = 'T|'
 
 
 
 # %%
 
 @catch_error(logger)
-def get_copy_schema():
+def get_envestnet_schema():
     """
     Get copy schema - i.e. list of file names and versions to copy
     """
-    copy_schema = dict()
-    for row in get_csv_rows(csv_file_path=data_settings.schema_file_copy_path):
-        copy_schema[row['name'].lower()] = row['version'].lower()
+    schema1 = defaultdict(list)
+    for row in get_csv_rows(csv_file_path=data_settings.schema_path):
+        #table_name, record_type, field, sub_table_name
+        table_name = normalize_name(row['table_name'])
+        sub_table_name = normalize_name(row['sub_table_name'])
+        field = normalize_name(row['field'])
+        record_type = row['record_type'].strip().lower()
 
-    return copy_schema
+        for x in schema1[(table_name, record_type)]:
+            if x[0]==field:
+                raise ValueError(f'Duplicate name found for table_name={table_name} field={field}')
+
+        schema1[(table_name, record_type)].append((field, sub_table_name))
+
+    schema2 = defaultdict(list)
+    table_list = []
+    for (table_name, record_type), val in schema1.items():
+        table_list.append(table_name)
+        sub_table_name_x = ''
+        for (field, sub_table_name) in val:
+            if sub_table_name:
+                if sub_table_name_x and sub_table_name!=sub_table_name_x:
+                    raise ValueError(f'Two different sub-table names are given in schema file: table_name = {table_name}, record_type={record_type}, field={field}, sub_table_name1={sub_table_name}, sub_table_name2={sub_table_name_x}')
+                else:
+                    sub_table_name_x = sub_table_name
+
+        if not sub_table_name_x:
+            sub_table_name_x = normalize_name(record_type)
+
+        if sub_table_name_x:
+            final_table_name = table_name + '_' + sub_table_name_x
+        else:
+            final_table_name = table_name
+
+        for (field, sub_table_name) in val:
+            if field in schema2[(table_name, record_type, final_table_name)]:
+                raise ValueError(f'Duplicate field found in (table_name, record_type, final_table_name) = {(table_name, record_type, final_table_name)}, field={field}')
+            else:
+                schema2[(table_name, record_type, final_table_name)].append(field)
+
+    table_list = list(set(table_list))
+    return schema2, table_list
 
 
 
-copy_schema = get_copy_schema()
+envestnet_schema, table_list = get_envestnet_schema()
 
 
 
@@ -81,16 +124,18 @@ def get_zip_files():
             file_name_noext, file_ext = os.path.splitext(file_name)
 
             date_str = file_name_noext[-8:]
-            if file_ext.lower()!='.zip' or not date_str.isdigit(): continue
+            if file_ext.lower()!='.zip' or not date_str.isdigit() or 'V35' not in file_name_noext:
+                logger.info(f'Not a valid Envestnet V35 ZIP file, skipping: {remote_file_path}')
+                continue
 
             try:
-                _ = datetime.strptime(date_str, r'%Y%m%d')
+                date_val = datetime.strptime(date_str, r'%Y%m%d')
             except:
-                logger.warning(f'Not an invalid zip file date: {remote_file_path}')
+                logger.warning(f'Not a valid zip file date: {remote_file_path}')
                 continue
 
             zip_files.append(remote_file_path)
-            zip_dates.append(file_name_noext[-8:])
+            zip_dates.append(date_val)
 
     maxdate = max(zip_dates)
     zip_files = [zip_files[i] for i, x in enumerate(zip_dates) if x == maxdate]
@@ -118,28 +163,134 @@ def parse_envestnet_file_name(file_name, zip_name):
     try:
         _ = datetime.strptime(date_str, r'%Y%m%d')
     except:
-        logger.warning(f'Not an invalid file date: {file_name} in zip archive {zip_name} -> skipping file')
+        logger.warning(f'Invalid file date: {file_name} in zip archive {zip_name} -> skipping file')
         return None, None
 
     file_name_noext = re.sub('_+', '_', file_name_noext[:-8])[:-1].lower()
-    if file_name_noext[:3].lower() != 'ag_':
-        logger.warning(f'File does not start with "AG_": {file_name} in zip archive {zip_name} -> skipping file')
+    file_prefix = 'AG_V35_'
+    if file_name_noext[:len(file_prefix)].upper() != file_prefix.upper():
+        logger.warning(f'File does not start with "{file_prefix}": {file_name} in zip archive {zip_name} -> skipping file')
         return None, None
 
     file_name_split = file_name_noext.split('_')
 
-    if not len(file_name_split) in [2, 3]:
+    if len(file_name_split)!=3:
         logger.warning(f'Cannot parse file name: {file_name} in zip archive {zip_name} -> skipping file')
         return None, None
 
-    if len(file_name_split) == 2:
-        file_name = file_name_split[1]
-        file_version = 'x'
-    else:
-        file_name = file_name_split[2]
-        file_version = file_name_split[1]
+    table_name = file_name_split[2].lower()
+    file_version = file_name_split[1].upper()
 
-    return file_name, file_version
+    return table_name, file_version
+
+
+
+# %%
+
+@catch_error(logger)
+def get_table_schemas(table_name:str):
+    """
+    Retrieve schemas for given table_name
+    """
+    table_schemas = dict()
+    for (table_name1, record_type, final_table_name), field_list in envestnet_schema.items():
+        if table_name1.lower()==table_name.lower():
+            table_schemas[(final_table_name, record_type)] = field_list
+    return table_schemas
+
+
+
+# %%
+
+@catch_error(logger)
+def get_field_list_from_table_schema(table_schemas:dict, record_type:str=''):
+    """
+    Get list of fields (columns) for a given record type - for creating sub-tables
+    """
+    field_list = []
+    final_table_name = ''
+    for (final_table_name, record_type1), field_list in table_schemas.items():
+        if record_type1.lower() == record_type.lower():
+            break
+    if not field_list or not final_table_name or record_type1.lower() != record_type.lower():
+        raise ValueError(f'Record type "{record_type}" does not exist in Table Schemas {table_schemas}\nfinal_table_name={final_table_name}\nfield_list={field_list}')
+    return final_table_name, field_list
+
+
+
+# %%
+
+@catch_error(logger)
+def process_psv_file(file_path:str):
+    """
+    Process single unzipped PSV file
+    """
+    with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as f:
+        HEADER = f.readline()
+
+    if HEADER[:2] != 'H|':
+        logger.warning(f'Header is not found in 1st line inside the file: {file_path}')
+        return
+
+    HEADER = HEADER.split(sep='|')
+    try:
+        table_name = normalize_name(HEADER[1])
+        file_date = HEADER[2]
+    except Exception as e:
+        logger.warning(f'Error occurred while reading file HEADER info: {file_path}')
+        return
+
+    try:
+        _ = datetime.strptime(file_date, r'%Y%m%d')
+    except:
+        logger.warning(f'Invalid file date: {file_path}')
+        return
+
+    table_schemas = get_table_schemas(table_name=table_name)
+
+    if len(table_schemas)==0:
+        logger.warning(f'Table schema is not found for table_name="{table_name}" file={file_path}')
+        return
+
+    logger.info(f'Processing file {file_path}')
+    with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as fsource:
+        _ = fsource.readline() # discard header line
+        if len(table_schemas)==1: # does not have sub-tables
+            final_table_name, field_list = get_field_list_from_table_schema(table_schemas=table_schemas, record_type='')
+            destination_path = os.path.join(os.path.dirname(file_path), final_table_name+'_'+file_date+final_file_ext)
+            logger.info(f'Creating file {destination_path}')
+            with open(file=destination_path, mode='wt', encoding='utf-8-sig') as fdest:
+                fdest.write('|'.join(field_list)+'\n')
+                shutil.copyfileobj(fsource, fdest)
+
+            remove_last_line_from_file(file_path=destination_path, last_line_text_seek=last_line_text_seek)
+
+        else: # has sub-tables
+            current_record_type = ''
+            for line in fsource:
+                if line.startswith(last_line_text_seek):
+                    if current_record_type:
+                        fdest.close()
+                    break
+
+                record_type = line[:line.find('|')].strip().lower() # take first column as record_type
+                if not record_type:
+                    raise ValueError(f'Invalid line {line}')
+
+                if record_type!=current_record_type:
+                    if current_record_type:
+                        fdest.close()
+                    current_record_type = record_type
+                    final_table_name, field_list = get_field_list_from_table_schema(table_schemas=table_schemas, record_type=record_type)
+                    destination_path = os.path.join(os.path.dirname(file_path), final_table_name+'_'+file_date+final_file_ext)
+                    logger.info(f'Creating file {destination_path}')
+                    fdest = open(file=destination_path, mode='wt', encoding='utf-8-sig')
+                    fdest.write('|'.join(field_list)+'\n')
+
+                fdest.write(line)
+
+    logger.info(f'Deleting file {file_path}')
+    os.remove(file_path)
 
 
 
@@ -156,17 +307,16 @@ def extract_zip_files():
             for zipinfo in zipinfo_list:
                 if zipinfo.is_dir(): continue
 
-                file_name, file_version = parse_envestnet_file_name(file_name=zipinfo.filename, zip_name=zip_file)
-                if not file_name: continue
+                table_name, file_version = parse_envestnet_file_name(file_name=zipinfo.filename, zip_name=zip_file)
+                if not table_name: continue
 
-                if not copy_schema.get(file_name):
-                    logger.warning(f'File name doesn''t exist in Envestnet schema, unknown file name: {zipinfo.filename} in zip archive {zip_file} -> skipping file')
+                if table_name.lower() not in table_list:
+                    logger.warning(f'File name does not exist in Envestnet schema, unknown file name: {zipinfo.filename} in zip archive {zip_file} -> skipping file')
                     continue
-
-                if copy_schema[file_name] != file_version: continue
 
                 logger.info(f'Extracting {zipinfo.filename} from {zip_file} to {data_settings.source_path}')
                 zipobj.extract(member=zipinfo, path=data_settings.source_path)
+                process_psv_file(file_path=os.path.join(data_settings.source_path, zipinfo.filename))
 
 
 

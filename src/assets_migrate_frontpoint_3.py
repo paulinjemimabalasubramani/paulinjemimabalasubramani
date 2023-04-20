@@ -138,8 +138,8 @@ def select_files():
 
     selected_file_paths = sorted(selected_file_paths, key=lambda c: (c[2], c[1], c[0]))
 
+    filter_tables = []
     if len(selected_file_paths)>0:
-        filter_tables = []
         for k in range(len(selected_file_paths)-1):
             if selected_file_paths[k][2] == selected_file_paths[k+1][2]:
                 continue # Take only the latest dates for a given filter_table
