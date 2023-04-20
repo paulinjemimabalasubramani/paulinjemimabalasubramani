@@ -37,7 +37,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, relative_copy_file, remove_last_line_from_file
 
 import tempfile, shutil
 from datetime import datetime
@@ -49,6 +49,8 @@ from datetime import datetime
 max_folder_name = r'{{ MAX }}'
 
 folder_levels = [r'%Y%m%d']
+
+last_line_text_seek = 'EOF|'
 
 
 
@@ -90,31 +92,6 @@ def find_latest_folder(remote_path:str, level:int=0):
 # %%
 
 @catch_error(logger)
-def remove_last_line_from_file(file_path:str):
-    """
-    Remove last line from CSV / PSV file. Last line has EOF word
-    """
-    text_seek = 'EOF|'
-
-    with open(file_path, "r+", encoding = "utf-8") as file:
-        file.seek(0, os.SEEK_END)
-        pos = file.tell() - len(text_seek)
-        while pos > 0:
-            pos -= 1
-            file.seek(pos, os.SEEK_SET)
-            text = file.read(len(text_seek))
-            if text==text_seek:
-                break
-
-        if pos > 0:
-            file.seek(pos, os.SEEK_SET)
-            file.truncate()
-
-
-
-# %%
-
-@catch_error(logger)
 def unzip_and_custom_copy(remote_file_path:str, source_path:str):
     """
     Unzip the file from remote location to a temporary location. Remove the last EOF line from CSV/PSV file. And copy it to final location
@@ -132,7 +109,7 @@ def unzip_and_custom_copy(remote_file_path:str, source_path:str):
                 if file_ext.lower() not in ['.txt', '.csv']:
                     logger.warning(f'Unknown file extention, skipping: {extract_file_path}')
                     continue
-                remove_last_line_from_file(file_path=extract_file_path)
+                remove_last_line_from_file(file_path=extract_file_path, last_line_text_seek=last_line_text_seek)
                 relative_copy_file(remote_path=extract_dir, dest_path=source_path, remote_file_path=extract_file_path)
 
 
