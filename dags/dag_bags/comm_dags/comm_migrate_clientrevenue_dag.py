@@ -9,10 +9,10 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_d
 
 # %% Pipeline Parameters
 
-pipelinekey = 'COMP_MIGRATE_CLIENTREVENUE'
+pipelinekey = 'COMM_MIGRATE_CLIENT_REVENUE'
 python_spark_code = 'migrate_csv_3'
 
-tags = ['DB:Comp', 'SC:ClientRevenue']
+tags = ['DB:Comm', 'SC:Client_Revenue']
 
 schedule_interval = '40 12 * * *' # https://crontab.guru/
 
