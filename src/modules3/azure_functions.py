@@ -29,6 +29,8 @@ domain_map = { # To keep legacy folder structure in Azure and SQL code in Snowfl
     'ASSETS': 'customer_assets',
     }
 
+max_delta_save_row_count = 50*1000
+
 
 
 # %% Set up Spark to ADLS Connection
@@ -130,7 +132,10 @@ def save_adls_gen2(
             return False
         else:
             userMetadata = execution_date # any string metadata to save alongside with the Delta Table
-            table.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy_str, overwriteSchema='true', userMetadata=userMetadata)
+            row_count = table.count()
+            npartition = max(int(row_count/max_delta_save_row_count), 1)
+            logger.info(f'Number of rows in table: {row_count}, number of partitions used: {npartition}')
+            table.repartition(npartition).write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy_str, overwriteSchema='true', userMetadata=userMetadata)
     else:
         table.write.save(path=data_path, format=file_format, mode='overwrite', overwriteSchema='true')
 
