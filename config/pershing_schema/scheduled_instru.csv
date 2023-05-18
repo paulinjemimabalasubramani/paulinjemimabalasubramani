@@ -1,0 +1,185 @@
+﻿record_name,position,picture,type,conditional_changes,field_name,scale,description,notes
+HEADER,001-018,X(18),AN,,not_used,,Literally “BOFPERSHING” (beginning of Pershing file),
+HEADER,019-036,X(18),AN,,not_used,,Literally “SCHEDULED INSTRU”,
+HEADER,037-046,X(10),AN,,not_used,,Literally “DATA OF”,
+HEADER,047-056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY” format,
+HEADER,057-067,X(11),AN,,not_used,,Literally “TO REMOTE”,
+HEADER,068-071,X(04),AN,,remote_id,,REMOTE ID = “XXX”,
+HEADER,072-085,X(14),AN,,not_used,,Literally “BEGINS HERE”,
+HEADER,086-095,X(10),AN,,run_date,,RUN DATE = “MM/DD/CCYY” format,
+HEADER,096-096,X(01),AN,,not_used,,Not Used,
+HEADER,097-104,X(08),AN,,run_time,,RUN TIME = “HH:MM:SS” format,
+HEADER,105-749,X(645),AN,,not_used,,Not Used,
+HEADER,750-750,X(01),AN,,not_used,,RECORD DELIMITER = “A”; indicates end of the header record,
+A,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “S1”,
+A,003-003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “A”,
+A,004-011,9(08),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “00000001”,
+A,012-020,X(09),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (5), Check Digit (1)",
+A,021-021,X(01),AN,,not_used,,Not Used,
+A,022-024,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+A,025-025,X(01),AN,,not_used,,Not Used,
+A,026-029,X(04),AN,,investment_professional_ip_number,,"INVESTMENT PROFESSIONAL (IP) NUMBER; NOTE: For three-character IP Numbers position 29 will be “”, effective Q4 2023.",
+A,030-031,X(02),AN,,instruction_type,,"INSTRUCTION TYPE; values include:
+“EC” = Employer Contribution
+“EX” = Exchange
+“MF” = Mutual Fund Allocation
+“PB” = Buy
+“PS” = Redeem",
+A,032-032,X(01),AN,,frequency_of_instruction,,"FREQUENCY OF INSTRUCTION; values include:
+“A” = Annually
+“B” = Bi-monthly
+“M” = Monthly
+“Q” = Quarterly
+“S” = Semi-annually“
+” = Not applicable",
+A,033-033,X(01),AN,,amount_or_percentage_or_share_indicator,,"AMOUNT or PERCENTAGE or SHARE INDICATOR; values include:
+“A” = Amount
+“P” = Percent
+“S” = Share",
+A,034-051,9(16)v9(02),N,,transaction_amount,,"TRANSACTION AMOUNT; required if Amount, Percentage, or Share Indicator in position 033 is “A”",
+A,052-052,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“+” = Credit amount
+“-” = Debit amount
+“” = Not applicable",
+A,053-070,9(13)v9(05),N,,transaction_quantity,,"TRANSACTION QUANTITY; required if Amount, Percentage, or Share Indicator in position 033 above, is “S”",
+A,071-071,X(01),AN,,transaction_quantity_sign,,"TRANSACTION QUANTITY SIGN; values include:
+“+” = Positive quantity
+“-” = Negative quantity
+“” = Not applicable",
+A,072-080,X(09),AN,,cusip_associated_with_transaction,,CUSIP ASSOCIATED WITH TRANSACTION; for Buys and Sells only),
+A,081-084,X(04),AN,,not_used,,Reserved,
+A,085-100,X(16),AN,,symbol_associated_with_transaction,,SYMBOL ASSOCIATED WITH TRANSACTION; for Buys and Sells only,
+A,101-103,9(03),N,,transaction_percentage,,"TRANSACTION PERCENTAGE; required if Amount, Percentage, or Share Indicator in position 033 above, is “P”",
+A,104-150,X(47),AN,,not_used,,Reserved,
+A,151-158,9(08),N,,next_instruction_effective_date,,"NEXT INSTRUCTION EFFECTIVE DATE, in CCYYMMDD format",
+A,159-166,9(08),N,,instruction_end_date,,"INSTRUCTION END DATE, in CCYYMMDD format",
+A,167-174,9(08),N,,exclusion_period_start_date,,"EXCLUSION PERIOD START DATE, in CCYYMMDD format",
+A,175-182,9(08),N,,exclusion_period_end_date,,"EXCLUSION PERIOD END DATE, in CCYYMMDD format",
+A,183-222,X(40),AN,,not_used,,Reserved,
+A,223-257,X(35),AN,,instruction_description,,INSTRUCTION DESCRIPTION; free-form,
+A,258-258,X(01),AN,,buy_at_nav_indicator,,"BUY AT NAV INDICATOR; values include:
+“Y” = Yes, NAV
+“N” = No, not NAV
+“” = Not applicable",
+A,259-259,X(01),AN,,buy_at_nav_reason,,"BUY AT NAV REASON; values include:
+“A” = Dividend reinvestment trade
+“B” = Trust company NAV per agreement
+“E” = Self-directed brokerage account
+“1” = Net asset value (NAV) transfer
+“2” = Repurchase
+“3” = Employee
+“4” = Error correction
+“5” = Wrap fee account
+“6” = NAV commissionable
+“7” = Commissionable defined contribution plan
+“8” = Non-commissionable defined contribution plan
+“9” = Section 529 account - qualified state tuition program
+“0” = Other
+“” = Not applicable",
+A,260-260,X(01),AN,,loi_roa_indicator,,"LOI/ROA INDICATOR; values include:
+“L” = LOI
+“R” = ROA
+“” = Not applicable",
+A,261-268,9(08),N,,loi_date,,"LOI DATE; if LOI, in CCYYMMDD format",
+A,269-278,X(10),AN,,loi_number,,LOI NUMBER; if LOI,
+A,279-296,9(16)v9(02),N,,loi_roa_value,,LOI/ROA VALUE,
+A,297-297,X(01),AN,,loi_roa_value_sign,,"LOI/ROA VALUE SIGN; values include:
+“+” = Positive amount
+“-” = Negative amount
+“” = Not applicable",
+A,298-298,X(01),AN,,charge_fees_to,,"CHARGE FEES TO, when NAV; values include:
+“C” = Customer
+“I” = IBD
+“” = Not applicable",
+A,299-348,X(50),AN,,not_used,,Reserved,
+A,349-349,X(01),AN,,gross_net_indicator,,"GROSS/NET INDICATOR; values include:
+G” = Gross
+N” = Net
+” = Not applicable",
+A,350-350,X(01),AN,,cdsc_waiver_code,,"CDSC WAIVER CODE; values include:
+“A” = Hardship
+“B” = No commission paid
+“1” = Gross
+“2” = Net
+“4” = CDSC waiver due to correction
+“5” = Death
+“6” = Disability
+“7” = Mandatory distribution
+“8” = Systematic withdrawal
+“9” = Defined contribution
+“” = Not applicable",
+A,351-352,X(02),AN,,redemption_fee_waiver_code,,"REDEMPTION FEE WAIVER CODE; values include:
+“1” = STR waiver due to correction
+“2” = Death
+“3” = Disability
+“4” = Mandatory distribution
+“5” = Systematic withdrawal
+“6” = Defined contribution
+“7” = Hardship
+“8” = Auto rebalance
+“9” = DC - termination distribution
+“A” = DC - involuntary distribution
+“B” = DC - forfeitures
+“C” = DC - loans
+“D” = DC - excess contributions
+“E” = Wrap program
+“F” = Fund of funds
+“G” = Divorce / QDRO
+“H” = Plan fees / QDRO
+“” = Not applicable or populated",
+A,353-402,X(50),AN,,reserved,,Reserved,
+A,403-411,X(09),AN,,from_cusip,,FROM CUSIP,
+A,412-415,X(04),AN,,not_used,,Reserved,
+A,416-431,X(16),AN,,from_symbol,,FROM SYMBOL,
+A,432-440,X(09),AN,,to_cusip,,TO CUSIP,
+A,441-444,X(04),AN,,not_used,,Reserved,
+A,445-460,X(16),AN,,to_symbol,,TO SYMBOL,
+A,461-510,X(50),AN,,not_used,,Reserved,
+A,511-518,X(08),AN,,user_id_of_person_who_entered_added_instruction,,USER ID OF PERSON WHO ENTERED (ADDED) INSTRUCTION,
+A,519-526,9(08),N,,date_instruction_added,,"DATE INSTRUCTION ADDED, in CCYYMMDD format",
+A,527-532,9(06),N,,time_instruction_added,,"TIME INSTRUCTION ADDED, in HHMISS format",
+A,533-540,X(08),AN,,user_id_of_person_who_last_modified_instruction,,USER ID OF PERSON WHO LAST MODIFIED INSTRUCTION,
+A,541-548,9(08),N,,date_of_last_instruction_modification,,"DATE OF LAST INSTRUCTION MODIFICATION, in CCYYMMDD format",
+A,549-554,9(06),N,,time_of_last_instruction_modification,,"TIME OF LAST INSTRUCTION MODIFICATION, in HHMISS format",
+A,555-562,9(08),N,,date_instruction_was_deleted,,"DATE INSTRUCTION WAS DELETED, in CCYYMMDD format (delete date will appear once, after which the instruction will be removed from the file)",
+A,563-602,X(40),AN,,not_used,,Reserved,
+A,603-610,9(08),N,,introducing_broker_dealer_ibd_order_receipt_date,,"INTRODUCING BROKER DEALER (IBD) ORDER RECEIPT DATE, in CCYYMMDD format",
+A,611-616,9(06),N,,ibd_order_receipt_time,,"IBD ORDER RECEIPT TIME, in HHMISS forma",
+A,617-626,X(10),AN,,ibd_order_receipt_time_zone,,IBD ORDER RECEIPT TIME ZONE,
+A,627-627,X(01),AN,,ibd_discretion_exercised,,"IBD DISCRETION EXERCISED; values include:
+“Y” = Yes; discretion exercised
+“N” = No; discretion not exercised
+“” = Not known or populated",
+A,628-628,X(01),AN,,ibd_solicited_indicator,,"IBD SOLICITED INDICATOR; values include:
+“Y” = Yes; order solicited by IBD
+“N” = No; order was not solicited by IBD
+“” = Not known or populated",
+A,629-668,X(40),AN,,ibd_order_received_from,,IBD ORDER RECEIVED FROM; free-form,
+A,669-708,X(40),AN,,not_used,,Reserved,
+A,709-710,X(02),AN,,contribution_type,,"CONTRIBUTION TYPE; for 529 plans only; values include:
+“CY” = Current year
+“PY” = Prior year
+“” = Not applicable",
+A,711-714,X(04),AN,,distribution_type,,"DISTRIBUTION TYPE; for 529 plans only; values include:
+“NQUA” = Non-qualified
+“QUAL” = Qualified
+“” = Not applicable",
+A,715-718,X(04),AN,,payable_to,,"PAYABLE TO; for 529 plans only; values include:
+“AHLD = Account holder
+“BENE” = Beneficiary
+“” = Not applicable",
+A,719-758,X(40),AN,,not_used,,Reserved,
+A,759-776,9(16)v9(02),N,,minimum_auto_investment_amount,,MINIMUM AUTO INVESTMENT AMOUNT; for Mutual Fund Allocations only when Instruction Type in position 03-31 is “MF”,
+A,777-794,9(16)v9(02),N,,maximum_auto_investment_amount,,MAXIMUM AUTO INVESTMENT AMOUNT; for Mutual Fund Allocations only when Instruction Type in position 03-31 is “MF”,
+A,795-999,X(205),AN,,not_used,,Not Used,
+A,1000-1000,X(01),AN,,not_used,,Literally “X”; indicates the end of the detail record A,
+TRAILER,001-018,X(18),AN,,not_used,,Literally “EOFPERSHING” (end of Pershing file),
+TRAILER,019-036,X(18),AN,,not_used,,Literally “SECURITY PROFILES”,
+TRAILER,037-046,X(10),AN,,not_used,,Literally “DATA OF”,
+TRAILER,047-056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY” format,
+TRAILER,057-067,X(11),AN,,not_used,,Literally “TO REMOTE”,
+TRAILER,068-071,X(04),AN,,remote_id,,REMOTE ID = “XXX”,
+TRAILER,072-105,X(12),AN,,not_used,,Literally“ENDS HERE. TOTAL DETAIL RECORDS:”,
+TRAILER,106-115,9(10),N,,number_of_detail_records,,NUMBER OF DETAIL RECORDS,
+TRAILER,116-749,X(634),AN,,not_used,,Not Used,
+TRAILER,750-750,X(01),AN,,not_used,,Record Delimiter = “Z”; indicates the end of the trailer record,
