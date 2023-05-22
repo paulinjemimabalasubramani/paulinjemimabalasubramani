@@ -121,7 +121,7 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
     """
     Process single FWF
     """
-    with open(source_file_path, mode='rt', encoding='utf-8', errors='ignore') as fsource:
+    with open(source_file_path, mode='rt', encoding='utf-8', errors='replace') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
             first = file_has_header
             header_line = ''
