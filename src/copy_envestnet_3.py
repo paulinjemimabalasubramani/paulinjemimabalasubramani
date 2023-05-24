@@ -266,28 +266,27 @@ def process_psv_file(file_path:str):
             remove_last_line_from_file(file_path=destination_path, last_line_text_seek=last_line_text_seek)
 
         else: # has sub-tables
-            current_record_type = ''
+            record_types = dict()
             for line in fsource:
                 if line.startswith(last_line_text_seek):
-                    if current_record_type:
-                        fdest.close()
                     break
 
                 record_type = line[:line.find('|')].strip().lower() # take first column as record_type
                 if not record_type:
                     raise ValueError(f'Invalid line {line}')
 
-                if record_type!=current_record_type:
-                    if current_record_type:
-                        fdest.close()
-                    current_record_type = record_type
+                if record_type not in record_types:
                     final_table_name, field_list = get_field_list_from_table_schema(table_schemas=table_schemas, record_type=record_type)
                     destination_path = os.path.join(os.path.dirname(file_path), final_table_name+'_'+file_date+final_file_ext)
                     logger.info(f'Creating file {destination_path}')
                     fdest = open(file=destination_path, mode='wt', encoding='utf-8-sig')
                     fdest.write('|'.join(field_list)+'\n')
+                    record_types[record_type] = fdest
 
-                fdest.write(line)
+                record_types[record_type].write(line)
+
+            for record_type, fdest in record_types.items():
+                fdest.close()
 
     logger.info(f'Deleting file {file_path}')
     os.remove(file_path)
