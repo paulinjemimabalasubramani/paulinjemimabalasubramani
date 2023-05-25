@@ -355,7 +355,12 @@ def read_csv(spark, file_path:str):
     with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as f:
         HEADER = f.readline()
 
-    delimiter = '|' if '|' in HEADER else ','
+    if '|' in HEADER:
+        delimiter = '|'
+    elif '\t' in HEADER:
+        delimiter = '\t'
+    else:
+        delimiter = ','
 
     csv_table = (spark.read # https://github.com/databricks/spark-csv
         .format('csv')
