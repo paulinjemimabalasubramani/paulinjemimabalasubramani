@@ -4384,7 +4384,7 @@ Position Transmission,HEADER RECORD CLIENT ID,,Header,,,PIC X(03),3,4-Feb,2,4,,,
 Position Transmission,FILLER,,Header,,,PIC X(17),17,21-May,5,21,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/9/2001,TRUE
 Position Transmission,FILE ORIGIN,,Header,,,PIC X(16),16,22-37,22,37,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/9/2001,TRUE
 Position Transmission,FILLER,,Header,,,PIC X(04),4,38-41,38,41,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/9/2001,TRUE
-Position Transmission,FILE TITLE,,Header,,,PIC X(16),16,42-57,42,57,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/9/2001,TRUE
+Position Transmission,FILE TITLE,,Header,position,POSITION EXTRACT,PIC X(16),16,42-57,42,57,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/9/2001,TRUE
 Position Transmission,FILLER,,Header,,,PIC X(05),5,58-62,58,62,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/9/2001,TRUE
 Position Transmission,TRANSMISSION CREATION DATE,,Header,,,PIC X(06),6,63-68,63,68,,,MMDDYY,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/9/2001,TRUE
 Position Transmission,FILLER,,Header,,,PIC X(1032),1032,69-1100,69,1100,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,6/15/2014,TRUE
