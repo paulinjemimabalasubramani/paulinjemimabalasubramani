@@ -10,10 +10,10 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_d
 
 # %% Pipeline Parameters
 
-pipelinekey = 'ASSETS_MIGRATE_DW_AUM'
+pipelinekey = 'REPLICA_MIGRATE_PW1SQLDATA01_DW'
 python_spark_code = 'migrate_csv_3'
 
-tags = ['DB:ASSETS', 'SC:DW_AUM']
+tags = ['DB:REPLICA', 'SC:PW1SQLDATA01_DW']
 
 schedule_interval = '16 12 * * *' # https://crontab.guru/
 
