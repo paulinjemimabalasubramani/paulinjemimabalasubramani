@@ -196,7 +196,7 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
 
             table_suffix = ''
             client_id_iws = ''
-            if row['table_name'] in ['bookkeeping', 'account_balance', 'trade_revenue']:
+            if row['table_name'] in ['bookkeeping', 'account_balance', 'trade_revenue', 'position']:
                 client_id_iws = HEADER[1:6].strip() # get client id for IWS files (different from NFS headers).
                 if len(client_id_iws)>3:
                     table_suffix = '_iws'

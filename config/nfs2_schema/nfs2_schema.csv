@@ -4408,36 +4408,36 @@ Position Transmission,MARGIN LAST ACTIVITY DATE,,Record,,,PIC 9(06),6,38-43,38,4
 Position Transmission,STOCK RECORD LAST ACTIVITY DATE,,Record,,,PIC 9(06),6,44-49,44,49,BPOS,DATE,YYMMDD,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,SYMBOL,,Record,,,PIC X(09),9,50-58,50,58,BSUM,SYMBOL,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,MARKET PRICE,,Record,,,PIC 9(09)V9(09),18,59-76,59,76,BPOS,PRICE,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,77-77,77,77,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,MARKET PRICE SIGN,,Record,,,PIC X(01),1,77-77,77,77,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,TRADE DATE QUANTITY,,Record,,,PIC 9(13)V9(05),18,78-95,78,95,BPOS,TD QUANTITY,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,8/5/2016,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,96-96,96,96,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,TRADE DATE QTY SIGN,,Record,,,PIC X(01),1,96-96,96,96,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,OPTION STRIKE PRICE,,Record,,,PIC 9(05)V9(03),8,97-104,97,104,BSEC DISP OPTN,EXERCISE PRICE,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,3/23/2009,TRUE
 Position Transmission,SETTLEMENT DATE QUANTITY,,Record,,,PIC 9(13)V9(05),18,105-122,105,122,BPOS,SD QUANTITY,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,06/01/2015 - Updated from PIC 9(09)V9(09) to PIC 9(13)V9(05). Quality change only.,6/1/2015,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,123-123,123,123,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,SETTLEMENT DATE QTY SIGN,,Record,,,PIC X(01),1,123-123,123,123,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,SEGREGATED QUANTITY,,Record,,,PIC 9(13)V9(05),18,124-141,124,141,BPOS,MEMO = SG,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,06/01/2015 - Updated from PIC 9(09)V9(09) to PIC 9(13)V9(05). Quality change only.,6/1/2015,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,142-142,142,142,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,SEGREGATED QTY SIGN,,Record,,,PIC X(01),1,142-142,142,142,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,TRANSIT QUANTITY,,Record,,,PIC 9(13)V9(05),18,143-160,143,160,BPOS,MEMO = TR,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,06/01/2015 - Updated from PIC 9(09)V9(09) to PIC 9(13)V9(05). Quality change only.,6/1/2015,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,161-161,161,161,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,TRANSIT QTY SIGN,,Record,,,PIC X(01),1,161-161,161,161,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,TRANSFER QUANTITY,,Record,,,PIC 9(13)V9(05),18,162-179,162,179,BPOS,MEMO = TF,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,06/01/2015 - Updated from PIC 9(09)V9(09) to PIC 9(13)V9(05). Quality change only.,6/1/2015,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,180-180,180,180,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,TRANSFER QTY SIGN,,Record,,,PIC X(01),1,180-180,180,180,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,LEGAL TRANSFER QUANTITY,,Record,,,PIC 9(13)V9(05),18,181-198,181,198,BPOS,MEMO = TL,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,06/01/2015 - Updated from PIC 9(09)V9(09) to PIC 9(13)V9(05). Quality change only.,6/1/2015,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,199-199,199,199,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,LEGAL TRANSFER QTY SIGN,,Record,,,PIC X(01),1,199-199,199,199,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,NON-NEGOTIABLE QUANTITY,,Record,,,PIC 9(13)V9(05),18,200-217,200,217,,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,06/01/2015 - Updated from PIC 9(09)V9(09) to PIC 9(13)V9(05). Quality change only.,6/1/2015,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,218-218,218,218,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,NON-NEGOTIABLE QTY SIGN,,Record,,,PIC X(01),1,218-218,218,218,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,TRADE DATE SHORT SALE QUANTITY,,Record,,,PIC 9(13)V9(05),18,219-236,219,236,BPOS,TD QUANTITY,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,06/01/2015 - Updated from PIC 9(09)V9(09) to PIC 9(13)V9(05). Quality change only.,6/1/2015,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,237-237,237,237,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,TRADE DATE SHORT SALE QTY SIGN,,Record,,,PIC X(01),1,237-237,237,237,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,SETTLEMENT DATE SHORT SALE QUANTITY,,Record,,,PIC 9(13)V9(05),18,238-255,238,255,BPOS,SD QUANTITY,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,06/01/2015 - Updated from PIC 9(09)V9(09) to PIC 9(13)V9(05). Quality change only.,6/1/2015,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,256-256,256,256,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,SETTLEMENT DATE SHORT SALE QTY SIGN,,Record,,,PIC X(01),1,256-256,256,256,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,MTD POSITION TRADE DATE BALANCE,,Record,,,PIC 9(15)V9(02),17,257-273,257,273,NOT DISPLAYED,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,OPEN - Spoke with Cary - Verify Processing Guidelines,6/15/2014,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(1),1,274-274,274,274,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,MTD POSITION TRADE DATE BALANCE SIGN,,Record,,,PIC X(1),1,274-274,274,274,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,MTD POSITION SETTLEMENT DATE BALANCE,,Record,,,PIC 9(15)V9(02),17,275-291,275,291,NOT DISPLAYED,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,OPEN - Spoke with Cary - Verify Processing Guidelines,6/15/2014,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,292-292,292,292,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,MTD POSITION SETTLEMENT DATE BALANCE SIGN,,Record,,,PIC X(01),1,292-292,292,292,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,MTD TRADE DATE POSITION COMMISSION,,Record,,,PIC 9(09)V9(02),11,293-303,293,303,NOT DISPLAYED,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,OPEN - Spoke with Cary - Verify Processing Guidelines,8/24/2001,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,304-304,304,304,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,MTD TRADE DATE POSITION COMMISSION SIGN,,Record,,,PIC X(01),1,304-304,304,304,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,MTD SETTLE DATE POSITION COMMISSION,,Record,,,PIC 9(09)V9(02),11,305-315,305,315,NOT DISPLAYED,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,OPEN - Spoke with Cary - Verify Processing Guidelines,8/24/2001,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,316-316,316,316,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,MTD SETTLE DATE POSITION COMMISSION SIGN,,Record,,,PIC X(01),1,316-316,316,316,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,COUPON RATE,,Record,,,PIC 9(02)V9(03),5,317-321,317,321,BSEC,INT RATE,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/1/2001,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,322-322,322,322,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/1/2001,TRUE
+Position Transmission,COUPON RATE SIGN,,Record,,,PIC X(01),1,322-322,322,322,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/1/2001,TRUE
 Position Transmission,FILLER,,Record,,,PIC X(01),1,323-323,323,323,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/1/2001,TRUE
 Position Transmission,NUMBER OF SECURITY DESCRIPTION LINES,,Record,,,PIC 9(01),1,324-324,324,324,NOT DISPLAYED,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,SHORT NAME,,Record,,,PIC X(10),10,325-334,325,334,BNAM DISP CUST,SHTNAME:,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/1/2001,TRUE
@@ -4454,18 +4454,18 @@ Position Transmission,DIVIDEND CAPITAL GAINS UPDATE DATE,,Record,,,PIC 9(06),6,4
 Position Transmission,DIVIDEND CAPITAL GAINS UPDATE USER ID,,Record,,,PIC X(10),10,464-473,464,473,BDIS DISP,PF6>UPD ID,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/12/2010,TRUE
 Position Transmission,FILLER,,Record,,,PIC X(13),13,474-486,474,486,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/12/2010,TRUE
 Position Transmission,MTD POSITION INCOME - TRADE DATE,,Record,,,PIC 9(15)V9(02),17,487-503,487,503,NOT DISPLAYED,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,OPEN - Spoke with Cary - Verify Processing Guidelines,6/15/2014,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,504-504,504,504,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,MTD POSITION INCOME TRADE DATE SIGN,,Record,,,PIC X(01),1,504-504,504,504,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,MTD POSITION INCOME - SETTLE DATE,,Record,,,PIC 9(15)V9(02),17,505-521,505,521,NOT DISPLAYED,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,OPEN - Spoke with Cary - Verify Processing Guidelines,6/15/2014,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,522-522,522,522,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
+Position Transmission,MTD POSITION INCOME SETTLE DATE SIGN,,Record,,,PIC X(01),1,522-522,522,522,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,REGISTERED REP EXEC REP (RR2),,Record,,,PIC X(03),3,523-525,523,525,BNAM DISP CUST,RR2:,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/1/2001,TRUE
 Position Transmission,AGENCY CODE,,Record,,,PIC X(08),8,526-533,526,533,BNAM DISP CUST,AGENCY:,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/1/2001,TRUE
 Position Transmission,PRODUCT CODE,,Record,,,PIC X(12),12,534-545,534,545,BSEC DISP,PROD-ID,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,8/24/2001,TRUE
 Position Transmission,MATURITY DATE,,Record,,,PIC 9(08),8,546-553,546,553,BSEC DISP,MATURITY DATE,YYYYMMDD,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/1/2001,TRUE
 Position Transmission,CASH AVAILABLE TO PAY,,Record,,,PIC 9(11)V9(02),13,554-566,554,566,,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,10/28/2004,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,567-567,567,567,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,10/28/2004,TRUE
+Position Transmission,CASH AVAILABLE TO PAY SIGN,,Record,,,PIC X(01),1,567-567,567,567,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,10/28/2004,TRUE
 Position Transmission,MULTI-CURRENCY INDICATOR,,Record,,,PIC X(01),1,568-568,568,568,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/23/2007,TRUE
 Position Transmission,POSITION MARKET VALUE,,Record,,,PIC 9(15)V9(02),17,569-585,569,585,BPOS,MKT VAL,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,6/15/2014,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,586-586,586,586,BPOS,MKT VAL,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/15/2010,TRUE
+Position Transmission,POSITION MARKET VALUE SIGN,,Record,,,PIC X(01),1,586-586,586,586,BPOS,MKT VAL,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/15/2010,TRUE
 Position Transmission,CURRENT FACTOR AMOUNT,,Record,,,PIC 9(02)V9(08),10,587-596,587,596,BSEC DISP FACT,CURRENT FACTOR AMOUNT,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,10/24/2007,TRUE
 Position Transmission,UNFACTORED PRICE SIGN,,Record,,,PIC X(01),1,597-597,597,597,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,10/24/2007,TRUE
 Position Transmission,UNFACTORED PRICE,,Record,,,PIC 9(09)V9(09),18,598-615,598,615,BSEC DISP PRCE,TRADING PRICE:,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,10/24/2007,TRUE
@@ -4479,14 +4479,14 @@ Position Transmission,OPTION EXPIRATION DATE,,Record,,,PIC X(06),6,650-655,650,6
 Position Transmission,OPTION CALL PUT INDICATOR,,Record,,,PIC X(01),1,656-656,656,656,BSEC DISP OPTN,"CALL /PUT (C,P)",AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,3/23/2009,TRUE
 Position Transmission,OPTION SYMBOL ID,,Record,,,PIC X(30),30,657-686,657,686,BSEC DISP OPTN,EXPANDED SYMBOL,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,3/23/2009,TRUE
 Position Transmission,ELIGIBLE SETTLEMENT DATE QUANTITY,,Record,,,PIC 9(09)V9(09),18,687-704,687,704,,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,12/30/2014,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,705-705,705,705,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,12/30/2014,TRUE
+Position Transmission,ELIGIBLE SETTLEMENT DATE QUANTITY SIGN,,Record,,,PIC X(01),1,705-705,705,705,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,12/30/2014,TRUE
 Position Transmission,FIXED INCOME ACCRUED INTEREST,,Record,,,PIC 9(09)V9(09),18,706-723,706,723,,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/3/2017,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,724-724,724,724,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/3/2017,TRUE
+Position Transmission,FIXED INCOME ACCRUED INTEREST SIGN,,Record,,,PIC X(01),1,724-724,724,724,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/3/2017,TRUE
 Position Transmission,NON-CORE MONEY MARKET ELIGIBLE INDICATOR,,Record,,,PIC X(01),1,725-725,725,725,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/26/2022,TRUE
 Position Transmission,NON-TRANSACTION FEE TRADE DATE QUANTITY,,Record,,,PIC 9(13)V9(05),18,726-743,726,743,,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,5/2/2022,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,744-744,744,744,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/26/2022,TRUE
+Position Transmission,NON-TRANSACTION FEE TRADE DATE QTY SIGN,,Record,,,PIC X(01),1,744-744,744,744,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/26/2022,TRUE
 Position Transmission,TRANSACTION FEE TRADE DATE QUANTITY,,Record,,,PIC 9(13)V9(05),18,745-762,745,762,,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,5/2/2022,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,763-763,763,763,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/26/2022,TRUE
+Position Transmission,TRANSACTION FEE TRADE DATE QTY SIGN,,Record,,,PIC X(01),1,763-763,763,763,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,1/26/2022,TRUE
 Position Transmission,FILLER,,Record,,,PIC X(105),105,764-868,764,868,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,06/01/2015 - Updated from PIC X(182) top PIC X(163). Quality change only.,6/1/2015,TRUE
 Position Transmission,ISIN,,Record,,,PIC X(15),15,869-883,869,883,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,08/05/2016 Processing guidelines changed to reflect IM165800269. Research queue item 338R00.,8/5/2016,TRUE
 Position Transmission,SEDOL,,Record,,,PIC X(15),15,884-898,884,898,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/25/2009,TRUE
@@ -4496,7 +4496,7 @@ Position Transmission,LOCAL CURRENCY MARKET VALUE,,Record,,,PIC 9(14)V9(04),18,9
 Position Transmission,MARKET PRICE DATE,,Record,,,PIC X(08),8,936-943,936,943,,,MMDDYYYY,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/25/2009,TRUE
 Position Transmission,CONVERSION PRICE DATE,,Record,,,PIC X(08),8,944-951,944,951,,,MMDDYYYY,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,7/25/2009,TRUE
 Position Transmission,LOCAL CURRENCY FIXED INCOME ACCRUED INTEREST,,Record,,,PIC 9(09)V9(09),18,952-969,952,969,,,N,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/3/2017,TRUE
-Position Transmission,POS SIGN,,Record,,,PIC X(01),1,970-970,970,970,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/3/2017,TRUE
+Position Transmission,LOCAL CURRENCY FIXED INCOME ACCRUED INTEREST SIGN,,Record,,,PIC X(01),1,970-970,970,970,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/3/2017,TRUE
 Position Transmission,FILLER,,Record,,,PIC X(130),130,971-1100,971,1100,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,6/15/2014,TRUE
 Position Transmission,RECORD NUMBER,,Trailer,,,PIC X(01),1,1-Jan,1,1,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/9/2001,TRUE
 Position Transmission,FILLER,,Trailer,,,PIC X(20),20,21-Feb,2,21,,,AN,6.3.2,09/16/2022 - Added “Not in use” to RR2 and AGENCY fields,9/16/2022,,11/9/2001,TRUE
