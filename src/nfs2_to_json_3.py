@@ -196,7 +196,7 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
 
             table_suffix = ''
             client_id_iws = ''
-            if row['table_name'] in ['bookkeeping', 'account_balance', 'trade_revenue', 'position']:
+            if row['table_name'] in ['bookkeeping', 'account_balance', 'trade_revenue', 'position', 'order', 'rmd', 'scheduled_events', 'suitability', 'tas_closed', 'tas_open']:
                 client_id_iws = HEADER[1:6].strip() # get client id for IWS files (different from NFS headers).
                 if len(client_id_iws)>3:
                     table_suffix = '_iws'
@@ -501,6 +501,19 @@ process_lines_map = {
     'name_and_address_iws': process_lines_name_and_address,
     'position': process_lines_1_record,
     'position_iws': process_lines_1_record,
+    'order': process_lines_1_record,
+    'order_iws': process_lines_1_record,
+    'rmd': process_lines_1_record,
+    'rmd_iws': process_lines_1_record,
+    'scheduled_events': process_lines_1_record,
+    'scheduled_events_iws': process_lines_1_record,
+    'suitability': process_lines_1_record,
+    'suitability_iws': process_lines_1_record,
+    'tas_closed': process_lines_1_record,
+    'tas_closed_iws': process_lines_1_record,
+    'tas_open': process_lines_1_record,
+    'tas_open_iws': process_lines_1_record
+
 }
 
 
