@@ -187,9 +187,10 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
     file_meta = None
     for file_type, row in file_titles.items():
         file_title = HEADER[row['pos_start']:row['pos_end']].strip().lower()
-        if file_title == 'NAME AND ADDRESS'.lower(): file_title = 'NAME/ADDR HISTORY'.lower() # Fix for SAI and TRI IWS files
-        elif file_title == 'POSITION DELTA E'.lower(): file_title = 'POSITION EXTRACT'.lower()
-        file_title
+        if file_title == 'NAME AND ADDRESS'.lower():
+            file_title = 'NAME/ADDR HISTORY'.lower() # Fix for SAI and TRI IWS files
+        elif file_title == 'POSITION DELTA E'.lower():
+            file_title = 'POSITION EXTRACT'.lower()
 
         if file_title.lower() == row['file_title'].lower():
             header_schema = all_schema[(file_type, 'header')]
