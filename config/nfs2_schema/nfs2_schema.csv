@@ -7536,7 +7536,7 @@ Tax Accounting System (TAS) Open Lot Transmission,FILE ORIGIN,,Header,,,PIC X(16
 Tax Accounting System (TAS) Open Lot Transmission,FILLER,,Header,,,PIC X(04),4,38-41,38,41,,,AN,4.2.6,03/08/2022 - Add fixed income adjustments to Daily Delta file,3/8/2022,,2/28/2014,TRUE
 Tax Accounting System (TAS) Open Lot Transmission,FILE TITLE,,Header,tas_open,TASOPEN,PIC X(07),7,42-48,42,48,,,AN,4.2.6,03/08/2022 - Add fixed income adjustments to Daily Delta file,3/8/2022,,2/28/2014,TRUE
 Tax Accounting System (TAS) Open Lot Transmission,FILLER,,Header,,,PIC X(14),14,49-62,49,62,,,AN,4.2.6,03/08/2022 - Add fixed income adjustments to Daily Delta file,3/8/2022,,2/28/2014,TRUE
-Tax Accounting System (TAS) Open Lot Transmission,HEADER DATE,,Header,,,PIC X(08),8,63-70,63,70,,,MMDDYYYY,4.2.6,03/08/2022 - Add fixed income adjustments to Daily Delta file,3/8/2022,,2/28/2014,TRUE
+Tax Accounting System (TAS) Open Lot Transmission,HEADER DATE,,Header,,,PIC X(08),8,63-70,63,70,,,MMDDYY,4.2.6,03/08/2022 - Add fixed income adjustments to Daily Delta file,3/8/2022,,2/28/2014,TRUE
 Tax Accounting System (TAS) Open Lot Transmission,FILLER,,Header,,,PIC X(930),930,71-1000,71,1000,,,AN,4.2.6,03/08/2022 - Add fixed income adjustments to Daily Delta file,3/8/2022,,2/28/2014,TRUE
 Tax Accounting System (TAS) Open Lot Transmission,RECORD NUMBER,,Record,,,PIC X(01),1,1-Jan,1,1,,,AN,4.2.6,03/08/2022 - Add fixed income adjustments to Daily Delta file,3/8/2022,,2/28/2014,TRUE
 Tax Accounting System (TAS) Open Lot Transmission,TAS DELTA INDICATOR,,Record,,,PIC X(01),1,2-Feb,2,2,,,AN,4.2.6,03/08/2022 - Add fixed income adjustments to Daily Delta file,3/8/2022,,2/28/2014,TRUE
