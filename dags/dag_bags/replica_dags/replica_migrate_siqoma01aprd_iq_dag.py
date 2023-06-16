@@ -15,7 +15,7 @@ python_spark_code = 'migrate_csv_3'
 
 tags = ['DB:REPLICA', 'SC:SIQOMA01APRD_IQ']
 
-schedule_interval = '16 12 * * *' # https://crontab.guru/
+schedule_interval = '17 12 * * *' # https://crontab.guru/
 
 
 
