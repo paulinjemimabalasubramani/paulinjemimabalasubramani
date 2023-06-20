@@ -123,10 +123,10 @@ class SuccessproActifi:
                     #logger.info(f'Total number of results = {len_results}')
                     break
 
-                time.sleep(1)
                 attempts += 1
                 if attempts >= self.max_request_attempts:
                     raise Exception(f'API request failed with status code: {response.status_code}')
+                time.sleep(1)
 
             if table_name and results:
                 if first_time:
