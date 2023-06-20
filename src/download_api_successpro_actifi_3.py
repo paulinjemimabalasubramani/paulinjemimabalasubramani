@@ -25,7 +25,7 @@ else:
 
 # %% Import Libraries
 
-import os, sys
+import os, sys, time
 
 class app: pass
 sys.app = app
@@ -123,6 +123,7 @@ class SuccessproActifi:
                     #logger.info(f'Total number of results = {len_results}')
                     break
 
+                time.sleep(1)
                 attempts += 1
                 if attempts >= self.max_request_attempts:
                     raise Exception(f'API request failed with status code: {response.status_code}')
