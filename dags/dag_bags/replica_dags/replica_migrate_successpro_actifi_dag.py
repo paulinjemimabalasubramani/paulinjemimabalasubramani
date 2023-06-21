@@ -10,12 +10,12 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_d
 
 # %% Pipeline Parameters
 
-pipelinekey = 'REPLICA_MIGRATE_SIQOMA01APRD_IQ'
+pipelinekey = 'REPLICA_MIGRATE_SUCCESSPRO_ACTIFI'
 python_spark_code = 'migrate_csv_3'
 
-tags = ['DB:REPLICA', 'SC:SIQOMA01APRD_IQ']
+tags = ['DB:REPLICA', 'SC:SUCCESSPRO_ACTIFI']
 
-schedule_interval = '17 12 * * *' # https://crontab.guru/
+schedule_interval = '20 20 * * *' # https://crontab.guru/
 
 
 
@@ -31,7 +31,13 @@ with DAG(
     catchup = False,
 ) as dag:
 
-    start_pipe(dag) >> copy_files(dag, pipelinekey) >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
+    extractdata = BashOperator(
+        task_id = f'API_{pipelinekey}',
+        bash_command = f'python {src_path}/download_api_successpro_actifi_3.py --pipelinekey {pipelinekey}',
+        dag = dag
+    )
+
+    start_pipe(dag) >> extractdata >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
 
 
 
