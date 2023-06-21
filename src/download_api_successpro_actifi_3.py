@@ -39,13 +39,10 @@ import requests, json, csv
 
 
 
-# %%
+# %% Parameters
 
 domain = 'advisorgroup'
-
-#_, client_id, client_secret = get_secrets(account_name='actifi')
-client_id = 'apiuser@advisorgroup.actifi'
-client_secret = os.environ.get(key='SUCCESSPRO_ACTIFI_SECRET', default='')
+azure_kv_account_name = 'actifi'
 
 csv_encoding = 'utf-8'
 csv_delimiter = ','
@@ -176,7 +173,7 @@ class SuccessproActifi:
 # %%
 
 @catch_error(logger)
-def fetch_user_profiles(sa:SuccessproActifi):
+def fetch_user_profiles(sa:SuccessproActifi) -> None:
     """
     Fetch user_profiles data from API. Run this only after getting user.csv file.
     """
@@ -205,11 +202,13 @@ def fetch_user_profiles(sa:SuccessproActifi):
 # %%
 
 @catch_error(logger)
-def main():
+def main() -> None:
     """
     Main Function to run
     """
     sa = SuccessproActifi(domain=domain)
+
+    _, client_id, client_secret = get_secrets(account_name=azure_kv_account_name)
     sa.authenticate(client_id=client_id, client_secret=client_secret)
 
     for path_name, table_name in path_names.items():
