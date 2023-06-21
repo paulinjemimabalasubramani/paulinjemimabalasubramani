@@ -34,7 +34,7 @@ sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, normalize_name, get_csv_rows, is_pc, get_secrets
 
-from typing import Dict
+from typing import List, Dict
 import requests, json, csv
 
 
@@ -67,18 +67,20 @@ class SuccessproActifi:
     https://documenter.getpostman.com/view/2614838/S11GQegf?version=latest
     """
     @catch_error(logger)
-    def __init__(self, domain:str) -> None:
+    def __init__(self, domain:str, azure_kv_account_name:str) -> None:
         """
         Initialize the class
         """
-        self.max_request_attempts = 3
+        self.max_request_attempts = 4
+        self.authenticate_attempt_no = 3
         self.domain = domain
         self.domain_url = f'https://{self.domain}.actifi.com'
         self.api_url = f'{self.domain_url}/n/api/v3/rest/'
+        self.azure_kv_account_name = azure_kv_account_name
 
 
     @catch_error(logger)
-    def request(self, method:str='GET', path_name:str='', data:dict={}, headers:dict={}, params:dict={}, table_name:str=None) -> Dict:
+    def request(self, method:str='GET', path_name:str='', data:dict={}, headers:dict={}, params:dict={}, table_name:str=None) -> List[Dict]:
         """
         Make an API Request
         """
@@ -114,16 +116,21 @@ class SuccessproActifi:
                 if response.status_code == 200:
                     response_data = response.json()
                     results:list =  response_data['result']
-                    if type(results)==dict:
+                    if type(results) == dict:
                         results = [results]
                     len_results += len(results)
                     #logger.info(f'Total number of results = {len_results}')
                     break
+                else:
+                    logger.warning(f'API request failed with status code: {response.status_code}')
 
                 attempts += 1
                 if attempts >= self.max_request_attempts:
-                    raise Exception(f'API request failed with status code: {response.status_code}')
-                time.sleep(1)
+                    raise Exception(f'Maximum {attempts} attempts reached')
+                time.sleep(2)
+                if attempts == self.authenticate_attempt_no:
+                    logger.info('Re-authenticating...')
+                    self.authenticate()
 
             if table_name and results:
                 if first_time:
@@ -151,10 +158,12 @@ class SuccessproActifi:
 
 
     @catch_error(logger)
-    def authenticate(self, client_id:str, client_secret:str) -> None:
+    def authenticate(self) -> None:
         """
         Authenticate to actifi REST API and get Access Token
         """
+        _, client_id, client_secret = get_secrets(account_name=self.azure_kv_account_name)
+
         path_name = 'auth/token'
         headers = {'Content-Type': 'application/json'}
         data = {
@@ -206,15 +215,14 @@ def main() -> None:
     """
     Main Function to run
     """
-    sa = SuccessproActifi(domain=domain)
-
-    _, client_id, client_secret = get_secrets(account_name=azure_kv_account_name)
-    sa.authenticate(client_id=client_id, client_secret=client_secret)
+    sa = SuccessproActifi(domain=domain, azure_kv_account_name=azure_kv_account_name)
+    sa.authenticate()
 
     for path_name, table_name in path_names.items():
         sa.request(path_name=path_name, table_name=table_name)
 
-    #fetch_user_profiles(sa=sa)
+    sa.authenticate() # Refresh authentication for long running job
+    fetch_user_profiles(sa=sa)
 
     mark_execution_end()
 
