@@ -44,7 +44,7 @@ master_schema_header_columns = {
 # %% get and pre-process schema
 
 @catch_error(logger)
-def get_pershing_schema(schema_file_name:str):
+def get_pershing_schema(schema_file_name:str, table_name:str=''):
     """
     Read and Pre-process the schema table to make it code-friendly
     """
@@ -61,6 +61,9 @@ def get_pershing_schema(schema_file_name:str):
         position = row['position'].strip()
         record_name = row['record_name'].upper().strip()
         conditional_changes = row['conditional_changes'].upper().strip()
+
+        if schema_file_name.lower().startswith('security_profiles') and record_name.uppper() not in [schema_header_str, schema_trailer_str, table_name[-1].upper()]:
+            continue
 
         if not field_name or (field_name in ['', 'not_used', 'filler', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
             or ('-' not in position) or not record_name: continue

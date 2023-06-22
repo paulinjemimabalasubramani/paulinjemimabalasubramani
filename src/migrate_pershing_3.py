@@ -318,7 +318,7 @@ def create_table_from_fwt_file(file_meta:dict, key_column_names:list):
         'schema_file_name': schema_file_name,
     })
 
-    schema = get_pershing_schema(schema_file_name=schema_file_name)
+    schema = get_pershing_schema(schema_file_name=schema_file_name, table_name=table_name)
     if not schema: return
 
     text_file = read_text(spark=spark, file_path=data_file_path)
@@ -406,6 +406,8 @@ def extract_pershing_file_meta(file_path:str, zip_file_path:str=None):
     schema_file_name = re.sub(column_regex, ' ', header_info['form_name'].lower()).strip()
     schema_file_name = re.sub(' ', '_', schema_file_name)
     table_name = add_firm_to_table_name(table_name=schema_file_name)
+    if schema_file_name.startswith('security_profile_'):
+        schema_file_name = 'security_profiles'
 
     file_meta = {
         'table_name': table_name,
