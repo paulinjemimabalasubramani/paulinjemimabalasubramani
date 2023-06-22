@@ -22,7 +22,7 @@ if True: # Set to False for Debugging
 else:
     args = {
         'pipelinekey': 'ASSETS_MIGRATE_PERSHING_RAA',
-        'source_path': r'C:\myworkdir\Shared\PERSHING-ASSETS\RAA',
+        'source_path': r'C:\myworkdir\data\pershing3',
         'schema_file_path': r'C:\myworkdir\EDIP-Code\config\pershing_schema',
         }
 
@@ -38,7 +38,7 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end
-from modules3.pershing_header import total_hash_length, hash_func, bulk_file_ext, HEADER_str, TRAILER_str
+from modules3.pershing_header import total_hash_length, hash_func, bulk_file_ext, HEADER_str, TRAILER_str, get_header_info
 
 from distutils.dir_util import remove_tree
 
@@ -121,27 +121,56 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
     """
     Process single FWF
     """
-    with open(source_file_path, mode='rt', encoding='utf-8', errors='replace') as fsource:
-        with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
-            first = file_has_header
-            header_line = ''
-            lines = []
-            for line in fsource:
-                if first:
-                    add_custom_txt_line(ftarget=ftarget, line=line, txt=HEADER_str)
-                    header_line = line
-                    first = False
-                else:
-                    if is_start_line(line=line, header_line=header_line) and lines:
-                        lines_to_hex(ftarget=ftarget, lines=lines)
-                        lines = []
-                    lines.append(line)
+    header_info = get_header_info(file_path=source_file_path, is_bulk_formatted=False)
 
-            if file_has_trailer:
-                if len(lines)>1: lines_to_hex(ftarget=ftarget, lines=lines[:-1])
-                add_custom_txt_line(ftarget=ftarget, line=lines[-1], txt=TRAILER_str)
-            else:
-                lines_to_hex(ftarget=ftarget, lines=lines)
+    with open(source_file_path, mode='rt', encoding='utf-8', errors='replace') as fsource:
+        if header_info['form_name'] == 'SECURITY PROFILES':
+            split_files = dict()
+            for line in fsource:
+                if line[:3] == 'BOF':
+                    header_line = line
+                elif line[:3] == 'EOF':
+                    tralier_line = line
+                elif line[:2] == 'SP':
+                    record_name = line[2]
+                else:
+                    logger.warning(f'Not a valid SPAT file for line: {line}')
+
+                if line[:2] == 'SP':
+                    if record_name not in split_files:
+                        header_line1 = header_line.replace('SECURITY PROFILES ', 'SECURITY PROFILE '+record_name)
+                        file_name = os.path.basename(source_file_path) + '_' + record_name
+                        target_file_path = os.path.join(data_settings.target_path, file_name + bulk_file_ext)
+                        split_files[record_name] = open(target_file_path, mode='wt', encoding='utf-8')
+                        add_custom_txt_line(ftarget=split_files[record_name], line=header_line1, txt=HEADER_str)
+
+                    lines_to_hex(ftarget=split_files[record_name], lines=[line])
+
+            for record_name in split_files:
+                add_custom_txt_line(ftarget=split_files[record_name], line=tralier_line, txt=TRAILER_str)
+                split_files[record_name].close()
+
+        else: # not SECURITY PROFILES
+            with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
+                first = file_has_header
+                header_line = ''
+                lines = []
+                for line in fsource:
+                    if first:
+                        add_custom_txt_line(ftarget=ftarget, line=line, txt=HEADER_str)
+                        header_line = line
+                        first = False
+                    else:
+                        if is_start_line(line=line, header_line=header_line) and lines:
+                            lines_to_hex(ftarget=ftarget, lines=lines)
+                            lines = []
+                        lines.append(line)
+
+                if file_has_trailer:
+                    if len(lines)>1: lines_to_hex(ftarget=ftarget, lines=lines[:-1])
+                    add_custom_txt_line(ftarget=ftarget, line=lines[-1], txt=TRAILER_str)
+                else:
+                    lines_to_hex(ftarget=ftarget, lines=lines)
 
 
 

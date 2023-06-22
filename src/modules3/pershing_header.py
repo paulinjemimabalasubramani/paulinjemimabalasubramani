@@ -126,20 +126,24 @@ header_schema = get_header_schema()
 # %% Get Header Info from Pershing file
 
 @catch_error(logger)
-def get_header_info(file_path:str):
+def get_header_info(file_path:str, is_bulk_formatted:bool=True):
     """
     Get Header Info from Pershing file
     """
     with open(file=file_path, mode='rt') as f:
         HEADER = f.readline()
 
-    if HEADER[:len(bulk_id_header)] != bulk_id_header: 
-        logger.warning(f'Not a Bulk Formatted file: {file_path}')
-        return
+    if is_bulk_formatted:
+        prefix_length = 0
+        if HEADER[:len(bulk_id_header)] != bulk_id_header: 
+            logger.warning(f'Not a Bulk Formatted file: {file_path}')
+            return
+    else:
+        prefix_length = total_prefix_length
 
     header_info = dict()
     for field_name, pos in header_schema.items():
-        header_info[field_name] = re.sub(' +', ' ', HEADER[pos['position_start']-1: pos['position_end']].strip())
+        header_info[field_name] = re.sub(' +', ' ', HEADER[pos['position_start']-1-prefix_length: pos['position_end']-prefix_length].strip())
 
     header_info['date_of_data'] = datetime.strptime(header_info['date_of_data'], r'%m/%d/%Y')
     return header_info
