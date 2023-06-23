@@ -62,7 +62,7 @@ def get_pershing_schema(schema_file_name:str, table_name:str=''):
         record_name = row['record_name'].upper().strip()
         conditional_changes = row['conditional_changes'].upper().strip()
 
-        if schema_file_name.lower().startswith('security_profiles') and record_name.uppper() not in [schema_header_str, schema_trailer_str, table_name[-1].upper()]:
+        if schema_file_name.lower().startswith('security_profiles') and record_name.upper() not in [schema_header_str, schema_trailer_str, table_name[-1].upper()]:
             continue
 
         if not field_name or (field_name in ['', 'not_used', 'filler', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
