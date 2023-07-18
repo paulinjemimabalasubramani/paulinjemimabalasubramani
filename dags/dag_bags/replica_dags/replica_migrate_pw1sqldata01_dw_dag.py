@@ -19,7 +19,7 @@ schedule_interval = '16 12 * * *' # https://crontab.guru/
 
 
 
-# %% Create DAG
+# %% REPLICA_MIGRATE_PW1SQLDATA01_DW
 
 with DAG(
     dag_id = pipelinekey.lower(),
@@ -32,6 +32,22 @@ with DAG(
 ) as dag:
 
     start_pipe(dag) >> copy_files(dag, pipelinekey) >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
+
+
+
+# %% REPLICA_MIGRATE_PW1SQLDATA01_DW_MANUAL
+
+with DAG(
+    dag_id = (pipelinekey+'_MANUAL').lower(),
+    default_args = default_args,
+    description = (pipelinekey+'_MANUAL'),
+    schedule_interval = None, # Manual Trigger
+    start_date = days_ago(1),
+    tags = tags,
+    catchup = False,
+) as dag:
+
+    start_pipe(dag) >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
 
 
 
