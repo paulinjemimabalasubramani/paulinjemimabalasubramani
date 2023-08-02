@@ -4,7 +4,7 @@ Library for common generic functions
 """
 
 # %% Import Libraries
-import os, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, re, csv
+import os, shutil, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, re, csv
 
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
@@ -1002,6 +1002,30 @@ def remove_last_line_from_file(file_path:str, last_line_text_seek:str):
         if pos > 0:
             file.seek(pos, os.SEEK_SET)
             file.truncate()
+
+
+
+# %%
+
+@catch_error(logger)
+def zip_delete_1_file(file_path:str, zip_file_name_no_ext:str=None):
+    """
+    zip single file and delete the original keeping only the zip file
+    """
+    if zip_file_name_no_ext:
+        base_name = os.path.join(os.path.dirname(file_path), zip_file_name_no_ext)
+    else:
+        base_name = os.path.splitext(file_path)[0]
+
+    shutil.make_archive(
+        base_name = base_name, # zip file path + name without extension
+        format = 'zip',
+        root_dir = os.path.dirname(file_path), # source folder
+        base_dir = os.path.basename(file_path) # source folder file relative path
+        )
+
+    os.remove(file_path)
+    return base_name + '.zip'
 
 
 

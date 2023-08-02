@@ -40,7 +40,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, get_csv_rows, normalize_name, convert_string_map_to_dict
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, get_csv_rows, normalize_name, convert_string_map_to_dict, zip_delete_1_file
 from modules3.migrate_files import file_meta_exists_in_history
 
 from collections import defaultdict
@@ -542,6 +542,9 @@ def convert_nfs2_to_json(file_meta:dict):
         return
 
     logger.info(f'Finished converting file {source_file_path} to JSON file {target_file_path}')
+
+    target_file_path_zip = zip_delete_1_file(file_path=target_file_path)
+    logger.info(f'Finished archiving file {target_file_path} to zip file {target_file_path_zip}')
 
 
 
