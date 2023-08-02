@@ -43,11 +43,13 @@ from modules3.spark_functions import add_id_key, create_spark, read_json, remove
 from modules3.migrate_files import migrate_all_files, get_key_column_names, default_table_dtypes, file_meta_exists_for_select_files, add_firm_to_table_name
 from modules3.nfs_header import json_file_ext, json_file_date_format
 
+from distutils.dir_util import remove_tree
+
 
 
 # %% Parameters
 
-allowed_file_extensions = [json_file_ext]
+allowed_file_extensions = [json_file_ext, '.zip']
 
 data_settings.date_format = json_file_date_format
 
@@ -202,6 +204,12 @@ migrate_all_files(
     fn_select_files = select_files,
     fn_get_dtypes = get_dtypes,
     )
+
+
+
+# %% Remove files in app_data_path
+
+if os.path.isdir(data_settings.app_data_path): remove_tree(directory=data_settings.app_data_path, verbose=0, dry_run=0)
 
 
 

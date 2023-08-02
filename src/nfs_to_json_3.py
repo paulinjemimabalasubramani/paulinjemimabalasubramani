@@ -37,7 +37,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, column_regex, get_csv_rows
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, column_regex, get_csv_rows, zip_delete_1_file
 from modules3.migrate_files import file_meta_exists_for_select_files
 from modules3.nfs_header import get_header_info
 
@@ -554,6 +554,9 @@ def process_single_fwf(source_file_path:str):
         return
 
     logger.info(f'Finished converting file {source_file_path} to JSON file {target_file_path}')
+
+    target_file_path_zip = zip_delete_1_file(file_path=target_file_path)
+    logger.info(f'Finished archiving file {target_file_path} to zip file {target_file_path_zip}')
 
 
 
