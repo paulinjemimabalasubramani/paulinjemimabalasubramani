@@ -55,6 +55,7 @@ path_names = {
     'userAssessmentAnswers': 'user_assessment_answers',
     'userAssessmentResults': 'user_assessment_results',
     'userMeetings': 'user_meetings',
+    'userProfiles': 'user_profiles',
 }
 
 
@@ -127,7 +128,7 @@ class SuccessproActifi:
                 attempts += 1
                 if attempts >= self.max_request_attempts:
                     raise Exception(f'Maximum {attempts} attempts reached')
-                time.sleep(2)
+                time.sleep(3)
                 if attempts == self.authenticate_attempt_no:
                     logger.info('Re-authenticating...')
                     self.authenticate()
@@ -221,8 +222,8 @@ def main() -> None:
     for path_name, table_name in path_names.items():
         sa.request(path_name=path_name, table_name=table_name)
 
-    sa.authenticate() # Refresh authentication for long running job
-    fetch_user_profiles(sa=sa)
+    #sa.authenticate() # Refresh authentication for long running job
+    #fetch_user_profiles(sa=sa)
 
     mark_execution_end()
 
