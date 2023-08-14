@@ -607,6 +607,9 @@ def iterate_over_all_nfs2(source_path:str):
 
 iterate_over_all_nfs2(source_path=data_settings.source_path)
 
+if hasattr(data_settings, 'source_path2'):
+    iterate_over_all_nfs2(source_path=data_settings.source_path2)
+
 
 
 # %% Close Connections / End Program
