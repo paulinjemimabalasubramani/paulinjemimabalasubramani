@@ -41,7 +41,7 @@ import requests, json, csv
 
 # %% Parameters
 
-domain = 'advisorgroup'
+domain = 'osaic'
 azure_kv_account_name = 'actifi'
 
 csv_encoding = 'utf-8'
