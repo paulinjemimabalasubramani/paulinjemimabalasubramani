@@ -74,6 +74,7 @@ class SuccessproActifi:
         """
         self.max_request_attempts = 4
         self.authenticate_attempt_no = 3
+        self.api_request_timeout = 180 # seconds
         self.domain = domain
         self.domain_url = f'https://{self.domain}.actifi.com'
         self.api_url = f'{self.domain_url}/n/api/v3/rest/'
@@ -112,6 +113,7 @@ class SuccessproActifi:
                     headers = headers,
                     data = data1,
                     params = params1,
+                    timeout = self.api_request_timeout,
                     )
 
                 if response.status_code == 200:
