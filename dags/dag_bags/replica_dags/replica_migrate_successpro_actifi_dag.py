@@ -4,6 +4,8 @@ from airflow import DAG
 from airflow.utils.dates import days_ago
 from airflow.operators.bash import BashOperator
 
+from datetime import timedelta
+
 from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_data, copy_files, delete_files, src_path
 
 
@@ -34,7 +36,8 @@ with DAG(
     extractdata = BashOperator(
         task_id = f'API_{pipelinekey}',
         bash_command = f'python {src_path}/download_api_successpro_actifi_3.py --pipelinekey {pipelinekey}',
-        dag = dag
+        dag = dag,
+        execution_timeout = timedelta(seconds=7200), # set execution timeout for this API
     )
 
     start_pipe(dag) >> extractdata >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
