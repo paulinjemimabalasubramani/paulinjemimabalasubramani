@@ -18,14 +18,14 @@ if True: # Set to False for Debugging
 
 else:
     args = {
-        'pipelinekey': 'ASSETS_MIGRATE_NFS_FSC',
+        'pipelinekey': 'ASSETS_MIGRATE_NFS_TEST',
         'schema_file_path': r'C:\myworkdir\EDIP-Code\config\nfs2_schema\nfs2_schema.csv',
-        'source_path': r'C:\myworkdir\data\NFS2_FSC',
+        'source_path': r'C:\myworkdir\data\NFS2_Test',
         'db_name': 'ASSETS',
         'schema_name': 'NFS2',
-        'clientid_map': 'MAJ:RAA,FXA:SPF,FL2:FSC,00133:SAI,00436:TRI,WDB:WFS,0KS:SAI,TR1:TRI',
-        'file_history_start_date': '2023-01-15',
-        'pipeline_firm': 'FSC',
+        'clientid_map': 'MAJ:RAA,FXA:SPF,FL2:FSC,00133:SAI,00436:TRI,WDB:WFS,0KS:SAI,TR1:TRI,033:TST',
+        'file_history_start_date': '2016-01-15',
+        'pipeline_firm': 'TST',
         'is_full_load': 'FALSE',
         }
 
@@ -197,7 +197,7 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
 
             table_suffix = ''
             client_id_iws = ''
-            if row['table_name'] in ['bookkeeping', 'account_balance', 'trade_revenue', 'position', 'order', 'rmd', 'scheduled_events', 'suitability', 'tas_closed', 'tas_open']:
+            if row['table_name'] in ['bookkeeping', 'account_balance', 'trade_revenue', 'position', 'order', 'rmd', 'scheduled_events', 'suitability', 'tas_closed', 'tas_open', 'user_id_administration', 'wealthscape_id']:
                 client_id_iws = HEADER[1:6].strip() # get client id for IWS files (different from NFS headers).
                 if len(client_id_iws)>3:
                     table_suffix = '_iws'
@@ -378,7 +378,7 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
     for line in fsource:
         common_records = {
             'record_type': line[0:1],
-            'record_number':line[1:4],
+            'record_number': line[1:4],
             'firm': line[4:8],
             'branch': line[8:11],
             'account_number': line[11:17],
@@ -491,6 +491,72 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
 
 # %%
 
+@catch_error(logger)
+def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
+    """
+    Process all lines for user_id_administration table
+    """
+    get_record_schema = lambda record_number: all_schema[(file_meta['file_type'], 'record_'+record_number.lower())]
+
+    record_descriptions = {
+        '1': 'Portal ID',
+        '2': 'Account Linking',
+        '3': 'Product',
+        '4': 'Federation',
+    }
+
+    record_descriptions = {k.strip():normalize_name(v) for k, v in record_descriptions.items()}
+
+    main_record = {}
+    firstln = True
+    for line in fsource:
+        common_records = {
+            'record_type': line[0:1],
+            'record_number': line[1:2],
+            'portal_user_id': line[2:62].strip(),
+            }
+
+        is_data_record_type = common_records['record_type'] == 'D'
+        if (not is_data_record_type) and (not main_record):
+            continue
+
+        record_number = common_records['record_number']
+        if record_number == '1' or not is_data_record_type:
+            if main_record:
+                if not firstln: ftarget.write(',\n')
+                firstln = False
+                ftarget.write(json.dumps(main_record))
+                if not is_data_record_type: break
+
+            record_schema = get_record_schema(record_number=record_number)
+            main_record = new_record(file_meta=file_meta)
+            main_record = {**main_record, **extract_values_from_line(line=line, record_schema=record_schema)}
+            main_record = {**main_record, **{v:list() for k, v in record_descriptions.items() if k != '1'}}
+
+        if not main_record:
+            logger.warning(f'Found line with no D1 record: {line}')
+            continue
+
+        if any(common_records[k]!=main_record[k] for k in ['portal_user_id']):
+            logger.warning(f'portal_user_id does not match for the same record: {main_record}\nline: {line}')
+            continue
+
+        if record_number == '1' or not is_data_record_type:
+            pass # placeholder as the condition has already been evaluated above
+        elif record_number in ['2', '3', '4']:
+            record_schema = get_record_schema(record_number=record_number)
+            record = extract_values_from_line(line=line, record_schema=record_schema)
+            main_record[record_descriptions[record_number]].append(record)
+        else:
+            logger.warning(f'Unknown Record Number: {record_number} for line {line}')
+            continue
+
+    return True if main_record else False
+
+
+
+# %%
+
 process_lines_map = {
     'bookkeeping': process_lines_1_record,
     'bookkeeping_iws': process_lines_1_record,
@@ -513,8 +579,11 @@ process_lines_map = {
     'tas_closed': process_lines_1_record,
     'tas_closed_iws': process_lines_1_record,
     'tas_open': process_lines_1_record,
-    'tas_open_iws': process_lines_1_record
-
+    'tas_open_iws': process_lines_1_record,
+    'wealthscape_id': process_lines_1_record,
+    'wealthscape_id_iws': process_lines_1_record,
+    'user_id_administration': process_lines_user_id_administration,
+    'user_id_administration_iws': process_lines_user_id_administration,
 }
 
 
@@ -568,10 +637,10 @@ def process_single_nfs2(file_path:str):
         logger.info(f'File datetime {file_meta["key_datetime"]} is older than the datetime threshold {data_settings.key_datetime}, skipping {file_path}')
         return
 
-    if ('header_record_client_id' in file_meta and
-            headerrecordclientid_map[file_meta['header_record_client_id'].upper()] != file_meta['firm_name'].upper()):
-        logger.warning(f'File header_record_client_id {file_meta["header_record_client_id"]} is not mathing with expected Firm name {file_meta["firm_name"]}, skipping {file_path}')
-        return
+    for firm_id_field in ['header_record_client_id', 'super_branch']:
+        if firm_id_field in file_meta and headerrecordclientid_map[file_meta[firm_id_field].upper()] != file_meta['firm_name'].upper():
+            logger.warning(f'File header_record_client_id {file_meta[firm_id_field]} is not mathing with expected Firm name {file_meta["firm_name"]}, skipping {file_path}')
+            return
 
     convert_nfs2_to_json(file_meta=file_meta)
 
