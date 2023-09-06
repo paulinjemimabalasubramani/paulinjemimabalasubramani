@@ -8005,7 +8005,7 @@ Wealthscape℠ ID Transmission,SUPER BRANCH,,Header,,,PIC X(03),3,4-Feb,2,4,,,AN
 Wealthscape℠ ID Transmission,FILLER,,Header,,,PIC X(17),17,21-May,5,21,,,AN,4.0.0,01/17/2020 - New Business eReview number,1/17/2020,,5/7/2014,TRUE
 Wealthscape℠ ID Transmission,FILE ORIGIN,,Header,,,PIC X(16),16,22-37,22,37,,,AN,4.0.0,01/17/2020 - New Business eReview number,1/17/2020,,5/7/2014,TRUE
 Wealthscape℠ ID Transmission,FILLER,,Header,,,PIC X(04),4,38-41,38,41,,,AN,4.0.0,01/17/2020 - New Business eReview number,1/17/2020,,5/7/2014,TRUE
-Wealthscape℠ ID Transmission,FILE TITLE,,Header,wealthscape_id,STREETSCAPE ID,PIC X(14),14,42-55,42,55,,,AN,4.0.0,01/17/2020 - New Business eReview number,1/17/2020,,5/7/2014,TRUE
+Wealthscape℠ ID Transmission,FILE TITLE,,Header,wealthscape_id,WEALTHSCAPE ID,PIC X(14),14,42-55,42,55,,,AN,4.0.0,01/17/2020 - New Business eReview number,1/17/2020,,5/7/2014,TRUE
 Wealthscape℠ ID Transmission,FILLER,,Header,,,PIC X(07),7,56-62,56,62,,,AN,4.0.0,01/17/2020 - New Business eReview number,1/17/2020,,5/7/2014,TRUE
 Wealthscape℠ ID Transmission,HEADER DATE,,Header,,,PIC X(06),6,63-68,63,68,,,MMDDYY,4.0.0,01/17/2020 - New Business eReview number,1/17/2020,,5/7/2014,TRUE
 Wealthscape℠ ID Transmission,FILLER,,Header,,,PIC X(232),432,69-500,69,500,,,AN,4.0.0,01/17/2020 - New Business eReview number,1/17/2020,,5/7/2014,TRUE
