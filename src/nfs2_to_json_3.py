@@ -640,7 +640,9 @@ def process_single_nfs2(file_path:str):
         return
 
     for firm_id_field in ['header_record_client_id', 'super_branch']:
-        if firm_id_field in file_meta and headerrecordclientid_map[file_meta[firm_id_field].upper()] != file_meta['firm_name'].upper():
+        if firm_id_field in file_meta \
+            and file_meta[firm_id_field] \
+            and headerrecordclientid_map[file_meta[firm_id_field].upper()] != file_meta['firm_name'].upper():
             logger.warning(f'File header_record_client_id {file_meta[firm_id_field]} is not mathing with expected Firm name {file_meta["firm_name"]}, skipping {file_path}')
             return
 
