@@ -141,13 +141,17 @@ def extract_json_file_meta(file_path:str, zip_file_path:str=None):
         logger.warning(f'Invalid date format in file name: {file_path}. {str(e)}')
         return
 
+    is_full_load = data_settings.is_full_load.upper() == 'TRUE'
+    if 'user_id_administration'.lower() in table_name.lower():
+        is_full_load = True
+
     file_meta = {
         'table_name': table_name.lower(), # table name should always be lower
         'file_name': file_name,
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
         'zip_file_path': zip_file_path,
-        'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
+        'is_full_load': is_full_load,
         'key_datetime': key_datetime,
     }
 
