@@ -683,6 +683,9 @@ iterate_over_all_nfs2(source_path=data_settings.source_path)
 if hasattr(data_settings, 'source_path2'):
     iterate_over_all_nfs2(source_path=data_settings.source_path2)
 
+if hasattr(data_settings, 'source_path3'):
+    iterate_over_all_nfs2(source_path=data_settings.source_path3)
+
 
 
 # %% Close Connections / End Program
