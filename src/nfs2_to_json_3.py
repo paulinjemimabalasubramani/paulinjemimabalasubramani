@@ -46,6 +46,7 @@ from modules3.migrate_files import file_meta_exists_in_history
 from collections import defaultdict
 from distutils.dir_util import remove_tree
 from datetime import datetime
+from typing import List, Dict, Union
 
 
 
@@ -57,6 +58,8 @@ TRAILER_record = 'T'
 
 json_file_ext = '.json'
 json_file_date_format = r'%Y%m%d'
+
+max_folder_name = r'{{ MAX }}'
 
 data_settings.target_path = data_settings.app_data_path
 if os.path.isdir(data_settings.target_path): remove_tree(directory=data_settings.target_path, verbose=0, dry_run=0)
@@ -650,6 +653,41 @@ def process_single_nfs2(file_path:str):
 
 
 
+# %% Find Latest Folder
+
+@catch_error(logger)
+def find_latest_folder(remote_path:str, folder_levels:List[str], level:int=0) -> str:
+    """
+    Find Latest Folder
+    """
+    if level >= len(folder_levels): return remote_path
+
+    paths = {}
+    for file_name in os.listdir(remote_path):
+        remote_file_path = os.path.join(remote_path, file_name)
+        if os.path.isdir(remote_file_path):
+            if folder_levels[level][0] == '%':
+                try:
+                    path_key = datetime.strptime(file_name, folder_levels[level])
+                except:
+                    continue
+            elif folder_levels[level] == max_folder_name:
+                path_key = file_name
+            else:
+                path_key = folder_levels[level]
+                remote_file_path = os.path.join(remote_path, folder_levels[level])
+                paths[path_key] = remote_file_path
+                break
+
+            paths[path_key] = remote_file_path
+
+    if not paths:
+        raise ValueError(f'No Paths found in {remote_path}')
+
+    return find_latest_folder(remote_path=paths[max(paths)], level=level+1)
+
+
+
 # %%
 
 @catch_error(logger)
@@ -683,8 +721,31 @@ iterate_over_all_nfs2(source_path=data_settings.source_path)
 if hasattr(data_settings, 'source_path2'):
     iterate_over_all_nfs2(source_path=data_settings.source_path2)
 
-if hasattr(data_settings, 'source_path3'):
-    iterate_over_all_nfs2(source_path=data_settings.source_path3)
+if data_settings.pipeline_firm.lower() == 'sai':
+    base_path = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_SAI/MIPS'
+    folder_levels = [r'%Y', r'%b', 'NFSBOOK'] # for bookkeeping data
+    source_path = find_latest_folder(remote_path=base_path, folder_levels=folder_levels)
+    logger.info(f'source_path for bookkeeping data: {source_path}')
+    iterate_over_all_nfs2(source_path=source_path)
+
+    base_path = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_SAI'
+    folder_levels = [r'%Y', r'%b', r'%Y%m%d', 'FIDELITYIWS', max_folder_name, 'RAWDATA'] # for IWS data
+    source_path = find_latest_folder(remote_path=base_path, folder_levels=folder_levels)
+    logger.info(f'source_path for IWS data: {source_path}')
+    iterate_over_all_nfs2(source_path=source_path)
+
+elif data_settings.pipeline_firm.lower() == 'tri':
+    base_path = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_TRI'
+    folder_levels = [r'%Y', r'%b', r'%Y%m%d', 'NFS', max_folder_name, 'RAWDATA'] # for NFS data
+    source_path = find_latest_folder(remote_path=base_path, folder_levels=folder_levels)
+    logger.info(f'source_path for NFS data: {source_path}')
+    iterate_over_all_nfs2(source_path=source_path)
+
+    base_path = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_TRI'
+    folder_levels = [r'%Y', r'%b', r'%Y%m%d', 'FIDELITYIWS', max_folder_name, 'RAWDATA'] # for IWS data
+    source_path = find_latest_folder(remote_path=base_path, folder_levels=folder_levels)
+    logger.info(f'source_path for IWS data: {source_path}')
+    iterate_over_all_nfs2(source_path=source_path)
 
 
 
