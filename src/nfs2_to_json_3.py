@@ -666,7 +666,7 @@ def find_latest_folder(remote_path:str, folder_levels:List[str], level:int=0) ->
     for file_name in os.listdir(remote_path):
         remote_file_path = os.path.join(remote_path, file_name)
         if os.path.isdir(remote_file_path):
-            if folder_levels[level][0] == '%':
+            if '%' in folder_levels[level]:
                 try:
                     path_key = datetime.strptime(file_name, folder_levels[level])
                 except:
@@ -684,7 +684,7 @@ def find_latest_folder(remote_path:str, folder_levels:List[str], level:int=0) ->
     if not paths:
         raise ValueError(f'No Paths found in {remote_path}')
 
-    return find_latest_folder(remote_path=paths[max(paths)], level=level+1)
+    return find_latest_folder(remote_path=paths[max(paths)], folder_levels=folder_levels, level=level+1)
 
 
 
