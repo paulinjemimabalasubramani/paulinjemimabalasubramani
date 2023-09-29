@@ -189,7 +189,7 @@ def get_secrets(account_name:str, logger=None, additional_secrets:list=[]):
 
 
 
-azure_tenant_id, log_customer_id, log_shared_key = get_secrets(account_name='loganalytics')
+#azure_tenant_id, log_customer_id, log_shared_key = get_secrets(account_name='loganalytics')
 
 
 
@@ -393,6 +393,8 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
             **log_data}
         body = json.dumps(log_data, sort_keys=True, default=str)
 
+        # Azure Log Analytics is not used for now.
+        """
         method = 'POST'
         content_type = 'application/json'
         resource = '/api/logs'
@@ -416,12 +418,15 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
             'Log-Type': log_type,
             'x-ms-date': rfc1123date,
         }
+        """
 
         if backup_logger_func:
             backup_logger_func(body, exc_info=False)
         else:
             print(body)
 
+        # Azure Log Analytics is not used for now.
+        """
         if not logger or log_type!=logger.print_log_type: # Temporarily stop sending print logs to Azure
             response = requests.post(uri, data=body, headers=headers)
             if response.status_code >= 200 and response.status_code <= 299 and not is_pc:
@@ -429,6 +434,7 @@ def post_log_data(log_data:dict, log_type:str, logger=None, backup_logger_func=N
                 pass
             else:
                 print(f'Log Response code: {response.status_code}')
+        """
 
     except (BaseException, AssertionError) as e:
         if logger:
