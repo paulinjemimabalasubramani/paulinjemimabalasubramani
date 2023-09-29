@@ -681,8 +681,9 @@ def find_latest_folder(remote_path:str, folder_levels:List[str], level:int=0) ->
 
             paths[path_key] = remote_file_path
 
-    if not paths:
-        raise ValueError(f'No Paths found in {remote_path}')
+    if not paths or not os.path.isdir(remote_file_path):
+        logger.warning(f'No Paths found in {remote_path}')
+        return None
 
     return find_latest_folder(remote_path=paths[max(paths)], folder_levels=folder_levels, level=level+1)
 
@@ -695,6 +696,10 @@ def iterate_over_all_nfs2(source_path:str):
     """
     Main function to iterate over all the files in source_path and add bulk_id
     """
+    if not source_path:
+        logger.warning('Empty Source Path - skipping')
+        return
+
     for root, dirs, files in os.walk(source_path):
         for file_name in files:
             file_path = os.path.join(root, file_name)
