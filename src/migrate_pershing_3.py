@@ -409,6 +409,10 @@ def extract_pershing_file_meta(file_path:str, zip_file_path:str=None):
     if schema_file_name.startswith('security_profile_'):
         schema_file_name = 'security_profiles'
 
+    is_full_load = header_info['refreshed_updated'].upper() == 'REFRESHED'
+    if 'security_profile' in table_name.lower():
+        is_full_load = True
+
     file_meta = {
         'table_name': table_name,
         'schema_file_name': schema_file_name,
@@ -416,7 +420,7 @@ def extract_pershing_file_meta(file_path:str, zip_file_path:str=None):
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
         'zip_file_path': zip_file_path,
-        'is_full_load': header_info['refreshed_updated'].upper() == 'REFRESHED',
+        'is_full_load': is_full_load,
         'key_datetime': datetime.strptime(' '.join([header_info['run_date'], header_info['run_time']]), pershing_strftime),
         **{c:header_info[c] for c in master_schema_header_columns},
     }
