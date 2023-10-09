@@ -40,7 +40,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, get_csv_rows, normalize_name, convert_string_map_to_dict, zip_delete_1_file
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, get_csv_rows, normalize_name, convert_string_map_to_dict, zip_delete_1_file, find_latest_folder, max_folder_name
 from modules3.migrate_files import file_meta_exists_in_history
 
 from collections import defaultdict
@@ -58,8 +58,6 @@ TRAILER_record = 'T'
 
 json_file_ext = '.json'
 json_file_date_format = r'%Y%m%d'
-
-max_folder_name = r'{{ MAX }}'
 
 data_settings.target_path = data_settings.app_data_path
 if os.path.isdir(data_settings.target_path): remove_tree(directory=data_settings.target_path, verbose=0, dry_run=0)
@@ -650,42 +648,6 @@ def process_single_nfs2(file_path:str):
             return
 
     convert_nfs2_to_json(file_meta=file_meta)
-
-
-
-# %% Find Latest Folder
-
-@catch_error(logger)
-def find_latest_folder(remote_path:str, folder_levels:List[str], level:int=0) -> str:
-    """
-    Find Latest Folder
-    """
-    if level >= len(folder_levels): return remote_path
-
-    paths = {}
-    for file_name in os.listdir(remote_path):
-        remote_file_path = os.path.join(remote_path, file_name)
-        if os.path.isdir(remote_file_path):
-            if '%' in folder_levels[level]:
-                try:
-                    path_key = datetime.strptime(file_name, folder_levels[level])
-                except:
-                    continue
-            elif folder_levels[level] == max_folder_name:
-                path_key = file_name
-            else:
-                path_key = folder_levels[level]
-                remote_file_path = os.path.join(remote_path, folder_levels[level])
-                paths[path_key] = remote_file_path
-                break
-
-            paths[path_key] = remote_file_path
-
-    if not paths or not os.path.isdir(remote_file_path):
-        logger.warning(f'No Paths found in {remote_path}')
-        return None
-
-    return find_latest_folder(remote_path=paths[max(paths)], folder_levels=folder_levels, level=level+1)
 
 
 
