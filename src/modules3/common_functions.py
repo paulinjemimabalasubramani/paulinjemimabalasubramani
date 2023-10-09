@@ -6,6 +6,7 @@ Library for common generic functions
 # %% Import Libraries
 import os, shutil, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, re, csv
 
+from typing import List, Dict, Union
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
@@ -41,6 +42,8 @@ metadata_sql_table_names = {
     'pipeline': 'Pipeline',
     'datasource': 'DataSource',
 }
+
+max_folder_name = r'{{ MAX }}'
 
 
 
@@ -1032,6 +1035,46 @@ def zip_delete_1_file(file_path:str, zip_file_name_no_ext:str=None):
 
     os.remove(file_path)
     return base_name + '.zip'
+
+
+
+# %% Find Latest Folder
+
+@catch_error(logger)
+def find_latest_folder(remote_path:str, folder_levels:List[str], level:int=0) -> str:
+    """
+    Find Latest Folder
+    """
+    if level >= len(folder_levels): return remote_path
+    if not os.path.isdir(remote_path):
+        logger.warning(f'Not a folder, skipping: {remote_path}')
+        return None
+
+    paths = {}
+    for file_name in os.listdir(remote_path):
+        remote_file_path = os.path.join(remote_path, file_name)
+        if os.path.isdir(remote_file_path):
+            if '%' in folder_levels[level]:
+                try:
+                    path_key = datetime.strptime(file_name, folder_levels[level])
+                except:
+                    logger.warning(f'Error in converting folder name {file_name} to datatime using {folder_levels[level]} format.')
+                    continue
+            elif folder_levels[level] == max_folder_name:
+                path_key = file_name
+            else:
+                path_key = folder_levels[level]
+                remote_file_path = os.path.join(remote_path, folder_levels[level])
+                paths[path_key] = remote_file_path
+                break
+
+            paths[path_key] = remote_file_path
+
+    if not paths:
+        logger.warning(f'No paths found in {remote_path}')
+        return None
+
+    return find_latest_folder(remote_path=paths[max(paths)], folder_levels=folder_levels, level=level+1)
 
 
 
