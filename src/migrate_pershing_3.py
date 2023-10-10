@@ -410,8 +410,6 @@ def extract_pershing_file_meta(file_path:str, zip_file_path:str=None):
         schema_file_name = 'security_profiles'
 
     is_full_load = header_info['refreshed_updated'].upper() == 'REFRESHED'
-    if 'security_profile' in table_name.lower():
-        is_full_load = True
 
     file_meta = {
         'table_name': table_name,
