@@ -213,14 +213,19 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
                     client_id_iws = '00436'
                     table_suffix = '_iws'
 
+            table_name_no_firm = (row['table_name'] + table_suffix).lower()
+            is_full_load = data_settings.is_full_load.upper() == 'TRUE'
+            if 'user_id_administration'.lower() in table_name_no_firm.lower():
+                is_full_load = True
+
             file_meta = {
                 'database_name': data_settings.domain_name,
                 'schema_name': data_settings.schema_name,
                 'firm_name': data_settings.pipeline_firm.upper(),
-                'table_name_no_firm': row['table_name'].lower() + table_suffix,
-                'table_name': '_'.join([data_settings.pipeline_firm, row['table_name']]).lower() + table_suffix,
+                'table_name_no_firm': table_name_no_firm,
+                'table_name': '_'.join([data_settings.pipeline_firm, table_name_no_firm]).lower(),
                 'file_type': row['file_type'],
-                'is_full_load': data_settings.is_full_load.upper() == 'TRUE',
+                'is_full_load': is_full_load,
                 'file_name': file_name,
                 'file_path': file_path,
                 'folder_path': os.path.dirname(file_path),
