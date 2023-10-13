@@ -1,0 +1,4 @@
+﻿pipeline_key,config_key,config_value
+saviynt_envestnet,schema_path,./saviynt/config/envestnet_schema/envestnet_schema.csv
+saviynt_envestnet,remote_path,C:\myworkdir\data\envestnet_v35
+saviynt_envestnet,source_path,C:\myworkdir\data\envestnet_v35_processed
