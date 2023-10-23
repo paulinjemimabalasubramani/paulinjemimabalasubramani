@@ -3,17 +3,16 @@ Library for common generic functions
 
 """
 
-
 # %% Import Libraries
 
 import os
-from .logging_module import logger, catch_error
+from .logger import logger, catch_error
 
 
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def remove_last_line_from_file(file_path:str, last_line_text_seek:str):
     """
     Remove last line from text file.

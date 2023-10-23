@@ -10,7 +10,7 @@ Copy Envestnet files for Saviynt
 # %% Parse Arguments
 
 import os
-from saviynt_modules.logging_module import catch_error, environment, logger
+from saviynt_modules.logger import catch_error, environment, logger
 
 if environment.is_prod:
     import argparse
@@ -38,8 +38,8 @@ from datetime import datetime
 from zipfile import ZipFile
 from collections import defaultdict
 
-from saviynt_modules.settings_module import Config, get_csv_rows, normalize_name
-from saviynt_modules.common_functions import remove_last_line_from_file
+from saviynt_modules.settings import Config, get_csv_rows, normalize_name
+from saviynt_modules.common import remove_last_line_from_file
 
 
 

@@ -1,7 +1,13 @@
+"""
+Centralized settings management, read settings from various sources
+Metadata driven coding
+
+"""
+
 # %% Import Libraries
 
-import os, yaml, csv, re, platform, psutil
-from .logging_module import logger, catch_error, get_env, environment
+import yaml, csv, re, platform, psutil
+from .logger import logger, catch_error, get_env, environment
 from typing import List, Dict
 
 
@@ -158,8 +164,8 @@ class Config(ConfigBase):
     """
     Building on top of base config
     """
-    config_file_path = './saviynt/config/config.csv'
-    config_dev_file_path = './saviynt/config/config_dev.csv'
+    config_file_path = './../config/config.csv'
+    config_dev_file_path = './../config/config_dev.csv'
     generic_key = 'generic'
     env_var_names = []
 

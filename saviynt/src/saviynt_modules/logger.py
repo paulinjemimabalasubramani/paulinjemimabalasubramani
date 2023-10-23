@@ -1,3 +1,8 @@
+"""
+Module for logging, handling errors and sending alerts
+
+"""
+
 # %% Import Libraries
 
 import os, sys, logging, json, pymsteams
@@ -115,6 +120,7 @@ class Execution_Date:
     """
     Mark Start and End of Execution
     """
+    @catch_error()
     def __init__(self):
         """
         Initialize the Class and Mark Start Datetime
@@ -125,6 +131,7 @@ class Execution_Date:
         self.start = datetime.strptime(self.start_str, self.strftime) # to ensure identity with the string form of execution date
 
 
+    @catch_error()
     def end_execution(self):
         """
         Mark End of Execution

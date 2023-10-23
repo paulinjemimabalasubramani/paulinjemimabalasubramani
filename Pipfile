@@ -17,6 +17,7 @@ sqlalchemy = "==1.4.41"
 pyarrow = "==8.0.0"
 pymsteams = "==0.2.2"
 pandas = "*"
+pyodbc = "*"
 
 [dev-packages]
 ipykernel = "*"
