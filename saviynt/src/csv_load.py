@@ -57,10 +57,6 @@ args |=  {
 
 config = Config(args=args)
 
-
-
-# %%
-
 target_connection = Connection.from_config(config=config, prefix='target')
 
 
@@ -153,23 +149,39 @@ def run_process(command:str):
     Run command line process. Returns None if error.
     """
     encoding = 'UTF-8'
+    command_regex = r'\r?\n' # remove line endings
+    command = re.sub(command_regex, ' ', command) # remove line endings
+
     process = subprocess.Popen(
         args = command,
         stdout = subprocess.PIPE,
         stderr = subprocess.PIPE,
+        shell = True,
         )
 
-    out, err = process.communicate()
-    out, err = out.decode(encoding), err.decode(encoding)
-    logger.info(out)
+    stdout, stderr = '', ''
+
+    k = 0
+    while k<2:
+        out = process.stdout.read().decode(encoding).rstrip('\n')
+        err = process.stderr.read().decode(encoding).rstrip('\n')
+
+        if out: print(out)
+        if err: print(err)
+        stdout += out
+        stderr += err
+
+        if process.poll() is not None:
+            k += 1
+
+    #stdout, stderr = process.communicate()
+    #stdout, stderr = stdout.decode(encoding), stderr.decode(encoding)
 
     if process.returncode != 0:
-        logger.info(out)
-        logger.error(out)
         logger.error(f'Error in running command: {command}')
         return None
 
-    return out
+    return stdout
 
 
 
@@ -193,9 +205,17 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
         -F 2
         """
 
-    results = run_process(command=bcp_str)
-    print(results)
-    return results
+    stdout = run_process(command=bcp_str)
+    if not stdout: return
+
+    try:
+        rows_copied = int(stdout[:stdout.find(' rows copied.')].split('\n')[-1]) - 1 # remove header row
+    except Exception as e:
+        logger.error(f'Exceptin on extracting rows_copied: {str(e)}')
+        return
+
+    logger.info(f'Server: {connection.server}; Table: {connection.database}.{table_name_with_schema}; Rows copied: {rows_copied}; File: {file_path}')
+    return rows_copied
 
 
 
@@ -329,24 +349,31 @@ def get_file_meta_csv(file_path:str, config:Config, zip_file_path:str=None):
 # %% 
 
 @catch_error()
-def csv_file_to_sql_server(file_path:str, connection:Connection, config:Config):
+def csv_file_to_sql_server(file_path:str, target_connection:Connection, config:Config):
     """
     Create SQL Server table with csv file contents
     """
+    logger.info(f'Processing file: {file_path}')
+
     file_meta = get_file_meta_csv(file_path=file_path, config=config)
     if not file_meta:
         logger.warning(f'Invalid file, NOT processing: {file_path}')
         return
 
-    create_or_truncate_table(table_name_with_schema=file_meta['table_name_with_schema'], columns=file_meta['columns'], connection=connection, truncate=True)
-    bcp_to_sql_server_csv(file_path=file_path, connection=connection, table_name_with_schema=file_meta['table_name_with_schema'], delimiter=file_meta['delimiter'])
+    create_or_truncate_table(table_name_with_schema=file_meta['table_name_with_schema'], columns=file_meta['columns'], connection=target_connection, truncate=True)
+
+    rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=target_connection, table_name_with_schema=file_meta['table_name_with_schema'], delimiter=file_meta['delimiter'])
+    if rows_copied is None: return
+    file_meta['rows_copied'] = rows_copied
+
+    logger.info(f'Finished processing file: {file_path}')
 
 
 
 # %%
 
 @catch_error()
-def recursive_migrate_all_files(source_path:str, config:Config, connection, zip_file_path:str=None):
+def recursive_migrate_all_files(source_path:str, config:Config, target_connection:Connection, zip_file_path:str=None):
     """
     Migrate all files to the database. Unzip archive files and migrate contents as well.
     """
@@ -364,21 +391,22 @@ def recursive_migrate_all_files(source_path:str, config:Config, connection, zip_
                     recursive_migrate_all_files(
                         source_path = extract_dir,
                         config = config,
-                        connection = connection,
+                        target_connection = target_connection,
                         zip_file_path = zip_file_path,
                         )
                 continue
 
             csv_file_to_sql_server(
                 file_path = file_path,
-                connection = connection,
+                target_connection = target_connection,
+                config = config,
             )
 
 
 
 # %%
 
-recursive_migrate_all_files(source_path=config.source_path, config=config, connection=Connection)
+recursive_migrate_all_files(source_path=config.source_path, config=config, target_connection=target_connection)
 
 
 

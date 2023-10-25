@@ -6,7 +6,7 @@ Metadata driven coding
 
 # %% Import Libraries
 
-import yaml, csv, re, platform, psutil
+import yaml, csv, re, platform, psutil, os
 from .logger import logger, catch_error, get_env, environment
 from typing import List, Dict
 
@@ -35,6 +35,7 @@ def system_info(logger=None):
         'Machine_Type': uname.machine,
         'Processor': uname.processor,
         'RAM': str(round(psutil.virtual_memory().total / (1024.0 **3))) + ' GB',
+        'pwd': os.path.realpath('.'),
     }
     return sysinfo
 
@@ -127,11 +128,11 @@ class ConfigBase:
         """
         Read settings from CSV file
         """
+        logger.info(f'Reading settings file {os.path.realpath(file_path)}, Present Working Directory: {os.path.realpath(".")}')
         flist = [x.lower() for x in filter_list]
 
         contents = {}
         for row in get_csv_rows(csv_file_path=file_path):
-            print(row)
             if row['pipeline_key'] in flist or not flist:
                 contents |= {row['config_key']:row['config_value']}
 
@@ -164,8 +165,8 @@ class Config(ConfigBase):
     """
     Building on top of base config
     """
-    config_file_path = './../config/config.csv'
-    config_dev_file_path = './../config/config_dev.csv'
+    config_file_path = './saviynt/config/config.csv'
+    config_dev_file_path = './saviynt/config/config_dev.csv'
     generic_key = 'generic'
 
     @catch_error()
