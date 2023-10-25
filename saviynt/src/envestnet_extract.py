@@ -1,21 +1,26 @@
 # %%
 
-description = """
+__description__ = """
 
 Copy Envestnet files for Saviynt
 
 """
 
 
-# %% Parse Arguments
+# %% Strat Logging
 
 import os
 from saviynt_modules.logger import catch_error, environment, logger
+logger.set_logger(app_name=os.path.basename(__file__))
+
+
+
+# %% Parse Arguments
 
 if environment.is_prod:
     import argparse
 
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description=__description__)
 
     parser.add_argument('--pipeline_key', '--pk', help='pipeline_key value for getting pipeline settings', required=True)
 
@@ -25,9 +30,6 @@ else:
     args = {
         'pipeline_key': 'saviynt_envestnet',
         }
-
-
-logger.set_logger(app_name=os.path.basename(__file__))
 
 
 

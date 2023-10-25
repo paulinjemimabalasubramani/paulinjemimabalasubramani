@@ -1,23 +1,27 @@
-description = """
+__description__ = """
 Load data to SQL Server using bcp tool
 
 bcp <databse_name>.<schema_name>.<table_name> in "<file_path>" -S <server_name>.<dns_suffix> -U <username> -P <password> -c -t "|" -F 2
 
 bcp SaviyntIntegration.dbo.envestnet_hierarchy_firm in "C:/myworkdir/data/envestnet_v35_processed/hierarchy_firm_20231009.txt" -S DW1SQLDATA01.ibddomain.net -T -c -t "|" -F 2
 
-
 """
+
+
+# %% Strat Logging
+
+import os
+from saviynt_modules.logger import catch_error, environment, logger
+logger.set_logger(app_name=os.path.basename(__file__))
+
 
 
 # %% Parse Arguments
 
-import os
-from saviynt_modules.logger import catch_error, environment, logger
-
 if environment.is_prod:
     import argparse
 
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description=__description__)
 
     parser.add_argument('--pipeline_key', '--pk', help='pipeline_key value for getting pipeline settings', required=True)
 
@@ -29,13 +33,10 @@ else:
         }
 
 
-logger.set_logger(app_name=os.path.basename(__file__))
-
-
 
 # %% Import Libraries
 
-import pyodbc, subprocess, tempfile, shutil
+import pyodbc, subprocess, tempfile, shutil, re
 from saviynt_modules.logger import logger, catch_error
 from saviynt_modules.connections import Connection
 from saviynt_modules.settings import Config, normalize_name
@@ -199,11 +200,44 @@ def bcp_to_sql_server(file_path:str, connection:Connection, table_name_with_sche
 # %%
 
 @catch_error()
+def allowed_file_extensions(config:Config):
+    """
+    Retrieve Allowed file extensions
+    """
+    if not hasattr(config, 'allowed_file_extensions'): return
+
+    if isinstance(config.allowed_file_extensions, str):
+        ext_regex = r'[^a-zA-Z0-9]'
+        ext_list = config.allowed_file_extensions.lower().split(',')
+        ext_list = [re.sub(ext_regex, '', e) for e in ext_list]
+        config.allowed_file_extensions = ['.'+e for e in ext_list if e]
+    elif isinstance(config.allowed_file_extensions, List):
+        pass
+    else:
+        raise ValueError(f'Error in config.allowed_file_extensions:{config.allowed_file_extensions} Invalid Type: {type(config.allowed_file_extensions)}')
+
+    return config.allowed_file_extensions
+
+
+
+# %%
+
+@catch_error()
 def get_file_meta(file_path:str, config:Config):
     """
     Extract file metadata
     """
     columns, delimiter = get_csv_file_columns_and_delimiter(file_path=file_path)
+    if not columns: return
+
+    file_name = os.path.basename(file_path)
+    file_name_noext, file_ext = os.path.splitext(file_name)
+    file_name_noext = file_name_noext.lower()
+
+    allowed_file_ext = allowed_file_extensions(config=config)
+    if allowed_file_ext and file_ext.lower() not in allowed_file_ext:
+        logger.warning(f'Only {allowed_file_ext} extensions are allowed: {file_path}')
+        return
 
     table_name_with_schema = 
 
@@ -224,6 +258,10 @@ def csv_file_to_sql_server(file_path:str, connection:Connection, config:Config):
     Create SQL Server table with csv file contents
     """
     file_meta = get_file_meta(file_path=file_path, config=config)
+    if not file_meta:
+        logger.warning(f'Invalid file, NOT processing: {file_path}')
+        return
+
     create_or_truncate_table(table_name_with_schema=file_meta['table_name_with_schema'], columns=file_meta['columns'], connection=connection, truncate=True)
     bcp_to_sql_server(file_path=file_path, connection=connection, table_name_with_schema=file_meta['table_name_with_schema'], delimiter=file_meta['delimiter'])
 
