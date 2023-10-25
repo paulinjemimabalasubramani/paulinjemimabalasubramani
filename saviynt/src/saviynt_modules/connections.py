@@ -41,10 +41,10 @@ class Connection:
         """
         pre = prefix+'_' if prefix else ''
         return cls(
-            driver = getattr(config, f'{pre}driver'),
-            server = getattr(config, f'{pre}server'),
-            database = getattr(config, f'{pre}database'),
-            username = getattr(config, f'{pre}username', None),
+            driver = getattr(config, f'{pre}driver').strip(),
+            server = getattr(config, f'{pre}server').strip(),
+            database = getattr(config, f'{pre}database').strip(),
+            username = getattr(config, f'{pre}username', None).strip(),
             password = getattr(config, f'{pre}password', None),
         )
 

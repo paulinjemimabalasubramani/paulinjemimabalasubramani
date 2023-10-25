@@ -167,14 +167,13 @@ class Config(ConfigBase):
     config_file_path = './../config/config.csv'
     config_dev_file_path = './../config/config_dev.csv'
     generic_key = 'generic'
-    env_var_names = []
 
     @catch_error()
-    def __init__(self, args:Dict={}):
-        super().__init__(defaults=args)
+    def __init__(self, args:Dict={}, env_var_names:List=[]):
+        super().__init__(defaults={})
 
         self.system_info = system_info()
-        self.read_environment(env_var_names=self.env_var_names)
+        self.read_environment(env_var_names=env_var_names)
         self.set_values(values=args)
 
         self.filter_list = [self.generic_key]

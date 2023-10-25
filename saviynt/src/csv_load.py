@@ -37,10 +37,12 @@ else:
 # %% Import Libraries
 
 import pyodbc, subprocess, tempfile, shutil, re
+from typing import List
+from datetime import datetime
+
 from saviynt_modules.logger import logger, catch_error
 from saviynt_modules.connections import Connection
 from saviynt_modules.settings import Config, normalize_name
-from typing import List
 
 
 
@@ -174,7 +176,7 @@ def run_process(command:str):
 # %%
 
 @catch_error()
-def bcp_to_sql_server(file_path:str, connection:Connection, table_name_with_schema:str, delimiter:str=','):
+def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_schema:str, delimiter:str=','):
     """
     Send CSV/PSV data file to SQL Server using bcp tool
     if no username or password given, then use trusted connection
@@ -219,17 +221,29 @@ def allowed_file_extensions(config:Config):
     return config.allowed_file_extensions
 
 
+# %%
+
+def normalize_table_name(table_name_raw:str, config:Config):
+    """
+    Normalize table_name, add prefix (if any) and schema
+    """
+    if hasattr(config, 'table_prefix') and config.table_prefix.strip():
+        prefix = config.table_prefix.strip().lower() + '_'
+        if not table_name_raw.lower().startswith(prefix):
+            table_name_raw = prefix + table_name_raw.lower()
+
+    table_name_with_schema = normalize_name(name=config.target_schema) + '.' + normalize_name(name=table_name_raw)
+    return table_name_with_schema.lower()
+
+
 
 # %%
 
 @catch_error()
-def get_file_meta(file_path:str, config:Config):
+def extract_table_name_and_date_from_file_name(file_path:str, config:Config, zip_file_path:str=None):
     """
-    Extract file metadata
+    Extract table_name and date of data from file_name
     """
-    columns, delimiter = get_csv_file_columns_and_delimiter(file_path=file_path)
-    if not columns: return
-
     file_name = os.path.basename(file_path)
     file_name_noext, file_ext = os.path.splitext(file_name)
     file_name_noext = file_name_noext.lower()
@@ -237,16 +251,78 @@ def get_file_meta(file_path:str, config:Config):
     allowed_file_ext = allowed_file_extensions(config=config)
     if allowed_file_ext and file_ext.lower() not in allowed_file_ext:
         logger.warning(f'Only {allowed_file_ext} extensions are allowed: {file_path}')
-        return
+        return None, None
 
-    table_name_with_schema = 
+    if hasattr(config, 'file_name_regex'):
+        match = re.search(config.file_name_regex, file_name_noext)
+        if match:
+            try:
+                table_name_raw = match.group(1)
+                if hasattr(config, 'file_date_format'):
+                    file_date_str = match.group(2) # Assuming that date will be 2nd
+            except Exception as e:
+                logger.warning(f'Invalid Match, could not retrieve table_name or file_date from regex pattern: {file_path}. {str(e)}')
+                return None, None
+        else:
+            logger.warning(f'Invalid Match, Could not find date stamp for the file or invalid file name: {file_path}')
+            return None, None
+    else:
+        if hasattr(config, 'file_date_format'):
+            date_loc = -file_name_noext[::-1].find('_')
+            if date_loc>=0:
+                logger.warning(f'Could not find date stamp for the file or invalid file name: {file_path}')
+                return None, None
+            file_date_str = file_name_noext[date_loc:]
+            table_name_raw = file_name_noext[:date_loc-1]
+        else:
+            table_name_raw = file_name_noext
+
+    if hasattr(config, 'file_date_format'):
+        date_of_data = datetime.strptime(file_date_str, config.file_date_format)
+    else:
+        date_of_data = logger.execution_date.start
+
+    table_name_with_schema = normalize_table_name(table_name_raw=table_name_raw, config=config)
+
+    return table_name_with_schema, date_of_data
+
+
+
+# %%
+
+@catch_error()
+def get_file_meta_csv(file_path:str, config:Config, zip_file_path:str=None):
+    """
+    Extract file metadata
+    """
+    columns, delimiter = get_csv_file_columns_and_delimiter(file_path=file_path)
+    if not columns: return
+
+    table_name_with_schema, date_of_data = extract_table_name_and_date_from_file_name(file_path=file_path, config=config, zip_file_path=zip_file_path)
+    if not table_name_with_schema: return
+
+    is_full_load = True # default value
+    if hasattr(config, 'is_full_load'):
+        is_full_load = config.is_full_load.upper() == 'TRUE'
 
     file_meta = {
+        'file_name': os.path.basename(file_path),
         'file_path': file_path,
+        'zip_file_name': os.path.basename(zip_file_path) if zip_file_path else None,
+        'zip_file_path': zip_file_path,
         'columns': columns,
         'delimiter': delimiter,
         'table_name_with_schema': table_name_with_schema,
+        'database_name': config.target_database.strip(),
+        'file_type': 'csv',
+        'is_full_load': is_full_load,
+        'date_of_data': date_of_data,
+        'source_server': None,
+        'source_database': None,
+        'source_table_name_with_schema': None,
     }
+
+    return file_meta
 
 
 
@@ -257,13 +333,13 @@ def csv_file_to_sql_server(file_path:str, connection:Connection, config:Config):
     """
     Create SQL Server table with csv file contents
     """
-    file_meta = get_file_meta(file_path=file_path, config=config)
+    file_meta = get_file_meta_csv(file_path=file_path, config=config)
     if not file_meta:
         logger.warning(f'Invalid file, NOT processing: {file_path}')
         return
 
     create_or_truncate_table(table_name_with_schema=file_meta['table_name_with_schema'], columns=file_meta['columns'], connection=connection, truncate=True)
-    bcp_to_sql_server(file_path=file_path, connection=connection, table_name_with_schema=file_meta['table_name_with_schema'], delimiter=file_meta['delimiter'])
+    bcp_to_sql_server_csv(file_path=file_path, connection=connection, table_name_with_schema=file_meta['table_name_with_schema'], delimiter=file_meta['delimiter'])
 
 
 
