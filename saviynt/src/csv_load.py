@@ -8,7 +8,7 @@ bcp SaviyntIntegration.dbo.envestnet_hierarchy_firm in "C:/myworkdir/data/envest
 """
 
 
-# %% Strat Logging
+# %% Start Logging
 
 import os
 from saviynt_modules.logger import catch_error, environment, logger

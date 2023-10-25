@@ -169,6 +169,7 @@ class Config(ConfigBase):
     generic_key = 'generic'
     env_var_names = []
 
+    @catch_error()
     def __init__(self, args:Dict={}):
         super().__init__(defaults=args)
 

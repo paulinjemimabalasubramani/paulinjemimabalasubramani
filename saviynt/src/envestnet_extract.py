@@ -7,7 +7,7 @@ Copy Envestnet files for Saviynt
 """
 
 
-# %% Strat Logging
+# %% Start Logging
 
 import os
 from saviynt_modules.logger import catch_error, environment, logger
@@ -63,7 +63,7 @@ config = Config(args=args)
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def get_envestnet_schema():
     """
     Get copy schema - i.e. list of file names and versions to copy
@@ -115,13 +115,13 @@ def get_envestnet_schema():
 
 envestnet_schema, table_list = get_envestnet_schema()
 
-table_list = ['hierarchy'] # Overrice table_list to have only the one needed for Saviynt
+table_list = ['hierarchy'] # Override table_list to have only the one needed for Saviynt
 
 
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def get_zip_files():
     """
     Get the latest zip files to extract data, based on latest date
@@ -160,7 +160,7 @@ zip_files = get_zip_files()
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def parse_envestnet_file_name(file_name, zip_name):
     """
     Parse Envestnet file name and return clean names
@@ -198,7 +198,7 @@ def parse_envestnet_file_name(file_name, zip_name):
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def get_table_schemas(table_name:str):
     """
     Retrieve schemas for given table_name
@@ -213,7 +213,7 @@ def get_table_schemas(table_name:str):
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def get_field_list_from_table_schema(table_schemas:dict, record_type:str=''):
     """
     Get list of fields (columns) for a given record type - for creating sub-tables
@@ -231,7 +231,7 @@ def get_field_list_from_table_schema(table_schemas:dict, record_type:str=''):
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def process_psv_file(file_path:str):
     """
     Process single unzipped PSV file
@@ -306,7 +306,7 @@ def process_psv_file(file_path:str):
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def extract_zip_files():
     """
     Extract selected zip files according to copy schema / file version.
