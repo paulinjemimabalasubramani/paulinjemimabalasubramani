@@ -241,6 +241,7 @@ def allowed_file_extensions(config:Config):
     return config.allowed_file_extensions
 
 
+
 # %%
 
 def normalize_table_name(table_name_raw:str, config:Config):
