@@ -15,10 +15,12 @@ snowflake-connector-python = "==2.7.12"
 snowflake-sqlalchemy = "==1.4.1"
 sqlalchemy = "==1.4.41"
 pyarrow = "==8.0.0"
+pymsteams = "==0.2.2"
+pandas = "*"
+pyodbc = "*"
 
 [dev-packages]
 ipykernel = "*"
-pandas = "*"
 
 [requires]
 python_version = "3.10"
