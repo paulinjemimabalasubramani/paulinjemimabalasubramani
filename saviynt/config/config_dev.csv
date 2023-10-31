@@ -1,12 +1,13 @@
 ﻿pipeline_key,config_key,config_value
 generic,temporary_folder_path,C:\myworkdir\data\temp
+generic,target_driver,{ODBC Driver 17 for SQL Server}
+generic,target_server,DW1SQLDATA01.ibddomain.net
+generic,target_database,SaviyntIntegration
+generic,target_schema,dbo
+generic,staging_schema,stg
 saviynt_envestnet,schema_path,./saviynt/config/envestnet_schema/envestnet_schema.csv
 saviynt_envestnet,remote_path,C:\myworkdir\data\envestnet_v35
 saviynt_envestnet,source_path,C:\myworkdir\data\envestnet_v35_processed
-saviynt_envestnet,target_driver,{ODBC Driver 17 for SQL Server}
-saviynt_envestnet,target_server,DW1SQLDATA01.ibddomain.net
-saviynt_envestnet,target_database,SaviyntIntegration
-saviynt_envestnet,target_schema,dbo
 saviynt_envestnet,allowed_file_extensions,"txt,csv,psv"
 saviynt_envestnet,file_date_format,%Y%m%d
 saviynt_envestnet,file_name_regex,^(.+?)(?=_(\d{8})$)

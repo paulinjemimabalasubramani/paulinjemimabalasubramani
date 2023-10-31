@@ -36,13 +36,16 @@ else:
 
 # %% Import Libraries
 
-import pyodbc, subprocess, tempfile, shutil, re
+import tempfile, shutil, re
 from typing import List
 from datetime import datetime
 
 from saviynt_modules.logger import logger, catch_error
 from saviynt_modules.connections import Connection
 from saviynt_modules.settings import Config, normalize_name
+from saviynt_modules.migration import FileMeta, allowed_file_extensions, bcp_to_sql_server_csv, create_or_truncate_sql_table, normalize_table_name,\
+    execute_sql_queries, staging_schema
+from saviynt_modules.common import get_separator
 
 
 
@@ -64,23 +67,6 @@ target_connection = Connection.from_config(config=config, prefix='target')
 # %%
 
 @catch_error()
-def get_separator(header_string:str):
-    """
-    Find out what separator is used in the file header
-    """
-    separators = ['!#!#', '|', '\t']
-    delimiter = ','
-    for s in separators:
-        if s in header_string:
-            delimiter = s
-            break
-    return delimiter
-
-
-
-# %%
-
-@catch_error()
 def get_csv_file_columns_and_delimiter(file_path:str):
     """
     Get list of columns and delimiter used for csv file
@@ -94,167 +80,6 @@ def get_csv_file_columns_and_delimiter(file_path:str):
     columns = HEADER.split(delimiter)
     columns = [normalize_name(c) for c in columns]
     return columns, delimiter
-
-
-
-# %%
-
-@catch_error()
-def execute_sql_queries(sql_list:List, connection:Connection):
-    """
-    Execute given list of SQL queries
-    """
-    outputs = []
-    with pyodbc.connect(connection.conn_str_sql_server()) as conn:
-        cursor = conn.cursor()
-        for sql_str in sql_list:
-            result = cursor.execute(sql_str)
-            outputs.append(result)
-        conn.commit()
-    return outputs
-
-
-
-# %%
-
-@catch_error()
-def create_or_truncate_table(table_name_with_schema:str, columns:List, connection:Connection, truncate:bool=False):
-    """
-    Create a new table is not exists otherwise optionally truncate
-    """
-    columns_sql = ",\n".join([f"[{column}] NVARCHAR(MAX)" for column in columns])
-    create_table_sql = f'''
-    IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE LOWER(CONCAT_WS('.', table_schema, table_name)) = LOWER('{table_name_with_schema}'))
-    BEGIN
-        CREATE TABLE {table_name_with_schema} (
-            {columns_sql}
-        );
-    END
-    '''
-    sql_list = [create_table_sql]
-
-    if truncate:
-        truncate_table_sql = f'TRUNCATE TABLE {table_name_with_schema}'
-        sql_list.append(truncate_table_sql)
-
-    outputs = execute_sql_queries(sql_list=sql_list, connection=connection)
-
-
-
-# %%
-
-catch_error()
-def run_process(command:str):
-    """
-    Run command line process. Returns None if error.
-    """
-    encoding = 'UTF-8'
-    command_regex = r'\r?\n' # remove line endings
-    command = re.sub(command_regex, ' ', command) # remove line endings
-
-    process = subprocess.Popen(
-        args = command,
-        stdout = subprocess.PIPE,
-        stderr = subprocess.PIPE,
-        shell = True,
-        )
-
-    stdout, stderr = '', ''
-
-    k = 0
-    while k<2:
-        out = process.stdout.read().decode(encoding).rstrip('\n')
-        err = process.stderr.read().decode(encoding).rstrip('\n')
-
-        if out: print(out)
-        if err: print(err)
-        stdout += out
-        stderr += err
-
-        if process.poll() is not None:
-            k += 1
-
-    #stdout, stderr = process.communicate()
-    #stdout, stderr = stdout.decode(encoding), stderr.decode(encoding)
-
-    if process.returncode != 0:
-        logger.error(f'Error in running command: {command}')
-        return None
-
-    return stdout
-
-
-
-# %%
-
-@catch_error()
-def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_schema:str, delimiter:str=','):
-    """
-    Send CSV/PSV data file to SQL Server using bcp tool
-    if no username or password given, then use trusted connection
-    """
-    authentication_str = '-T' if connection.is_trusted_connection() else f'-U {connection.username} -P {connection.password}'
-
-    bcp_str = f"""
-        bcp {connection.database}.{table_name_with_schema}
-        in "{file_path}"
-        -S {connection.server}
-        {authentication_str}
-        -c
-        -t "{delimiter}"
-        -F 2
-        """
-
-    stdout = run_process(command=bcp_str)
-    if not stdout: return
-
-    try:
-        rows_copied = int(stdout[:stdout.find(' rows copied.')].split('\n')[-1]) - 1 # remove header row
-    except Exception as e:
-        logger.error(f'Exceptin on extracting rows_copied: {str(e)}')
-        return
-
-    logger.info(f'Server: {connection.server}; Table: {connection.database}.{table_name_with_schema}; Rows copied: {rows_copied}; File: {file_path}')
-    return rows_copied
-
-
-
-# %%
-
-@catch_error()
-def allowed_file_extensions(config:Config):
-    """
-    Retrieve Allowed file extensions
-    """
-    if not hasattr(config, 'allowed_file_extensions'): return
-
-    if isinstance(config.allowed_file_extensions, str):
-        ext_regex = r'[^a-zA-Z0-9]'
-        ext_list = config.allowed_file_extensions.lower().split(',')
-        ext_list = [re.sub(ext_regex, '', e) for e in ext_list]
-        config.allowed_file_extensions = ['.'+e for e in ext_list if e]
-    elif isinstance(config.allowed_file_extensions, List):
-        pass
-    else:
-        raise ValueError(f'Error in config.allowed_file_extensions:{config.allowed_file_extensions} Invalid Type: {type(config.allowed_file_extensions)}')
-
-    return config.allowed_file_extensions
-
-
-
-# %%
-
-def normalize_table_name(table_name_raw:str, config:Config):
-    """
-    Normalize table_name, add prefix (if any) and schema
-    """
-    if hasattr(config, 'table_prefix') and config.table_prefix.strip():
-        prefix = config.table_prefix.strip().lower() + '_'
-        if not table_name_raw.lower().startswith(prefix):
-            table_name_raw = prefix + table_name_raw.lower()
-
-    table_name_with_schema = normalize_name(name=config.target_schema) + '.' + normalize_name(name=table_name_raw)
-    return table_name_with_schema.lower()
 
 
 
@@ -301,7 +126,7 @@ def extract_table_name_and_date_from_file_name(file_path:str, config:Config, zip
     if hasattr(config, 'file_date_format'):
         date_of_data = datetime.strptime(file_date_str, config.file_date_format)
     else:
-        date_of_data = logger.execution_date.start
+        date_of_data = logger.run_date.start
 
     table_name_with_schema = normalize_table_name(table_name_raw=table_name_raw, config=config)
 
@@ -316,32 +141,25 @@ def get_file_meta_csv(file_path:str, config:Config, zip_file_path:str=None):
     """
     Extract file metadata
     """
+    file_type = 'csv'
+
     columns, delimiter = get_csv_file_columns_and_delimiter(file_path=file_path)
     if not columns: return
 
     table_name_with_schema, date_of_data = extract_table_name_and_date_from_file_name(file_path=file_path, config=config, zip_file_path=zip_file_path)
     if not table_name_with_schema: return
 
-    is_full_load = True # default value
-    if hasattr(config, 'is_full_load'):
-        is_full_load = config.is_full_load.upper() == 'TRUE'
+    file_meta = FileMeta(
+        table_name_with_schema = table_name_with_schema,
+        file_path = file_path,
+        zip_file_path = zip_file_path,
+        columns = columns,
+        delimiter = delimiter,
+        file_type = file_type,
+        date_of_data = date_of_data,
+    )
 
-    file_meta = {
-        'file_name': os.path.basename(file_path),
-        'file_path': file_path,
-        'zip_file_name': os.path.basename(zip_file_path) if zip_file_path else None,
-        'zip_file_path': zip_file_path,
-        'columns': columns,
-        'delimiter': delimiter,
-        'table_name_with_schema': table_name_with_schema,
-        'database_name': config.target_database.strip(),
-        'file_type': 'csv',
-        'is_full_load': is_full_load,
-        'date_of_data': date_of_data,
-        'source_server': None,
-        'source_database': None,
-        'source_table_name_with_schema': None,
-    }
+    file_meta.add_config(config=config)
 
     return file_meta
 
@@ -361,13 +179,36 @@ def csv_file_to_sql_server(file_path:str, target_connection:Connection, config:C
         logger.warning(f'Invalid file, NOT processing: {file_path}')
         return
 
-    create_or_truncate_table(table_name_with_schema=file_meta['table_name_with_schema'], columns=file_meta['columns'], connection=target_connection, truncate=True)
+    create_or_truncate_sql_table(table_name_with_schema=file_meta['table_name_with_schema'], columns=file_meta['columns'], connection=target_connection, truncate=True)
 
-    rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=target_connection, table_name_with_schema=file_meta['table_name_with_schema'], delimiter=file_meta['delimiter'])
-    if rows_copied is None: return
-    file_meta['rows_copied'] = rows_copied
+    file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=target_connection, table_name_with_schema=file_meta['table_name_with_schema'], delimiter=file_meta['delimiter'])
+    if file_meta.rows_copied is None: return
 
     logger.info(f'Finished processing file: {file_path}')
+    return file_meta
+
+
+
+
+# %%
+
+
+file_path = r'C:\myworkdir\data\envestnet_v35_processed\codes_account_status_20231009.txt'
+
+file_meta = get_file_meta_csv(file_path=file_path, config=config)
+create_or_truncate_sql_table(table_name_with_schema=file_meta.table_name_with_schema, columns=file_meta.columns, connection=target_connection, truncate=True)
+file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=target_connection, table_name_with_schema=file_meta.table_name_with_schema, delimiter=file_meta.delimiter)
+
+print('Rows Copied:', file_meta.rows_copied)
+
+
+ # %%
+
+staging_table =  staging_schema + '.' + file_meta.table_name_with_schema.split('.')[1]
+
+create_or_truncate_sql_table(table_name_with_schema=staging_table, columns=file_meta.columns, connection=target_connection, truncate=True)
+file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=target_connection, table_name_with_schema=staging_table, delimiter=file_meta.delimiter)
+
 
 
 
@@ -397,7 +238,7 @@ def recursive_migrate_all_files(source_path:str, config:Config, target_connectio
                         )
                 continue
 
-            csv_file_to_sql_server(
+            file_meta = csv_file_to_sql_server(
                 file_path = file_path,
                 target_connection = target_connection,
                 config = config,
@@ -413,7 +254,7 @@ recursive_migrate_all_files(source_path=config.source_path, config=config, targe
 
 # %% Close Connections / End Program
 
-logger.mark_execution_end()
+logger.mark_run_end()
 
 
 

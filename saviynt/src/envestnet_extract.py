@@ -115,7 +115,7 @@ def get_envestnet_schema():
 
 envestnet_schema, table_list = get_envestnet_schema()
 
-table_list = ['hierarchy'] # Override table_list to have only the one needed for Saviynt
+table_list = ['hierarchy', 'codes'] # Override table_list to have only the one needed for Saviynt
 
 
 
@@ -336,7 +336,7 @@ extract_zip_files()
 
 # %% Close Connections / End Program
 
-logger.mark_execution_end()
+logger.mark_run_end()
 
 
 
