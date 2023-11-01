@@ -7,9 +7,10 @@ Module to handle common migration tasks
 # %%
 
 import os, re, pyodbc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from collections import OrderedDict
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 
 from .settings import Config, normalize_name
 from .logger import logger, catch_error
@@ -21,6 +22,7 @@ from .common import run_process, remove_square_parenthesis
 
 default_data_type = 'NVARCHAR(MAX)'
 staging_schema = 'stg'
+meta_prefix = 'meta_'
 
 
 
@@ -32,7 +34,7 @@ class FileMeta:
     Store common File Meta data
     """
     table_name_with_schema:str
-    file_path:str
+    file_path:str = None
     zip_file_path:str = None
     columns:str = None
     delimiter:str = None
@@ -45,7 +47,7 @@ class FileMeta:
     source_database:str = None
     source_table_name_with_schema:str = None
     pipeline_key:str = None
-    additional_info:str = None
+    additional_info:OrderedDict = field(default_factory=OrderedDict)
     rows_copied:int = None
 
 
@@ -53,7 +55,7 @@ class FileMeta:
         """
         Runs after __init__
         """
-        self.file_name = os.path.basename(self.file_path)
+        self.file_name = os.path.basename(self.file_path) if self.file_path else None
         self.zip_file_name = os.path.basename(self.zip_file_path) if self.zip_file_path else None
         self.run_date = logger.run_date.start
 
@@ -65,8 +67,8 @@ class FileMeta:
         """
         if self.database_name is None and hasattr(config, 'target_database'): self.database_name = config.target_database
         if self.server_name is None  and hasattr(config, 'target_server'): self.server_name = config.target_server
-        if self.pipeline_key is None : self.pipeline_key = config.pipeline_key
-        if self.date_of_data is None : self.date_of_data = logger.run_date.start
+        if self.pipeline_key is None: self.pipeline_key = config.pipeline_key
+        if self.date_of_data is None: self.date_of_data = logger.run_date.start
         if self.is_full_load is None and hasattr(config, 'is_full_load'): self.is_full_load = config.is_full_load.upper() == 'TRUE'
 
 
@@ -191,7 +193,7 @@ def get_sql_table_columns(table_name_with_schema, connection:Connection):
 # %%
 
 @catch_error()
-def add_sql_new_columns_if_any(table_name_with_schema:str, columns:List, connection:Connection):
+def add_sql_new_columns_if_any(table_name_with_schema:str, columns:OrderedDict, connection:Connection):
     """
     Add new columns to existing table, if any.
     """
@@ -199,10 +201,10 @@ def add_sql_new_columns_if_any(table_name_with_schema:str, columns:List, connect
     if not existing_columns: return ['No existing_columns']
     existing_columns = [c.lower() for c in existing_columns]
 
-    new_columns = [c for c in columns if c.lower() not in existing_columns]
+    new_columns = {c:t for c, t in columns.items() if c.lower() not in existing_columns}
     if not new_columns: return ['No new_columns']
 
-    new_col_str = ','.join([f'{c} {default_data_type}' for c in new_columns])
+    new_col_str = ','.join([f'{c} {t}' for c, t in new_columns.items()])
     add_new_columns_sql = f'ALTER TABLE {table_name_with_schema} ADD {new_col_str}'
 
     outputs = execute_sql_queries(sql_list=[add_new_columns_sql], connection=connection)
@@ -213,7 +215,7 @@ def add_sql_new_columns_if_any(table_name_with_schema:str, columns:List, connect
 # %%
 
 @catch_error()
-def create_or_truncate_sql_table(table_name_with_schema:str, columns:List, connection:Connection, truncate:bool=False):
+def create_or_truncate_sql_table(table_name_with_schema:str, columns:OrderedDict, connection:Connection, truncate:bool=False):
     """
     Create a new table if not exists otherwise optionally truncate. Add new columns to existing table, if any.
     """
@@ -239,6 +241,76 @@ def create_or_truncate_sql_table(table_name_with_schema:str, columns:List, conne
     outputs1 = add_sql_new_columns_if_any(table_name_with_schema=table_name_with_schema, columns=columns, connection=connection)
     outputs.extend(outputs1)
 
+    return outputs
+
+
+
+# %%
+
+@catch_error()
+def drop_sql_table_if_exists(table_name_with_schema:str, connection:Connection):
+    """
+    Drop table if exists
+    """
+    drop_table_sql = f'''
+    IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE LOWER(CONCAT_WS('.', table_schema, table_name)) = LOWER('{remove_square_parenthesis(table_name_with_schema)}'))
+    BEGIN
+        DROP TABLE {table_name_with_schema};
+    END
+    '''
+
+    outputs = execute_sql_queries(sql_list=[drop_table_sql], connection=connection)
+    return outputs
+
+
+
+# %%
+
+@catch_error()
+def get_sql_table_meta_columns(file_meta:FileMeta):
+    """
+    Get Meta fileds that will be added to the table
+    Output is a dictionary of:
+        Key: Name of Column
+        Value: tuple(Value/Expression, Column Type)
+    """
+    columns_sql = ','.join([f"COALESCE({c}, '')" for c in file_meta.columns])
+    row_hash_sql = f"HASHBYTES('SHA2_256', CONCAT({columns_sql}))"
+
+    meta_fields = OrderedDict([
+        (f'{meta_prefix}pipeline_key', (default_data_type, f"'{file_meta.pipeline_key}'")),
+        (f'{meta_prefix}is_full_load', ('INT', f"'{int(file_meta.is_full_load)}'")),
+        (f'{meta_prefix}run_date', ('DATETIME', f"'{file_meta.run_date}'")),
+        (f'{meta_prefix}date_of_data', ('DATETIME', f"'{file_meta.date_of_data}'")),
+        (f'{meta_prefix}start_date', ('DATETIME', 'CURRENT_TIMESTAMP')),
+        (f'{meta_prefix}end_date', ('DATETIME', "CAST('9999-12-31' AS DATETIME)")),
+        (f'{meta_prefix}is_current', ('INT', '1')),
+        (f'{meta_prefix}hash_key', ('VARBINARY(MAX)', row_hash_sql)),
+    ])
+
+    if file_meta.additional_info:
+        for c, v in file_meta.additional_info.items():
+            meta_fields[f'{meta_prefix}{c}'] = (default_data_type, v)
+
+    meta_columns, meta_columns_values = OrderedDict(), OrderedDict()
+    for c, v in meta_fields.items():
+        meta_columns[c], meta_columns_values[c] = v
+
+    return meta_columns, meta_columns_values
+
+
+
+# %%
+
+@catch_error()
+def update_sql_staging_table_meta_fields(table_name_with_schema:str, meta_columns_values:OrderedDict, connection:Connection):
+    """
+    Update sql staging table meta fields
+    """
+    update_columns = ','.join([f'{c}={v}' for c, v in meta_columns_values.items()])
+    update_table_sql = f'UPDATE {table_name_with_schema} SET {update_columns}'
+    print(update_table_sql)
+    outputs = execute_sql_queries(sql_list=[update_table_sql], connection=connection)
     return outputs
 
 

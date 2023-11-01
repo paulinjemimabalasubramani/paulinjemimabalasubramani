@@ -39,12 +39,14 @@ else:
 import tempfile, shutil, re
 from typing import List
 from datetime import datetime
+from collections import OrderedDict
 
 from saviynt_modules.logger import logger, catch_error
 from saviynt_modules.connections import Connection
 from saviynt_modules.settings import Config, normalize_name
 from saviynt_modules.migration import FileMeta, allowed_file_extensions, bcp_to_sql_server_csv, create_or_truncate_sql_table, normalize_table_name,\
-    execute_sql_queries, staging_schema
+    execute_sql_queries, staging_schema, drop_sql_table_if_exists, add_sql_new_columns_if_any, get_sql_table_meta_columns, update_sql_staging_table_meta_fields,\
+    default_data_type
 from saviynt_modules.common import get_separator
 
 
@@ -78,7 +80,8 @@ def get_csv_file_columns_and_delimiter(file_path:str):
     delimiter = get_separator(header_string=HEADER)
 
     columns = HEADER.split(delimiter)
-    columns = [normalize_name(c) for c in columns]
+    columns = OrderedDict([(normalize_name(c), default_data_type) for c in columns])
+
     return columns, delimiter
 
 
@@ -194,20 +197,32 @@ def csv_file_to_sql_server(file_path:str, target_connection:Connection, config:C
 
 
 file_path = r'C:\myworkdir\data\envestnet_v35_processed\codes_account_status_20231009.txt'
-
 file_meta = get_file_meta_csv(file_path=file_path, config=config)
-create_or_truncate_sql_table(table_name_with_schema=file_meta.table_name_with_schema, columns=file_meta.columns, connection=target_connection, truncate=True)
-file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=target_connection, table_name_with_schema=file_meta.table_name_with_schema, delimiter=file_meta.delimiter)
-
-print('Rows Copied:', file_meta.rows_copied)
 
 
- # %%
+
+# %%
 
 staging_table =  staging_schema + '.' + file_meta.table_name_with_schema.split('.')[1]
-
+drop_sql_table_if_exists(table_name_with_schema=staging_table, connection=target_connection)
 create_or_truncate_sql_table(table_name_with_schema=staging_table, columns=file_meta.columns, connection=target_connection, truncate=True)
 file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=target_connection, table_name_with_schema=staging_table, delimiter=file_meta.delimiter)
+meta_columns, meta_columns_values = get_sql_table_meta_columns(file_meta=file_meta)
+add_sql_new_columns_if_any(table_name_with_schema=staging_table, columns=meta_columns, connection=target_connection)
+update_sql_staging_table_meta_fields(table_name_with_schema=staging_table, meta_columns_values=meta_columns_values, connection=target_connection)
+
+
+
+# %%
+
+create_or_truncate_sql_table(table_name_with_schema=file_meta.table_name_with_schema, columns=file_meta.columns | meta_columns, connection=target_connection, truncate=False)
+
+
+
+# %%
+
+
+
 
 
 
