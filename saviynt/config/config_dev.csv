@@ -5,6 +5,9 @@ generic,target_server,DW1SQLDATA01.ibddomain.net
 generic,target_database,SaviyntIntegration
 generic,target_schema,dbo
 generic,staging_schema,stg
+generic,default_data_type,NVARCHAR(MAX)
+generic,column_meta_prefix,meta_
+generic,keep_history,TRUE
 saviynt_envestnet,schema_path,./saviynt/config/envestnet_schema/envestnet_schema.csv
 saviynt_envestnet,remote_path,C:\myworkdir\data\envestnet_v35
 saviynt_envestnet,source_path,C:\myworkdir\data\envestnet_v35_processed
@@ -13,3 +16,4 @@ saviynt_envestnet,file_date_format,%Y%m%d
 saviynt_envestnet,file_name_regex,^(.+?)(?=_(\d{8})$)
 saviynt_envestnet,table_prefix,envestnet
 saviynt_envestnet,is_full_load,TRUE
+saviynt_envestnet,keep_history,FALSE

@@ -1,317 +1,81 @@
 """
-Module to handle common migration tasks
+Module to handle high level migration tasks, also record metrics / metadata about migration
 
 """
 
+# %% Import Libraries
 
-# %%
+import tempfile, shutil, os
+from typing import Callable
 
-import os, re, pyodbc
-from dataclasses import dataclass, field
-from collections import OrderedDict
-from datetime import datetime
-from typing import List, Dict
-
-from .settings import Config, normalize_name
 from .logger import logger, catch_error
-from .connections import Connection
-from .common import run_process, remove_square_parenthesis
-
-
-# %% Parameters
-
-default_data_type = 'NVARCHAR(MAX)'
-staging_schema = 'stg'
-meta_prefix = 'meta_'
-
-
-
-# %%
-
-@dataclass
-class FileMeta:
-    """
-    Store common File Meta data
-    """
-    table_name_with_schema:str
-    file_path:str = None
-    zip_file_path:str = None
-    columns:str = None
-    delimiter:str = None
-    database_name:str = None
-    server_name:str = None
-    file_type:str = None
-    is_full_load:bool = None
-    date_of_data:datetime = None
-    source_server:str = None
-    source_database:str = None
-    source_table_name_with_schema:str = None
-    pipeline_key:str = None
-    additional_info:OrderedDict = field(default_factory=OrderedDict)
-    rows_copied:int = None
-
-
-    def __post_init__(self):
-        """
-        Runs after __init__
-        """
-        self.file_name = os.path.basename(self.file_path) if self.file_path else None
-        self.zip_file_name = os.path.basename(self.zip_file_path) if self.zip_file_path else None
-        self.run_date = logger.run_date.start
-
-
-    @catch_error()
-    def add_config(self, config:Config):
-        """
-        Add metadata from config and other default values
-        """
-        if self.database_name is None and hasattr(config, 'target_database'): self.database_name = config.target_database
-        if self.server_name is None  and hasattr(config, 'target_server'): self.server_name = config.target_server
-        if self.pipeline_key is None: self.pipeline_key = config.pipeline_key
-        if self.date_of_data is None: self.date_of_data = logger.run_date.start
-        if self.is_full_load is None and hasattr(config, 'is_full_load'): self.is_full_load = config.is_full_load.upper() == 'TRUE'
+from .settings import Config
+from .filemeta import get_file_meta_csv
+from .sqlserver import migrate_file_to_sql_table
 
 
 
 # %%
 
 @catch_error()
-def allowed_file_extensions(config:Config):
+def recursive_migrate_all_files(source_path:str, config:Config, fn_migrate_file:Callable, zip_file_path:str=None):
     """
-    Retrieve Allowed file extensions
+    Migrate all files to the database. Unzip archive files and migrate contents as well.
     """
-    if not hasattr(config, 'allowed_file_extensions'): return
+    selected_file_paths = []
 
-    if isinstance(config.allowed_file_extensions, str):
-        ext_regex = r'[^a-zA-Z0-9]'
-        ext_list = config.allowed_file_extensions.lower().split(',')
-        ext_list = [re.sub(ext_regex, '', e) for e in ext_list]
-        config.allowed_file_extensions = ['.'+e for e in ext_list if e]
-    elif isinstance(config.allowed_file_extensions, List):
-        pass
+    if os.path.isdir(source_path):
+        for root, dirs, files in os.walk(source_path):
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                selected_file_paths.append(file_path)
     else:
-        raise ValueError(f'Error in config.allowed_file_extensions:{config.allowed_file_extensions} Invalid Type: {type(config.allowed_file_extensions)}')
+        selected_file_paths.append(source_path)
 
-    return config.allowed_file_extensions
+    selected_file_paths = sorted(selected_file_paths)
 
+    for root, dirs, files in os.walk(source_path):
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+            file_name_noext, file_ext = os.path.splitext(file_name)
 
+            if file_ext.lower() == '.zip':
+                with tempfile.TemporaryDirectory(dir=config.temporary_folder_path) as tmpdir:
+                    extract_dir = tmpdir
+                    logger.info(f'Extracting {file_path} to {extract_dir}')
+                    shutil.unpack_archive(filename=file_path, extract_dir=extract_dir, format='zip')
+                    zip_file_path = zip_file_path if zip_file_path else file_path # to keep original zip file path, rather than the last zip file path
+                    recursive_migrate_all_files(
+                        source_path = extract_dir,
+                        config = config,
+                        zip_file_path = zip_file_path,
+                        )
+                continue
 
-# %%
-
-@catch_error()
-def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_schema:str, delimiter:str=','):
-    """
-    Send CSV/PSV data file to SQL Server using bcp tool
-    if no username or password given, then use trusted connection
-    """
-    authentication_str = '-T' if connection.is_trusted_connection() else f'-U {connection.username} -P {connection.password}'
-
-    bcp_str = f"""
-        bcp {connection.database}.{table_name_with_schema}
-        in "{file_path}"
-        -S {connection.server}
-        {authentication_str}
-        -c
-        -t "{delimiter}"
-        -F 2
-        """
-
-    stdout = run_process(command=bcp_str)
-    if not stdout: return
-
-    try:
-        rows_copied = int(stdout[:stdout.find(' rows copied.')].split('\n')[-1])
-    except Exception as e:
-        logger.error(f'Exceptin on extracting rows_copied: {str(e)}')
-        return
-
-    logger.info(f'Server: {connection.server}; Table: {connection.database}.{table_name_with_schema}; Rows copied: {rows_copied}; File: {file_path}')
-    return rows_copied
+            file_meta = fn_migrate_file(
+                file_path = file_path,
+                config = config,
+                zip_file_path = zip_file_path,
+            )
 
 
 
-# %%
-
-def normalize_table_name(table_name_raw:str, config:Config):
-    """
-    Normalize table_name, add prefix (if any) and schema
-    """
-    if hasattr(config, 'table_prefix') and config.table_prefix.strip():
-        prefix = config.table_prefix.strip().lower() + '_'
-        if not table_name_raw.lower().startswith(prefix):
-            table_name_raw = prefix + table_name_raw.lower()
-
-    table_name_with_schema = normalize_name(name=config.target_schema) + '.' + normalize_name(name=table_name_raw)
-    return table_name_with_schema.lower()
-
-
-
-# %%
+# %% 
 
 @catch_error()
-def execute_sql_queries(sql_list:List, connection:Connection):
+def migrate_csv_file_to_sql_server(file_path:str, config:Config, zip_file_path:str=None):
     """
-    Execute given list of SQL queries
+    Create SQL Server table with csv file contents
     """
-    outputs = []
-    with pyodbc.connect(connection.conn_str_sql_server()) as conn:
-        cursor = conn.cursor()
-        for sql_str in sql_list:
-            cursor.execute(sql_str)
-            if cursor.description:
-                results = cursor.fetchall()
-            else:
-                results = ['DML statement (success)']
-            outputs.append(results)
-        conn.commit()
-    return outputs
+    logger.info(f'Processing file: {file_path}')
 
+    file_meta = get_file_meta_csv(file_path=file_path, config=config, zip_file_path=zip_file_path)
 
+    migrate_file_to_sql_table(file_meta=file_meta, connection=config.target_connection, config=config)
 
-# %%
+    logger.info(f'Finished processing file: {file_path}')
+    return file_meta
 
-@catch_error()
-def get_sql_table_columns(table_name_with_schema, connection:Connection):
-    """
-    Get column names for a give table from information schema
-    """
-    sql_str = f'''
-    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE LOWER(CONCAT_WS('.', table_schema, table_name)) = LOWER('{remove_square_parenthesis(table_name_with_schema)}')
-    ORDER BY ORDINAL_POSITION
-    '''
-
-    columns = []
-    res = execute_sql_queries([sql_str], connection=connection)
-    if res[0]:
-        columns = [c[0] for c in res[0]]
-
-    return columns
-
-
-
-# %%
-
-@catch_error()
-def add_sql_new_columns_if_any(table_name_with_schema:str, columns:OrderedDict, connection:Connection):
-    """
-    Add new columns to existing table, if any.
-    """
-    existing_columns = get_sql_table_columns(table_name_with_schema=table_name_with_schema, connection=connection)
-    if not existing_columns: return ['No existing_columns']
-    existing_columns = [c.lower() for c in existing_columns]
-
-    new_columns = {c:t for c, t in columns.items() if c.lower() not in existing_columns}
-    if not new_columns: return ['No new_columns']
-
-    new_col_str = ','.join([f'{c} {t}' for c, t in new_columns.items()])
-    add_new_columns_sql = f'ALTER TABLE {table_name_with_schema} ADD {new_col_str}'
-
-    outputs = execute_sql_queries(sql_list=[add_new_columns_sql], connection=connection)
-    return outputs
-
-
-
-# %%
-
-@catch_error()
-def create_or_truncate_sql_table(table_name_with_schema:str, columns:OrderedDict, connection:Connection, truncate:bool=False):
-    """
-    Create a new table if not exists otherwise optionally truncate. Add new columns to existing table, if any.
-    """
-    sql_list = []
-
-    columns_sql = ',\n'.join([f'[{column}] {default_data_type}' for column in columns])
-    create_table_sql = f'''
-    IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE LOWER(CONCAT_WS('.', table_schema, table_name)) = LOWER('{remove_square_parenthesis(table_name_with_schema)}'))
-    BEGIN
-        CREATE TABLE {table_name_with_schema} (
-            {columns_sql}
-        );
-    END
-    '''
-    sql_list.append(create_table_sql)
-
-    if truncate:
-        truncate_table_sql = f'TRUNCATE TABLE {table_name_with_schema}'
-        sql_list.append(truncate_table_sql)
-
-    outputs = execute_sql_queries(sql_list=sql_list, connection=connection)
-
-    outputs1 = add_sql_new_columns_if_any(table_name_with_schema=table_name_with_schema, columns=columns, connection=connection)
-    outputs.extend(outputs1)
-
-    return outputs
-
-
-
-# %%
-
-@catch_error()
-def drop_sql_table_if_exists(table_name_with_schema:str, connection:Connection):
-    """
-    Drop table if exists
-    """
-    drop_table_sql = f'''
-    IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE LOWER(CONCAT_WS('.', table_schema, table_name)) = LOWER('{remove_square_parenthesis(table_name_with_schema)}'))
-    BEGIN
-        DROP TABLE {table_name_with_schema};
-    END
-    '''
-
-    outputs = execute_sql_queries(sql_list=[drop_table_sql], connection=connection)
-    return outputs
-
-
-
-# %%
-
-@catch_error()
-def get_sql_table_meta_columns(file_meta:FileMeta):
-    """
-    Get Meta fileds that will be added to the table
-    Output is a dictionary of:
-        Key: Name of Column
-        Value: tuple(Value/Expression, Column Type)
-    """
-    columns_sql = ','.join([f"COALESCE({c}, '')" for c in file_meta.columns])
-    row_hash_sql = f"HASHBYTES('SHA2_256', CONCAT({columns_sql}))"
-
-    meta_fields = OrderedDict([
-        (f'{meta_prefix}pipeline_key', (default_data_type, f"'{file_meta.pipeline_key}'")),
-        (f'{meta_prefix}is_full_load', ('INT', f"'{int(file_meta.is_full_load)}'")),
-        (f'{meta_prefix}run_date', ('DATETIME', f"'{file_meta.run_date}'")),
-        (f'{meta_prefix}date_of_data', ('DATETIME', f"'{file_meta.date_of_data}'")),
-        (f'{meta_prefix}start_date', ('DATETIME', 'CURRENT_TIMESTAMP')),
-        (f'{meta_prefix}end_date', ('DATETIME', "CAST('9999-12-31' AS DATETIME)")),
-        (f'{meta_prefix}is_current', ('INT', '1')),
-        (f'{meta_prefix}hash_key', ('VARBINARY(MAX)', row_hash_sql)),
-    ])
-
-    if file_meta.additional_info:
-        for c, v in file_meta.additional_info.items():
-            meta_fields[f'{meta_prefix}{c}'] = (default_data_type, v)
-
-    meta_columns, meta_columns_values = OrderedDict(), OrderedDict()
-    for c, v in meta_fields.items():
-        meta_columns[c], meta_columns_values[c] = v
-
-    return meta_columns, meta_columns_values
-
-
-
-# %%
-
-@catch_error()
-def update_sql_staging_table_meta_fields(table_name_with_schema:str, meta_columns_values:OrderedDict, connection:Connection):
-    """
-    Update sql staging table meta fields
-    """
-    update_columns = ','.join([f'{c}={v}' for c, v in meta_columns_values.items()])
-    update_table_sql = f'UPDATE {table_name_with_schema} SET {update_columns}'
-    print(update_table_sql)
-    outputs = execute_sql_queries(sql_list=[update_table_sql], connection=connection)
-    return outputs
 
 
 

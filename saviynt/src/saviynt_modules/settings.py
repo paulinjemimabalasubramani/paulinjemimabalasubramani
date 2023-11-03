@@ -171,6 +171,9 @@ class Config(ConfigBase):
 
     @catch_error()
     def __init__(self, args:Dict={}, env_var_names:List=[]):
+        """
+        Initiate class - build on top of base class initialization
+        """
         super().__init__(defaults={})
 
         self.system_info = system_info()
@@ -185,6 +188,13 @@ class Config(ConfigBase):
         self.read_csv(file_path=config_file_path, filter_list=self.filter_list)
 
         logger.info(self.__dict__) # print out all settings
+
+
+    def add_target_connection(self, Connection):
+        """
+        Add target connection to settings
+        """
+        self.target_connection = Connection.from_config(config=self, prefix='target')
 
 
 

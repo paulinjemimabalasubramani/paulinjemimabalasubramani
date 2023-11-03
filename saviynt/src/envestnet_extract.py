@@ -42,6 +42,8 @@ from collections import defaultdict
 
 from saviynt_modules.settings import Config, get_csv_rows, normalize_name
 from saviynt_modules.common import remove_last_line_from_file
+from saviynt_modules.connections import Connection
+from saviynt_modules.migration import migrate_csv_file_to_sql_server
 
 
 
@@ -54,10 +56,10 @@ args |=  {
 
 
 
-
 # %% Get Config
 
 config = Config(args=args)
+config.add_target_connection(Connection=Connection)
 
 
 
@@ -263,12 +265,14 @@ def process_psv_file(file_path:str):
         logger.warning(f'Table schema is not found for table_name="{table_name}" file={file_path}')
         return
 
+    destination_paths = []
     logger.info(f'Processing file {file_path}')
     with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as fsource:
         _ = fsource.readline() # discard header line
         if len(table_schemas)==1: # does not have sub-tables
             final_table_name, field_list = get_field_list_from_table_schema(table_schemas=table_schemas, record_type='')
             destination_path = os.path.join(os.path.dirname(file_path), final_table_name+'_'+file_date+config.final_file_ext)
+            destination_paths.append(destination_path)
             logger.info(f'Creating file {destination_path}')
             with open(file=destination_path, mode='wt', encoding='utf-8-sig') as fdest:
                 fdest.write('|'.join(field_list)+'\n')
@@ -289,6 +293,7 @@ def process_psv_file(file_path:str):
                 if record_type not in record_types:
                     final_table_name, field_list = get_field_list_from_table_schema(table_schemas=table_schemas, record_type=record_type)
                     destination_path = os.path.join(os.path.dirname(file_path), final_table_name+'_'+file_date+config.final_file_ext)
+                    destination_paths.append(destination_path)
                     logger.info(f'Creating file {destination_path}')
                     fdest = open(file=destination_path, mode='wt', encoding='utf-8-sig')
                     fdest.write('|'.join(field_list)+'\n')
@@ -301,6 +306,11 @@ def process_psv_file(file_path:str):
 
     logger.info(f'Deleting file {file_path}')
     os.remove(file_path)
+
+    for destination_path in destination_paths:
+        migrate_csv_file_to_sql_server(file_path=destination_path, config=config)
+        logger.info(f'Deleting file {destination_path}')
+        os.remove(destination_path)
 
 
 

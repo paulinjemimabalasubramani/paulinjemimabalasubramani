@@ -182,6 +182,8 @@ class CreateLogger:
         """
         Initiate the class. Set Logging Policy.
         """
+        self.environment = environment
+
         self.app_name = app_name if app_name else 'logs'
         self.logger = logging.getLogger(self.app_name)
         self.logger.setLevel(logging_level)
@@ -193,7 +195,7 @@ class CreateLogger:
         self.add_stream_handlers()
         self.add_file_handler()
 
-        self.info(f'Run Date: {self.run_date.start_str}')
+        self.info(f'Environment: {self.environment.ENVIRONMENT}, Run Date: {self.run_date.start_str}')
 
 
     def filter_out_unwanted_info_logs(self, filter_log_level:int=logging.WARNING):
@@ -250,9 +252,10 @@ class CreateLogger:
         """
         Send failure notifications to MS Teams
         """
-        msteams_webhook = pymsteams.connectorcard(self.msteams_webhook_url)
-        msteams_webhook.text(f'app = {self.app_name}; message = {message}')
-        msteams_webhook.send()
+        if self.environment.is_prod:
+            msteams_webhook = pymsteams.connectorcard(self.msteams_webhook_url)
+            msteams_webhook.text(f'app = {self.app_name}; message = {message}')
+            msteams_webhook.send()
 
 
     def log(self, msg, msg_type, extra_log:dict={}, logger_func=None):
