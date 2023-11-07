@@ -6,14 +6,15 @@ Module to handle high level migration tasks, also record metrics / metadata abou
 # %% Import Libraries
 
 import tempfile, os
-from typing import List
+from typing import List, Dict
 from zipfile import ZipFile
 
 from .logger import logger, catch_error
 from .settings import Config
 from .connections import Connection
+from .common import to_sql_value
 from .filemeta import get_file_meta_csv, FileMeta
-from .sqlserver import migrate_file_to_sql_table, create_or_truncate_sql_table, execute_sql_queries
+from .sqlserver import migrate_file_to_sql_table, create_or_truncate_sql_table, execute_sql_queries, sql_table_exists
 
 
 
@@ -48,7 +49,8 @@ def add_file_meta_to_load_history(file_meta:FileMeta, config:Config):
     create_or_truncate_sql_table(table_name_with_schema=load_history_table, columns=elt_columns, connection=elt_connection, truncate=False)
 
     elt_columns.pop('id')
-    elt_values_sql = file_meta.get_elt_values_sql()
+    elt_values_dict = file_meta.get_elt_values_sql()
+    elt_values_sql = ','.join([elt_values_dict[c] for c in elt_columns])
 
     insert_history_sql = f'''INSERT INTO {load_history_table} ({','.join(elt_columns)}) VALUES ({elt_values_sql})'''
     execute_sql_queries(sql_list=[insert_history_sql], connection=elt_connection)
@@ -83,18 +85,33 @@ def get_selected_file_paths(file_paths:str|List):
 # %%
 
 @catch_error()
-def file_meta_exists_in_history(file_meta:FileMeta=None, file_type:str=None, filename:str=None, zip_file_path:str=None):
+def file_meta_exists_in_history(config:Config, file_meta:FileMeta=None, **kwargs):
     """
     Check whether to migrate the file or not
     False return means to ingest the file | True return means to skip the file
     """
-    if file_meta: # detailed check
-
+    if not sql_table_exists(table_name_with_schema=config.elt_table_load_history, connection=config.elt_connection):
         return False
 
-    else: # quick check
+    if kwargs: # custom check
+        check_dict = {c:to_sql_value(v) for c, v in kwargs.items()}
+    elif file_meta: # detailed check
+        check_list = ['table_name_with_schema', 'database_name', 'server_name', 'date_of_data', 'is_full_load']
+        elt_values = file_meta.get_elt_values_sql()
+        check_dict = {c:elt_values[c] for c in check_list}
+    else:
+        raise ValueError('Either file_meta or **kwargs should be given')
 
-        return False
+    check_dict_filter = ' AND '.join([f'{c} IS NULL' if v.upper().strip()=='NULL' or v.strip()=='' or v is None else f'{c}={v}' for c, v in check_dict.items()])
+
+    exists_sql = f'''
+        SELECT COUNT(*) AS CNT
+        FROM {config.elt_table_load_history}
+        WHERE {check_dict_filter}
+        '''
+
+    output = execute_sql_queries(sql_list=[exists_sql], connection=config.elt_connection)
+    return output[0][0][0]>0
 
 
 
@@ -112,7 +129,7 @@ def migrate_single_file_to_sql_server(file_type:str, file_path:str, config:Confi
     else:
         raise ValueError(f'Unknown file_type: {file_type}')
 
-    if file_meta_exists_in_history(file_meta=file_meta):
+    if file_meta_exists_in_history(config=config, file_meta=file_meta):
         logger.info(f'The file has been loaded previously, skipping {file_path}')
         return
 
@@ -149,7 +166,7 @@ def recursive_migrate_all_files(file_type:str, file_paths:str|List, config:Confi
                 for zipinfo in zipinfo_list:
                     if zipinfo.is_dir(): continue
 
-                    if file_meta_exists_in_history(file_type=file_type, filename=os.path.basename(zipinfo.filename), zip_file_path=zip_file_path):
+                    if file_meta_exists_in_history(config=config, file_type=file_type, file_name=os.path.basename(zipinfo.filename), zip_file_path=zip_file_path):
                         logger.info(f'The file already has been loaded or the file is not used, skipping file_type={file_type}, filename={os.path.basename(zipinfo.filename)}, zip_file_path={zip_file_path}')
                         continue
 

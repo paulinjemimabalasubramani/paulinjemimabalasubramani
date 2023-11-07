@@ -129,7 +129,7 @@ class FileMeta:
         """
         elt_columns = self.get_elt_load_history_columns()
 
-        elt_values = []
+        elt_values = OrderedDict()
         for elt_column in elt_columns:
             if elt_column == 'id':
                 continue # id field will be auto-populated (autoincrement)
@@ -142,9 +142,9 @@ class FileMeta:
             else:
                 val = to_sql_value(val)
 
-            elt_values.append(val)
+            elt_values[elt_column] = val
 
-        return ','.join(elt_values)
+        return elt_values
 
 
 
@@ -230,8 +230,10 @@ def extract_table_name_and_date_from_file_name(file_path:str, config:Config, zip
 
     if hasattr(config, 'file_date_format'):
         date_of_data = datetime.strptime(file_date_str, config.file_date_format)
+    elif zip_file_path:
+        date_of_data = datetime.fromtimestamp(os.path.getmtime(filename=zip_file_path))
     else:
-        date_of_data = logger.run_date.start
+        date_of_data = datetime.fromtimestamp(os.path.getmtime(filename=file_path))
 
     table_name_with_schema = normalize_table_name(table_name_raw=table_name_raw, config=config)
 

@@ -99,6 +99,24 @@ def execute_sql_queries(sql_list:List, connection:Connection):
 # %%
 
 @catch_error()
+def sql_table_exists(table_name_with_schema, connection:Connection):
+    """
+    Check if SQL Server table exists
+    """
+    exists_sql = f'''
+        SELECT COUNT(*) AS CNT
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE LOWER(CONCAT_WS('.', table_schema, table_name)) = LOWER('{remove_square_parenthesis(table_name_with_schema)}')
+        '''
+
+    output = execute_sql_queries(sql_list=[exists_sql], connection=connection)
+    return output[0][0][0]>0
+
+
+
+# %%
+
+@catch_error()
 def get_sql_table_columns(table_name_with_schema, connection:Connection):
     """
     Get column names for a give table from information schema
