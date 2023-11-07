@@ -71,7 +71,6 @@ zip_file_path = None
 
 file_meta = get_file_meta_csv(file_path=file_path, config=config, zip_file_path=zip_file_path)
 
-migrate_file_to_sql_table(file_meta=file_meta, connection=config.target_connection, config=config)
 
 
 # %%

@@ -32,16 +32,6 @@ def get_config(args:dict):
     return config
 
 
-# %%
-
-from collections import OrderedDict
-
-a = OrderedDict()
-a[1] = 'a'
-a[2] = 'b'
-a[3] = 'c'
-
-
 
 # %%
 
