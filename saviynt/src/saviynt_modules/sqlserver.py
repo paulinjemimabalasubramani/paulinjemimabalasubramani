@@ -9,6 +9,7 @@ Module to handle common sql server migration tasks
 import pyodbc
 from collections import OrderedDict
 from typing import List, Dict
+from datetime import datetime
 
 from .settings import Config
 from .logger import logger, catch_error
@@ -312,6 +313,8 @@ def migrate_file_to_sql_table(file_meta:FileMeta, connection:Connection, config:
         logger.warning(f'No File Meta, skipping')
         return
 
+    migration_start_time = datetime.now()
+
     staging_table =  config.staging_schema + '.' + file_meta.table_name_with_schema.split('.')[1]
     logger.info(f'Preparing Staging Table: {staging_table}')
 
@@ -340,6 +343,9 @@ def migrate_file_to_sql_table(file_meta:FileMeta, connection:Connection, config:
     logger.info(f'Finished Merge-Match statement for table {file_meta.table_name_with_schema}')
 
     drop_sql_table_if_exists(table_name_with_schema=staging_table, connection=connection)
+
+    timedelta1 = datetime.now() - migration_start_time
+    file_meta.load_time_seconds = timedelta1.days*86400 + timedelta1.seconds + timedelta1.microseconds/10**6
 
     return output
 

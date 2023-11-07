@@ -44,6 +44,7 @@ class FileMeta:
     file_modified_date:datetime = None
     zip_file_size_kb:float = None
     zip_file_modified_date:datetime = None
+    load_time_seconds:float = None
 
 
     @catch_error()
@@ -85,13 +86,15 @@ class FileMeta:
             ('table_name_with_schema', str_type),
             ('database_name', str_type),
             ('server_name', str_type),
-            ('delimiter', str_type),
-            ('columns', str_type),
             ('is_full_load', int_type),
+            ('rows_copied', int_type),
+            ('load_time_seconds', float_type),
             ('date_of_data', datetime_type),
             ('run_date', datetime_type),
             ('pipeline_key', str_type),
             ('file_type', str_type),
+            ('delimiter', str_type),
+            ('columns', str_type),
             ('file_name', str_type),
             ('file_path', str_type),
             ('file_size_kb', float_type),
@@ -104,7 +107,6 @@ class FileMeta:
             ('source_database', str_type),
             ('source_table_name_with_schema', str_type),
             ('additional_info', json_type),
-            ('rows_copied', int_type),
         ])
 
         return elt_columns

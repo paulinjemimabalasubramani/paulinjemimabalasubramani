@@ -173,8 +173,9 @@ def recursive_migrate_all_files(file_type:str, file_paths:str|List, config:Confi
                     with tempfile.TemporaryDirectory(dir=config.temporary_folder_path) as tmpdir:
                         logger.info(f'Extracting {zipinfo.filename} from {file_path} to {tmpdir}')
                         zipobj.extract(member=zipinfo, path=tmpdir)
+                        new_file_path = os.path.join(tmpdir, zipinfo.filename)
 
-                        recursive_migrate_all_files(file_type=file_type, source_path=tmpdir, config=config, zip_file_path=zip_file_path)
+                        recursive_migrate_all_files(file_type=file_type, file_paths=new_file_path, config=config, zip_file_path=zip_file_path)
             continue
 
         file_meta = migrate_single_file_to_sql_server(file_type=file_type, file_path=file_path, config=config, zip_file_path=zip_file_path)
