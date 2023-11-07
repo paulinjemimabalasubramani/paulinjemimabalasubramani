@@ -5,6 +5,10 @@ generic,target_server,DW1SQLDATA01.ibddomain.net
 generic,target_database,SaviyntIntegration
 generic,target_schema,dbo
 generic,staging_schema,stg
+generic,elt_driver,{ODBC Driver 17 for SQL Server}
+generic,elt_server,DW1SQLDATA01.ibddomain.net
+generic,elt_database,SaviyntIntegration
+generic,elt_table_load_history,elt.load_history
 generic,default_data_type,NVARCHAR(MAX)
 generic,column_meta_prefix,meta_
 generic,keep_history,TRUE

@@ -190,11 +190,12 @@ class Config(ConfigBase):
         logger.info(self.__dict__) # print out all settings
 
 
-    def add_target_connection(self, Connection):
+    def add_connection_from_config(self, prefix:str, Connection):
         """
         Add target connection to settings
         """
-        self.target_connection = Connection.from_config(config=self, prefix='target')
+        prefix = prefix.lower().strip()
+        setattr(self, f'{prefix}_connection', Connection.from_config(config=self, prefix=prefix))
 
 
 

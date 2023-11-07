@@ -38,8 +38,7 @@ else:
 
 from saviynt_modules.logger import logger, catch_error
 from saviynt_modules.connections import Connection
-from saviynt_modules.settings import Config
-from saviynt_modules.migration import recursive_migrate_all_files, migrate_csv_file_to_sql_server
+from saviynt_modules.migration import recursive_migrate_all_files, migrate_csv_file_to_sql_server, get_config
 
 
 
@@ -52,8 +51,33 @@ args |=  {
 
 # %% Get Config
 
-config = Config(args=args)
-config.add_target_connection(Connection=Connection)
+config = get_config(args=args)
+
+
+
+# %%
+
+from saviynt_modules.migration import migrate_file_to_sql_table
+from saviynt_modules.filemeta import get_file_meta_csv
+from saviynt_modules.sqlserver import create_or_truncate_sql_table, execute_sql_queries, get_elt_values_sql
+
+
+
+# %%
+
+
+file_path = r'C:\myworkdir\data\envestnet_v35_processed\codes_account_status_20231009.txt'
+zip_file_path = None
+
+file_meta = get_file_meta_csv(file_path=file_path, config=config, zip_file_path=zip_file_path)
+
+migrate_file_to_sql_table(file_meta=file_meta, connection=config.target_connection, config=config)
+
+
+# %%
+
+
+
 
 
 

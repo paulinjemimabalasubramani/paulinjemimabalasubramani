@@ -59,6 +59,22 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
 # %%
 
 @catch_error()
+def bcp_to_sql_server(file_meta:FileMeta, connection:Connection, staging_table:str):
+    """
+    Main BCP function, which calls other BCP functions depending on file_type
+    """
+    if file_meta.file_type == 'csv':
+        file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_meta.file_path, connection=connection, table_name_with_schema=staging_table, delimiter=file_meta.delimiter)
+    else:
+        raise ValueError(f'Unknown file_meta.file_type: {file_meta.file_type}')
+
+    return file_meta.rows_copied
+
+
+
+# %%
+
+@catch_error()
 def execute_sql_queries(sql_list:List, connection:Connection):
     """
     Execute given list of SQL queries
@@ -283,8 +299,7 @@ def migrate_file_to_sql_table(file_meta:FileMeta, connection:Connection, config:
 
     drop_sql_table_if_exists(table_name_with_schema=staging_table, connection=connection)
     create_or_truncate_sql_table(table_name_with_schema=staging_table, columns=file_meta.columns, connection=connection, truncate=True)
-    file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_meta.file_path, connection=connection, table_name_with_schema=staging_table, delimiter=file_meta.delimiter)
-    if file_meta.rows_copied is None: return
+    if bcp_to_sql_server(file_meta=file_meta, connection=connection, staging_table=staging_table) is None: return
 
     meta_columns, meta_columns_values = get_sql_table_meta_columns(file_meta=file_meta, config=config)
     add_sql_new_columns_if_any(table_name_with_schema=staging_table, columns=meta_columns, connection=connection)

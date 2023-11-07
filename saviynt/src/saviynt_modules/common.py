@@ -5,7 +5,10 @@ Library for common generic functions
 
 # %% Import Libraries
 
-import os, subprocess, re
+import os, subprocess, re, json
+from collections import OrderedDict
+from datetime import datetime
+
 from .logger import logger, catch_error
 
 
@@ -103,6 +106,35 @@ def get_separator(header_string:str):
             break
     return delimiter
 
+
+
+# %%
+
+@catch_error()
+def to_sql_value(cval):
+    """
+    Utility function to convert Python values to SQL server equivalent values
+    """
+    strftime = r'%Y-%m-%d %H:%M:%S'  # http://strftime.org/
+
+    if cval is None:
+        cval = 'NULL'
+    elif isinstance(cval, datetime):
+        cval = f"'{cval.strftime(strftime)}'"
+    elif isinstance(cval, bool):
+        cval = str(int(cval))
+    elif isinstance(cval, int) or isinstance(cval, float):
+        cval = str(cval)
+    elif isinstance(cval, dict) or isinstance(cval, OrderedDict) or isinstance(cval, list):
+        if cval:
+            cval = f"'{json.dumps(cval)}'"
+        else:
+            cval = 'NULL'
+    else:
+        cval = str(cval).replace("'", "''")
+        cval = f"'{cval}'"
+
+    return cval
 
 
 # %%

@@ -13,7 +13,7 @@ from typing import List, Dict
 
 from .logger import logger, catch_error
 from .settings import Config, normalize_name
-from .common import get_separator
+from .common import get_separator, to_sql_value
 
 
 
@@ -27,7 +27,7 @@ class FileMeta:
     table_name_with_schema:str
     file_path:str = None
     zip_file_path:str = None
-    columns:str = None
+    columns:OrderedDict = field(default_factory=OrderedDict)
     delimiter:str = None
     database_name:str = None
     server_name:str = None
@@ -40,8 +40,13 @@ class FileMeta:
     pipeline_key:str = None
     additional_info:OrderedDict = field(default_factory=OrderedDict)
     rows_copied:int = None
+    file_size_kb:float = None
+    file_modified_date:datetime = None
+    zip_file_size_kb:float = None
+    zip_file_modified_date:datetime = None
 
 
+    @catch_error()
     def __post_init__(self):
         """
         Runs after __init__
@@ -61,6 +66,85 @@ class FileMeta:
         if self.pipeline_key is None: self.pipeline_key = config.pipeline_key
         if self.date_of_data is None: self.date_of_data = logger.run_date.start
         if self.is_full_load is None and hasattr(config, 'is_full_load'): self.is_full_load = config.is_full_load.upper() == 'TRUE'
+
+
+    @catch_error()
+    def get_elt_load_history_columns(self):
+        """
+        get list of columns for in elt.load_history
+        """
+        id_type = 'INT IDENTITY'
+        str_type = 'NVARCHAR(MAX)'
+        int_type = 'INT'
+        datetime_type = 'DATETIME'
+        float_type = 'FLOAT'
+        json_type = 'NVARCHAR(MAX)'
+
+        elt_columns = OrderedDict([
+            ('id', id_type),
+            ('table_name_with_schema', str_type),
+            ('database_name', str_type),
+            ('server_name', str_type),
+            ('delimiter', str_type),
+            ('columns', str_type),
+            ('is_full_load', int_type),
+            ('date_of_data', datetime_type),
+            ('run_date', datetime_type),
+            ('pipeline_key', str_type),
+            ('file_type', str_type),
+            ('file_name', str_type),
+            ('file_path', str_type),
+            ('file_size_kb', float_type),
+            ('file_modified_date', datetime_type),
+            ('zip_file_name', str_type),
+            ('zip_file_path', str_type),
+            ('zip_file_size_kb', float_type),
+            ('zip_file_modified_date', datetime_type),
+            ('source_server', str_type),
+            ('source_database', str_type),
+            ('source_table_name_with_schema', str_type),
+            ('additional_info', json_type),
+            ('rows_copied', int_type),
+        ])
+
+        return elt_columns
+
+
+    @catch_error()
+    def add_file_os_info(self):
+        """
+        """
+        self.file_size_kb = os.path.getsize(filename=self.file_path) / 1024.0
+        self.file_modified_date = datetime.fromtimestamp(os.path.getmtime(filename=self.file_path))
+
+        if self.zip_file_path:
+            self.zip_file_size_kb = os.path.getsize(filename=self.zip_file_path) / 1024.0
+            self.zip_file_modified_date = datetime.fromtimestamp(os.path.getmtime(filename=self.zip_file_path))
+
+
+    @catch_error()
+    def get_elt_values_sql(self):
+        """
+        Get SQL version of ELT Values
+        """
+        elt_columns = self.get_elt_load_history_columns()
+
+        elt_values = []
+        for elt_column in elt_columns:
+            if elt_column == 'id':
+                continue # id field will be auto-populated (autoincrement)
+
+            val = getattr(self, elt_column)
+
+            if elt_column == 'columns':
+                val = ','.join([x for x in val])
+                val = f"'{val}'"
+            else:
+                val = to_sql_value(val)
+
+            elt_values.append(val)
+
+        return ','.join(elt_values)
 
 
 
@@ -178,12 +262,10 @@ def get_csv_file_columns_and_delimiter(file_path:str, default_data_type:str):
 # %%
 
 @catch_error()
-def get_file_meta_csv(file_path:str, config:Config, zip_file_path:str=None):
+def get_file_meta_csv(file_type:str, file_path:str, config:Config, zip_file_path:str=None):
     """
-    Extract file metadata
+    Extract file metadata for csv-like files
     """
-    file_type = 'csv'
-
     columns, delimiter = get_csv_file_columns_and_delimiter(file_path=file_path, default_data_type=config.default_data_type)
     if not columns: return
 
@@ -201,6 +283,7 @@ def get_file_meta_csv(file_path:str, config:Config, zip_file_path:str=None):
     )
 
     file_meta.add_config(config=config)
+    file_meta.add_file_os_info()
 
     return file_meta
 

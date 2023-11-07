@@ -40,10 +40,9 @@ from datetime import datetime
 from zipfile import ZipFile
 from collections import defaultdict
 
-from saviynt_modules.settings import Config, get_csv_rows, normalize_name
+from saviynt_modules.settings import get_csv_rows, normalize_name
 from saviynt_modules.common import remove_last_line_from_file
-from saviynt_modules.connections import Connection
-from saviynt_modules.migration import migrate_csv_file_to_sql_server
+from saviynt_modules.migration import recursive_migrate_all_files, get_config
 
 
 
@@ -58,8 +57,7 @@ args |=  {
 
 # %% Get Config
 
-config = Config(args=args)
-config.add_target_connection(Connection=Connection)
+config = get_config(args=args)
 
 
 
@@ -308,7 +306,7 @@ def process_psv_file(file_path:str):
     os.remove(file_path)
 
     for destination_path in destination_paths:
-        migrate_csv_file_to_sql_server(file_path=destination_path, config=config)
+        recursive_migrate_all_files(file_type='csv', file_paths=destination_path, config=config)
         logger.info(f'Deleting file {destination_path}')
         os.remove(destination_path)
 
