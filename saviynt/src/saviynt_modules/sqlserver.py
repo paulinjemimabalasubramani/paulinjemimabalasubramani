@@ -331,6 +331,8 @@ def migrate_file_to_sql_table(file_meta:FileMeta, connection:Connection, config:
     if hasattr(config, 'keep_history') and config.keep_history.strip().upper() == 'FALSE':
         truncate_target_table = True
 
+    if truncate_target_table: # to fix SQL problem of having turncated table with large disk space
+        drop_sql_table_if_exists(table_name_with_schema=file_meta.table_name_with_schema, connection=connection)
     create_or_truncate_sql_table(table_name_with_schema=file_meta.table_name_with_schema, columns=file_meta.columns | meta_columns, connection=connection, truncate=truncate_target_table)
 
     output = merge_sql_staging_into_target(

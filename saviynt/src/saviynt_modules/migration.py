@@ -129,6 +129,10 @@ def migrate_single_file_to_sql_server(file_type:str, file_path:str, config:Confi
     else:
         raise ValueError(f'Unknown file_type: {file_type}')
 
+    if not file_meta:
+        logger.warning(f'File Meta could not be processed, skipping {file_path}')
+        return
+
     if file_meta_exists_in_history(config=config, file_meta=file_meta):
         logger.info(f'The file has been loaded previously, skipping {file_path}')
         return

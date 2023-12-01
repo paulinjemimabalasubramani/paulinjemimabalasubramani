@@ -29,7 +29,7 @@ if environment.environment >= environment.qa:
 
 else:
     args = {
-        'pipeline_key': 'saviynt_envestnet',
+        'pipeline_key': 'saviynt_mips',
         }
 
 

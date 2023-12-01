@@ -9,7 +9,7 @@ generic,elt_driver,{ODBC Driver 17 for SQL Server}
 generic,elt_server,DW1SQLDATA01.ibddomain.net
 generic,elt_database,SaviyntIntegration
 generic,elt_table_load_history,elt.load_history
-generic,default_data_type,NVARCHAR(MAX)
+generic,default_data_type,NVARCHAR(2000)
 generic,column_meta_prefix,meta_
 generic,keep_history,TRUE
 generic,is_full_load,TRUE
@@ -22,3 +22,18 @@ saviynt_envestnet,file_name_regex,^(.+?)(?=_(\d{8})$)
 saviynt_envestnet,table_prefix,envestnet
 saviynt_envestnet,is_full_load,TRUE
 saviynt_envestnet,keep_history,FALSE
+saviynt_mips,source_path,C:\myworkdir\data\MIPS_accounts
+saviynt_mips,allowed_file_extensions,"txt,csv,psv"
+saviynt_mips,file_name_regex,^([A-Za-z]+)
+saviynt_mips,is_full_load,TRUE
+saviynt_mips,keep_history,FALSE
+saviynt_investalink,source_path,C:\myworkdir\data\\Investalink_accounts
+saviynt_investalink,allowed_file_extensions,"txt,csv,psv"
+saviynt_investalink,file_name_regex,^([A-Za-z]+)
+saviynt_investalink,is_full_load,TRUE
+saviynt_investalink,keep_history,FALSE
+saviynt_sabos,source_path,C:\myworkdir\data\SABOS_accounts
+saviynt_sabos,allowed_file_extensions,"txt,csv,psv"
+saviynt_sabos,file_name_regex,^([A-Za-z]+)
+saviynt_sabos,is_full_load,TRUE
+saviynt_sabos,keep_history,FALSE

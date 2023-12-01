@@ -75,11 +75,11 @@ class FileMeta:
         get list of columns for in elt.load_history
         """
         id_type = 'INT IDENTITY'
-        str_type = 'NVARCHAR(MAX)'
+        str_type = 'NVARCHAR(2000)'
         int_type = 'INT'
         datetime_type = 'DATETIME'
         float_type = 'FLOAT'
-        json_type = 'NVARCHAR(MAX)'
+        json_type = 'NVARCHAR(2000)'
 
         elt_columns = OrderedDict([
             ('id', id_type),
@@ -217,7 +217,7 @@ def extract_table_name_and_date_from_file_name(file_path:str, config:Config, zip
                 logger.warning(f'Invalid Match, could not retrieve table_name or file_date from regex pattern: {file_path}. {str(e)}')
                 return None, None
         else:
-            logger.warning(f'Invalid Match, Could not find date stamp for the file or invalid file name: {file_path}')
+            logger.warning(f'Invalid Match, Could not find date stamp for the file or invalid file name: {file_path}\nfile_name_regex={config.file_name_regex}  file_name_noext={file_name_noext}')
             return None, None
     else:
         if hasattr(config, 'file_date_format'):
