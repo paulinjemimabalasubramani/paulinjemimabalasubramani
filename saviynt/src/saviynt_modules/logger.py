@@ -102,7 +102,7 @@ class Environment:
         """
         Initialize the class. Read environment
         """
-        self.ENVIRONMENT = get_env(variable_name='ENVIRONMENT').upper() # string form
+        self.ENVIRONMENT = get_env(variable_name='ENVIRONMENT').upper().strip() # string form
         self.environment = self.ENVIRONMENT_OPTIONS[self.ENVIRONMENT] # number form
 
         for e in self.ENVIRONMENT_OPTIONS:

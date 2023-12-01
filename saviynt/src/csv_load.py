@@ -18,7 +18,7 @@ logger.set_logger(app_name=os.path.basename(__file__))
 
 # %% Parse Arguments
 
-if environment.is_prod:
+if environment.environment >= environment.qa:
     import argparse
 
     parser = argparse.ArgumentParser(description=__description__)
