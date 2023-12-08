@@ -63,7 +63,7 @@ class FileMeta:
         Add metadata from config and other default values
         """
         if self.database_name is None and hasattr(config, 'target_database'): self.database_name = config.target_database
-        if self.server_name is None  and hasattr(config, 'target_server'): self.server_name = config.target_server
+        if self.server_name is None and hasattr(config, 'target_server'): self.server_name = config.target_server
         if self.pipeline_key is None: self.pipeline_key = config.pipeline_key
         if self.date_of_data is None: self.date_of_data = logger.run_date.start
         if self.is_full_load is None and hasattr(config, 'is_full_load'): self.is_full_load = config.is_full_load.upper() == 'TRUE'
@@ -245,8 +245,21 @@ def extract_table_name_and_date_from_file_name(file_path:str, config:Config, zip
 
 # %%
 
+"""
+
+import re
+
+file_name_noext='user_id_administration.20231204.maj_userid_20231204'
+file_name_regex = r"^(.*?)\.(\d{8})"
+
+match = re.search(file_name_regex, file_name_noext)
+"""
+
+
+# %%
+
 @catch_error()
-def get_csv_file_columns_and_delimiter(file_path:str, default_data_type:str):
+def get_file_columns_csv(file_path:str, default_data_type:str):
     """
     Get list of columns and delimiter used for csv file
     """
@@ -270,7 +283,7 @@ def get_file_meta_csv(file_type:str, file_path:str, config:Config, zip_file_path
     """
     Extract file metadata for csv-like files
     """
-    columns, delimiter = get_csv_file_columns_and_delimiter(file_path=file_path, default_data_type=config.default_data_type)
+    columns, delimiter = get_file_columns_csv(file_path=file_path, default_data_type=config.default_data_type)
     if not columns: return
 
     table_name_with_schema, date_of_data = extract_table_name_and_date_from_file_name(file_path=file_path, config=config, zip_file_path=zip_file_path)
@@ -289,6 +302,59 @@ def get_file_meta_csv(file_type:str, file_path:str, config:Config, zip_file_path
     file_meta.add_config(config=config)
     file_meta.add_file_os_info()
 
+    return file_meta
+
+
+
+# %%
+
+@catch_error()
+def get_file_meta_json(file_type:str, file_path:str, config:Config, zip_file_path:str=None):
+    """
+    Extract file metadata for json-like files
+    """
+    columns = config.columns # Assume columns will be available from previous process.
+    if not columns:
+        logger.warning(f'No columns found for file: {file_path}')
+        return
+
+    table_name_with_schema, date_of_data = extract_table_name_and_date_from_file_name(file_path=file_path, config=config, zip_file_path=zip_file_path)
+    if not table_name_with_schema: return
+
+    file_meta = FileMeta(
+        table_name_with_schema = table_name_with_schema,
+        file_path = file_path,
+        zip_file_path = zip_file_path,
+        columns = columns,
+        file_type = file_type,
+        date_of_data = date_of_data,
+    )
+
+    file_meta.add_config(config=config)
+    file_meta.add_file_os_info()
+
+    return file_meta
+
+
+
+# %%
+
+file_type_map_fn = {
+    'csv': get_file_meta_csv,
+    'json': get_file_meta_json,
+}
+
+
+
+# %%
+
+@catch_error()
+def get_file_meta(file_type:str, file_path:str, config:Config, zip_file_path:str=None) -> FileMeta:
+    """
+    Main function to get file_meta
+    """
+    get_file_meta_fn = file_type_map_fn[file_type]
+    file_meta = get_file_meta_fn(file_type=file_type, file_path=file_path, config=config, zip_file_path=zip_file_path)
     return file_meta
 
 

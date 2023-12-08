@@ -13,7 +13,7 @@ from .logger import logger, catch_error
 from .settings import Config
 from .connections import Connection
 from .common import to_sql_value
-from .filemeta import get_file_meta_csv, FileMeta
+from .filemeta import get_file_meta, FileMeta
 from .sqlserver import migrate_file_to_sql_table, create_or_truncate_sql_table, execute_sql_queries, sql_table_exists
 
 
@@ -124,11 +124,7 @@ def migrate_single_file_to_sql_server(file_type:str, file_path:str, config:Confi
     """
     logger.info(f'Processing file: {file_path}')
 
-    if file_type == 'csv':
-        file_meta = get_file_meta_csv(file_type=file_type, file_path=file_path, config=config, zip_file_path=zip_file_path)
-    else:
-        raise ValueError(f'Unknown file_type: {file_type}')
-
+    file_meta = get_file_meta(file_type=file_type, file_path=file_path, config=config, zip_file_path=zip_file_path)
     if not file_meta:
         logger.warning(f'File Meta could not be processed, skipping {file_path}')
         return

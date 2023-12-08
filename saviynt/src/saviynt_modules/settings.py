@@ -190,12 +190,37 @@ class Config(ConfigBase):
         logger.info(self.__dict__) # print out all settings
 
 
+    @catch_error()
     def add_connection_from_config(self, prefix:str, Connection):
         """
         Add target connection to settings
         """
         prefix = prefix.lower().strip()
         setattr(self, f'{prefix}_connection', Connection.from_config(config=self, prefix=prefix))
+
+
+    @staticmethod
+    @catch_error()
+    def convert_string_map_to_dict(map_str:str, uppercase_key:bool=True, uppercase_val:bool=True):
+        """
+        Convert string mapping to dictionary
+        """
+        dict_map = dict()
+        kvs = map_str.split(',')
+
+        for kv in kvs:
+            kv_split = kv.split(':')
+            key = kv_split[0].strip()
+            val = kv_split[1].strip()
+
+            if not key or not val: continue
+
+            if uppercase_key: key = key.upper()
+            if uppercase_val: val = val.upper()
+
+            dict_map = {**dict_map, key:val}
+
+        return dict_map
 
 
 

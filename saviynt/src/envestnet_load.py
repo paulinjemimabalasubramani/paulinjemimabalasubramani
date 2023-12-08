@@ -2,7 +2,7 @@
 
 __description__ = """
 
-Copy Envestnet files for Saviynt
+Load Envestnet files for Saviynt
 
 """
 
@@ -39,6 +39,7 @@ import re, shutil
 from datetime import datetime
 from zipfile import ZipFile
 from collections import defaultdict
+from distutils.dir_util import remove_tree
 
 from saviynt_modules.settings import get_csv_rows, normalize_name
 from saviynt_modules.common import remove_last_line_from_file
@@ -58,6 +59,13 @@ args |=  {
 # %% Get Config
 
 config = get_config(args=args)
+
+
+
+# %% Clean up the source path for new files
+
+if os.path.isdir(config.source_path): remove_tree(directory=config.source_path, verbose=0, dry_run=0)
+os.makedirs(config.source_path, exist_ok=True)
 
 
 

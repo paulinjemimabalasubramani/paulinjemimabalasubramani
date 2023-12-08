@@ -27,7 +27,7 @@ saviynt_mips,allowed_file_extensions,"txt,csv,psv"
 saviynt_mips,file_name_regex,^([A-Za-z]+)
 saviynt_mips,is_full_load,TRUE
 saviynt_mips,keep_history,FALSE
-saviynt_investalink,source_path,C:\myworkdir\data\\Investalink_accounts
+saviynt_investalink,source_path,C:\myworkdir\data\Investalink_accounts
 saviynt_investalink,allowed_file_extensions,"txt,csv,psv"
 saviynt_investalink,file_name_regex,^([A-Za-z]+)
 saviynt_investalink,is_full_load,TRUE
@@ -37,3 +37,15 @@ saviynt_sabos,allowed_file_extensions,"txt,csv,psv"
 saviynt_sabos,file_name_regex,^([A-Za-z]+)
 saviynt_sabos,is_full_load,TRUE
 saviynt_sabos,keep_history,FALSE
+saviynt_nfs_raa,remote_path,C:\myworkdir\data\NFS_accounts\RAA
+saviynt_nfs_raa,source_path,C:\myworkdir\data\NFS_accounts\RAA_processed
+saviynt_nfs_raa,allowed_file_extensions,"json"
+saviynt_nfs_raa,file_name_regex,r"^(.*?)\.(\d{8})"
+saviynt_nfs_raa,file_date_format,%Y%m%d
+saviynt_nfs_raa,is_full_load,TRUE
+saviynt_nfs_raa,keep_history,FALSE
+saviynt_nfs_raa,table_prefix,nfs_raa
+saviynt_nfs_raa,schema_path,./saviynt/config/nfs_schema/nfs2_schema.csv
+saviynt_nfs_raa,clientid_map,"MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS"
+saviynt_nfs_raa,firm_name,raa
+saviynt_nfs_raa,date_threshold,2023-12-03
