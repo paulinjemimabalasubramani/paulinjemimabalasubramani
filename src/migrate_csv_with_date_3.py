@@ -75,12 +75,11 @@ def select_files():
             if file_ext.lower() not in allowed_file_extensions + ['.zip']: continue
 
             try:
-                if file_ext.lower() == '.zip':
-                    file_date_str = file_name_noext
-                else:
+                if '_' in file_name_noext:
                     date_loc = -file_name_noext[::-1].find('_')
                     file_date_str = file_name_noext[date_loc:]
-
+                else:
+                    file_date_str = file_name_noext
                 key_datetime = datetime.strptime(file_date_str, date_format)
                 if key_datetime < data_settings.key_datetime: continue
             except Exception as e:
