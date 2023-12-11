@@ -13,7 +13,7 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_d
 pipelinekey = 'ASSETS_MIGRATE_ENVESTNET'
 python_spark_code = 'migrate_csv_with_date_3'
 
-tags = ['DB:ASSETS', 'SC:ENVESTNET']
+tags = ['DB:Assets', 'SC:ENVESTNET']
 
 schedule_interval = '39 */8 * * *' # https://crontab.guru/
 
