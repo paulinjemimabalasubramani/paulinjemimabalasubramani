@@ -2,7 +2,7 @@
 
 __description__ = """
 
-Copy Envestnet files for Saviynt
+Load Envestnet files for Saviynt
 
 """
 
@@ -17,7 +17,7 @@ logger.set_logger(app_name=os.path.basename(__file__))
 
 # %% Parse Arguments
 
-if environment.is_prod:
+if environment.environment >= environment.qa:
     import argparse
 
     parser = argparse.ArgumentParser(description=__description__)
@@ -39,9 +39,11 @@ import re, shutil
 from datetime import datetime
 from zipfile import ZipFile
 from collections import defaultdict
+from distutils.dir_util import remove_tree
 
-from saviynt_modules.settings import Config, get_csv_rows, normalize_name
+from saviynt_modules.settings import get_csv_rows, normalize_name
 from saviynt_modules.common import remove_last_line_from_file
+from saviynt_modules.migration import recursive_migrate_all_files, get_config
 
 
 
@@ -54,10 +56,16 @@ args |=  {
 
 
 
-
 # %% Get Config
 
-config = Config(args=args)
+config = get_config(args=args)
+
+
+
+# %% Clean up the source path for new files
+
+if os.path.isdir(config.source_path): remove_tree(directory=config.source_path, verbose=0, dry_run=0)
+os.makedirs(config.source_path, exist_ok=True)
 
 
 
@@ -115,7 +123,7 @@ def get_envestnet_schema():
 
 envestnet_schema, table_list = get_envestnet_schema()
 
-table_list = ['hierarchy'] # Override table_list to have only the one needed for Saviynt
+table_list = ['hierarchy', 'codes'] # Override table_list to have only the one needed for Saviynt
 
 
 
@@ -263,12 +271,14 @@ def process_psv_file(file_path:str):
         logger.warning(f'Table schema is not found for table_name="{table_name}" file={file_path}')
         return
 
+    destination_paths = []
     logger.info(f'Processing file {file_path}')
     with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as fsource:
         _ = fsource.readline() # discard header line
         if len(table_schemas)==1: # does not have sub-tables
             final_table_name, field_list = get_field_list_from_table_schema(table_schemas=table_schemas, record_type='')
             destination_path = os.path.join(os.path.dirname(file_path), final_table_name+'_'+file_date+config.final_file_ext)
+            destination_paths.append(destination_path)
             logger.info(f'Creating file {destination_path}')
             with open(file=destination_path, mode='wt', encoding='utf-8-sig') as fdest:
                 fdest.write('|'.join(field_list)+'\n')
@@ -289,6 +299,7 @@ def process_psv_file(file_path:str):
                 if record_type not in record_types:
                     final_table_name, field_list = get_field_list_from_table_schema(table_schemas=table_schemas, record_type=record_type)
                     destination_path = os.path.join(os.path.dirname(file_path), final_table_name+'_'+file_date+config.final_file_ext)
+                    destination_paths.append(destination_path)
                     logger.info(f'Creating file {destination_path}')
                     fdest = open(file=destination_path, mode='wt', encoding='utf-8-sig')
                     fdest.write('|'.join(field_list)+'\n')
@@ -301,6 +312,11 @@ def process_psv_file(file_path:str):
 
     logger.info(f'Deleting file {file_path}')
     os.remove(file_path)
+
+    for destination_path in destination_paths:
+        recursive_migrate_all_files(file_type='csv', file_paths=destination_path, config=config)
+        logger.info(f'Deleting file {destination_path}')
+        os.remove(destination_path)
 
 
 
@@ -336,7 +352,7 @@ extract_zip_files()
 
 # %% Close Connections / End Program
 
-logger.mark_execution_end()
+logger.mark_run_end()
 
 
 

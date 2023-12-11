@@ -102,7 +102,7 @@ class Environment:
         """
         Initialize the class. Read environment
         """
-        self.ENVIRONMENT = get_env(variable_name='ENVIRONMENT').upper() # string form
+        self.ENVIRONMENT = get_env(variable_name='ENVIRONMENT').upper().strip() # string form
         self.environment = self.ENVIRONMENT_OPTIONS[self.ENVIRONMENT] # number form
 
         for e in self.ENVIRONMENT_OPTIONS:
@@ -116,9 +116,9 @@ environment = Environment()
 
 # %%
 
-class Execution_Date:
+class RunDate:
     """
-    Mark Start and End of Execution
+    Mark Start and End of Run
     """
     @catch_error()
     def __init__(self):
@@ -128,13 +128,13 @@ class Execution_Date:
         self.start = datetime.now()
         self.strftime = r'%Y-%m-%d %H:%M:%S'  # http://strftime.org/
         self.start_str =self. start.strftime(self.strftime) # in string form
-        self.start = datetime.strptime(self.start_str, self.strftime) # to ensure identity with the string form of execution date
+        self.start = datetime.strptime(self.start_str, self.strftime) # to ensure identity with the string form of start date
 
 
     @catch_error()
-    def end_execution(self):
+    def end_run(self):
         """
-        Mark End of Execution
+        Mark End of Run
         """
         self.end = datetime.now()
         self.timedelta = self.end - self.start
@@ -144,14 +144,14 @@ class Execution_Date:
         s = self.timedelta.seconds - h * 3600 - m * 60
         total_time = f'{self.timedelta.days} day(s), {h} hour(s), {m} minute(s), {s} second(s)'
 
-        execution_info = {
-            'execution_start': self.start_str,
-            'execution_end': self.end.strftime(self.strftime),
+        run_info = {
+            'run_start': self.start_str,
+            'run_end': self.end.strftime(self.strftime),
             'total_seconds': self.timedelta.seconds,
             'total_time': total_time,
             }
 
-        return execution_info
+        return run_info
 
 
 
@@ -175,13 +175,15 @@ class CreateLogger:
         """
         Empty initialization, so that oncoming app can set the parent_name and other important info
         """
-        self.execution_date = Execution_Date()
+        self.run_date = RunDate()
 
 
     def set_logger(self, logging_level:int=logging.INFO, app_name:str=None, log_folder_path:str=None):
         """
         Initiate the class. Set Logging Policy.
         """
+        self.environment = environment
+
         self.app_name = app_name if app_name else 'logs'
         self.logger = logging.getLogger(self.app_name)
         self.logger.setLevel(logging_level)
@@ -193,7 +195,7 @@ class CreateLogger:
         self.add_stream_handlers()
         self.add_file_handler()
 
-        self.info(f'Execution Date: {self.execution_date.start_str}')
+        self.info(f'Environment: {self.environment.ENVIRONMENT}, Run Date: {self.run_date.start_str}')
 
 
     def filter_out_unwanted_info_logs(self, filter_log_level:int=logging.WARNING):
@@ -250,9 +252,10 @@ class CreateLogger:
         """
         Send failure notifications to MS Teams
         """
-        msteams_webhook = pymsteams.connectorcard(self.msteams_webhook_url)
-        msteams_webhook.text(f'app = {self.app_name}; message = {message}')
-        msteams_webhook.send()
+        if self.environment.is_prod:
+            msteams_webhook = pymsteams.connectorcard(self.msteams_webhook_url)
+            msteams_webhook.text(f'app = {self.app_name}; message = {message}')
+            msteams_webhook.send()
 
 
     def log(self, msg, msg_type, extra_log:dict={}, logger_func=None):
@@ -302,11 +305,11 @@ class CreateLogger:
         self.log(msg=msg, msg_type=self.msg_type_ERROR, logger_func=self.logger.error)
 
 
-    def mark_execution_end(self):
+    def mark_run_end(self):
         """
-        Log Execution End date and Execution duration of the entire code
+        Log Run End date and Run duration of the entire code
         """
-        self.info(self.execution_date.end_execution())
+        self.info(self.run_date.end_run())
 
 
 
