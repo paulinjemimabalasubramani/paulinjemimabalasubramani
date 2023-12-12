@@ -39,7 +39,7 @@ import re, json, shutil, tempfile
 from datetime import datetime
 from collections import defaultdict
 from distutils.dir_util import remove_tree
-
+from collections import OrderedDict
 
 from saviynt_modules.settings import get_csv_rows, normalize_name
 from saviynt_modules.migration import recursive_migrate_all_files, get_config, file_meta_exists_in_history
@@ -575,6 +575,7 @@ def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
             logger.warning(f'Unknown Record Number: {record_number} for line {line}')
             continue
 
+    columns = OrderedDict([(c, config.default_data_type) for c in columns])
     return columns
 
 

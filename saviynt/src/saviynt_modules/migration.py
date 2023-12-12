@@ -9,7 +9,7 @@ import tempfile, os
 from typing import List, Dict
 from zipfile import ZipFile
 
-from .logger import logger, catch_error
+from .logger import logger, catch_error, environment
 from .settings import Config
 from .connections import Connection
 from .common import to_sql_value
@@ -102,13 +102,16 @@ def file_meta_exists_in_history(config:Config, file_meta:FileMeta=None, **kwargs
     else:
         raise ValueError('Either file_meta or **kwargs should be given')
 
-    check_dict_filter = ' AND '.join([f'{c} IS NULL' if v.upper().strip()=='NULL' or v.strip()=='' or v is None else f'{c}={v}' for c, v in check_dict.items()])
+    check_dict_filter = ' AND '.join([f'{c} IS NULL' if v is None or v.upper().strip()=='NULL' or v.strip()=='' else f'{c}={v}' for c, v in check_dict.items()])
 
     exists_sql = f'''
         SELECT COUNT(*) AS CNT
         FROM {config.elt_table_load_history}
         WHERE {check_dict_filter}
         '''
+
+    if environment.environment < environment.qa:
+        logger.info(exists_sql)
 
     output = execute_sql_queries(sql_list=[exists_sql], connection=config.elt_connection)
     return output[0][0][0]>0

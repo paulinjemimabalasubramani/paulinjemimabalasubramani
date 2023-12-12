@@ -12,7 +12,7 @@ from typing import List, Dict
 from datetime import datetime
 
 from .settings import Config
-from .logger import logger, catch_error
+from .logger import logger, catch_error, environment
 from .connections import Connection
 from .common import run_process, remove_square_parenthesis
 from .filemeta import FileMeta
@@ -30,6 +30,10 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
     """
     Send CSV/PSV data file to SQL Server using bcp tool
     if no username or password given, then use trusted connection
+
+    bcp <databse_name>.<schema_name>.<table_name> in "<file_path>" -S <server_name>.<dns_suffix> -U <username> -P <password> -c -t "|" -F 2
+
+    bcp SaviyntIntegration.dbo.envestnet_hierarchy_firm in "C:/myworkdir/data/envestnet_v35_processed/hierarchy_firm_20231009.txt" -S DW1SQLDATA01.ibddomain.net -T -c -t "|" -F 2
     """
     authentication_str = '-T' if connection.is_trusted_connection() else f'-U {connection.username} -P {connection.password}'
 
@@ -42,6 +46,9 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
         -t "{delimiter}"
         -F 2
         """
+
+    if environment.environment < environment.qa:
+        logger.info(f'BCP Command: {bcp_str}')
 
     stdout = run_process(command=bcp_str)
     if not stdout: return
@@ -56,11 +63,19 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
     return rows_copied
 
 
+# %%
+
+# convert CSV to bcp_separator file
+
+
+
+
+
 
 # %%
 
 @catch_error()
-def bcp_to_sql_server(file_meta:FileMeta, connection:Connection, staging_table:str):
+def bcp_to_sql_server(file_meta:FileMeta, connection:Connection, staging_table:str, config:Config):
     """
     Main BCP function, which calls other BCP functions depending on file_type
     """
@@ -84,6 +99,8 @@ def execute_sql_queries(sql_list:List, connection:Connection):
     with pyodbc.connect(connection.conn_str_sql_server()) as conn:
         cursor = conn.cursor()
         for sql_str in sql_list:
+            if environment.environment < environment.qa:
+                logger.info(sql_str)
             cursor.execute(sql_str)
             if cursor.description:
                 results = cursor.fetchall()
@@ -320,36 +337,37 @@ def migrate_file_to_sql_table(file_meta:FileMeta, connection:Connection, config:
 
     drop_sql_table_if_exists(table_name_with_schema=staging_table, connection=connection)
     create_or_truncate_sql_table(table_name_with_schema=staging_table, columns=file_meta.columns, connection=connection, truncate=True)
-    if bcp_to_sql_server(file_meta=file_meta, connection=connection, staging_table=staging_table) is None: return
+    bcp_output = bcp_to_sql_server(file_meta=file_meta, connection=connection, staging_table=staging_table, config=config)
 
-    meta_columns, meta_columns_values = get_sql_table_meta_columns(file_meta=file_meta, config=config)
-    add_sql_new_columns_if_any(table_name_with_schema=staging_table, columns=meta_columns, connection=connection)
-    update_sql_staging_table_meta_fields(table_name_with_schema=staging_table, meta_columns_values=meta_columns_values, connection=connection)
+    if bcp_output is None or file_meta.rows_copied == 0:
+        logger.warning(f'No rows copied in file, skipping {file_meta.file_path}')
+    else:
+        meta_columns, meta_columns_values = get_sql_table_meta_columns(file_meta=file_meta, config=config)
+        add_sql_new_columns_if_any(table_name_with_schema=staging_table, columns=meta_columns, connection=connection)
+        update_sql_staging_table_meta_fields(table_name_with_schema=staging_table, meta_columns_values=meta_columns_values, connection=connection)
 
-    logger.info(f'Preparing Persistent Table: {file_meta.table_name_with_schema}')
-    truncate_target_table = False
-    if hasattr(config, 'keep_history') and config.keep_history.strip().upper() == 'FALSE':
-        truncate_target_table = True
+        logger.info(f'Preparing Persistent Table: {file_meta.table_name_with_schema}')
+        truncate_target_table = False
+        if hasattr(config, 'keep_history') and config.keep_history.strip().upper() == 'FALSE':
+            truncate_target_table = True
 
-    if truncate_target_table: # to fix SQL problem of having turncated table with large disk space
-        drop_sql_table_if_exists(table_name_with_schema=file_meta.table_name_with_schema, connection=connection)
-    create_or_truncate_sql_table(table_name_with_schema=file_meta.table_name_with_schema, columns=file_meta.columns | meta_columns, connection=connection, truncate=truncate_target_table)
+        if truncate_target_table: # to fix SQL problem of having turncated table with large disk space
+            drop_sql_table_if_exists(table_name_with_schema=file_meta.table_name_with_schema, connection=connection)
+        create_or_truncate_sql_table(table_name_with_schema=file_meta.table_name_with_schema, columns=file_meta.columns | meta_columns, connection=connection, truncate=truncate_target_table)
 
-    output = merge_sql_staging_into_target(
-        tgt_table_name_with_schema = file_meta.table_name_with_schema,
-        stg_table_name_with_schema = staging_table,
-        all_columns = file_meta.columns | meta_columns,
-        is_full_load = file_meta.is_full_load,
-        connection = connection,
-        )
-    logger.info(f'Finished Merge-Match statement for table {file_meta.table_name_with_schema}')
+        output = merge_sql_staging_into_target(
+            tgt_table_name_with_schema = file_meta.table_name_with_schema,
+            stg_table_name_with_schema = staging_table,
+            all_columns = file_meta.columns | meta_columns,
+            is_full_load = file_meta.is_full_load,
+            connection = connection,
+            )
+        logger.info(f'Finished Merge-Match statement for table {file_meta.table_name_with_schema}')
 
     drop_sql_table_if_exists(table_name_with_schema=staging_table, connection=connection)
 
     timedelta1 = datetime.now() - migration_start_time
     file_meta.load_time_seconds = timedelta1.days*86400 + timedelta1.seconds + timedelta1.microseconds/10**6
-
-    return output
 
 
 

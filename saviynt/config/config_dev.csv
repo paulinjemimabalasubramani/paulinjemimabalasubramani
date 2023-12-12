@@ -13,6 +13,7 @@ generic,default_data_type,NVARCHAR(2000)
 generic,column_meta_prefix,meta_
 generic,keep_history,TRUE
 generic,is_full_load,TRUE
+generic,bcp_separator,!#!#
 saviynt_envestnet,schema_path,./saviynt/config/envestnet_schema/envestnet_schema.csv
 saviynt_envestnet,remote_path,C:\myworkdir\data\envestnet_v35
 saviynt_envestnet,source_path,C:\myworkdir\data\envestnet_v35_processed
@@ -40,7 +41,7 @@ saviynt_sabos,keep_history,FALSE
 saviynt_nfs_raa,remote_path,C:\myworkdir\data\NFS_accounts\RAA
 saviynt_nfs_raa,source_path,C:\myworkdir\data\NFS_accounts\RAA_processed
 saviynt_nfs_raa,allowed_file_extensions,"json"
-saviynt_nfs_raa,file_name_regex,r"^(.*?)\.(\d{8})"
+saviynt_nfs_raa,file_name_regex,^(.*?)\.(\d{8})
 saviynt_nfs_raa,file_date_format,%Y%m%d
 saviynt_nfs_raa,is_full_load,TRUE
 saviynt_nfs_raa,keep_history,FALSE
@@ -49,3 +50,8 @@ saviynt_nfs_raa,schema_path,./saviynt/config/nfs_schema/nfs2_schema.csv
 saviynt_nfs_raa,clientid_map,"MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS"
 saviynt_nfs_raa,firm_name,raa
 saviynt_nfs_raa,date_threshold,2023-12-03
+test01,source_path,C:\myworkdir\data\test01
+test01,allowed_file_extensions,"txt,csv,psv"
+test01,file_name_regex,^([A-Za-z0-9]+)
+test01,is_full_load,TRUE
+test01,keep_history,FALSE

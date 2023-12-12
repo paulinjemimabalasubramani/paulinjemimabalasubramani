@@ -1,9 +1,5 @@
 __description__ = """
-Load data to SQL Server using bcp tool
-
-bcp <databse_name>.<schema_name>.<table_name> in "<file_path>" -S <server_name>.<dns_suffix> -U <username> -P <password> -c -t "|" -F 2
-
-bcp SaviyntIntegration.dbo.envestnet_hierarchy_firm in "C:/myworkdir/data/envestnet_v35_processed/hierarchy_firm_20231009.txt" -S DW1SQLDATA01.ibddomain.net -T -c -t "|" -F 2
+Load CSV data to SQL Server
 
 """
 
@@ -29,7 +25,7 @@ if environment.environment >= environment.qa:
 
 else:
     args = {
-        'pipeline_key': 'saviynt_mips',
+        'pipeline_key': 'test01',
         }
 
 

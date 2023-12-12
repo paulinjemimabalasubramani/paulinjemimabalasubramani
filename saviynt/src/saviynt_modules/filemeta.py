@@ -189,7 +189,6 @@ def normalize_table_name(table_name_raw:str, config:Config):
 
 
 
-
 # %%
 
 @catch_error()
@@ -239,21 +238,9 @@ def extract_table_name_and_date_from_file_name(file_path:str, config:Config, zip
 
     table_name_with_schema = normalize_table_name(table_name_raw=table_name_raw, config=config)
 
+    date_of_data = date_of_data.replace(microsecond=0)
     return table_name_with_schema, date_of_data
 
-
-
-# %%
-
-"""
-
-import re
-
-file_name_noext='user_id_administration.20231204.maj_userid_20231204'
-file_name_regex = r"^(.*?)\.(\d{8})"
-
-match = re.search(file_name_regex, file_name_noext)
-"""
 
 
 # %%

@@ -10,6 +10,7 @@ from collections import OrderedDict
 from datetime import datetime
 
 from .logger import logger, catch_error
+from .settings import Config
 
 
 
@@ -94,12 +95,12 @@ def remove_square_parenthesis(table_name_with_schema:str):
 # %%
 
 @catch_error()
-def get_separator(header_string:str):
+def get_separator(header_string:str, config:Config):
     """
     Find out what separator is used in the file header
     """
-    separators = ['!#!#', '|', '\t']
-    delimiter = ','
+    separators = [config.bcp_separator, '|', '\t', ',']
+    delimiter = config.bcp_separator
     for s in separators:
         if s in header_string:
             delimiter = s
