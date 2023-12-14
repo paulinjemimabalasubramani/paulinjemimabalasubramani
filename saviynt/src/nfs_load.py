@@ -339,181 +339,6 @@ def get_field_properties(column_name:str, record_schema:list):
 # %%
 
 @catch_error(logger)
-def process_lines_1_record(fsource, ftarget, file_meta:dict):
-    """
-    Process all lines for files that has only 1 record type
-    """
-    record_schema = all_schema[(file_meta['file_type'], 'record')]
-
-    first = True
-    for line in fsource:
-        if line[0]!='D':
-            continue
-
-        record = new_record(file_meta=file_meta)
-        record = {**record, **extract_values_from_line(line=line, record_schema=record_schema)}
-
-        if not first:
-            ftarget.write(',\n')
-
-        ftarget.write(json.dumps(record))
-        first = False
-
-    return not first
-
-
-
-# %%
-
-@catch_error(logger)
-def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
-    """
-    Process all lines for name_and_address file
-    """
-    if 'NAMED' in os.path.basename(fsource.name).upper(): # Use only full files
-        return False
-
-    get_record_schema = lambda record_number: all_schema[(file_meta['file_type'], 'record_'+record_number.lower())]
-
-    record_descriptions = {
-        '101': ('Customer', None),
-        '102': ('FFR list', list),
-        '102x': ('FFR', dict),
-        '103': ('FFR list', list),
-        '104': ('FBSI', dict),
-        '107': ('Employer', dict),
-        '113': ('FFR list', list),
-        '115': ('Legal', dict),
-        '2X0': ('Customer', list),
-        '2X1': ('Mailing address', list),
-        '2X2': ('Legal address', list),
-        '2X3': ('Affiliation address', list),
-        '3X0': ('Email', list),
-        '900': ('ASTK_TCPN', list), # Account Stakeholder / Trusted Contact Person
-        '901': ('IPCS', list),
-        '998': ('IPID', list),
-    }
-    record_descriptions = {k.strip():(normalize_name(v[0]),v[1]) for k, v in record_descriptions.items()}
-
-    main_record = {}
-    firstln = True
-    for line in fsource:
-        common_records = {
-            'record_type': line[0:1],
-            'record_number': line[1:4],
-            'firm': line[4:8],
-            'branch': line[8:11],
-            'account_number': line[11:17],
-            }
-
-        is_data_record_type = common_records['record_type'] == 'D'
-        if (not is_data_record_type) and (not main_record):
-            continue
-
-        record_number = common_records['record_number']
-        if record_number == '101' or not is_data_record_type:
-            if main_record:
-                if not firstln: ftarget.write(',\n')
-                firstln = False
-                ftarget.write(json.dumps(main_record))
-                if not is_data_record_type: break
-
-            record_schema = get_record_schema(record_number=record_number)
-            main_record = new_record(file_meta=file_meta)
-            main_record = {**main_record, **extract_values_from_line(line=line, record_schema=record_schema)}
-            main_record = {**main_record, **{v[0]:v[1]() for k, v in record_descriptions.items() if v[1]}}
-            main_record['ffr']['ffr_name_count'] = 0
-
-        if not main_record:
-            logger.warning(f'Found line with no 101 record: {line}')
-            continue
-
-        if any(common_records[k]!=main_record[k] for k in ['firm', 'branch', 'account_number']):
-            if record_number[0]!='9':
-                logger.warning(f'Firm, Branch or Account Number does not match for the same record: {main_record}\nline: {line}')
-            continue
-
-        if record_number == '101' or not is_data_record_type:
-            pass # placeholder as the condition has already been evaluated above
-        elif record_number in ['102', '103', '113']:
-            record_schema = get_record_schema(record_number=record_number)
-            ffr_record = extract_values_from_line(line=line, record_schema=record_schema)
-
-            ffr_prefix = ['x1', 'x2', 'x3']
-            ffr_record_prefix = defaultdict(dict)
-
-            for rkey, rval in ffr_record.items():
-                if rkey in common_records:
-                    continue
-
-                if rkey == 'ffr_name_count':
-                    main_record['ffr']['ffr_name_count']  += int(rval if rval else 0)
-                    continue
-
-                prefix = rkey[:2].lower()
-                if prefix in ffr_prefix:
-                    suffix = rkey[2:]
-                    is_business = ffr_record[prefix+'ffr_name_type'].upper() == 'B'
-                    field_properties = get_field_properties(column_name=rkey, record_schema=record_schema)
-                    overlap_value = field_properties['overlap'].upper()
-                    if (is_business and overlap_value != 'P') or (not is_business and overlap_value != 'B'):
-                        ffr_record_prefix[prefix][suffix] = rval
-                else:
-                    rkey1 = rkey
-                    ffr_str = 'ffr_'.lower()
-                    if rkey1[:len(ffr_str)].lower() != ffr_str:
-                        rkey1 = ffr_str + rkey1
-
-                    if main_record['ffr'].get(rkey1):
-                        raise ValueError(f'Name "{rkey1}" already exists in Main Record {main_record["ffr"]} , check line {line}')
-                    main_record['ffr'][rkey1] = rval
-
-            ffr_list = main_record[record_descriptions['102'][0]]
-            for _, val in ffr_record_prefix.items():
-                if val['ffr_primary_acct_name'] or val['ffr_ssn_number'] or val['ffr_xref']:
-                    val2 = {'ffr_'+k:v for k,v in common_records.items()}
-                    val2 = {**val2, **val}
-                    ffr_list.append(val2)
-
-        elif record_number in ['104', '107', '115']: # dict records
-            record_schema = get_record_schema(record_number=record_number)
-            record = extract_values_from_line(line=line, record_schema=record_schema)
-
-            rdict = main_record[record_descriptions[record_number][0]]
-            for key, val in record.items():
-                if rdict.get(key):
-                    raise ValueError(f'Name "{key}" already exists in Main Record {rdict} , check line {line}')
-                rdict[key] = val
-
-        elif record_number[0] in ['2', '3', '9']: # list records
-            if record_number[0] in ['2', '3']:
-                record_numberx = record_number[0] + 'X' + record_number[2]
-            elif record_number in ['900']:
-                record_numberx = record_number
-            elif '901' <= record_number <= '997':
-                record_numberx = '901'
-            elif record_number in ['998', '999']:
-                record_numberx = '901' # 998 - Manual override - since there is no specific schema for 998, use 901 schema instead
-            else:
-                raise ValueError(f'Unknown Record Number: {record_number} for line {line}')
-
-            record_schema = get_record_schema(record_number=record_numberx)
-            record = extract_values_from_line(line=line, record_schema=record_schema)
-
-            rlist = main_record[record_descriptions['998'][0]]
-            rlist.append(record)
-
-        else:
-            logger.warning(f'Unknown Record Number: {record_number} for line {line}')
-            continue
-
-    return True if main_record else False
-
-
-
-# %%
-
-@catch_error(logger)
 def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
     """
     Process all lines for user_id_administration table
@@ -582,35 +407,6 @@ def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
 
 # %%
 
-process_lines_map = {
-    'bookkeeping': process_lines_1_record,
-    'bookkeeping_iws': process_lines_1_record,
-    'account_balance': process_lines_1_record,
-    'account_balance_iws': process_lines_1_record,
-    'trade_revenue': process_lines_1_record,
-    'trade_revenue_iws': process_lines_1_record,
-    'name_and_address': process_lines_name_and_address,
-    'name_and_address_iws': process_lines_name_and_address,
-    'position': process_lines_1_record,
-    'position_iws': process_lines_1_record,
-    'order': process_lines_1_record,
-    'order_iws': process_lines_1_record,
-    'rmd': process_lines_1_record,
-    'rmd_iws': process_lines_1_record,
-    'scheduled_events': process_lines_1_record,
-    'scheduled_events_iws': process_lines_1_record,
-    'suitability': process_lines_1_record,
-    'suitability_iws': process_lines_1_record,
-    'tas_closed': process_lines_1_record,
-    'tas_closed_iws': process_lines_1_record,
-    'tas_open': process_lines_1_record,
-    'tas_open_iws': process_lines_1_record,
-    'wealthscape_id': process_lines_1_record,
-    'wealthscape_id_iws': process_lines_1_record,
-    'user_id_administration': process_lines_user_id_administration,
-    'user_id_administration_iws': process_lines_user_id_administration,
-}
-
 process_lines_map = { # Select only what is needed for Saviynt
     'user_id_administration': process_lines_user_id_administration,
     #'user_id_administration_iws': process_lines_user_id_administration,
@@ -631,9 +427,9 @@ def convert_nfs2_to_json(file_meta:dict):
     logger.info(f'Converting to JSON: {source_file_path}')
     with open(source_file_path, mode='rt', encoding='ISO-8859-1', errors='ignore') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
-            ftarget.write('[\n')
+            #ftarget.write('[\n')
             columns = process_lines_map[file_meta['table_name_no_firm']](fsource=fsource, ftarget=ftarget, file_meta=file_meta)
-            ftarget.write('\n]')
+            #ftarget.write('\n]')
 
     if not columns:
         logger.warning(f'No Data in the file {source_file_path} -> Skipping conversion to JSON and deleting {target_file_path}.')

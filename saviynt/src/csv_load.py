@@ -25,7 +25,7 @@ if environment.environment >= environment.qa:
 
 else:
     args = {
-        'pipeline_key': 'test01',
+        'pipeline_key': 'saviynt_mips',
         }
 
 

@@ -20,6 +20,7 @@ from .sqlserver import migrate_file_to_sql_table, create_or_truncate_sql_table, 
 
 # %%
 
+@catch_error()
 def get_config(args:dict):
     """
     Create Config object with args

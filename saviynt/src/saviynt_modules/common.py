@@ -95,12 +95,12 @@ def remove_square_parenthesis(table_name_with_schema:str):
 # %%
 
 @catch_error()
-def get_separator(header_string:str, config:Config):
+def get_separator(header_string:str):
     """
     Find out what separator is used in the file header
     """
-    separators = [config.bcp_separator, '|', '\t', ',']
-    delimiter = config.bcp_separator
+    separators = ['!#!#', '|', '\t', ',']
+    delimiter = '|'
     for s in separators:
         if s in header_string:
             delimiter = s

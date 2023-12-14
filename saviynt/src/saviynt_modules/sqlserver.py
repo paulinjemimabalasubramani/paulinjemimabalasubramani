@@ -6,7 +6,7 @@ Module to handle common sql server migration tasks
 
 # %%
 
-import pyodbc
+import pyodbc, os, csv, re
 from collections import OrderedDict
 from typing import List, Dict
 from datetime import datetime
@@ -63,12 +63,35 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
     return rows_copied
 
 
+
 # %%
 
-# convert CSV to bcp_separator file
+@catch_error()
+def convert_csv_to_psv(file_path:str, config:Config):
+    """
+    Convert CSV to PSV for corrent BCP tool function
+    """
+    file_name = os.path.basename(file_path)
+    output_file = os.path.join(config.temporary_folder_path, file_name)
+    logger.info(f'Converting CSV to PSV -> CSV: {file_path} PSV: {output_file}')
 
+    first_flag = True
+    with open(file=output_file, mode='w', newline='', encoding='UTF-8') as out_file:
+        with open(file=file_path, mode='rt', newline='', encoding='UTF-8-SIG', errors='ignore') as csvfile:
+            reader = csv.DictReader(f=csvfile, delimiter=',')
+            for row in reader:
+                rowl = OrderedDict()
+                for k, v in row.items():
+                    val = re.sub(r'\s', ' ', re.sub(r'\|', ':', v), flags=re.MULTILINE)
+                    rowl[k] = val
 
+                if first_flag:
+                    first_flag = False
+                    out_writer = csv.DictWriter(out_file, delimiter='|', quotechar=None, quoting=csv.QUOTE_NONE, skipinitialspace=True, fieldnames=row.keys())
+                    out_writer.writeheader()
+                out_writer.writerow(rowl)
 
+    return output_file
 
 
 
@@ -80,7 +103,14 @@ def bcp_to_sql_server(file_meta:FileMeta, connection:Connection, staging_table:s
     Main BCP function, which calls other BCP functions depending on file_type
     """
     if file_meta.file_type == 'csv':
-        file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_meta.file_path, connection=connection, table_name_with_schema=staging_table, delimiter=file_meta.delimiter)
+        file_path = file_meta.file_path
+        delimiter = file_meta.delimiter
+        if delimiter == ',':
+            file_path = convert_csv_to_psv(file_path=file_path, config=config)
+            delimiter = '|'
+
+        file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=connection, table_name_with_schema=staging_table, delimiter=delimiter)
+
     else:
         raise ValueError(f'Unknown file_meta.file_type: {file_meta.file_type}')
 

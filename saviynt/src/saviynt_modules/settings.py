@@ -7,8 +7,11 @@ Metadata driven coding
 # %% Import Libraries
 
 import yaml, csv, re, platform, psutil, os
-from .logger import logger, catch_error, get_env, environment
 from typing import List, Dict
+from collections import OrderedDict
+
+from .logger import logger, catch_error, get_env, environment
+
 
 
 # %% Parameters / Constants
@@ -55,14 +58,14 @@ def normalize_name(name:str):
 # %% Get CSV rows
 
 @catch_error()
-def get_csv_rows(csv_file_path:str, csv_encoding:str='UTF-8-SIG', normalize_names:bool=True):
+def get_csv_rows(csv_file_path:str, csv_encoding:str='UTF-8-SIG', normalize_names:bool=True, delimiter:str=','):
     """
     Generator function to get csv file rows one by one
     """
     with open(file=csv_file_path, mode='rt', newline='', encoding=csv_encoding, errors='ignore') as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(f=csvfile, delimiter=delimiter)
         for row in reader:
-            rowl = {}
+            rowl = OrderedDict()
             for k, v in row.items():
                 key = k
                 if normalize_names:
