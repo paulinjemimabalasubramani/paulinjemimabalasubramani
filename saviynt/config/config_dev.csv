@@ -13,6 +13,7 @@ generic,default_data_type,NVARCHAR(2000)
 generic,column_meta_prefix,meta_
 generic,keep_history,TRUE
 generic,is_full_load,TRUE
+generic,recreate_target_table,FALSE
 saviynt_envestnet,schema_path,./saviynt/config/envestnet_schema/envestnet_schema.csv
 saviynt_envestnet,remote_path,C:\myworkdir\data\envestnet_v35
 saviynt_envestnet,source_path,C:\myworkdir\data\envestnet_v35_processed

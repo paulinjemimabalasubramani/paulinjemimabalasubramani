@@ -261,6 +261,19 @@ def drop_sql_table_if_exists(table_name_with_schema:str, connection:Connection):
 # %%
 
 @catch_error()
+def delete_history_from_sql_table(table_name_with_schema:str, connection:Connection):
+    """
+    Hard delete soft-deleted records
+    """
+    delete_history_sql = f'DELETE FROM {table_name_with_schema} WHERE meta_is_current=0;'
+    outputs = execute_sql_queries(sql_list=[delete_history_sql], connection=connection)
+    return outputs
+
+
+
+# %%
+
+@catch_error()
 def get_sql_table_meta_columns(file_meta:FileMeta, config:Config):
     """
     Get Meta fileds that will be added to the table
@@ -377,13 +390,14 @@ def migrate_file_to_sql_table(file_meta:FileMeta, connection:Connection, config:
         update_sql_staging_table_meta_fields(table_name_with_schema=staging_table, meta_columns_values=meta_columns_values, connection=connection)
 
         logger.info(f'Preparing Persistent Table: {file_meta.table_name_with_schema}')
-        truncate_target_table = False
-        if hasattr(config, 'keep_history') and config.keep_history.strip().upper() == 'FALSE':
-            truncate_target_table = True
 
-        if truncate_target_table: # to fix SQL problem of having turncated table with large disk space
+        recreate_target_table = False
+        if hasattr(config, 'recreate_target_table') and config.recreate_target_table.strip().upper() == 'TRUE':
+            recreate_target_table = True
+        if recreate_target_table:
             drop_sql_table_if_exists(table_name_with_schema=file_meta.table_name_with_schema, connection=connection)
-        create_or_truncate_sql_table(table_name_with_schema=file_meta.table_name_with_schema, columns=file_meta.columns | meta_columns, connection=connection, truncate=truncate_target_table)
+
+        create_or_truncate_sql_table(table_name_with_schema=file_meta.table_name_with_schema, columns=file_meta.columns | meta_columns, connection=connection, truncate=False)
 
         output = merge_sql_staging_into_target(
             tgt_table_name_with_schema = file_meta.table_name_with_schema,
@@ -392,6 +406,13 @@ def migrate_file_to_sql_table(file_meta:FileMeta, connection:Connection, config:
             is_full_load = file_meta.is_full_load,
             connection = connection,
             )
+
+        keep_history = True
+        if hasattr(config, 'keep_history') and config.keep_history.strip().upper() == 'FALSE':
+            keep_history = False
+        if not keep_history:
+            delete_history_from_sql_table(table_name_with_schema=file_meta.table_name_with_schema, connection=connection)
+
         logger.info(f'Finished Merge-Match statement for table {file_meta.table_name_with_schema}')
 
     drop_sql_table_if_exists(table_name_with_schema=staging_table, connection=connection)
