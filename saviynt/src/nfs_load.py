@@ -35,7 +35,7 @@ else:
 
 # %% Import Libraries
 
-import re, json, shutil, tempfile
+import re, json, shutil, tempfile, csv
 from datetime import datetime
 from collections import defaultdict
 from distutils.dir_util import remove_tree
@@ -263,12 +263,13 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
                     key_datetime_format = header_info_format[x]
                     break
 
-            file_name_noext = os.path.splitext(os.path.basename(file_path))[0].replace('.', '_')
+            file_meta['file_name_noext'] = os.path.splitext(os.path.basename(file_path))[0].replace('.', '_')
+
             file_meta['key_datetime'] = convert_header_datetime(datetime_str=key_datetime, format=key_datetime_format)
-            file_meta['json_file_path'] = os.path.join(config.source_path,
+            file_meta['out_file_path'] = os.path.join(config.source_path,
                                                        file_meta['table_name']
                                                        + '.' + file_meta['key_datetime'].strftime(config.final_file_date_format)
-                                                       + '.' + file_name_noext
+                                                       + '.' + file_meta['file_name_noext']
                                                        + config.final_file_ext)
             break
 
@@ -365,10 +366,14 @@ def json_to_psv_record(columns:List, json_record:OrderedDict):
 # %%
 
 @catch_error(logger)
-def process_lines_user_id_administration(fsource:TextIOWrapper, ftarget:TextIOWrapper, file_meta:dict):
+def process_lines_user_id_administration(file_meta:dict):
     """
     Process all lines for user_id_administration table
     """
+    logger.info(f"Processing user_id_administration file {file_meta['file_path']}")
+    if environment.environment < environment.qa:
+        logger.info(file_meta)
+
     get_record_schema = lambda record_number: all_schema[(file_meta['file_type'], 'record_'+record_number.lower())]
 
     record_descriptions = {
@@ -379,56 +384,49 @@ def process_lines_user_id_administration(fsource:TextIOWrapper, ftarget:TextIOWr
     }
 
     record_descriptions = {k.strip():normalize_name(v) for k, v in record_descriptions.items()}
-    record_descriptions_subrecords = [v for k, v in record_descriptions.items() if k != '1']
 
-    main_record = OrderedDict()
-    firstln = True
-    for line in fsource:
-        common_records = {
-            'record_type': line[0:1],
-            'record_number': line[1:2],
-            'portal_user_id': line[2:62].strip(),
+    record_files = dict()
+    for record_number, record_desription in record_descriptions.items():
+        file_path = os.path.join(config.source_path,
+                                    file_meta['table_name']
+                                    + (('_'+record_desription) if record_number != '1' else '')
+                                    + '.' + file_meta['key_datetime'].strftime(config.final_file_date_format)
+                                    + '.' + file_meta['file_name_noext']
+                                    + config.final_file_ext)
+
+        if environment.environment < environment.qa:
+            logger.info(f'file_path = {file_path}')
+
+        record_files[record_number] = {
+            'file': open(file=file_path, mode='wt', encoding='utf-8'),
+            'file_paths': file_path,
+            'writer': None,
+            'first': True,
             }
 
-        is_data_record_type = common_records['record_type'] == 'D'
-        if (not is_data_record_type) and (not main_record):
-            continue
-
-        record_number = common_records['record_number']
-        if record_number == '1' or not is_data_record_type:
-            if main_record:
-                if firstln:
-                    columns = list(main_record.keys())
-                    ftarget.write(common_delimiter.join(columns) + '\n')
-                firstln = False
-                ftarget.write(json_to_psv_record(columns=columns, json_record=main_record) + '\n')
-                if not is_data_record_type: break
+    with open(file_meta['file_path'], mode='rt', encoding='ISO-8859-1', errors='ignore') as fsource:
+        for line in fsource:
+            record_type = line[0:1]
+            record_number = line[1:2]
+            if record_type != 'D': continue
 
             record_schema = get_record_schema(record_number=record_number)
-            main_record = new_record(file_meta=file_meta)
-            main_record = main_record | extract_values_from_line(line=line, record_schema=record_schema)
-            main_record = main_record | OrderedDict([(v, list()) for v in record_descriptions_subrecords])
+            record = new_record(file_meta=file_meta) | extract_values_from_line(line=line, record_schema=record_schema)
 
-        if not main_record:
-            logger.warning(f'Found line with no D1 record: {line}')
-            continue
+            if record_files[record_number]['first']:
+                record_files[record_number]['first'] = False
+                record_files[record_number]['writer'] = csv.DictWriter(record_files[record_number]['file'], delimiter=common_delimiter, quotechar=None, quoting=csv.QUOTE_NONE, skipinitialspace=True, fieldnames=record.keys())
+                record_files[record_number]['writer'].writeheader()
 
-        if any(common_records[k]!=main_record[k] for k in ['portal_user_id']):
-            logger.warning(f'portal_user_id does not match for the same record: {main_record}\nline: {line}')
-            continue
+            record_files[record_number]['writer'].writerow(record)
 
-        if record_number == '1' or not is_data_record_type:
-            pass # placeholder as the condition has already been evaluated above
-        elif record_number in ['2', '3', '4']:
-            record_schema = get_record_schema(record_number=record_number)
-            record = extract_values_from_line(line=line, record_schema=record_schema)
-            main_record[record_descriptions[record_number]].append(record)
-        else:
-            logger.warning(f'Unknown Record Number: {record_number} for line {line}')
-            continue
+    for record_number, record_file in record_files.items():
+        record_file['file'].close()
 
-    columns = OrderedDict([(c, 'NVARCHAR(MAX)' if c in record_descriptions_subrecords else config.default_data_type) for c in columns])
-    return columns
+    out_files = [record_file['file_paths'] for record_number, record_file in record_files.items()]
+    logger.info(f'Files created: {out_files}')
+
+    return out_files
 
 
 
@@ -448,26 +446,18 @@ def convert_nfs2_to_csv(file_meta:dict):
     """
     Convert given NFS2 DAT file to Json format.
     """
-    source_file_path = file_meta['file_path']
-    target_file_path = file_meta['json_file_path']
+    target_file_paths =  process_lines_map[file_meta['table_name_no_firm']](file_meta=file_meta)
 
-    logger.info(f'Converting to PSV -> Source: {source_file_path} Target: {target_file_path}')
-    with open(source_file_path, mode='rt', encoding='ISO-8859-1', errors='ignore') as fsource:
-        with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
-            columns = process_lines_map[file_meta['table_name_no_firm']](fsource=fsource, ftarget=ftarget, file_meta=file_meta)
-
-    if not columns:
-        logger.warning(f'No Data in the file {source_file_path} -> Skipping conversion to JSON and deleting {target_file_path}.')
-        os.remove(target_file_path)
+    if not target_file_paths:
+        logger.warning(f"Could not process {file_meta['file_path']} skipping.")
         return
 
-    config.columns = columns # to indirectly get json file columns - no longer needed, converted file to csv (semi-structured)
+    logger.info(f"Finised converting {file_meta['file_path']} to {target_file_paths}")
 
-    logger.info(f'Finished converting file {source_file_path} to JSON file {target_file_path}')
-
-    recursive_migrate_all_files(file_type='csv', file_paths=target_file_path, config=config)
-    logger.info(f'Deleting file {target_file_path}')
-    os.remove(target_file_path)
+    for target_file_path in target_file_paths:
+        recursive_migrate_all_files(file_type='csv', file_paths=target_file_path, config=config)
+        logger.info(f'Deleting file {target_file_path}')
+        os.remove(target_file_path)
 
 
 
@@ -494,8 +484,8 @@ def process_single_nfs2(file_path:str):
             logger.warning(f'File header_record_client_id {file_meta[firm_id_field]} is not matching with expected Firm name {file_meta["firm_name"]}, skipping {file_path}')
             return
 
-    if file_meta_exists_in_history(config=config, file_name=file_meta['json_file_path']):
-        logger.info(f"File already exists, skipping: {file_meta['json_file_path']}")
+    if file_meta_exists_in_history(config=config, file_name=file_meta['out_file_path']):
+        logger.info(f"File already exists, skipping: {file_meta['out_file_path']}")
         return
 
     convert_nfs2_to_csv(file_meta=file_meta)

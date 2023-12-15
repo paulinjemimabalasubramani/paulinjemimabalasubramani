@@ -82,7 +82,7 @@ def convert_csv_to_psv(file_path:str, config:Config):
             for row in reader:
                 rowl = OrderedDict()
                 for k, v in row.items():
-                    val = clean_delimiter_value_for_bcp(value=val)
+                    val = clean_delimiter_value_for_bcp(value=v)
                     rowl[k] = val
 
                 if first_flag:
