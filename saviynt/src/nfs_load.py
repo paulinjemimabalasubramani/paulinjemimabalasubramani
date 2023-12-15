@@ -473,6 +473,9 @@ def process_single_nfs2(file_path:str):
         logger.warning(f'Unable to get header info for file: {file_path} -> skipping')
         return
 
+    if environment.environment < environment.qa:
+        logger.info(f'file_meta = {file_meta}')
+
     if config.date_threshold > file_meta['key_datetime']:
         logger.info(f'File datetime {file_meta["key_datetime"]} is older than the datetime threshold {config.date_threshold}, skipping {file_path}')
         return
@@ -484,7 +487,7 @@ def process_single_nfs2(file_path:str):
             logger.warning(f'File header_record_client_id {file_meta[firm_id_field]} is not matching with expected Firm name {file_meta["firm_name"]}, skipping {file_path}')
             return
 
-    if file_meta_exists_in_history(config=config, file_name=file_meta['out_file_path']):
+    if file_meta_exists_in_history(config=config, file_path=file_meta['out_file_path']):
         logger.info(f"File already exists, skipping: {file_meta['out_file_path']}")
         return
 

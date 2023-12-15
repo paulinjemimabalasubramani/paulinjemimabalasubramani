@@ -292,7 +292,7 @@ def get_sql_table_meta_columns(file_meta:FileMeta, config:Config):
         (f'{config.column_meta_prefix}start_date', ('DATETIME', 'CURRENT_TIMESTAMP')),
         (f'{config.column_meta_prefix}end_date', ('DATETIME', "CAST('9999-12-31' AS DATETIME)")),
         (f'{config.column_meta_prefix}is_current', ('INT', '1')),
-        (f'{config.column_meta_prefix}hash_key', ('VARBINARY(MAX)', row_hash_sql)),
+        (f'{config.column_meta_prefix}hash_key', ('VARBINARY(500)', row_hash_sql)),
     ])
 
     if file_meta.additional_info:
