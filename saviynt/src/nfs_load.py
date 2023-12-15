@@ -40,20 +40,23 @@ from datetime import datetime
 from collections import defaultdict
 from distutils.dir_util import remove_tree
 from collections import OrderedDict
+from io import TextIOWrapper
+from typing import List, Dict
 
 from saviynt_modules.settings import get_csv_rows, normalize_name
 from saviynt_modules.migration import recursive_migrate_all_files, get_config, file_meta_exists_in_history
+from saviynt_modules.common import clean_delimiter_value_for_bcp, common_delimiter
 
 
 
 # %% Parameters
 
 args |=  {
-    'final_file_ext': '.json',
+    'final_file_ext': '.psv',
     'header_record': 'H',
     'data_record': 'D',
     'trailer_record': 'T',
-    'final_file_date_format': r'%Y%m%d'
+    'final_file_date_format': r'%Y%m%d',
     }
 
 
@@ -280,9 +283,9 @@ def new_record(file_meta:dict):
     """
     Create new record with basic info
     """
-    record = {
-        'header_firm_name': file_meta['firm_name'],
-    }
+    record = OrderedDict([
+        ('header_firm_name', file_meta['firm_name']),
+        ])
 
     if 'header_record_client_id' in file_meta:
         record['header_client_id'] = file_meta['header_record_client_id']
@@ -301,7 +304,7 @@ def extract_values_from_line(line:str, record_schema:list):
     if not record_schema:
         raise ValueError(f'record_schema is empty for line {line}')
 
-    field_values = dict()
+    field_values = OrderedDict()
     for field in record_schema:
         field_value = line[field['pos_start']:field['pos_end']]
         field_value = re.sub(' +', ' ', field_value.strip())
@@ -338,8 +341,31 @@ def get_field_properties(column_name:str, record_schema:list):
 
 # %%
 
+def json_to_psv_record(columns:List, json_record:OrderedDict):
+    """
+    Convert json record to PSV record with semi-sturctured data
+    """
+    psv_list = []
+    for column in columns:
+        if column in json_record:
+            value = json_record[column]
+            if isinstance(value, list) or isinstance(value, dict):
+                value = json.dumps(value)
+            else:
+                value = str(value)
+            value = clean_delimiter_value_for_bcp(value=value)
+        else:
+            value = ''
+        psv_list.append(value)
+
+    return common_delimiter.join(psv_list)
+
+
+
+# %%
+
 @catch_error(logger)
-def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
+def process_lines_user_id_administration(fsource:TextIOWrapper, ftarget:TextIOWrapper, file_meta:dict):
     """
     Process all lines for user_id_administration table
     """
@@ -353,9 +379,9 @@ def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
     }
 
     record_descriptions = {k.strip():normalize_name(v) for k, v in record_descriptions.items()}
+    record_descriptions_subrecords = [v for k, v in record_descriptions.items() if k != '1']
 
-    main_record = {}
-    columns = {}
+    main_record = OrderedDict()
     firstln = True
     for line in fsource:
         common_records = {
@@ -371,16 +397,17 @@ def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
         record_number = common_records['record_number']
         if record_number == '1' or not is_data_record_type:
             if main_record:
-                if not firstln: ftarget.write(',\n')
+                if firstln:
+                    columns = list(main_record.keys())
+                    ftarget.write(common_delimiter.join(columns) + '\n')
                 firstln = False
-                ftarget.write(json.dumps(main_record))
-                columns = columns | main_record.keys()
+                ftarget.write(json_to_psv_record(columns=columns, json_record=main_record) + '\n')
                 if not is_data_record_type: break
 
             record_schema = get_record_schema(record_number=record_number)
             main_record = new_record(file_meta=file_meta)
-            main_record = {**main_record, **extract_values_from_line(line=line, record_schema=record_schema)}
-            main_record = {**main_record, **{v:list() for k, v in record_descriptions.items() if k != '1'}}
+            main_record = main_record | extract_values_from_line(line=line, record_schema=record_schema)
+            main_record = main_record | OrderedDict([(v, list()) for v in record_descriptions_subrecords])
 
         if not main_record:
             logger.warning(f'Found line with no D1 record: {line}')
@@ -400,7 +427,7 @@ def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
             logger.warning(f'Unknown Record Number: {record_number} for line {line}')
             continue
 
-    columns = OrderedDict([(c, config.default_data_type) for c in columns])
+    columns = OrderedDict([(c, 'NVARCHAR(MAX)' if c in record_descriptions_subrecords else config.default_data_type) for c in columns])
     return columns
 
 
@@ -417,30 +444,28 @@ process_lines_map = { # Select only what is needed for Saviynt
 # %%
 
 @catch_error(logger)
-def convert_nfs2_to_json(file_meta:dict):
+def convert_nfs2_to_csv(file_meta:dict):
     """
     Convert given NFS2 DAT file to Json format.
     """
     source_file_path = file_meta['file_path']
     target_file_path = file_meta['json_file_path']
 
-    logger.info(f'Converting to JSON: {source_file_path}')
+    logger.info(f'Converting to PSV -> Source: {source_file_path} Target: {target_file_path}')
     with open(source_file_path, mode='rt', encoding='ISO-8859-1', errors='ignore') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
-            #ftarget.write('[\n')
             columns = process_lines_map[file_meta['table_name_no_firm']](fsource=fsource, ftarget=ftarget, file_meta=file_meta)
-            #ftarget.write('\n]')
 
     if not columns:
         logger.warning(f'No Data in the file {source_file_path} -> Skipping conversion to JSON and deleting {target_file_path}.')
         os.remove(target_file_path)
         return
 
-    config.columns = columns # to indirectly get json file columns
+    config.columns = columns # to indirectly get json file columns - no longer needed, converted file to csv (semi-structured)
 
     logger.info(f'Finished converting file {source_file_path} to JSON file {target_file_path}')
 
-    recursive_migrate_all_files(file_type='json', file_paths=target_file_path, config=config)
+    recursive_migrate_all_files(file_type='csv', file_paths=target_file_path, config=config)
     logger.info(f'Deleting file {target_file_path}')
     os.remove(target_file_path)
 
@@ -473,7 +498,7 @@ def process_single_nfs2(file_path:str):
         logger.info(f"File already exists, skipping: {file_meta['json_file_path']}")
         return
 
-    convert_nfs2_to_json(file_meta=file_meta)
+    convert_nfs2_to_csv(file_meta=file_meta)
 
 
 

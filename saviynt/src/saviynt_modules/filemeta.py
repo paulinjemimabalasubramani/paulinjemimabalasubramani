@@ -273,6 +273,9 @@ def get_file_meta_csv(file_type:str, file_path:str, config:Config, zip_file_path
     columns, delimiter = get_file_columns_csv(file_path=file_path, default_data_type=config.default_data_type)
     if not columns: return
 
+    if hasattr(config, 'columns') and sorted(list(config.columns.keys()))==sorted(list(columns.keys())):
+        columns = config.columns # to apply right column type
+
     table_name_with_schema, date_of_data = extract_table_name_and_date_from_file_name(file_path=file_path, config=config, zip_file_path=zip_file_path)
     if not table_name_with_schema: return
 

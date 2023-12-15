@@ -6,7 +6,7 @@ Module to handle common sql server migration tasks
 
 # %%
 
-import pyodbc, os, csv, re
+import pyodbc, os, csv
 from collections import OrderedDict
 from typing import List, Dict
 from datetime import datetime
@@ -14,7 +14,7 @@ from datetime import datetime
 from .settings import Config
 from .logger import logger, catch_error, environment
 from .connections import Connection
-from .common import run_process, remove_square_parenthesis
+from .common import run_process, remove_square_parenthesis, clean_delimiter_value_for_bcp, common_delimiter
 from .filemeta import FileMeta
 
 
@@ -82,12 +82,12 @@ def convert_csv_to_psv(file_path:str, config:Config):
             for row in reader:
                 rowl = OrderedDict()
                 for k, v in row.items():
-                    val = re.sub(r'\s', ' ', re.sub(r'\|', ':', v), flags=re.MULTILINE)
+                    val = clean_delimiter_value_for_bcp(value=val)
                     rowl[k] = val
 
                 if first_flag:
                     first_flag = False
-                    out_writer = csv.DictWriter(out_file, delimiter='|', quotechar=None, quoting=csv.QUOTE_NONE, skipinitialspace=True, fieldnames=row.keys())
+                    out_writer = csv.DictWriter(out_file, delimiter=common_delimiter, quotechar=None, quoting=csv.QUOTE_NONE, skipinitialspace=True, fieldnames=row.keys())
                     out_writer.writeheader()
                 out_writer.writerow(rowl)
 
@@ -107,7 +107,7 @@ def bcp_to_sql_server(file_meta:FileMeta, connection:Connection, staging_table:s
         delimiter = file_meta.delimiter
         if delimiter == ',':
             file_path = convert_csv_to_psv(file_path=file_path, config=config)
-            delimiter = '|'
+            delimiter = common_delimiter
 
         file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=connection, table_name_with_schema=staging_table, delimiter=delimiter)
 

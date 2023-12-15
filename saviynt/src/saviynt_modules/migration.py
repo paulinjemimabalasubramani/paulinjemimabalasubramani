@@ -42,6 +42,10 @@ def add_file_meta_to_load_history(file_meta:FileMeta, config:Config):
     """
     Add File Meta data to Load History table
     """
+    if not file_meta or file_meta.rows_copied is None:
+        logger.warning('No file meta or no rows copied, skipping update to load history')
+        return
+
     load_history_table = config.elt_table_load_history
     elt_columns = file_meta.get_elt_load_history_columns()
     elt_connection = config.elt_connection
