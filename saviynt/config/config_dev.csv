@@ -50,6 +50,11 @@ saviynt_nfs_raa,schema_path,./saviynt/config/nfs_schema/nfs2_schema.csv
 saviynt_nfs_raa,clientid_map,"MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS"
 saviynt_nfs_raa,firm_name,raa
 saviynt_nfs_raa,date_threshold,2023-12-03
+saviynt_one_time_load,source_path,C:\myworkdir\data\one_time_load
+saviynt_one_time_load,allowed_file_extensions,"txt,csv,psv"
+saviynt_one_time_load,recreate_target_table,TRUE
+saviynt_one_time_load,is_full_load,TRUE
+saviynt_one_time_load,keep_history,FALSE
 test01,source_path,C:\myworkdir\data\test01
 test01,allowed_file_extensions,"txt,csv,psv"
 test01,file_name_regex,^([A-Za-z0-9]+)
