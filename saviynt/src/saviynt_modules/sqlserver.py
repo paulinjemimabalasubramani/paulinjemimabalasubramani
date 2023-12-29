@@ -47,8 +47,7 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
         -F 2
         """
 
-    if environment.environment < environment.qa:
-        logger.info(f'BCP Command: {bcp_str}')
+    logger.debug(f'BCP Command: {bcp_str}')
 
     stdout = run_process(command=bcp_str)
     if not stdout: return
@@ -129,8 +128,7 @@ def execute_sql_queries(sql_list:List, connection:Connection):
     with pyodbc.connect(connection.conn_str_sql_server()) as conn:
         cursor = conn.cursor()
         for sql_str in sql_list:
-            if environment.environment < environment.qa:
-                logger.info(sql_str)
+            logger.debug(sql_str)
             cursor.execute(sql_str)
             if cursor.description:
                 results = cursor.fetchall()

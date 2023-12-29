@@ -1,32 +1,18 @@
+# %% Init App
+
 __description__ = """
+
 Load CSV data to SQL Server
 
 """
 
+from saviynt_modules.logger import init_app, logger, catch_error
 
-# %% Start Logging
-
-import os
-from saviynt_modules.logger import environment, logger
-logger.set_logger(app_name=os.path.basename(__file__))
-
-
-
-# %% Parse Arguments
-
-if environment.environment >= environment.qa:
-    import argparse
-
-    parser = argparse.ArgumentParser(description=__description__)
-
-    parser.add_argument('--pipeline_key', '--pk', help='pipeline_key value for getting pipeline settings', required=True)
-
-    args = parser.parse_args().__dict__
-
-else:
-    args = {
-        'pipeline_key': 'saviynt_investalink',
-        }
+args = init_app(
+    __file__ = __file__,
+    __description__ = __description__,
+    test_pipeline_key = 'test01',
+)
 
 
 
@@ -45,7 +31,7 @@ args |=  {
 
 # %% Get Config
 
-config = get_config(args=args)
+config = get_config(**args)
 
 
 
@@ -57,7 +43,7 @@ recursive_migrate_all_files(file_type='csv', file_paths=config.source_path, conf
 
 # %% Close Connections / End Program
 
-logger.mark_run_end()
+logger.mark_ending()
 
 
 

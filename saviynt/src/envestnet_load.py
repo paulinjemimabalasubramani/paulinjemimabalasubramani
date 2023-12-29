@@ -1,4 +1,4 @@
-# %%
+# %% Init App
 
 __description__ = """
 
@@ -6,36 +6,19 @@ Load Envestnet files for Saviynt
 
 """
 
+from saviynt_modules.logger import init_app, logger, catch_error
 
-# %% Start Logging
-
-import os
-from saviynt_modules.logger import catch_error, environment, logger
-logger.set_logger(app_name=os.path.basename(__file__))
-
-
-
-# %% Parse Arguments
-
-if environment.environment >= environment.qa:
-    import argparse
-
-    parser = argparse.ArgumentParser(description=__description__)
-
-    parser.add_argument('--pipeline_key', '--pk', help='pipeline_key value for getting pipeline settings', required=True)
-
-    args = parser.parse_args().__dict__
-
-else:
-    args = {
-        'pipeline_key': 'saviynt_envestnet',
-        }
+args = init_app(
+    __file__ = __file__,
+    __description__ = __description__,
+    test_pipeline_key = 'saviynt_envestnet',
+)
 
 
 
 # %% Import Libraries
 
-import re, shutil
+import os, re, shutil
 from datetime import datetime
 from zipfile import ZipFile
 from collections import defaultdict
@@ -58,7 +41,7 @@ args |=  {
 
 # %% Get Config
 
-config = get_config(args=args)
+config = get_config(**args)
 
 
 
@@ -352,7 +335,7 @@ extract_zip_files()
 
 # %% Close Connections / End Program
 
-logger.mark_run_end()
+logger.mark_ending()
 
 
 

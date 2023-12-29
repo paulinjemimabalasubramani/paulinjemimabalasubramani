@@ -8,6 +8,7 @@ Module to handle high level migration tasks, also record metrics / metadata abou
 import tempfile, os
 from typing import List, Dict
 from zipfile import ZipFile
+from datetime import datetime
 
 from .logger import logger, catch_error, environment
 from .settings import Config
@@ -21,15 +22,18 @@ from .sqlserver import migrate_file_to_sql_table, create_or_truncate_sql_table, 
 # %%
 
 @catch_error()
-def get_config(args:dict):
+def get_config(**kwargs):
     """
     Create Config object with args
     Add ELT and Target connections to config object
     """
-    config = Config(args=args)
+    config = Config(**kwargs)
 
     for connection_prefix in ['elt', 'target']:
         config.add_connection_from_config(prefix=connection_prefix, Connection=Connection)
+
+    if hasattr(config, 'date_threshold'):
+        config.date_threshold = datetime.strptime(config.date_threshold, r'%Y-%m-%d')
 
     return config
 
@@ -115,8 +119,7 @@ def file_meta_exists_in_history(config:Config, file_meta:FileMeta=None, **kwargs
         WHERE {check_dict_filter}
         '''
 
-    if environment.environment < environment.qa:
-        logger.info(exists_sql)
+    logger.debug(exists_sql)
 
     output = execute_sql_queries(sql_list=[exists_sql], connection=config.elt_connection)
     return output[0][0][0]>0

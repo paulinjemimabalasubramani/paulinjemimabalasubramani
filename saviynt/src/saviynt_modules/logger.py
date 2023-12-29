@@ -7,13 +7,14 @@ Module for logging, handling errors and sending alerts
 
 import os, sys, logging, json, pymsteams
 from functools import wraps
-from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
 
 
 # %% Parameters
+
+__description__:str = 'Data Migration'
 
 
 
@@ -108,6 +109,7 @@ class Environment:
         for e in self.ENVIRONMENT_OPTIONS:
             setattr(self, f'is_{e.lower()}', self.ENVIRONMENT==e) # e.g: if environment.is_prod
             setattr(self, e.lower(), self.ENVIRONMENT_OPTIONS[e]) # e.g: if environment.environment < environment.prod
+            setattr(self, e, e)
 
 
 environment = Environment()
@@ -163,12 +165,15 @@ class CreateLogger:
     """
     log_format = logging.Formatter(fmt=r'%(asctime)s :: %(name)s :: %(levelname)-8s :: %(message)s', datefmt=r'%Y-%m-%d %H:%M:%S')
     log_folder_path = '../logs'
-    msteams_webhook_url = 'https://advisorgroup.webhook.office.com/webhookb2/17ec5d27-9782-46ab-9c9a-49a9cb61aab6@c1ef4e97-eeff-48b2-b720-0c8480a08061/IncomingWebhook/f0acf95ca6a44c72b579ac27fdab4b6f/4d1ebaa8-54ba-41cc-841e-1cb24f3b2eea'
+    msteams_webhook_url = {
+        environment.PROD: 'https://advisorgroup.webhook.office.com/webhookb2/17ec5d27-9782-46ab-9c9a-49a9cb61aab6@c1ef4e97-eeff-48b2-b720-0c8480a08061/IncomingWebhook/f0acf95ca6a44c72b579ac27fdab4b6f/4d1ebaa8-54ba-41cc-841e-1cb24f3b2eea',
+        }
 
-    log_type_PRINT = 'PRINT'
-    msg_type_INFO = 'INFO'
-    msg_type_WARNING = 'WARNING'
-    msg_type_ERROR = 'ERROR'
+    class msg_type:
+        DEBUG = 'DEBUG'
+        INFO = 'INFO'
+        WARNING = 'WARNING'
+        ERROR = 'ERROR'
 
 
     def __init__(self):
@@ -186,13 +191,24 @@ class CreateLogger:
 
         self.app_name = app_name if app_name else 'logs'
         self.logger = logging.getLogger(self.app_name)
-        self.logger.setLevel(logging_level)
+        print(f'logging_level = {logging_level}')
+        self.logger.setLevel(level=logging_level)
+
+        self.logger.setLevel(level=logging.DEBUG)
+        self.logger.debug('test debug msg')
+
+        self.logger_func_map = {
+            self.msg_type.DEBUG: self.logger.debug,
+            self.msg_type.INFO: self.logger.info,
+            self.msg_type.WARNING: self.logger.warning,
+            self.msg_type.ERROR: self.logger.error,
+            }
 
         if log_folder_path:
             self.log_folder_path = log_folder_path
 
         self.filter_out_unwanted_info_logs()
-        self.add_stream_handlers()
+        self.add_stream_handlers(logging_level=logging_level)
         self.add_file_handler()
 
         self.info(f'Environment: {self.environment.ENVIRONMENT}, Run Date: {self.run_date.start_str}')
@@ -211,17 +227,17 @@ class CreateLogger:
             logging.getLogger(warning_logger).setLevel(filter_log_level)
 
 
-    def add_stream_handlers(self, default_logging_level:int=logging.INFO):
+    def add_stream_handlers(self, logging_level:int=logging.INFO):
         """
         Add handlers for I/O stream.
         """
-        stdout_handler = StreamHandler(sys.stdout)
-        stdout_handler.setLevel(default_logging_level)
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setLevel(logging_level)
         stdout_handler.addFilter(lambda record: record.levelno <= logging.WARNING)
         stdout_handler.setFormatter(self.log_format)
         self.logger.addHandler(stdout_handler)
 
-        stderr_handler = StreamHandler(sys.stderr)
+        stderr_handler = logging.StreamHandler(sys.stderr)
         stderr_handler.setLevel(logging.ERROR)
         stderr_handler.setFormatter(self.log_format)
         self.logger.addHandler(stderr_handler)
@@ -252,13 +268,13 @@ class CreateLogger:
         """
         Send failure notifications to MS Teams
         """
-        if self.environment.is_prod:
-            msteams_webhook = pymsteams.connectorcard(self.msteams_webhook_url)
+        if environment.ENVIRONMENT in self.msteams_webhook_url:
+            msteams_webhook = pymsteams.connectorcard(self.msteams_webhook_url[environment.ENVIRONMENT])
             msteams_webhook.text(f'app = {self.app_name}; message = {message}')
             msteams_webhook.send()
 
 
-    def log(self, msg, msg_type, extra_log:dict={}, logger_func=None):
+    def log(self, msg, msg_type, extra_log:dict={}):
         """
         Build and send log data
         """
@@ -272,40 +288,45 @@ class CreateLogger:
             }
             body = json.dumps(log_data, sort_keys=True, default=str, indent=4)
 
-            if logger_func:
-                logger_func(msg, exc_info=False)
-            else:
-                print(body)
+            logger_func = self.logger_func_map[msg_type]
+            logger_func(msg, exc_info=False)
 
-            if msg_type==self.msg_type_ERROR:
+            if msg_type==self.msg_type.ERROR:
                 self.send_failure_notification(message=body)
 
         except (BaseException, AssertionError) as e:
             print(e)
 
 
+    def debug(self, msg):
+        """
+        Log debug message
+        """
+        self.log(msg=msg, msg_type=self.msg_type.DEBUG)
+
+
     def info(self, msg):
         """
         Log info message
         """
-        self.log(msg=msg, msg_type=self.msg_type_INFO, logger_func=self.logger.info)
+        self.log(msg=msg, msg_type=self.msg_type.INFO)
 
 
     def warning(self, msg):
         """
         Log warning message
         """
-        self.log(msg=msg, msg_type=self.msg_type_WARNING, logger_func=self.logger.warning)
+        self.log(msg=msg, msg_type=self.msg_type.WARNING)
 
 
     def error(self, msg):
         """
         Log error message
         """
-        self.log(msg=msg, msg_type=self.msg_type_ERROR, logger_func=self.logger.error)
+        self.log(msg=msg, msg_type=self.msg_type.ERROR)
 
 
-    def mark_run_end(self):
+    def mark_ending(self):
         """
         Log Run End date and Run duration of the entire code
         """
@@ -318,5 +339,38 @@ logger = CreateLogger()
 
 
 # %%
+
+
+@catch_error()
+def init_app(__file__:str, __description__:str=__description__, test_pipeline_key:str='generic'):
+    """
+    First procedure to run
+    """
+    if environment.environment <= environment.dev:
+        logging_level = logging.DEBUG
+    else:
+        logging_level = logging.INFO
+
+    logger.set_logger(logging_level=logging_level, app_name=os.path.basename(__file__))
+
+    if environment.environment >= environment.qa:
+        import argparse
+
+        parser = argparse.ArgumentParser(description=__description__)
+
+        parser.add_argument('--pipeline_key', '--pk', help='pipeline_key value for getting pipeline settings', required=True)
+
+        args = parser.parse_args().__dict__
+
+    else:
+        args = {
+            'pipeline_key': test_pipeline_key,
+            }
+
+    return args
+
+
+
+
 
 

@@ -168,12 +168,11 @@ class Config(ConfigBase):
     """
     Building on top of base config
     """
-    config_file_path = './saviynt/config/config.csv'
-    config_dev_file_path = './saviynt/config/config_dev.csv'
+    config_folder_path = './saviynt/config'
     generic_key = 'generic'
 
     @catch_error()
-    def __init__(self, args:Dict={}, env_var_names:List=[]):
+    def __init__(self, env_var_names:List=[], config_file_path:str=None, **kwargs):
         """
         Initiate class - build on top of base class initialization
         """
@@ -181,14 +180,18 @@ class Config(ConfigBase):
 
         self.system_info = system_info()
         self.read_environment(env_var_names=env_var_names)
-        self.set_values(values=args)
+        self.set_values(values=kwargs)
 
         self.filter_list = [self.generic_key]
         if hasattr(self, 'pipeline_key'):
             self.filter_list.append(self.pipeline_key)
 
-        config_file_path = self.config_file_path if environment.is_prod else self.config_dev_file_path
-        self.read_csv(file_path=config_file_path, filter_list=self.filter_list)
+        if config_file_path:
+            self.config_file_path = config_file_path
+        else:
+            self.config_file_path = os.path.join(self.config_folder_path, f'config_{environment.ENVIRONMENT.lower()}.csv')
+
+        self.read_csv(file_path=self.config_file_path, filter_list=self.filter_list)
 
         logger.info(self.__dict__) # print out all settings
 

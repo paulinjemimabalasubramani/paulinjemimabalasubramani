@@ -1,4 +1,4 @@
-# %%
+# %% Init App
 
 __description__ = """
 
@@ -6,41 +6,23 @@ Load NFS files for Saviynt
 
 """
 
+from saviynt_modules.logger import init_app, logger, catch_error
 
-# %% Start Logging
-
-import os
-from saviynt_modules.logger import catch_error, environment, logger
-logger.set_logger(app_name=os.path.basename(__file__))
-
-
-
-# %% Parse Arguments
-
-if environment.environment >= environment.qa:
-    import argparse
-
-    parser = argparse.ArgumentParser(description=__description__)
-
-    parser.add_argument('--pipeline_key', '--pk', help='pipeline_key value for getting pipeline settings', required=True)
-
-    args = parser.parse_args().__dict__
-
-else:
-    args = {
-        'pipeline_key': 'saviynt_nfs_raa',
-        }
+args = init_app(
+    __file__ = __file__,
+    __description__ = __description__,
+    test_pipeline_key = 'saviynt_nfs_raa',
+)
 
 
 
 # %% Import Libraries
 
-import re, json, shutil, tempfile, csv
+import os, re, json, shutil, tempfile, csv
 from datetime import datetime
 from collections import defaultdict
 from distutils.dir_util import remove_tree
 from collections import OrderedDict
-from io import TextIOWrapper
 from typing import List, Dict
 
 from saviynt_modules.settings import get_csv_rows, normalize_name
@@ -63,9 +45,7 @@ args |=  {
 
 # %% Get Config
 
-config = get_config(args=args)
-
-config.date_threshold = datetime.strptime(config.date_threshold, r'%Y-%m-%d')
+config = get_config(**args)
 
 
 
@@ -371,8 +351,7 @@ def process_lines_user_id_administration(file_meta:dict):
     Process all lines for user_id_administration table
     """
     logger.info(f"Processing user_id_administration file {file_meta['file_path']}")
-    if environment.environment < environment.qa:
-        logger.info(file_meta)
+    logger.debug(file_meta)
 
     get_record_schema = lambda record_number: all_schema[(file_meta['file_type'], 'record_'+record_number.lower())]
 
@@ -394,8 +373,7 @@ def process_lines_user_id_administration(file_meta:dict):
                                     + '.' + file_meta['file_name_noext']
                                     + config.final_file_ext)
 
-        if environment.environment < environment.qa:
-            logger.info(f'file_path = {file_path}')
+        logger.debug(f'file_path = {file_path}')
 
         record_files[record_number] = {
             'file': open(file=file_path, mode='wt', encoding='utf-8'),
@@ -473,8 +451,7 @@ def process_single_nfs2(file_path:str):
         logger.warning(f'Unable to get header info for file: {file_path} -> skipping')
         return
 
-    if environment.environment < environment.qa:
-        logger.info(f'file_meta = {file_meta}')
+    logger.debug(f'file_meta = {file_meta}')
 
     if config.date_threshold > file_meta['key_datetime']:
         logger.info(f'File datetime {file_meta["key_datetime"]} is older than the datetime threshold {config.date_threshold}, skipping {file_path}')
@@ -533,7 +510,7 @@ iterate_over_all_nfs2(remote_path=config.remote_path)
 
 # %% Close Connections / End Program
 
-logger.mark_run_end()
+logger.mark_ending()
 
 
 # %%
