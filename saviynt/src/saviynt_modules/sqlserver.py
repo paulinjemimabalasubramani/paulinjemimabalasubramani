@@ -280,7 +280,7 @@ def get_sql_table_meta_columns(file_meta:FileMeta, config:Config):
         Value: tuple(Value/Expression, Column Type)
     """
     columns_sql = ','.join([f"COALESCE({c}, '')" for c in file_meta.columns])
-    row_hash_sql = f"HASHBYTES('SHA2_256', CONCAT({columns_sql}))"
+    row_hash_sql = f"HASHBYTES('SHA2_256', CONCAT_WS(',', {columns_sql}))"
 
     meta_fields = OrderedDict([
         (f'{config.column_meta_prefix}pipeline_key', (config.default_data_type, f"'{file_meta.pipeline_key}'")),
@@ -338,8 +338,15 @@ def merge_sql_staging_into_target(tgt_table_name_with_schema:str, stg_table_name
         not_matched_by_source_sql = ''
 
     merge_match_sql = f'''
+    WITH SRC AS (
+        SELECT * FROM (
+            SELECT *, ROW_NUMBER() OVER (PARTITION BY COALESCE(META_HASH_KEY, '') ORDER BY META_DATE_OF_DATA DESC) AS META_ROW_NUMBER
+            FROM {stg_table_name_with_schema}
+            ) DD
+        WHERE DD.META_ROW_NUMBER = 1
+    )
     MERGE INTO {tgt_table_name_with_schema} TGT
-    USING {stg_table_name_with_schema} SRC
+    USING SRC
         ON COALESCE(TGT.META_HASH_KEY, '') = COALESCE(SRC.META_HASH_KEY, '')
             AND TGT.META_IS_CURRENT = 1
     WHEN MATCHED THEN

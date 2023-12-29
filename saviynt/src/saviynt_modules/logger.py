@@ -194,11 +194,7 @@ class CreateLogger:
 
         self.app_name = app_name if app_name else 'logs'
         self.logger = logging.getLogger(self.app_name)
-        print(f'logging_level = {self.logging_level}')
         self.logger.setLevel(level=self.logging_level)
-
-        self.logger.setLevel(level=logging.DEBUG)
-        self.logger.debug('test debug msg')
 
         self.logger_func_map = {
             self.msg_type.DEBUG: self.logger.debug,
