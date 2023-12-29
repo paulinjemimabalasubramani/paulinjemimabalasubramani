@@ -164,7 +164,9 @@ class CreateLogger:
     Class for Logging Print Statements
     """
     log_format = logging.Formatter(fmt=r'%(asctime)s :: %(name)s :: %(levelname)-8s :: %(message)s', datefmt=r'%Y-%m-%d %H:%M:%S')
+
     log_folder_path = '../logs'
+
     msteams_webhook_url = {
         environment.PROD: 'https://advisorgroup.webhook.office.com/webhookb2/17ec5d27-9782-46ab-9c9a-49a9cb61aab6@c1ef4e97-eeff-48b2-b720-0c8480a08061/IncomingWebhook/f0acf95ca6a44c72b579ac27fdab4b6f/4d1ebaa8-54ba-41cc-841e-1cb24f3b2eea',
         }
@@ -188,11 +190,12 @@ class CreateLogger:
         Initiate the class. Set Logging Policy.
         """
         self.environment = environment
+        self.logging_level = logging_level
 
         self.app_name = app_name if app_name else 'logs'
         self.logger = logging.getLogger(self.app_name)
-        print(f'logging_level = {logging_level}')
-        self.logger.setLevel(level=logging_level)
+        print(f'logging_level = {self.logging_level}')
+        self.logger.setLevel(level=self.logging_level)
 
         self.logger.setLevel(level=logging.DEBUG)
         self.logger.debug('test debug msg')
@@ -208,7 +211,7 @@ class CreateLogger:
             self.log_folder_path = log_folder_path
 
         self.filter_out_unwanted_info_logs()
-        self.add_stream_handlers(logging_level=logging_level)
+        self.add_stream_handlers()
         self.add_file_handler()
 
         self.info(f'Environment: {self.environment.ENVIRONMENT}, Run Date: {self.run_date.start_str}')
@@ -227,12 +230,12 @@ class CreateLogger:
             logging.getLogger(warning_logger).setLevel(filter_log_level)
 
 
-    def add_stream_handlers(self, logging_level:int=logging.INFO):
+    def add_stream_handlers(self):
         """
         Add handlers for I/O stream.
         """
         stdout_handler = logging.StreamHandler(sys.stdout)
-        stdout_handler.setLevel(logging_level)
+        stdout_handler.setLevel(self.logging_level)
         stdout_handler.addFilter(lambda record: record.levelno <= logging.WARNING)
         stdout_handler.setFormatter(self.log_format)
         self.logger.addHandler(stdout_handler)
@@ -243,7 +246,7 @@ class CreateLogger:
         self.logger.addHandler(stderr_handler)
 
 
-    def add_file_handler(self, log_folder_path:str=log_folder_path, logging_level:int=logging.INFO, file_size_mb:float=2.0, backupCount:int=3):
+    def add_file_handler(self, log_folder_path:str=log_folder_path, file_size_mb:float=2.0, backupCount:int=3):
         """
         Add logging to file capabilities
         """
@@ -259,7 +262,7 @@ class CreateLogger:
             backupCount = backupCount, # max file backups
             )
 
-        file_handler.setLevel(logging_level)
+        file_handler.setLevel(self.logging_level)
         file_handler.setFormatter(self.log_format)
         self.logger.addHandler(file_handler)
 
@@ -298,32 +301,10 @@ class CreateLogger:
             print(e)
 
 
-    def debug(self, msg):
-        """
-        Log debug message
-        """
-        self.log(msg=msg, msg_type=self.msg_type.DEBUG)
-
-
-    def info(self, msg):
-        """
-        Log info message
-        """
-        self.log(msg=msg, msg_type=self.msg_type.INFO)
-
-
-    def warning(self, msg):
-        """
-        Log warning message
-        """
-        self.log(msg=msg, msg_type=self.msg_type.WARNING)
-
-
-    def error(self, msg):
-        """
-        Log error message
-        """
-        self.log(msg=msg, msg_type=self.msg_type.ERROR)
+    def debug(self, msg): self.log(msg=msg, msg_type=self.msg_type.DEBUG)
+    def info(self, msg): self.log(msg=msg, msg_type=self.msg_type.INFO)
+    def warning(self, msg): self.log(msg=msg, msg_type=self.msg_type.WARNING)
+    def error(self, msg): self.log(msg=msg, msg_type=self.msg_type.ERROR)
 
 
     def mark_ending(self):
@@ -371,6 +352,6 @@ def init_app(__file__:str, __description__:str=__description__, test_pipeline_ke
 
 
 
-
+# %%
 
 
