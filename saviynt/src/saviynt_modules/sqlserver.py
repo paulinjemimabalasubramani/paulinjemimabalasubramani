@@ -6,7 +6,7 @@ Module to handle common sql server migration tasks
 
 # %%
 
-import pyodbc, os, csv
+import os, csv
 from collections import OrderedDict
 from typing import List, Dict
 from datetime import datetime
@@ -35,7 +35,7 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
 
     bcp SaviyntIntegration.dbo.envestnet_hierarchy_firm in "C:/myworkdir/data/envestnet_v35_processed/hierarchy_firm_20231009.txt" -S DW1SQLDATA01.ibddomain.net -T -c -t "|" -F 2
     """
-    authentication_str = '-T' if connection.is_trusted_connection() else f'-U {connection.username} -P {connection.password}'
+    authentication_str = '-T' if connection.trusted_connection else f'-U {connection.username} -P {connection.password}'
 
     bcp_str = f"""
         bcp {connection.database}.{table_name_with_schema}
@@ -125,7 +125,7 @@ def execute_sql_queries(sql_list:List, connection:Connection):
     Execute given list of SQL queries
     """
     outputs = []
-    with pyodbc.connect(connection.conn_str_sql_server()) as conn:
+    with connection.to_sql_server() as conn:
         cursor = conn.cursor()
         for sql_str in sql_list:
             logger.debug(sql_str)

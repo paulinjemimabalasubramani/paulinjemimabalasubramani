@@ -165,10 +165,6 @@ class CreateLogger:
 
     log_folder_path = '../logs'
 
-    msteams_webhook_url = {
-        environment.PROD: 'https://advisorgroup.webhook.office.com/webhookb2/17ec5d27-9782-46ab-9c9a-49a9cb61aab6@c1ef4e97-eeff-48b2-b720-0c8480a08061/IncomingWebhook/f0acf95ca6a44c72b579ac27fdab4b6f/4d1ebaa8-54ba-41cc-841e-1cb24f3b2eea',
-        }
-
     class msg_type:
         DEBUG = 'DEBUG'
         INFO = 'INFO'
@@ -266,9 +262,13 @@ class CreateLogger:
         """
         Send failure notifications to MS Teams
         """
-        if environment.ENVIRONMENT in self.msteams_webhook_url:
-            msteams_webhook = pymsteams.connectorcard(self.msteams_webhook_url[environment.ENVIRONMENT])
-            msteams_webhook.text(f'app = {self.app_name}; message = {message}')
+        if hasattr(self, 'msteams_webhook_url'):
+            mtext = f'app = {self.app_name}; message = {message}'
+            if hasattr(self, 'pipeline_key'):
+                mtext = f'pipeline_key = {self.pipeline_key}; {mtext}'
+
+            msteams_webhook = pymsteams.connectorcard(hookurl=self.msteams_webhook_url)
+            msteams_webhook.text(mtext=mtext)
             msteams_webhook.send()
 
 

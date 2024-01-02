@@ -1,15 +1,21 @@
 pipeline_key,config_key,config_value
+generic,key_vault_account,ag-kv-west2-secondary
+generic,azure_tenant_id,c1ef4e97-eeff-48b2-b720-0c8480a08061
 generic,logging_level,INFO
 generic,log_folder_path,C:\myworkdir\logs
+generic,msteams_webhook_url,https://advisorgroup.webhook.office.com/webhookb2/17ec5d27-9782-46ab-9c9a-49a9cb61aab6@c1ef4e97-eeff-48b2-b720-0c8480a08061/IncomingWebhook/5a88a35634014781a6748d5a7910850f/4d1ebaa8-54ba-41cc-841e-1cb24f3b2eea
 generic,temporary_folder_path,C:\myworkdir\data\temp
 generic,target_driver,{ODBC Driver 17 for SQL Server}
 generic,target_server,DW1SQLDATA01.ibddomain.net
 generic,target_database,SaviyntIntegration
 generic,target_schema,dbo
+generic,target_trusted_connection,FALSE
+generic,target_key_vault_name,elt
 generic,staging_schema,stg
 generic,elt_driver,{ODBC Driver 17 for SQL Server}
 generic,elt_server,DW1SQLDATA01.ibddomain.net
 generic,elt_database,SaviyntIntegration
+generic,elt_trusted_connection,FALSE
 generic,elt_table_load_history,elt.load_history
 generic,default_data_type,NVARCHAR(2000)
 generic,column_meta_prefix,meta_

@@ -111,12 +111,14 @@ class ConfigBase:
 
 
     @catch_error()
-    def read_environment(self, env_var_names:List=[]):
+    def read_environment(self, env_var_names:List=[], raise_error_if_no_value:bool=False):
         """
         Read Environmental Variables
         """
-        for envv in env_var_names:
-            setattr(self, envv.lower().strip(), get_env(variable_name=envv))
+        for variable_name in env_var_names:
+            variable_value = get_env(variable_name=variable_name, raise_error_if_no_value=raise_error_if_no_value)
+            if variable_value is not None:
+                setattr(self, variable_name.lower().strip(), variable_value)
 
 
     @catch_error()
@@ -275,10 +277,14 @@ def init_app(__file__:str, __description__:str='Data Migration', args:Dict={}, t
     logger.set_logger(
         logging_level = getattr(logging, config.logging_level, logging.INFO),
         app_name = os.path.basename(__file__),
-        log_folder_path = getattr(config, 'log_folder_path', logger.log_folder_path)
+        log_folder_path = getattr(config, 'log_folder_path', logger.log_folder_path),
         )
 
     logger.info(config.__dict__) # print out all settings
+
+    for c in ['pipeline_key', 'msteams_webhook_url']:
+        if hasattr(config, c):
+            logger.msteams_webhook_url = getattr(config, c)
 
     return config
 
