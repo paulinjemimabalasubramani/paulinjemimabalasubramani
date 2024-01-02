@@ -1,4 +1,6 @@
 pipeline_key,config_key,config_value
+generic,logging_level,INFO
+generic,log_folder_path,C:\myworkdir\logs
 generic,temporary_folder_path,C:\myworkdir\data\temp
 generic,target_driver,{ODBC Driver 17 for SQL Server}
 generic,target_server,DW1SQLDATA01.ibddomain.net

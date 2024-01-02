@@ -1,4 +1,4 @@
-# %% Init App
+# %% Description
 
 __description__ = """
 
@@ -6,32 +6,31 @@ Load CSV data to SQL Server
 
 """
 
-from saviynt_modules.logger import init_app, logger, catch_error
-
-args = init_app(
-    __file__ = __file__,
-    __description__ = __description__,
-    test_pipeline_key = 'test01',
-)
-
-
 
 # %% Import Libraries
 
-from saviynt_modules.migration import recursive_migrate_all_files, get_config
+from saviynt_modules.settings import init_app
+from saviynt_modules.logger import logger, catch_error
+from saviynt_modules.migration import recursive_migrate_all_files
 
 
 
 # %% Parameters
 
-args |=  {
-    }
+test_pipeline_key = 'test01'
+
+args = {}
 
 
 
 # %% Get Config
 
-config = get_config(**args)
+config = init_app(
+    __file__ = __file__,
+    __description__ = __description__,
+    args = args,
+    test_pipeline_key = test_pipeline_key,
+)
 
 
 

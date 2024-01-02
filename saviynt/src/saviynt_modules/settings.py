@@ -6,17 +6,21 @@ Metadata driven coding
 
 # %% Import Libraries
 
-import yaml, csv, re, platform, psutil, os
+import yaml, csv, re, platform, psutil, os, logging
 from typing import List, Dict
 from collections import OrderedDict
+from datetime import datetime
+from typing import List, Dict
 
 from .logger import logger, catch_error, get_env, environment
+from .connections import Connection
 
 
 
 # %% Parameters / Constants
 
-name_regex = r'[\W]+'
+config_folder_path:str = './saviynt/config'
+name_regex:str = r'[\W]+'
 
 
 
@@ -131,7 +135,6 @@ class ConfigBase:
         """
         Read settings from CSV file
         """
-        logger.info(f'Reading settings file {os.path.realpath(file_path)}, Present Working Directory: {os.path.realpath(".")}')
         flist = [x.lower() for x in filter_list]
 
         contents = {}
@@ -168,8 +171,8 @@ class Config(ConfigBase):
     """
     Building on top of base config
     """
-    config_folder_path = './saviynt/config'
     generic_key = 'generic'
+
 
     @catch_error()
     def __init__(self, env_var_names:List=[], config_file_path:str=None, **kwargs):
@@ -188,16 +191,11 @@ class Config(ConfigBase):
 
         if config_file_path:
             self.config_file_path = config_file_path
-        else:
-            self.config_file_path = os.path.join(self.config_folder_path, f'config_{environment.ENVIRONMENT.lower()}.csv')
-
-        self.read_csv(file_path=self.config_file_path, filter_list=self.filter_list)
-
-        logger.info(self.__dict__) # print out all settings
+            self.read_csv(file_path=self.config_file_path, filter_list=self.filter_list)
 
 
     @catch_error()
-    def add_connection_from_config(self, prefix:str, Connection):
+    def add_connection_from_config(self, prefix:str):
         """
         Add target connection to settings
         """
@@ -224,9 +222,65 @@ class Config(ConfigBase):
             if uppercase_key: key = key.upper()
             if uppercase_val: val = val.upper()
 
-            dict_map = {**dict_map, key:val}
+            dict_map |= {key:val}
 
         return dict_map
+
+
+
+# %%
+
+@catch_error()
+def get_config(**kwargs):
+    """
+    Create Config object with args
+    Add ELT and Target connections to config object
+    """
+    env_var_names = []
+
+    config_file_path = os.path.join(config_folder_path, f'config_{environment.ENVIRONMENT.lower()}.csv')
+
+    config = Config(env_var_names=env_var_names, config_file_path=config_file_path, **kwargs)
+
+    for connection_prefix in ['elt', 'target']:
+        config.add_connection_from_config(prefix=connection_prefix)
+
+    if hasattr(config, 'date_threshold'):
+        config.date_threshold = datetime.strptime(config.date_threshold, r'%Y-%m-%d')
+
+    return config
+
+
+
+# %%
+
+@catch_error()
+def init_app(__file__:str, __description__:str='Data Migration', args:Dict={}, test_pipeline_key:str=Config.generic_key):
+    """
+    First procedure to run
+    """
+    if environment.environment >= environment.qa:
+        import argparse
+        parser = argparse.ArgumentParser(description=__description__)
+        parser.add_argument('--pipeline_key', '--pk', help='pipeline_key value for getting pipeline settings', required=True)
+        args2 = parser.parse_args().__dict__
+    else:
+        args2 = {
+            'pipeline_key': test_pipeline_key,
+            }
+
+    args2 |= args
+    config = get_config(**args2)
+
+    logger.set_logger(
+        logging_level = getattr(logging, config.logging_level, logging.INFO),
+        app_name = os.path.basename(__file__),
+        log_folder_path = getattr(config, 'log_folder_path', logger.log_folder_path)
+        )
+
+    logger.info(config.__dict__) # print out all settings
+
+    return config
 
 
 

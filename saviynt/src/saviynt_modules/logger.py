@@ -14,8 +14,6 @@ from datetime import datetime
 
 # %% Parameters
 
-__description__:str = 'Data Migration'
-
 
 
 # %% Wrapper/Decorator function for catching errors
@@ -210,7 +208,8 @@ class CreateLogger:
         self.add_stream_handlers()
         self.add_file_handler()
 
-        self.info(f'Environment: {self.environment.ENVIRONMENT}, Run Date: {self.run_date.start_str}')
+        self.info(f'Environment: {self.environment.ENVIRONMENT}, Run Date: {self.run_date.start_str}, PWD: {os.path.realpath(".")}')
+        self.info(f'Logging Path: {os.path.realpath(self.log_folder_path)}')
 
 
     def filter_out_unwanted_info_logs(self, filter_log_level:int=logging.WARNING):
@@ -312,39 +311,6 @@ class CreateLogger:
 
 
 logger = CreateLogger()
-
-
-
-# %%
-
-
-@catch_error()
-def init_app(__file__:str, __description__:str=__description__, test_pipeline_key:str='generic'):
-    """
-    First procedure to run
-    """
-    if environment.environment <= environment.dev:
-        logging_level = logging.DEBUG
-    else:
-        logging_level = logging.INFO
-
-    logger.set_logger(logging_level=logging_level, app_name=os.path.basename(__file__))
-
-    if environment.environment >= environment.qa:
-        import argparse
-
-        parser = argparse.ArgumentParser(description=__description__)
-
-        parser.add_argument('--pipeline_key', '--pk', help='pipeline_key value for getting pipeline settings', required=True)
-
-        args = parser.parse_args().__dict__
-
-    else:
-        args = {
-            'pipeline_key': test_pipeline_key,
-            }
-
-    return args
 
 
 

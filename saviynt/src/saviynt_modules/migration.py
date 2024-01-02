@@ -22,26 +22,6 @@ from .sqlserver import migrate_file_to_sql_table, create_or_truncate_sql_table, 
 # %%
 
 @catch_error()
-def get_config(**kwargs):
-    """
-    Create Config object with args
-    Add ELT and Target connections to config object
-    """
-    config = Config(**kwargs)
-
-    for connection_prefix in ['elt', 'target']:
-        config.add_connection_from_config(prefix=connection_prefix, Connection=Connection)
-
-    if hasattr(config, 'date_threshold'):
-        config.date_threshold = datetime.strptime(config.date_threshold, r'%Y-%m-%d')
-
-    return config
-
-
-
-# %%
-
-@catch_error()
 def add_file_meta_to_load_history(file_meta:FileMeta, config:Config):
     """
     Add File Meta data to Load History table

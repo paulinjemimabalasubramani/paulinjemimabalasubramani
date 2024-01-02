@@ -5,7 +5,7 @@ Module to handle connections to various resources
 
 # %%
 from dataclasses import dataclass
-from .settings import Config
+
 
 
 # %%
@@ -35,7 +35,7 @@ class Connection:
         return f'DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};{authentication_str}'
 
     @classmethod
-    def from_config(cls, config:Config, prefix:str=None):
+    def from_config(cls, config, prefix:str=None):
         """
         Populate connection details from config object
         """

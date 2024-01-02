@@ -1,19 +1,10 @@
-# %% Init App
+# %% Description
 
 __description__ = """
 
 Load Envestnet files for Saviynt
 
 """
-
-from saviynt_modules.logger import init_app, logger, catch_error
-
-args = init_app(
-    __file__ = __file__,
-    __description__ = __description__,
-    test_pipeline_key = 'saviynt_envestnet',
-)
-
 
 
 # %% Import Libraries
@@ -24,15 +15,18 @@ from zipfile import ZipFile
 from collections import defaultdict
 from distutils.dir_util import remove_tree
 
-from saviynt_modules.settings import get_csv_rows, normalize_name
+from saviynt_modules.settings import init_app, get_csv_rows, normalize_name
+from saviynt_modules.logger import logger, catch_error
 from saviynt_modules.common import remove_last_line_from_file
-from saviynt_modules.migration import recursive_migrate_all_files, get_config
+from saviynt_modules.migration import recursive_migrate_all_files
 
 
 
 # %% Parameters
 
-args |=  {
+test_pipeline_key = 'saviynt_envestnet'
+
+args = {
     'final_file_ext': '.txt',
     'last_line_text_seek': 'T|',
     }
@@ -41,7 +35,12 @@ args |=  {
 
 # %% Get Config
 
-config = get_config(**args)
+config = init_app(
+    __file__ = __file__,
+    __description__ = __description__,
+    args = args,
+    test_pipeline_key = test_pipeline_key,
+)
 
 
 
