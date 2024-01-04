@@ -8,11 +8,9 @@ Module to handle high level migration tasks, also record metrics / metadata abou
 import tempfile, os
 from typing import List, Dict
 from zipfile import ZipFile
-from datetime import datetime
 
-from .logger import logger, catch_error, environment
+from .logger import logger, catch_error
 from .settings import Config
-from .connections import Connection
 from .common import to_sql_value
 from .filemeta import get_file_meta, FileMeta
 from .sqlserver import migrate_file_to_sql_table, create_or_truncate_sql_table, execute_sql_queries, sql_table_exists

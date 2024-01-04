@@ -60,12 +60,13 @@ class Connection:
 
 
     @catch_error()
-    def kv_str(self, kv_suffix:str, spacing:str='_'):
+    def property_kv_name(self, kv_suffix:str, spacing:str='_'):
         """
-        Key Vault String wihout last suffix
+        Key Vault name wihout last suffix
         e.g. DEV_SAVIYNT_ELT_ID
         """
-        return spacing.join([environment.ENVIRONMENT, self.config.key_vault_prefix, self.key_vault_name, kv_suffix]).upper()
+        ENV = environment.QA if environment.environment<environment.qa else environment.ENVIRONMENT # because we don't have dedicated DEV credentials in Azure KV
+        return spacing.join([ENV, self.config.key_vault_prefix, self.key_vault_name, kv_suffix]).upper()
 
 
     @catch_error()
@@ -85,15 +86,15 @@ class Connection:
         Try various sources to get the property
         """
         hidden_property_name = f'__{property_name}'
-        property_value = getattr(self, hidden_property_name, None)
+        property_value = getattr(self, hidden_property_name, None) # check if the property already exists in `connection` object
         if property_value: return property_value
 
-        env_name = self.kv_str(kv_suffix=kv_suffix, spacing='_')
-        kv_name = self.kv_str(kv_suffix=kv_suffix, spacing='-')
+        env_name = self.property_kv_name(kv_suffix=kv_suffix, spacing='_')
+        kv_name = self.property_kv_name(kv_suffix=kv_suffix, spacing='-')
 
-        if hasattr(self, 'config'): property_value = getattr(self.config, env_name.lower(), None)
-        if not property_value: property_value = get_env(variable_name=env_name.upper(), default=None, raise_error_if_no_value=False)
-        if not property_value: property_value = self.get_kv_secret(kv_name.upper())
+        if hasattr(self, 'config'): property_value = getattr(self.config, env_name.lower(), None) # check if the property is available in `config` object
+        if not property_value: property_value = get_env(variable_name=env_name.upper(), default=None, raise_error_if_no_value=False) # check if the property is available in environment
+        if not property_value: property_value = self.get_kv_secret(kv_name.upper()) # check if the property is available in Key Vault
 
         if not property_value:
             logger.warning(f'Secret property is not found: {kv_name}')
@@ -143,17 +144,14 @@ class Connection:
         """
         pre = prefix+'_' if prefix else ''
 
-        username = getattr(config, f'{pre}username', None)
-        username = username.strip() if username else username
-
         return cls(
             driver = getattr(config, f'{pre}driver').strip(),
             server = getattr(config, f'{pre}server').strip(),
             database = getattr(config, f'{pre}database').strip(),
-            username = username,
-            password = getattr(config, f'{pre}password', None),
+            username = getattr(config, f'{pre}username', '').strip(),
+            password = getattr(config, f'{pre}password', ''),
             trusted_connection = getattr(config, f'{pre}trusted_connection', '').lower().strip() in ['yes', 'y', 't', 'true'],
-            key_vault_name = getattr(config, f'{pre}key_vault_name').strip(),
+            key_vault_name = getattr(config, f'{pre}key_vault_name', '').strip(),
             config = config,
         )
 
