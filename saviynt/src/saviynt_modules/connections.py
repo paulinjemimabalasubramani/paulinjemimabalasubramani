@@ -10,7 +10,7 @@ from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
 from contextlib import contextmanager
 
-from .logger import catch_error, get_env, environment
+from .logger import catch_error, get_env, environment, logger
 
 
 
@@ -60,32 +60,55 @@ class Connection:
 
 
     @catch_error()
-    def kv_str(self, kv_suffix:str):
+    def kv_str(self, kv_suffix:str, spacing:str='_'):
         """
         Key Vault String wihout last suffix
         e.g. DEV_SAVIYNT_ELT_ID
         """
-        return f'{environment.ENVIRONMENT}_{self.config.key_vault_prefix}_{self.key_vault_name}_{kv_suffix}'.upper()
+        return spacing.join([environment.ENVIRONMENT, self.config.key_vault_prefix, self.key_vault_name, kv_suffix]).upper()
+
+
+    @catch_error()
+    def get_kv_secret(self, name:str):
+        """
+        Get secret from Azure KV
+        """
+        if not hasattr(self, '__key_vault_client'):
+            self.__key_vault_client = self.get_azure_key_vault_client()
+        return self.__key_vault_client.get_secret(name.upper()).value
+
+
+    @catch_error()
+    def secret_property(self, property_name:str, kv_suffix:str):
+        """
+        Fetch secret property. To be used inside class property
+        Try various sources to get the property
+        """
+        hidden_property_name = f'__{property_name}'
+        property_value = getattr(self, hidden_property_name, None)
+        if property_value: return property_value
+
+        env_name = self.kv_str(kv_suffix=kv_suffix, spacing='_')
+        kv_name = self.kv_str(kv_suffix=kv_suffix, spacing='-')
+
+        if hasattr(self, 'config'): property_value = getattr(self.config, env_name.lower(), None)
+        if not property_value: property_value = get_env(variable_name=env_name.upper(), default=None, raise_error_if_no_value=False)
+        if not property_value: property_value = self.get_kv_secret(kv_name.upper())
+
+        if not property_value:
+            logger.warning(f'Secret property is not found: {kv_name}')
+            return None
+
+        setattr(self, hidden_property_name, property_value)
+        return property_value
 
 
     @property
     def username(self):
         """
-        fetch username
+        Fetch username
         """
-        if self.__username: return self.__username
-
-        kv_name = self.kv_str(kv_suffix='ID')
-
-        self.__username = get_env(variable_name=kv_name.upper(), default=None, raise_error_if_no_value=False)
-        if self.__username: return self.__username
-
-        if not hasattr(self, '__key_vault_client'):
-            self.__key_vault_client = self.get_azure_key_vault_client()
-        self.__username = self.__key_vault_client.get_secret(kv_name.lower()).value
-        if self.__username: return self.__username
-
-        return None
+        return self.secret_property(property_name='username', kv_suffix='ID')
 
 
     @username.setter
@@ -99,21 +122,9 @@ class Connection:
     @property
     def password(self):
         """
-        fetch password
+        Fetch password
         """
-        if self.__password: return self.__password
-
-        kv_name = self.kv_str(kv_suffix='PASS')
-
-        self.__password = get_env(variable_name=kv_name.upper(), default=None, raise_error_if_no_value=False)
-        if self.__password: return self.__password
-
-        if not hasattr(self, '__key_vault_client'):
-            self.__key_vault_client = self.get_azure_key_vault_client()
-        self.__password = self.__key_vault_client.get_secret(kv_name.lower()).value
-        if self.__password: return self.__password
-
-        return None
+        return self.secret_property(property_name='password', kv_suffix='PASS')
 
 
     @password.setter

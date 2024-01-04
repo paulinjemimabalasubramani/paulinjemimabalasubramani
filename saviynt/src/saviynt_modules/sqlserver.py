@@ -240,6 +240,25 @@ def create_or_truncate_sql_table(table_name_with_schema:str, columns:OrderedDict
 # %%
 
 @catch_error()
+def create_sql_schema_if_not_exists(schema_name:str, connection:Connection):
+    """
+    Create SQL schema if not exists
+    """
+    create_schema_sql = f'''
+    IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE LOWER(SCHEMA_NAME) = LOWER('{schema_name}'))
+    BEGIN
+        EXEC ('CREATE SCHEMA {schema_name}')
+    END;
+    '''
+
+    outputs = execute_sql_queries(sql_list=[create_schema_sql], connection=connection)
+    return outputs
+
+
+
+# %%
+
+@catch_error()
 def drop_sql_table_if_exists(table_name_with_schema:str, connection:Connection):
     """
     Drop table if exists
@@ -382,6 +401,10 @@ def migrate_file_to_sql_table(file_meta:FileMeta, connection:Connection, config:
 
     staging_table =  config.staging_schema + '.' + file_meta.table_name_with_schema.split('.')[1]
     logger.info(f'Preparing Staging Table: {staging_table}')
+
+    create_sql_schema_if_not_exists(schema_name=config.elt_schema, connection=connection)
+    create_sql_schema_if_not_exists(schema_name=config.target_schema, connection=connection)
+    create_sql_schema_if_not_exists(schema_name=config.staging_schema, connection=connection)
 
     drop_sql_table_if_exists(table_name_with_schema=staging_table, connection=connection)
     create_or_truncate_sql_table(table_name_with_schema=staging_table, columns=file_meta.columns, connection=connection, truncate=True)

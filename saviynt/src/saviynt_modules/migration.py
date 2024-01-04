@@ -30,7 +30,7 @@ def add_file_meta_to_load_history(file_meta:FileMeta, config:Config):
         logger.warning('No file meta or no rows copied, skipping update to load history')
         return
 
-    load_history_table = config.elt_table_load_history
+    load_history_table = f'{config.elt_schema}.{config.elt_table_load_history}'
     elt_columns = file_meta.get_elt_load_history_columns()
     elt_connection = config.elt_connection
     logger.info(f'Updating load history for {load_history_table}')
@@ -79,7 +79,8 @@ def file_meta_exists_in_history(config:Config, file_meta:FileMeta=None, **kwargs
     Check whether to migrate the file or not
     False return means to ingest the file | True return means to skip the file
     """
-    if not sql_table_exists(table_name_with_schema=config.elt_table_load_history, connection=config.elt_connection):
+    load_history_table = f'{config.elt_schema}.{config.elt_table_load_history}'
+    if not sql_table_exists(table_name_with_schema=load_history_table, connection=config.elt_connection):
         return False
 
     if kwargs: # custom check
@@ -95,7 +96,7 @@ def file_meta_exists_in_history(config:Config, file_meta:FileMeta=None, **kwargs
 
     exists_sql = f'''
         SELECT COUNT(*) AS CNT
-        FROM {config.elt_table_load_history}
+        FROM {load_history_table}
         WHERE {check_dict_filter}
         '''
 

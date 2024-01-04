@@ -16,9 +16,10 @@ generic,staging_schema,stg
 generic,elt_driver,{ODBC Driver 17 for SQL Server}
 generic,elt_server,DW1SQLDATA01.ibddomain.net
 generic,elt_database,SaviyntIntegration
-generic,elt_trusted_connection,TRUE
+generic,elt_trusted_connection,FALSE
 generic,elt_key_vault_name,elt
-generic,elt_table_load_history,elt.load_history
+generic,elt_schema,elt
+generic,elt_table_load_history,load_history
 generic,default_data_type,NVARCHAR(2000)
 generic,column_meta_prefix,meta_
 generic,keep_history,TRUE
