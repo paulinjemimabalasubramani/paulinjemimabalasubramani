@@ -37,6 +37,7 @@ steps:
       dags/**
       drivers/**
       config/**
+      saviynt/**
       Pipfile
       Pipfile.lock
     TargetFolder: '$(Build.ArtifactStagingDirectory)/s'
@@ -79,7 +80,10 @@ steps:
   inputs:
     pathToPublish: $(build.artifactstagingdirectory)/s/config
     artifactName: CONFIG
-
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: $(build.artifactstagingdirectory)/s/saviynt
+    artifactName: SAVIYNT
 
 
 - script: |
