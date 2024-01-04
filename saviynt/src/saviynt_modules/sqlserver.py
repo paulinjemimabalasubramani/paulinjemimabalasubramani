@@ -6,15 +6,15 @@ Module to handle common sql server migration tasks
 
 # %%
 
-import pyodbc
+import os, csv
 from collections import OrderedDict
 from typing import List, Dict
 from datetime import datetime
 
 from .settings import Config
-from .logger import logger, catch_error
+from .logger import logger, catch_error, environment
 from .connections import Connection
-from .common import run_process, remove_square_parenthesis
+from .common import run_process, remove_square_parenthesis, clean_delimiter_value_for_bcp, common_delimiter
 from .filemeta import FileMeta
 
 
@@ -30,8 +30,12 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
     """
     Send CSV/PSV data file to SQL Server using bcp tool
     if no username or password given, then use trusted connection
+
+    bcp <databse_name>.<schema_name>.<table_name> in "<file_path>" -S <server_name>.<dns_suffix> -U <username> -P <password> -c -t "|" -F 2
+
+    bcp SaviyntIntegration.dbo.envestnet_hierarchy_firm in "C:/myworkdir/data/envestnet_v35_processed/hierarchy_firm_20231009.txt" -S DW1SQLDATA01.ibddomain.net -T -c -t "|" -F 2
     """
-    authentication_str = '-T' if connection.is_trusted_connection() else f'-U {connection.username} -P {connection.password}'
+    authentication_str = '-T' if connection.trusted_connection else f'-U {connection.username} -P {connection.password}'
 
     bcp_str = f"""
         bcp {connection.database}.{table_name_with_schema}
@@ -42,6 +46,8 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
         -t "{delimiter}"
         -F 2
         """
+
+    logger.debug(f'BCP Command: {bcp_str}')
 
     stdout = run_process(command=bcp_str)
     if not stdout: return
@@ -60,12 +66,50 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
 # %%
 
 @catch_error()
-def bcp_to_sql_server(file_meta:FileMeta, connection:Connection, staging_table:str):
+def convert_csv_to_psv(file_path:str, config:Config):
+    """
+    Convert CSV to PSV for corrent BCP tool function
+    """
+    file_name = os.path.basename(file_path)
+    output_file = os.path.join(config.temporary_folder_path, file_name)
+    logger.info(f'Converting CSV to PSV -> CSV: {file_path} PSV: {output_file}')
+
+    first_flag = True
+    with open(file=output_file, mode='w', newline='', encoding='UTF-8') as out_file:
+        with open(file=file_path, mode='rt', newline='', encoding='UTF-8-SIG', errors='ignore') as csvfile:
+            reader = csv.DictReader(f=csvfile, delimiter=',')
+            for row in reader:
+                rowl = OrderedDict()
+                for k, v in row.items():
+                    val = clean_delimiter_value_for_bcp(value=v)
+                    rowl[k] = val
+
+                if first_flag:
+                    first_flag = False
+                    out_writer = csv.DictWriter(out_file, delimiter=common_delimiter, quotechar=None, quoting=csv.QUOTE_NONE, skipinitialspace=True, fieldnames=row.keys())
+                    out_writer.writeheader()
+                out_writer.writerow(rowl)
+
+    return output_file
+
+
+
+# %%
+
+@catch_error()
+def bcp_to_sql_server(file_meta:FileMeta, connection:Connection, staging_table:str, config:Config):
     """
     Main BCP function, which calls other BCP functions depending on file_type
     """
     if file_meta.file_type == 'csv':
-        file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_meta.file_path, connection=connection, table_name_with_schema=staging_table, delimiter=file_meta.delimiter)
+        file_path = file_meta.file_path
+        delimiter = file_meta.delimiter
+        if delimiter == ',':
+            file_path = convert_csv_to_psv(file_path=file_path, config=config)
+            delimiter = common_delimiter
+
+        file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=connection, table_name_with_schema=staging_table, delimiter=delimiter)
+
     else:
         raise ValueError(f'Unknown file_meta.file_type: {file_meta.file_type}')
 
@@ -81,9 +125,10 @@ def execute_sql_queries(sql_list:List, connection:Connection):
     Execute given list of SQL queries
     """
     outputs = []
-    with pyodbc.connect(connection.conn_str_sql_server()) as conn:
+    with connection.to_sql_server() as conn:
         cursor = conn.cursor()
         for sql_str in sql_list:
+            logger.debug(sql_str)
             cursor.execute(sql_str)
             if cursor.description:
                 results = cursor.fetchall()
@@ -195,6 +240,25 @@ def create_or_truncate_sql_table(table_name_with_schema:str, columns:OrderedDict
 # %%
 
 @catch_error()
+def create_sql_schema_if_not_exists(schema_name:str, connection:Connection):
+    """
+    Create SQL schema if not exists
+    """
+    create_schema_sql = f'''
+    IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE LOWER(SCHEMA_NAME) = LOWER('{schema_name}'))
+    BEGIN
+        EXEC ('CREATE SCHEMA {schema_name}')
+    END;
+    '''
+
+    outputs = execute_sql_queries(sql_list=[create_schema_sql], connection=connection)
+    return outputs
+
+
+
+# %%
+
+@catch_error()
 def drop_sql_table_if_exists(table_name_with_schema:str, connection:Connection):
     """
     Drop table if exists
@@ -214,6 +278,19 @@ def drop_sql_table_if_exists(table_name_with_schema:str, connection:Connection):
 # %%
 
 @catch_error()
+def delete_history_from_sql_table(table_name_with_schema:str, connection:Connection):
+    """
+    Hard delete soft-deleted records
+    """
+    delete_history_sql = f'DELETE FROM {table_name_with_schema} WHERE meta_is_current=0;'
+    outputs = execute_sql_queries(sql_list=[delete_history_sql], connection=connection)
+    return outputs
+
+
+
+# %%
+
+@catch_error()
 def get_sql_table_meta_columns(file_meta:FileMeta, config:Config):
     """
     Get Meta fileds that will be added to the table
@@ -222,7 +299,7 @@ def get_sql_table_meta_columns(file_meta:FileMeta, config:Config):
         Value: tuple(Value/Expression, Column Type)
     """
     columns_sql = ','.join([f"COALESCE({c}, '')" for c in file_meta.columns])
-    row_hash_sql = f"HASHBYTES('SHA2_256', CONCAT({columns_sql}))"
+    row_hash_sql = f"HASHBYTES('SHA2_256', CONCAT_WS(',', {columns_sql}))"
 
     meta_fields = OrderedDict([
         (f'{config.column_meta_prefix}pipeline_key', (config.default_data_type, f"'{file_meta.pipeline_key}'")),
@@ -232,7 +309,7 @@ def get_sql_table_meta_columns(file_meta:FileMeta, config:Config):
         (f'{config.column_meta_prefix}start_date', ('DATETIME', 'CURRENT_TIMESTAMP')),
         (f'{config.column_meta_prefix}end_date', ('DATETIME', "CAST('9999-12-31' AS DATETIME)")),
         (f'{config.column_meta_prefix}is_current', ('INT', '1')),
-        (f'{config.column_meta_prefix}hash_key', ('VARBINARY(MAX)', row_hash_sql)),
+        (f'{config.column_meta_prefix}hash_key', ('VARBINARY(500)', row_hash_sql)),
     ])
 
     if file_meta.additional_info:
@@ -280,8 +357,15 @@ def merge_sql_staging_into_target(tgt_table_name_with_schema:str, stg_table_name
         not_matched_by_source_sql = ''
 
     merge_match_sql = f'''
+    WITH SRC AS (
+        SELECT * FROM (
+            SELECT *, ROW_NUMBER() OVER (PARTITION BY COALESCE(META_HASH_KEY, '') ORDER BY META_DATE_OF_DATA DESC) AS META_ROW_NUMBER
+            FROM {stg_table_name_with_schema}
+            ) DD
+        WHERE DD.META_ROW_NUMBER = 1
+    )
     MERGE INTO {tgt_table_name_with_schema} TGT
-    USING {stg_table_name_with_schema} SRC
+    USING SRC
         ON COALESCE(TGT.META_HASH_KEY, '') = COALESCE(SRC.META_HASH_KEY, '')
             AND TGT.META_IS_CURRENT = 1
     WHEN MATCHED THEN
@@ -318,38 +402,51 @@ def migrate_file_to_sql_table(file_meta:FileMeta, connection:Connection, config:
     staging_table =  config.staging_schema + '.' + file_meta.table_name_with_schema.split('.')[1]
     logger.info(f'Preparing Staging Table: {staging_table}')
 
+    create_sql_schema_if_not_exists(schema_name=config.elt_schema, connection=connection)
+    create_sql_schema_if_not_exists(schema_name=config.target_schema, connection=connection)
+    create_sql_schema_if_not_exists(schema_name=config.staging_schema, connection=connection)
+
     drop_sql_table_if_exists(table_name_with_schema=staging_table, connection=connection)
     create_or_truncate_sql_table(table_name_with_schema=staging_table, columns=file_meta.columns, connection=connection, truncate=True)
-    if bcp_to_sql_server(file_meta=file_meta, connection=connection, staging_table=staging_table) is None: return
+    bcp_output = bcp_to_sql_server(file_meta=file_meta, connection=connection, staging_table=staging_table, config=config)
 
-    meta_columns, meta_columns_values = get_sql_table_meta_columns(file_meta=file_meta, config=config)
-    add_sql_new_columns_if_any(table_name_with_schema=staging_table, columns=meta_columns, connection=connection)
-    update_sql_staging_table_meta_fields(table_name_with_schema=staging_table, meta_columns_values=meta_columns_values, connection=connection)
+    if bcp_output is None or file_meta.rows_copied == 0:
+        logger.warning(f'No rows copied in file, skipping {file_meta.file_path}')
+    else:
+        meta_columns, meta_columns_values = get_sql_table_meta_columns(file_meta=file_meta, config=config)
+        add_sql_new_columns_if_any(table_name_with_schema=staging_table, columns=meta_columns, connection=connection)
+        update_sql_staging_table_meta_fields(table_name_with_schema=staging_table, meta_columns_values=meta_columns_values, connection=connection)
 
-    logger.info(f'Preparing Persistent Table: {file_meta.table_name_with_schema}')
-    truncate_target_table = False
-    if hasattr(config, 'keep_history') and config.keep_history.strip().upper() == 'FALSE':
-        truncate_target_table = True
+        logger.info(f'Preparing Persistent Table: {file_meta.table_name_with_schema}')
 
-    if truncate_target_table: # to fix SQL problem of having turncated table with large disk space
-        drop_sql_table_if_exists(table_name_with_schema=file_meta.table_name_with_schema, connection=connection)
-    create_or_truncate_sql_table(table_name_with_schema=file_meta.table_name_with_schema, columns=file_meta.columns | meta_columns, connection=connection, truncate=truncate_target_table)
+        recreate_target_table = False
+        if hasattr(config, 'recreate_target_table') and config.recreate_target_table.strip().upper() == 'TRUE':
+            recreate_target_table = True
+        if recreate_target_table:
+            drop_sql_table_if_exists(table_name_with_schema=file_meta.table_name_with_schema, connection=connection)
 
-    output = merge_sql_staging_into_target(
-        tgt_table_name_with_schema = file_meta.table_name_with_schema,
-        stg_table_name_with_schema = staging_table,
-        all_columns = file_meta.columns | meta_columns,
-        is_full_load = file_meta.is_full_load,
-        connection = connection,
-        )
-    logger.info(f'Finished Merge-Match statement for table {file_meta.table_name_with_schema}')
+        create_or_truncate_sql_table(table_name_with_schema=file_meta.table_name_with_schema, columns=file_meta.columns | meta_columns, connection=connection, truncate=False)
+
+        output = merge_sql_staging_into_target(
+            tgt_table_name_with_schema = file_meta.table_name_with_schema,
+            stg_table_name_with_schema = staging_table,
+            all_columns = file_meta.columns | meta_columns,
+            is_full_load = file_meta.is_full_load,
+            connection = connection,
+            )
+
+        keep_history = True
+        if hasattr(config, 'keep_history') and config.keep_history.strip().upper() == 'FALSE':
+            keep_history = False
+        if not keep_history:
+            delete_history_from_sql_table(table_name_with_schema=file_meta.table_name_with_schema, connection=connection)
+
+        logger.info(f'Finished Merge-Match statement for table {file_meta.table_name_with_schema}')
 
     drop_sql_table_if_exists(table_name_with_schema=staging_table, connection=connection)
 
     timedelta1 = datetime.now() - migration_start_time
     file_meta.load_time_seconds = timedelta1.days*86400 + timedelta1.seconds + timedelta1.microseconds/10**6
-
-    return output
 
 
 

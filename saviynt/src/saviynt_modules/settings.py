@@ -6,14 +6,21 @@ Metadata driven coding
 
 # %% Import Libraries
 
-import yaml, csv, re, platform, psutil, os
-from .logger import logger, catch_error, get_env, environment
+import yaml, csv, re, platform, psutil, os, logging
 from typing import List, Dict
+from collections import OrderedDict
+from datetime import datetime
+from typing import List, Dict
+
+from .logger import logger, catch_error, get_env, environment
+from .connections import Connection
+
 
 
 # %% Parameters / Constants
 
-name_regex = r'[\W]+'
+config_folder_path:str = './saviynt/config'
+name_regex:str = r'[\W]+'
 
 
 
@@ -55,14 +62,14 @@ def normalize_name(name:str):
 # %% Get CSV rows
 
 @catch_error()
-def get_csv_rows(csv_file_path:str, csv_encoding:str='UTF-8-SIG', normalize_names:bool=True):
+def get_csv_rows(csv_file_path:str, csv_encoding:str='UTF-8-SIG', normalize_names:bool=True, delimiter:str=','):
     """
     Generator function to get csv file rows one by one
     """
     with open(file=csv_file_path, mode='rt', newline='', encoding=csv_encoding, errors='ignore') as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(f=csvfile, delimiter=delimiter)
         for row in reader:
-            rowl = {}
+            rowl = OrderedDict()
             for k, v in row.items():
                 key = k
                 if normalize_names:
@@ -104,12 +111,14 @@ class ConfigBase:
 
 
     @catch_error()
-    def read_environment(self, env_var_names:List=[]):
+    def read_environment(self, env_var_names:List=[], raise_error_if_no_value:bool=False):
         """
         Read Environmental Variables
         """
-        for envv in env_var_names:
-            setattr(self, envv.lower().strip(), get_env(variable_name=envv))
+        for variable_name in env_var_names:
+            variable_value = get_env(variable_name=variable_name, raise_error_if_no_value=raise_error_if_no_value)
+            if variable_value is not None:
+                setattr(self, variable_name.lower().strip(), variable_value)
 
 
     @catch_error()
@@ -128,7 +137,6 @@ class ConfigBase:
         """
         Read settings from CSV file
         """
-        logger.info(f'Reading settings file {os.path.realpath(file_path)}, Present Working Directory: {os.path.realpath(".")}')
         flist = [x.lower() for x in filter_list]
 
         contents = {}
@@ -165,12 +173,11 @@ class Config(ConfigBase):
     """
     Building on top of base config
     """
-    config_file_path = './saviynt/config/config.csv'
-    config_dev_file_path = './saviynt/config/config_dev.csv'
     generic_key = 'generic'
 
+
     @catch_error()
-    def __init__(self, args:Dict={}, env_var_names:List=[]):
+    def __init__(self, env_var_names:List=[], config_file_path:str=None, **kwargs):
         """
         Initiate class - build on top of base class initialization
         """
@@ -178,20 +185,19 @@ class Config(ConfigBase):
 
         self.system_info = system_info()
         self.read_environment(env_var_names=env_var_names)
-        self.set_values(values=args)
+        self.set_values(values=kwargs)
 
         self.filter_list = [self.generic_key]
         if hasattr(self, 'pipeline_key'):
             self.filter_list.append(self.pipeline_key)
 
-        config_file_path = self.config_file_path if environment.is_prod else self.config_dev_file_path
-        self.read_csv(file_path=config_file_path, filter_list=self.filter_list)
-
-        logger.info(self.__dict__) # print out all settings
+        if config_file_path:
+            self.config_file_path = config_file_path
+            self.read_csv(file_path=self.config_file_path, filter_list=self.filter_list)
 
 
     @catch_error()
-    def add_connection_from_config(self, prefix:str, Connection):
+    def add_connection_from_config(self, prefix:str):
         """
         Add target connection to settings
         """
@@ -218,9 +224,69 @@ class Config(ConfigBase):
             if uppercase_key: key = key.upper()
             if uppercase_val: val = val.upper()
 
-            dict_map = {**dict_map, key:val}
+            dict_map |= {key:val}
 
         return dict_map
+
+
+
+# %%
+
+@catch_error()
+def get_config(**kwargs):
+    """
+    Create Config object with args
+    Add ELT and Target connections to config object
+    """
+    env_var_names = []
+
+    config_file_path = os.path.join(config_folder_path, f'config_{environment.ENVIRONMENT.lower()}.csv')
+
+    config = Config(env_var_names=env_var_names, config_file_path=config_file_path, **kwargs)
+
+    for connection_prefix in ['elt', 'target']:
+        config.add_connection_from_config(prefix=connection_prefix)
+
+    if hasattr(config, 'date_threshold'):
+        config.date_threshold = datetime.strptime(config.date_threshold, r'%Y-%m-%d')
+
+    return config
+
+
+
+# %%
+
+@catch_error()
+def init_app(__file__:str, __description__:str='Data Migration', args:Dict={}, test_pipeline_key:str=Config.generic_key):
+    """
+    First procedure to run
+    """
+    if environment.environment >= environment.qa:
+        import argparse
+        parser = argparse.ArgumentParser(description=__description__)
+        parser.add_argument('--pipeline_key', '--pk', help='pipeline_key value for getting pipeline settings', required=True)
+        args2 = parser.parse_args().__dict__
+    else:
+        args2 = {
+            'pipeline_key': test_pipeline_key,
+            }
+
+    args2 |= args
+    config = get_config(**args2)
+
+    logger.set_logger(
+        logging_level = getattr(logging, config.logging_level, logging.INFO),
+        app_name = os.path.basename(__file__),
+        log_folder_path = getattr(config, 'log_folder_path', logger.log_folder_path),
+        )
+
+    logger.info(config.__dict__) # print out all settings
+
+    for c in ['pipeline_key', 'msteams_webhook_url']:
+        if hasattr(config, c):
+            logger.msteams_webhook_url = getattr(config, c)
+
+    return config
 
 
 

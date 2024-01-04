@@ -10,6 +10,22 @@ from collections import OrderedDict
 from datetime import datetime
 
 from .logger import logger, catch_error
+from .settings import Config
+
+
+# %% Parameters
+
+common_delimiter = '|'
+
+
+
+# %%
+
+def clean_delimiter_value_for_bcp(value:str):
+    """
+    remove common delimiter values and carriage returns, so that BCP tool can read the string correctly
+    """
+    return re.sub(r'\s', ' ', re.sub(r'\|', ':', value), flags=re.MULTILINE)
 
 
 
@@ -98,8 +114,8 @@ def get_separator(header_string:str):
     """
     Find out what separator is used in the file header
     """
-    separators = ['!#!#', '|', '\t']
-    delimiter = ','
+    separators = ['!#!#', '|', '\t', ',']
+    delimiter = common_delimiter
     for s in separators:
         if s in header_string:
             delimiter = s

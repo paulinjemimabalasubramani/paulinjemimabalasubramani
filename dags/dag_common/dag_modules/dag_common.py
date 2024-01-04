@@ -20,6 +20,7 @@ from dag_modules.msteams_webhook import on_failure, on_success, sla_miss
 
 ingestion_path = '/opt/EDIP/ingestion'
 src_path = f'{ingestion_path}/src'
+saviynt_src_path = f'/opt/EDIP/saviynt/src'
 
 
 

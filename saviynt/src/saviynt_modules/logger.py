@@ -7,7 +7,6 @@ Module for logging, handling errors and sending alerts
 
 import os, sys, logging, json, pymsteams
 from functools import wraps
-from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
@@ -108,6 +107,7 @@ class Environment:
         for e in self.ENVIRONMENT_OPTIONS:
             setattr(self, f'is_{e.lower()}', self.ENVIRONMENT==e) # e.g: if environment.is_prod
             setattr(self, e.lower(), self.ENVIRONMENT_OPTIONS[e]) # e.g: if environment.environment < environment.prod
+            setattr(self, e, e)
 
 
 environment = Environment()
@@ -162,13 +162,14 @@ class CreateLogger:
     Class for Logging Print Statements
     """
     log_format = logging.Formatter(fmt=r'%(asctime)s :: %(name)s :: %(levelname)-8s :: %(message)s', datefmt=r'%Y-%m-%d %H:%M:%S')
-    log_folder_path = '../logs'
-    msteams_webhook_url = 'https://advisorgroup.webhook.office.com/webhookb2/17ec5d27-9782-46ab-9c9a-49a9cb61aab6@c1ef4e97-eeff-48b2-b720-0c8480a08061/IncomingWebhook/f0acf95ca6a44c72b579ac27fdab4b6f/4d1ebaa8-54ba-41cc-841e-1cb24f3b2eea'
 
-    log_type_PRINT = 'PRINT'
-    msg_type_INFO = 'INFO'
-    msg_type_WARNING = 'WARNING'
-    msg_type_ERROR = 'ERROR'
+    log_folder_path = '../logs'
+
+    class msg_type:
+        DEBUG = 'DEBUG'
+        INFO = 'INFO'
+        WARNING = 'WARNING'
+        ERROR = 'ERROR'
 
 
     def __init__(self):
@@ -183,10 +184,18 @@ class CreateLogger:
         Initiate the class. Set Logging Policy.
         """
         self.environment = environment
+        self.logging_level = logging_level
 
         self.app_name = app_name if app_name else 'logs'
         self.logger = logging.getLogger(self.app_name)
-        self.logger.setLevel(logging_level)
+        self.logger.setLevel(level=self.logging_level)
+
+        self.logger_func_map = {
+            self.msg_type.DEBUG: self.logger.debug,
+            self.msg_type.INFO: self.logger.info,
+            self.msg_type.WARNING: self.logger.warning,
+            self.msg_type.ERROR: self.logger.error,
+            }
 
         if log_folder_path:
             self.log_folder_path = log_folder_path
@@ -195,7 +204,8 @@ class CreateLogger:
         self.add_stream_handlers()
         self.add_file_handler()
 
-        self.info(f'Environment: {self.environment.ENVIRONMENT}, Run Date: {self.run_date.start_str}')
+        self.info(f'Environment: {self.environment.ENVIRONMENT}, Run Date: {self.run_date.start_str}, PWD: {os.path.realpath(".")}')
+        self.info(f'Logging Path: {os.path.realpath(self.log_folder_path)}')
 
 
     def filter_out_unwanted_info_logs(self, filter_log_level:int=logging.WARNING):
@@ -211,23 +221,23 @@ class CreateLogger:
             logging.getLogger(warning_logger).setLevel(filter_log_level)
 
 
-    def add_stream_handlers(self, default_logging_level:int=logging.INFO):
+    def add_stream_handlers(self):
         """
         Add handlers for I/O stream.
         """
-        stdout_handler = StreamHandler(sys.stdout)
-        stdout_handler.setLevel(default_logging_level)
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setLevel(self.logging_level)
         stdout_handler.addFilter(lambda record: record.levelno <= logging.WARNING)
         stdout_handler.setFormatter(self.log_format)
         self.logger.addHandler(stdout_handler)
 
-        stderr_handler = StreamHandler(sys.stderr)
+        stderr_handler = logging.StreamHandler(sys.stderr)
         stderr_handler.setLevel(logging.ERROR)
         stderr_handler.setFormatter(self.log_format)
         self.logger.addHandler(stderr_handler)
 
 
-    def add_file_handler(self, log_folder_path:str=log_folder_path, logging_level:int=logging.INFO, file_size_mb:float=2.0, backupCount:int=3):
+    def add_file_handler(self, log_folder_path:str=log_folder_path, file_size_mb:float=2.0, backupCount:int=3):
         """
         Add logging to file capabilities
         """
@@ -243,7 +253,7 @@ class CreateLogger:
             backupCount = backupCount, # max file backups
             )
 
-        file_handler.setLevel(logging_level)
+        file_handler.setLevel(self.logging_level)
         file_handler.setFormatter(self.log_format)
         self.logger.addHandler(file_handler)
 
@@ -252,13 +262,17 @@ class CreateLogger:
         """
         Send failure notifications to MS Teams
         """
-        if self.environment.is_prod:
-            msteams_webhook = pymsteams.connectorcard(self.msteams_webhook_url)
-            msteams_webhook.text(f'app = {self.app_name}; message = {message}')
+        if hasattr(self, 'msteams_webhook_url'):
+            mtext = f'app = {self.app_name}; message = {message}'
+            if hasattr(self, 'pipeline_key'):
+                mtext = f'pipeline_key = {self.pipeline_key}; {mtext}'
+
+            msteams_webhook = pymsteams.connectorcard(hookurl=self.msteams_webhook_url)
+            msteams_webhook.text(mtext=mtext)
             msteams_webhook.send()
 
 
-    def log(self, msg, msg_type, extra_log:dict={}, logger_func=None):
+    def log(self, msg, msg_type, extra_log:dict={}):
         """
         Build and send log data
         """
@@ -272,40 +286,23 @@ class CreateLogger:
             }
             body = json.dumps(log_data, sort_keys=True, default=str, indent=4)
 
-            if logger_func:
-                logger_func(msg, exc_info=False)
-            else:
-                print(body)
+            logger_func = self.logger_func_map[msg_type]
+            logger_func(msg, exc_info=False)
 
-            if msg_type==self.msg_type_ERROR:
+            if msg_type==self.msg_type.ERROR:
                 self.send_failure_notification(message=body)
 
         except (BaseException, AssertionError) as e:
             print(e)
 
 
-    def info(self, msg):
-        """
-        Log info message
-        """
-        self.log(msg=msg, msg_type=self.msg_type_INFO, logger_func=self.logger.info)
+    def debug(self, msg): self.log(msg=msg, msg_type=self.msg_type.DEBUG)
+    def info(self, msg): self.log(msg=msg, msg_type=self.msg_type.INFO)
+    def warning(self, msg): self.log(msg=msg, msg_type=self.msg_type.WARNING)
+    def error(self, msg): self.log(msg=msg, msg_type=self.msg_type.ERROR)
 
 
-    def warning(self, msg):
-        """
-        Log warning message
-        """
-        self.log(msg=msg, msg_type=self.msg_type_WARNING, logger_func=self.logger.warning)
-
-
-    def error(self, msg):
-        """
-        Log error message
-        """
-        self.log(msg=msg, msg_type=self.msg_type_ERROR, logger_func=self.logger.error)
-
-
-    def mark_run_end(self):
+    def mark_ending(self):
         """
         Log Run End date and Run duration of the entire code
         """

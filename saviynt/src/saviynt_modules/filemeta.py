@@ -189,7 +189,6 @@ def normalize_table_name(table_name_raw:str, config:Config):
 
 
 
-
 # %%
 
 @catch_error()
@@ -239,21 +238,9 @@ def extract_table_name_and_date_from_file_name(file_path:str, config:Config, zip
 
     table_name_with_schema = normalize_table_name(table_name_raw=table_name_raw, config=config)
 
+    date_of_data = date_of_data.replace(microsecond=0)
     return table_name_with_schema, date_of_data
 
-
-
-# %%
-
-"""
-
-import re
-
-file_name_noext='user_id_administration.20231204.maj_userid_20231204'
-file_name_regex = r"^(.*?)\.(\d{8})"
-
-match = re.search(file_name_regex, file_name_noext)
-"""
 
 
 # %%
@@ -285,6 +272,9 @@ def get_file_meta_csv(file_type:str, file_path:str, config:Config, zip_file_path
     """
     columns, delimiter = get_file_columns_csv(file_path=file_path, default_data_type=config.default_data_type)
     if not columns: return
+
+    if hasattr(config, 'columns') and sorted(list(config.columns.keys()))==sorted(list(columns.keys())):
+        columns = config.columns # to apply right column type
 
     table_name_with_schema, date_of_data = extract_table_name_and_date_from_file_name(file_path=file_path, config=config, zip_file_path=zip_file_path)
     if not table_name_with_schema: return

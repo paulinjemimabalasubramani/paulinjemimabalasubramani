@@ -11,26 +11,9 @@ from zipfile import ZipFile
 
 from .logger import logger, catch_error
 from .settings import Config
-from .connections import Connection
 from .common import to_sql_value
 from .filemeta import get_file_meta, FileMeta
 from .sqlserver import migrate_file_to_sql_table, create_or_truncate_sql_table, execute_sql_queries, sql_table_exists
-
-
-
-# %%
-
-def get_config(args:dict):
-    """
-    Create Config object with args
-    Add ELT and Target connections to config object
-    """
-    config = Config(args=args)
-
-    for connection_prefix in ['elt', 'target']:
-        config.add_connection_from_config(prefix=connection_prefix, Connection=Connection)
-
-    return config
 
 
 
@@ -41,7 +24,11 @@ def add_file_meta_to_load_history(file_meta:FileMeta, config:Config):
     """
     Add File Meta data to Load History table
     """
-    load_history_table = config.elt_table_load_history
+    if not file_meta or file_meta.rows_copied is None:
+        logger.warning('No file meta or no rows copied, skipping update to load history')
+        return
+
+    load_history_table = f'{config.elt_schema}.{config.elt_table_load_history}'
     elt_columns = file_meta.get_elt_load_history_columns()
     elt_connection = config.elt_connection
     logger.info(f'Updating load history for {load_history_table}')
@@ -90,7 +77,8 @@ def file_meta_exists_in_history(config:Config, file_meta:FileMeta=None, **kwargs
     Check whether to migrate the file or not
     False return means to ingest the file | True return means to skip the file
     """
-    if not sql_table_exists(table_name_with_schema=config.elt_table_load_history, connection=config.elt_connection):
+    load_history_table = f'{config.elt_schema}.{config.elt_table_load_history}'
+    if not sql_table_exists(table_name_with_schema=load_history_table, connection=config.elt_connection):
         return False
 
     if kwargs: # custom check
@@ -102,13 +90,15 @@ def file_meta_exists_in_history(config:Config, file_meta:FileMeta=None, **kwargs
     else:
         raise ValueError('Either file_meta or **kwargs should be given')
 
-    check_dict_filter = ' AND '.join([f'{c} IS NULL' if v.upper().strip()=='NULL' or v.strip()=='' or v is None else f'{c}={v}' for c, v in check_dict.items()])
+    check_dict_filter = ' AND '.join([f'{c} IS NULL' if v is None or v.upper().strip()=='NULL' or v.strip()=='' else f'{c}={v}' for c, v in check_dict.items()])
 
     exists_sql = f'''
         SELECT COUNT(*) AS CNT
-        FROM {config.elt_table_load_history}
+        FROM {load_history_table}
         WHERE {check_dict_filter}
         '''
+
+    logger.debug(exists_sql)
 
     output = execute_sql_queries(sql_list=[exists_sql], connection=config.elt_connection)
     return output[0][0][0]>0
