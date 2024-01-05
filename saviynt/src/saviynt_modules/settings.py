@@ -19,7 +19,11 @@ from .connections import Connection
 
 # %% Parameters / Constants
 
-config_folder_path:str = './saviynt/config'
+if environment.environment < environment.qa:
+    config_folder_path:str = './saviynt/config'
+else:
+    config_folder_path:str = '/opt/EDIP/saviynt/config'
+
 name_regex:str = r'[\W]+'
 
 
