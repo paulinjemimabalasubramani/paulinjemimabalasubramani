@@ -34,7 +34,7 @@ with DAG(
 
     main_pipeline = BashOperator(
         task_id = f'{pipelinekey}_task',
-        bash_command = f'python {saviynt_src_path}/envestnet_load.py --pipelinekey {pipelinekey}',
+        bash_command = f'python {saviynt_src_path}/envestnet_load.py --pipeline_key {pipelinekey}',
         dag = dag,
         execution_timeout = timedelta(seconds=7200),
         )
