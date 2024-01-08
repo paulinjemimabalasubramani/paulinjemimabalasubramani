@@ -74,39 +74,40 @@ class FileMeta:
         """
         get list of columns for in elt.load_history
         """
-        id_type = 'INT IDENTITY'
-        str_type = 'NVARCHAR(2000)'
-        int_type = 'INT'
-        datetime_type = 'DATETIME'
-        float_type = 'FLOAT'
-        json_type = 'NVARCHAR(2000)'
+        class sql_types:
+            id = 'INT IDENTITY'
+            str = 'NVARCHAR(2000)'
+            int = 'INT'
+            datetime = 'DATETIME'
+            decimal2 = 'NUMERIC(38,2)'
+            json = 'NVARCHAR(2000)'
 
         elt_columns = OrderedDict([
-            ('id', id_type),
-            ('table_name_with_schema', str_type),
-            ('database_name', str_type),
-            ('server_name', str_type),
-            ('is_full_load', int_type),
-            ('rows_copied', int_type),
-            ('load_time_seconds', float_type),
-            ('date_of_data', datetime_type),
-            ('run_date', datetime_type),
-            ('pipeline_key', str_type),
-            ('file_type', str_type),
-            ('delimiter', str_type),
-            ('columns', str_type),
-            ('file_name', str_type),
-            ('file_path', str_type),
-            ('file_size_kb', float_type),
-            ('file_modified_date', datetime_type),
-            ('zip_file_name', str_type),
-            ('zip_file_path', str_type),
-            ('zip_file_size_kb', float_type),
-            ('zip_file_modified_date', datetime_type),
-            ('source_server', str_type),
-            ('source_database', str_type),
-            ('source_table_name_with_schema', str_type),
-            ('additional_info', json_type),
+            ('id', sql_types.id),
+            ('table_name_with_schema', sql_types.str),
+            ('database_name', sql_types.str),
+            ('server_name', sql_types.str),
+            ('is_full_load', sql_types.int),
+            ('rows_copied', sql_types.int),
+            ('load_time_seconds', sql_types.decimal2),
+            ('date_of_data', sql_types.datetime),
+            ('run_date', sql_types.datetime),
+            ('pipeline_key', sql_types.str),
+            ('file_type', sql_types.str),
+            ('delimiter', sql_types.str),
+            ('columns', sql_types.str),
+            ('file_name', sql_types.str),
+            ('file_path', sql_types.str),
+            ('file_size_kb', sql_types.decimal2),
+            ('file_modified_date', sql_types.datetime),
+            ('zip_file_name', sql_types.str),
+            ('zip_file_path', sql_types.str),
+            ('zip_file_size_kb', sql_types.decimal2),
+            ('zip_file_modified_date', sql_types.datetime),
+            ('source_server', sql_types.str),
+            ('source_database', sql_types.str),
+            ('source_table_name_with_schema', sql_types.str),
+            ('additional_info', sql_types.json),
         ])
 
         return elt_columns

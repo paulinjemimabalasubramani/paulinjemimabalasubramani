@@ -59,6 +59,9 @@ def normalize_name(name:str):
     """
     Clean up name and make it standard looking
     """
+    for ch in ['"', '[', ']']:
+        name = name.replace(ch, '')
+
     return re.sub(name_regex, '_', str(name).lower().strip())
 
 
