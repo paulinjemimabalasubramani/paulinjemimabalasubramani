@@ -434,7 +434,7 @@ def convert_nfs2_to_csv(file_meta:dict):
     for target_file_path in target_file_paths:
         recursive_migrate_all_files(file_type='csv', file_paths=target_file_path, config=config)
         logger.info(f'Deleting file {target_file_path}')
-        os.remove(target_file_path)
+        os.remove(path=target_file_path)
 
 
 
