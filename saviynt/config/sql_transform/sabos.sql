@@ -5,5 +5,5 @@ SELECT
     *
 FROM [dbo].[sabos_useraccess]
 WHERE [meta_is_current]=1
-    and upstat = '*ENABLED'
+    AND upstat='*ENABLED'
 ;

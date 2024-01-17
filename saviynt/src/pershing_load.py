@@ -26,7 +26,16 @@ from saviynt_modules.migration import recursive_migrate_all_files
 
 test_pipeline_key = 'saviynt_pershing_raa'
 
-args = {}
+master_schema_header_columns = {
+    'date_of_data': 'datetime NULL',
+    'remote_id': 'varchar(50) NULL',
+    'refreshed_updated': 'varchar(10) NULL',
+    }
+
+args = {
+    'master_schema_file': 'security_profiles',
+    'master_schema_header_columns': master_schema_header_columns,
+}
 
 
 
@@ -124,7 +133,6 @@ def get_header_schema():
 
     header_schema = [c for c in schema if c['record_name'] == schema_header_str]
     header_schema = {r['field_name']: {field_name: r[field_name] for field_name in position_fields} for r in header_schema}
-    header_schema['form_name'] = header_schema.pop(master_schema_form_name)
     return header_schema
 
 
