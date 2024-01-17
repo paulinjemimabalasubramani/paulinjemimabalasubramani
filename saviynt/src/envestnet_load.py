@@ -293,12 +293,12 @@ def process_psv_file(file_path:str):
                 fdest.close()
 
     logger.info(f'Deleting file {file_path}')
-    os.remove(file_path)
+    os.remove(path=file_path)
 
     for destination_path in destination_paths:
         recursive_migrate_all_files(file_type='csv', file_paths=destination_path, config=config)
         logger.info(f'Deleting file {destination_path}')
-        os.remove(destination_path)
+        os.remove(path=destination_path)
 
 
 

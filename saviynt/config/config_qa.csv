@@ -25,6 +25,11 @@ generic,column_meta_prefix,meta_
 generic,keep_history,TRUE
 generic,is_full_load,TRUE
 generic,recreate_target_table,FALSE
+saviynt_one_time_load,source_path,/opt/EDIP/saviynt/data/one_time_load
+saviynt_one_time_load,allowed_file_extensions,"txt,csv,psv"
+saviynt_one_time_load,recreate_target_table,TRUE
+saviynt_one_time_load,is_full_load,TRUE
+saviynt_one_time_load,keep_history,FALSE
 saviynt_envestnet,schema_path,/opt/EDIP/saviynt/config/envestnet_schema/envestnet_schema.csv
 saviynt_envestnet,remote_path,/opt/EDIP/saviynt/data/envestnet_v35
 saviynt_envestnet,source_path,/opt/EDIP/saviynt/localdata/envestnet_v35
@@ -64,8 +69,3 @@ saviynt_nfs_raa,schema_path,/opt/EDIP/saviynt/config/nfs_schema/nfs2_schema.csv
 saviynt_nfs_raa,clientid_map,"MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS"
 saviynt_nfs_raa,firm_name,raa
 saviynt_nfs_raa,date_threshold,2023-12-03
-saviynt_one_time_load,source_path,/opt/EDIP/saviynt/data/one_time_load
-saviynt_one_time_load,allowed_file_extensions,"txt,csv,psv"
-saviynt_one_time_load,recreate_target_table,TRUE
-saviynt_one_time_load,is_full_load,TRUE
-saviynt_one_time_load,keep_history,FALSE

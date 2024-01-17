@@ -104,11 +104,16 @@ def bcp_to_sql_server(file_meta:FileMeta, connection:Connection, staging_table:s
     if file_meta.file_type == 'csv':
         file_path = file_meta.file_path
         delimiter = file_meta.delimiter
+        converted_to_psv_flag = False
         if delimiter == ',':
+            converted_to_psv_flag = True
             file_path = convert_csv_to_psv(file_path=file_path, config=config)
             delimiter = common_delimiter
 
         file_meta.rows_copied = bcp_to_sql_server_csv(file_path=file_path, connection=connection, table_name_with_schema=staging_table, delimiter=delimiter)
+
+        if converted_to_psv_flag:
+            os.remove(path=file_path)
 
     else:
         raise ValueError(f'Unknown file_meta.file_type: {file_meta.file_type}')
