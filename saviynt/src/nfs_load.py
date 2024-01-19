@@ -19,7 +19,7 @@ from typing import List, Dict
 from saviynt_modules.settings import init_app, get_csv_rows, normalize_name
 from saviynt_modules.logger import logger, catch_error
 from saviynt_modules.migration import recursive_migrate_all_files, file_meta_exists_in_history
-from saviynt_modules.common import clean_delimiter_value_for_bcp, common_delimiter
+from saviynt_modules.common import clean_delimiter_value_for_bcp, common_delimiter, picture_to_decimals
 
 
 
@@ -71,21 +71,10 @@ def clean_row(row):
     if not row:
         return {}
 
-    pic = row['source_field_pic'].upper().replace('PIC','').replace(' ','').split('V')
-    if len(pic)<=1:
-        decimals = 0
-    else:
-        d = pic[-1]
-        if any(x.isalpha() for x in d):
-            decimals = 0
-        elif '(' in d:
-            dx = d.split('(')
-            dx = dx[1].split(')')
-            decimals = int(dx[0])
-        else:
-            decimals = d.count('9')
+    pic = row['source_field_pic'].upper().replace('PIC','')
+    decimals = picture_to_decimals(pic=pic)
 
-    clean_row = {
+    cleaned_row = {
         'file_type': normalize_name(row['source_file_description']),
         'column_name': normalize_name(row['business_name']),
         'record_number': normalize_name(row['record_number']),
@@ -97,7 +86,7 @@ def clean_row(row):
         'decimals': decimals,
         'overlap': row['overlap'].strip().lower(),
     }
-    return clean_row
+    return cleaned_row
 
 
 

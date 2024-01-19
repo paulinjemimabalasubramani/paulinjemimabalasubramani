@@ -17,7 +17,7 @@ from distutils.dir_util import remove_tree
 
 from saviynt_modules.settings import init_app, get_csv_rows, normalize_name
 from saviynt_modules.logger import logger, catch_error
-from saviynt_modules.common import remove_last_line_from_file
+from saviynt_modules.common import picture_to_decimals
 from saviynt_modules.migration import recursive_migrate_all_files
 
 
@@ -60,12 +60,12 @@ os.makedirs(config.source_path, exist_ok=True)
 # %% get and pre-process schema
 
 @catch_error(logger)
-def get_pershing_schema(schema_file_name:str, table_name:str=''):
+def get_pershing_schema(schema_file_name:str):
     """
     Read and Pre-process the schema table to make it code-friendly
     """
     if not schema_file_name.endswith('.csv'): schema_file_name = schema_file_name + '.csv'
-    schema_file_path = os.path.join(data_settings.schema_file_path, schema_file_name)
+    schema_file_path = os.path.join(config.schema_path, schema_file_name)
     if not os.path.isfile(schema_file_path):
         logger.warning(f'Schema file is not found: {schema_file_path}')
         return
@@ -77,15 +77,10 @@ def get_pershing_schema(schema_file_name:str, table_name:str=''):
         position = row['position'].strip()
         record_name = row['record_name'].upper().strip()
         conditional_changes = row['conditional_changes'].upper().strip()
-
-        if schema_file_name.lower().startswith('security_profiles') and record_name.upper() not in [schema_header_str, schema_trailer_str, table_name[-1].upper()]:
-            continue
+        decimals = picture_to_decimals(pic=row['picture'])
 
         if not field_name or (field_name in ['', 'not_used', 'filler', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \
             or ('-' not in position) or not record_name: continue
-
-        scale = str(row['scale']).strip()
-        scale = int(scale) if scale.isdigit() else -1
 
         if record_name not in record_names:
             record_names.append(record_name)
@@ -94,7 +89,7 @@ def get_pershing_schema(schema_file_name:str, table_name:str=''):
                 'position_start': 1,
                 'position_end': total_hash_length,
                 'length': total_hash_length,
-                'scale': scale,
+                'decimals': decimals,
                 'record_name': record_name,
                 'conditional_changes': conditional_changes,
                 })
@@ -110,7 +105,7 @@ def get_pershing_schema(schema_file_name:str, table_name:str=''):
             'position_start': position_start,
             'position_end': position_end,
             'length': position_end - position_start + 1,
-            'scale': scale,
+            'decimals': decimals,
             'record_name': record_name,
             'conditional_changes': conditional_changes,
             })

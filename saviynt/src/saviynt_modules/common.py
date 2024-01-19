@@ -155,4 +155,30 @@ def to_sql_value(cval):
 
 # %%
 
+@catch_error()
+def picture_to_decimals(pic:str) -> int:
+    """
+    Returns number of decimals in a field from schema picture (used in NFS and Pershing files)
+    """
+    pic_list = pic.replace(' ','').upper().split('V')
+
+    if len(pic_list)<=1:
+        decimals = 0
+    else:
+        d = pic_list[-1]
+        if any(x.isalpha() for x in d):
+            decimals = 0
+        elif '(' in d:
+            dx = d.split('(')
+            dx = dx[1].split(')')
+            decimals = int(dx[0])
+        else:
+            decimals = d.count('9')
+
+    return decimals
+
+
+
+# %%
+
 
