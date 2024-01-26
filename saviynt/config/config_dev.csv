@@ -6,6 +6,7 @@ generic,logging_level,DEBUG
 generic,log_folder_path,C:\myworkdir\logs
 generic,msteams_webhook_url,https://advisorgroup.webhook.office.com/webhookb2/17ec5d27-9782-46ab-9c9a-49a9cb61aab6@c1ef4e97-eeff-48b2-b720-0c8480a08061/IncomingWebhook/5a88a35634014781a6748d5a7910850f/4d1ebaa8-54ba-41cc-841e-1cb24f3b2eea
 generic,temporary_folder_path,C:\myworkdir\data\temp
+generic,bcp_password_path,C:\myworkdir\data\temp
 generic,target_driver,{ODBC Driver 17 for SQL Server}
 generic,target_server,DW1SQLDATA01.ibddomain.net
 generic,target_database,SaviyntIntegration
@@ -74,17 +75,15 @@ saviynt_nfs_raa,schema_path,./saviynt/config/nfs_schema/nfs2_schema.csv
 saviynt_nfs_raa,clientid_map,"MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS"
 saviynt_nfs_raa,firm_name,raa
 saviynt_nfs_raa,date_threshold,2023-12-03
-
 saviynt_pershing_raa,remote_path,C:\myworkdir\data\Pershing_accounts\RAA
 saviynt_pershing_raa,source_path,C:\myworkdir\data\Pershing_accounts\RAA_processed
-saviynt_pershing_raa,allowed_file_extensions,"csv"
-saviynt_pershing_raa,file_name_regex,^(.*?)\.(\d{8})
+saviynt_pershing_raa,file_name_regex,^(.+?)(?=_(\d{8})$)
 saviynt_pershing_raa,file_date_format,%Y%m%d
-saviynt_pershing_raa,is_full_load,TRUE
-saviynt_pershing_raa,keep_history,FALSE
-saviynt_pershing_raa,table_prefix,nfs_raa
+saviynt_pershing_raa,is_full_load,FALSE
+saviynt_pershing_raa,keep_history,TRUE
+saviynt_pershing_raa,table_prefix,pershing_raa
 saviynt_pershing_raa,schema_path,./saviynt/config/pershing_schema
 saviynt_pershing_raa,firm_name,raa
 saviynt_pershing_raa,date_threshold,2023-12-03
-
-
+saviynt_pershing_raa,is_zip_file,FALSE
+saviynt_pershing_raa,file_name_like_list,SPAT

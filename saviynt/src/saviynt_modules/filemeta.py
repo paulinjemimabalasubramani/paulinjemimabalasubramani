@@ -141,7 +141,7 @@ class FileMeta:
 
             if elt_column == 'columns':
                 val = ','.join([x for x in val])
-                val = f"'{val}'"
+                val = f"'{val[:2000]}'" # Trucate columns values longer than 2000 characters
             else:
                 val = to_sql_value(val)
 

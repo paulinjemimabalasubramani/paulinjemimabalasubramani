@@ -45,14 +45,14 @@ saviynt_mips,file_name_regex,^(.+?)(?=_(\d{8})$)
 saviynt_mips,file_date_format,%m%d%y
 saviynt_mips,is_full_load,TRUE
 saviynt_mips,keep_history,FALSE
-saviynt_mips,date_threshold,2024-01-09
+saviynt_mips,date_threshold,2024-01-24
 saviynt_investalink,source_path,/opt/EDIP/saviynt/data/investalink
 saviynt_investalink,allowed_file_extensions,"txt,csv,psv"
 saviynt_investalink,file_name_regex,^(.+?)(?=_(\d{8})$)
 saviynt_investalink,file_date_format,%Y%m%d
 saviynt_investalink,is_full_load,TRUE
 saviynt_investalink,keep_history,FALSE
-saviynt_investalink,date_threshold,2024-01-10
+saviynt_investalink,date_threshold,2024-01-24
 saviynt_sabos,source_path,/opt/EDIP/saviynt/SABOS_to_Saviynt_Access_Reports
 saviynt_sabos,allowed_file_extensions,"txt,csv,psv"
 saviynt_sabos,table_prefix,sabos
@@ -70,7 +70,7 @@ saviynt_nfs_raa,table_prefix,nfs_raa
 saviynt_nfs_raa,schema_path,/opt/EDIP/saviynt/config/nfs_schema/nfs2_schema.csv
 saviynt_nfs_raa,clientid_map,"MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS"
 saviynt_nfs_raa,firm_name,raa
-saviynt_nfs_raa,date_threshold,2024-01-10
+saviynt_nfs_raa,date_threshold,2024-01-24
 saviynt_nfs_sai,remote_path,/opt/EDIP/remote/dpwoma01prd/nfscreports/NFS2_SAI_S
 saviynt_nfs_sai,source_path,/opt/EDIP/saviynt/localdata/nfs/SAI
 saviynt_nfs_sai,allowed_file_extensions,"psv"
@@ -82,7 +82,7 @@ saviynt_nfs_sai,table_prefix,nfs_sai
 saviynt_nfs_sai,schema_path,/opt/EDIP/saviynt/config/nfs_schema/nfs2_schema.csv
 saviynt_nfs_sai,clientid_map,"MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS"
 saviynt_nfs_sai,firm_name,sai
-saviynt_nfs_sai,date_threshold,2024-01-10
+saviynt_nfs_sai,date_threshold,2024-01-24
 saviynt_nfs_tri,remote_path,/opt/EDIP/remote/dpwoma01prd/nfscreports/NFS2_TRI_S
 saviynt_nfs_tri,source_path,/opt/EDIP/saviynt/localdata/nfs/TRI
 saviynt_nfs_tri,allowed_file_extensions,"psv"
@@ -94,4 +94,4 @@ saviynt_nfs_tri,table_prefix,nfs_tri
 saviynt_nfs_tri,schema_path,/opt/EDIP/saviynt/config/nfs_schema/nfs2_schema.csv
 saviynt_nfs_tri,clientid_map,"MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS"
 saviynt_nfs_tri,firm_name,tri
-saviynt_nfs_tri,date_threshold,2024-01-10
+saviynt_nfs_tri,date_threshold,2024-01-24

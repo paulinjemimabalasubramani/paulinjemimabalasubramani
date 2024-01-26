@@ -1,0 +1,5 @@
+headers:
+  - name: "SECURITY PROFILES"
+    short_name: "SPAT"
+    transaction_code: "SP"
+    record_name: "A"

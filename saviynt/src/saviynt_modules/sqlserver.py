@@ -35,7 +35,7 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
 
     bcp SaviyntIntegration.dbo.envestnet_hierarchy_firm in "C:/myworkdir/data/envestnet_v35_processed/hierarchy_firm_20231009.txt" -S DW1SQLDATA01.ibddomain.net -T -c -t "|" -F 2
     """
-    authentication_str = '-T' if connection.trusted_connection else f'-U {connection.username} -P {connection.password}'
+    authentication_str = '-T' if connection.trusted_connection else f"-U {connection.username} -P '{connection.password}'"
 
     bcp_str = f"""
         bcp {connection.database}.{table_name_with_schema}
