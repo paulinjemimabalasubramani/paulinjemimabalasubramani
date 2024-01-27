@@ -11,7 +11,6 @@ Load Pershing files for Saviynt
 
 import os, re, shutil, csv, yaml, tempfile
 from datetime import datetime
-from zipfile import ZipFile
 from collections import defaultdict, OrderedDict
 from distutils.dir_util import remove_tree
 from dataclasses import dataclass
@@ -21,6 +20,7 @@ from saviynt_modules.settings import init_app, get_csv_rows, normalize_name
 from saviynt_modules.logger import logger, catch_error
 from saviynt_modules.common import picture_to_decimals, common_delimiter
 from saviynt_modules.migration import recursive_migrate_all_files, file_meta_exists_in_history
+
 
 
 # %% Types
@@ -377,34 +377,62 @@ def iterate_over_all_pershing(remote_path:str, zip_file_name:str=None):
 
     config_is_zip_file = config.is_zip_file.upper() == 'TRUE'
 
-    for root, dirs, files in os.walk(remote_path):
-        for file_name in files:
-            file_path = os.path.join(root, file_name)
-            file_name_noext, file_ext = os.path.splitext(file_name)
+    for file_name in os.listdir(remote_path):
+        file_path = os.path.join(remote_path, file_name)
+        if not os.path.isfile(file_path): continue
 
-            if file_ext.lower() == '.zip':
-                if config_is_zip_file:
-                    for name_like in config.file_name_like_list:
-                        if name_like.upper() in file_name.upper():
-                            with tempfile.TemporaryDirectory(dir=config.temporary_folder_path) as tmpdir:
-                                extract_dir = tmpdir
-                                logger.info(f'Extracting {file_path} to {extract_dir}')
-                                shutil.unpack_archive(filename=file_path, extract_dir=extract_dir, format='zip')
-                                if not zip_file_name: # maintain original zip_file_name
-                                    zip_file_name = file_path
-                                iterate_over_all_pershing(remote_path=extract_dir, zip_file_name=zip_file_name)
-                            break
-                continue
+        file_name_noext, file_ext = os.path.splitext(file_name)
 
-            if (config_is_zip_file and zip_file_name) or (not config_is_zip_file):
+        if file_ext.lower() == '.zip':
+            if config_is_zip_file:
                 for name_like in config.file_name_like_list:
-                    if (config_is_zip_file and name_like.upper() in zip_file_name.upper()) or (not config_is_zip_file and name_like.upper() in file_name.upper()):
-                        process_single_pershing(file_path=file_path)
+                    if name_like.upper() in file_name.upper():
+                        with tempfile.TemporaryDirectory(dir=config.temporary_folder_path) as tmpdir:
+                            extract_dir = tmpdir
+                            logger.info(f'Extracting {file_path} to {extract_dir}')
+                            shutil.unpack_archive(filename=file_path, extract_dir=extract_dir, format='zip')
+                            if not zip_file_name: # maintain original zip_file_name
+                                zip_file_name = file_path
+                            iterate_over_all_pershing(remote_path=extract_dir, zip_file_name=zip_file_name)
                         break
+            continue
+
+        if (config_is_zip_file and zip_file_name) or (not config_is_zip_file):
+            for name_like in config.file_name_like_list:
+                if (config_is_zip_file and name_like.upper() in zip_file_name.upper()) or (not config_is_zip_file and name_like.upper() in file_name.upper()):
+                    process_single_pershing(file_path=file_path)
+                    break
 
 
 
-iterate_over_all_pershing(remote_path=config.remote_path)
+# %%
+
+def find_latest_remote_path():
+    """
+    Deal with path variability, to find latest path
+    """
+    remote_path = config.remote_path
+
+    if config.firm_name.upper() in ['IFX']:
+        # /opt/EDIP/remote/APP01/ftproot/ifxftp1/2024-01-26
+        folder_paths = {}
+        for folder_name in os.listdir(config.remote_path):
+            folder_path = os.path.join(config.remote_path, folder_name)
+            if os.path.isdir(folder_path):
+                try:
+                    folder_date = datetime.strptime(folder_name, r'%Y-%m-%d')
+                    folder_paths[folder_date] = folder_path
+                except Exception as e:
+                    logger(f'Invalid Folder name, should be date folder: {folder_path}')
+        remote_path = folder_path[max(folder_paths)]
+
+    return remote_path
+
+
+
+remote_path = find_latest_remote_path()
+iterate_over_all_pershing(remote_path=remote_path)
+
 
 
 

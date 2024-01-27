@@ -17,7 +17,7 @@ from saviynt_modules.migration import recursive_migrate_all_files
 
 # %% Parameters
 
-test_pipeline_key = 'test01'
+test_pipeline_key = 'saviynt_sabos'
 
 args = {}
 

@@ -10,7 +10,7 @@ from collections import OrderedDict
 from datetime import datetime
 
 from .logger import logger, catch_error
-from .settings import Config
+
 
 
 # %% Parameters

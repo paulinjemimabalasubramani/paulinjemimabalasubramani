@@ -60,7 +60,8 @@ saviynt_investalink,keep_history,FALSE
 saviynt_sabos,source_path,C:\myworkdir\data\SABOS_accounts
 saviynt_sabos,allowed_file_extensions,"txt,csv,psv"
 saviynt_sabos,table_prefix,sabos
-saviynt_sabos,file_name_regex,^([A-Za-z]+)
+saviynt_sabos,file_name_regex,(.+)- (\d{6})
+saviynt_sabos,file_date_format,%m%d%y
 saviynt_sabos,is_full_load,TRUE
 saviynt_sabos,keep_history,FALSE
 saviynt_nfs_raa,remote_path,C:\myworkdir\data\NFS_accounts\RAA

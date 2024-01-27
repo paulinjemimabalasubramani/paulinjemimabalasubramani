@@ -12,7 +12,7 @@ from typing import List, Dict
 from datetime import datetime
 
 from .settings import Config
-from .logger import logger, catch_error, environment
+from .logger import logger, catch_error
 from .connections import Connection
 from .common import run_process, remove_square_parenthesis, clean_delimiter_value_for_bcp, common_delimiter
 from .filemeta import FileMeta
@@ -352,6 +352,8 @@ def merge_sql_staging_into_target(tgt_table_name_with_schema:str, stg_table_name
     Assumes data is ingested in chronological order (i.e. we don't ingest old data after ingesting new data)
     Assumes no two processes try to update the same table at the same time
     """
+    all_columns = {f'[{c}]': {t} for c, t in all_columns.items()}
+
     not_matched_by_source_sql = '''
     WHEN NOT MATCHED BY SOURCE AND TGT.META_IS_CURRENT = 1 THEN
         UPDATE SET
