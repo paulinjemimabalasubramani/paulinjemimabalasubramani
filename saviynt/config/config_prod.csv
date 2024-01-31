@@ -103,7 +103,7 @@ saviynt_pershing_raa,file_date_format,%Y%m%d
 saviynt_pershing_raa,is_full_load,FALSE
 saviynt_pershing_raa,keep_history,TRUE
 saviynt_pershing_raa,table_prefix,pershing_raa
-saviynt_pershing_raa,schema_path,./saviynt/config/pershing_schema
+saviynt_pershing_raa,schema_path,/opt/EDIP/saviynt/config/pershing_schema
 saviynt_pershing_raa,firm_name,raa
 saviynt_pershing_raa,date_threshold,2024-01-22
 saviynt_pershing_raa,is_zip_file,FALSE
@@ -115,7 +115,7 @@ saviynt_pershing_ifx,file_date_format,%Y%m%d
 saviynt_pershing_ifx,is_full_load,FALSE
 saviynt_pershing_ifx,keep_history,TRUE
 saviynt_pershing_ifx,table_prefix,pershing_ifx
-saviynt_pershing_ifx,schema_path,./saviynt/config/pershing_schema
+saviynt_pershing_ifx,schema_path,/opt/EDIP/saviynt/config/pershing_schema
 saviynt_pershing_ifx,firm_name,ifx
 saviynt_pershing_ifx,date_threshold,2024-01-22
 saviynt_pershing_ifx,is_zip_file,TRUE
@@ -127,7 +127,7 @@ saviynt_pershing_sai,file_date_format,%Y%m%d
 saviynt_pershing_sai,is_full_load,FALSE
 saviynt_pershing_sai,keep_history,TRUE
 saviynt_pershing_sai,table_prefix,pershing_sai
-saviynt_pershing_sai,schema_path,./saviynt/config/pershing_schema
+saviynt_pershing_sai,schema_path,/opt/EDIP/saviynt/config/pershing_schema
 saviynt_pershing_sai,firm_name,sai
 saviynt_pershing_sai,date_threshold,2024-01-22
 saviynt_pershing_sai,is_zip_file,TRUE
