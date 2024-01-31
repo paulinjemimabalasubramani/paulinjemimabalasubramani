@@ -16,9 +16,9 @@ from distutils.dir_util import remove_tree
 from dataclasses import dataclass
 from typing import Dict, List
 
-from saviynt_modules.settings import init_app, get_csv_rows, normalize_name
-from saviynt_modules.logger import logger, catch_error
-from saviynt_modules.common import picture_to_decimals, common_delimiter
+from saviynt_modules.settings import init_app, get_csv_rows
+from saviynt_modules.logger import logger, catch_error, environment
+from saviynt_modules.common import picture_to_decimals, common_delimiter, normalize_name
 from saviynt_modules.migration import recursive_migrate_all_files, file_meta_exists_in_history
 
 
@@ -413,7 +413,7 @@ def find_latest_remote_path():
     """
     remote_path = config.remote_path
 
-    if config.firm_name.upper() in ['IFX']:
+    if config.firm_name.upper() in ['IFX'] and environment.is_prod:
         # /opt/EDIP/remote/APP01/ftproot/ifxftp1/2024-01-26
         folder_paths = {}
         for folder_name in os.listdir(config.remote_path):

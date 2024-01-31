@@ -8,6 +8,7 @@ Library for common generic functions
 import os, subprocess, re, json
 from collections import OrderedDict
 from datetime import datetime
+from typing import List, Dict
 
 from .logger import logger, catch_error
 
@@ -16,6 +17,7 @@ from .logger import logger, catch_error
 # %% Parameters
 
 common_delimiter = '|'
+name_regex:str = r'[\W]+'
 
 
 
@@ -26,6 +28,61 @@ def clean_delimiter_value_for_bcp(value:str):
     remove common delimiter values and carriage returns, so that BCP tool can read the string correctly
     """
     return re.sub(r'\s', ' ', re.sub(r'\|', ':', value), flags=re.MULTILINE)
+
+
+# %%
+
+@catch_error()
+def normalize_name(name:str):
+    """
+    Clean up name and make it standard looking
+    """
+    for ch in ['"', '[', ']']:
+        name = name.replace(ch, '')
+
+    name = re.sub(name_regex, '_', str(name).lower().strip())
+
+    if name and name[0].isdigit():
+        name = '_' + name
+
+    return name
+
+
+
+# %%
+
+def clean_columns(columns:List) -> List:
+    """
+    Clean up column names, sort out duplicates, empty columns and bad column names (e.g columns start with number, or SQL reserved names etc)
+    """
+    bad_column_name = 'column'
+    reserved_names = ['select', 'delete', 'null', 'create', 'update', 'insert']
+    columns = [normalize_name(c) for c in columns]
+
+    columnsx = []
+    bad_column_count = 0
+    for col in columns:
+        if not col:
+            while True:
+                bad_column_count += 1
+                bad_column = normalize_name(bad_column_name + str(bad_column_count))
+                if bad_column not in columnsx and bad_column not in columns:
+                    break
+            columnsx.append(bad_column)
+            logger.warning(f'Empty column name found, renamed to "{bad_column}"')
+        elif col in columnsx or col in reserved_names:
+            duplicate_column_count = 0
+            while True:
+                duplicate_column_count += 1
+                duplicate_column = normalize_name(col + str(duplicate_column_count))
+                if duplicate_column not in columnsx and duplicate_column not in columns:
+                    break
+            columnsx.append(duplicate_column)
+            logger.warning(f'Duplicate or reserved column name "{col}" found, renamed to "{duplicate_column}"')
+        else:
+            columnsx.append(col)
+
+    return columnsx
 
 
 

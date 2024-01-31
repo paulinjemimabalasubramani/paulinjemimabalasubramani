@@ -12,8 +12,8 @@ from datetime import datetime
 from typing import List, Dict
 
 from .logger import logger, catch_error
-from .settings import Config, normalize_name
-from .common import get_separator, to_sql_value
+from .settings import Config
+from .common import get_separator, to_sql_value, normalize_name, clean_columns
 
 
 
@@ -241,42 +241,6 @@ def extract_table_name_and_date_from_file_name(file_path:str, config:Config, zip
 
     date_of_data = date_of_data.replace(microsecond=0)
     return table_name_with_schema, date_of_data
-
-
-
-# %%
-
-def clean_columns(columns:List) -> List:
-    """
-    Clean up column names, sort out duplicates, empty columns and bad column names (e.g columns start with number, or SQL reserved names etc)
-    """
-    bad_column_name = 'column'
-    columns = [normalize_name(c) for c in columns]
-
-    columnsx = []
-    bad_column_count = 0
-    duplicate_column_count = 0
-    for col in columns:
-        if col and col not in columnsx:
-            columnsx.append(col)
-        elif not col:
-            while True:
-                bad_column_count += 1
-                bad_column = normalize_name(bad_column_name + str(bad_column_count))
-                if bad_column not in columnsx and bad_column not in columns:
-                    break
-            columnsx.append(bad_column)
-            logger.warning(f'Empty column name found, renamed to "{bad_column}"')
-        elif col in columnsx:
-            while True:
-                duplicate_column_count += 1
-                duplicate_column = normalize_name(col + str(duplicate_column_count))
-                if duplicate_column not in columnsx and duplicate_column not in columns:
-                    break
-            columnsx.append(duplicate_column)
-            logger.warning(f'Duplicate column name "{col}" found, renamed to "{duplicate_column}"')
-
-    return columnsx
 
 
 
