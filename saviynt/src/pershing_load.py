@@ -424,7 +424,7 @@ def find_latest_remote_path():
                     folder_paths[folder_date] = folder_path
                 except Exception as e:
                     logger(f'Invalid Folder name, should be date folder: {folder_path}')
-        remote_path = folder_path[max(folder_paths)]
+        remote_path = folder_paths[max(folder_paths)]
 
     return remote_path
 
