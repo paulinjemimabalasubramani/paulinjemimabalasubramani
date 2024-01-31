@@ -130,5 +130,5 @@ saviynt_pershing_sai,table_prefix,pershing_sai
 saviynt_pershing_sai,schema_path,/opt/EDIP/saviynt/config/pershing_schema
 saviynt_pershing_sai,firm_name,sai
 saviynt_pershing_sai,date_threshold,2024-01-22
-saviynt_pershing_sai,is_zip_file,TRUE
+saviynt_pershing_sai,is_zip_file,FALSE
 saviynt_pershing_sai,file_name_like_list,SPAT
