@@ -37,19 +37,16 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
     """
     authentication_str = '-T' if connection.trusted_connection else f"-U {connection.username} -P '{connection.password}'"
 
-    bcp_str = f"""
-        bcp {connection.database}.{table_name_with_schema}
-        in "{file_path}"
-        -S {connection.server}
-        {authentication_str}
-        -c
-        -t "{delimiter}"
-        -F 2
-        """
+    bcp_str_ex_auth = f'bcp {connection.database}.{table_name_with_schema} in "{file_path}" -S {connection.server} -c -t "{delimiter}" -F 2'
+    bcp_str = f'{bcp_str_ex_auth} {authentication_str}'
 
-    logger.debug(f'BCP Command: {bcp_str}')
+    logger.debug(f'BCP Command: {bcp_str_ex_auth}')
 
-    stdout = run_process(command=bcp_str)
+    stdout = None
+    try:
+        stdout = run_process(command=bcp_str)
+    except Exception as e:
+        logger.error(f'Error in running BCP command: {bcp_str_ex_auth}')
     if not stdout: return
 
     try:
