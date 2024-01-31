@@ -15,9 +15,9 @@ from zipfile import ZipFile
 from collections import defaultdict
 from distutils.dir_util import remove_tree
 
-from saviynt_modules.settings import init_app, get_csv_rows, normalize_name
+from saviynt_modules.settings import init_app, get_csv_rows
 from saviynt_modules.logger import logger, catch_error
-from saviynt_modules.common import remove_last_line_from_file
+from saviynt_modules.common import remove_last_line_from_file, normalize_name
 from saviynt_modules.migration import recursive_migrate_all_files
 
 

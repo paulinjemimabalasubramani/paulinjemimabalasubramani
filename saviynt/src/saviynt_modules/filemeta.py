@@ -12,8 +12,8 @@ from datetime import datetime
 from typing import List, Dict
 
 from .logger import logger, catch_error
-from .settings import Config, normalize_name
-from .common import get_separator, to_sql_value
+from .settings import Config
+from .common import get_separator, to_sql_value, normalize_name, clean_columns
 
 
 
@@ -141,7 +141,7 @@ class FileMeta:
 
             if elt_column == 'columns':
                 val = ','.join([x for x in val])
-                val = f"'{val}'"
+                val = f"'{val[:2000]}'" # Trucate columns values longer than 2000 characters
             else:
                 val = to_sql_value(val)
 
@@ -256,9 +256,9 @@ def get_file_columns_csv(file_path:str, default_data_type:str):
         HEADER = f.readline()
 
     delimiter = get_separator(header_string=HEADER)
-
     columns = HEADER.split(delimiter)
-    columns = OrderedDict([(normalize_name(c), default_data_type) for c in columns])
+    columns = clean_columns(columns=columns)
+    columns = OrderedDict([(c, default_data_type) for c in columns])
 
     return columns, delimiter
 

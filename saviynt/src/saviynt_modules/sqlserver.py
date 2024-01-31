@@ -12,7 +12,7 @@ from typing import List, Dict
 from datetime import datetime
 
 from .settings import Config
-from .logger import logger, catch_error, environment
+from .logger import logger, catch_error
 from .connections import Connection
 from .common import run_process, remove_square_parenthesis, clean_delimiter_value_for_bcp, common_delimiter
 from .filemeta import FileMeta
@@ -35,21 +35,18 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
 
     bcp SaviyntIntegration.dbo.envestnet_hierarchy_firm in "C:/myworkdir/data/envestnet_v35_processed/hierarchy_firm_20231009.txt" -S DW1SQLDATA01.ibddomain.net -T -c -t "|" -F 2
     """
-    authentication_str = '-T' if connection.trusted_connection else f'-U {connection.username} -P {connection.password}'
+    authentication_str = '-T' if connection.trusted_connection else f"-U {connection.username} -P '{connection.password}'"
 
-    bcp_str = f"""
-        bcp {connection.database}.{table_name_with_schema}
-        in "{file_path}"
-        -S {connection.server}
-        {authentication_str}
-        -c
-        -t "{delimiter}"
-        -F 2
-        """
+    bcp_str_ex_auth = f'bcp {connection.database}.{table_name_with_schema} in "{file_path}" -S {connection.server} -c -t "{delimiter}" -F 2'
+    bcp_str = f'{bcp_str_ex_auth} {authentication_str}'
 
-    logger.debug(f'BCP Command: {bcp_str}')
+    logger.debug(f'BCP Command: {bcp_str_ex_auth}')
 
-    stdout = run_process(command=bcp_str)
+    stdout = None
+    try:
+        stdout = run_process(command=bcp_str)
+    except Exception as e:
+        logger.error(f'Error in running BCP command: {bcp_str_ex_auth}')
     if not stdout: return
 
     try:
@@ -352,6 +349,8 @@ def merge_sql_staging_into_target(tgt_table_name_with_schema:str, stg_table_name
     Assumes data is ingested in chronological order (i.e. we don't ingest old data after ingesting new data)
     Assumes no two processes try to update the same table at the same time
     """
+    all_columns = {f'[{c}]': {t} for c, t in all_columns.items()}
+
     not_matched_by_source_sql = '''
     WHEN NOT MATCHED BY SOURCE AND TGT.META_IS_CURRENT = 1 THEN
         UPDATE SET

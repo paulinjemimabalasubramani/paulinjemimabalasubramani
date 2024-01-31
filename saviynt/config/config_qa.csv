@@ -54,7 +54,8 @@ saviynt_investalink,keep_history,FALSE
 saviynt_sabos,source_path,/opt/EDIP/saviynt/data/sabos
 saviynt_sabos,allowed_file_extensions,"txt,csv,psv"
 saviynt_sabos,table_prefix,sabos
-saviynt_sabos,file_name_regex,^([A-Za-z]+)
+saviynt_sabos,file_name_regex,(.+)- (\d{6})
+saviynt_sabos,file_date_format,%m%d%y
 saviynt_sabos,is_full_load,TRUE
 saviynt_sabos,keep_history,FALSE
 saviynt_nfs_raa,remote_path,/opt/EDIP/saviynt/data/nfs/RAA
@@ -69,3 +70,15 @@ saviynt_nfs_raa,schema_path,/opt/EDIP/saviynt/config/nfs_schema/nfs2_schema.csv
 saviynt_nfs_raa,clientid_map,"MAJ:RAA,FXA:SPF,FL2:FSC,0KS:SAI,TR1:TRI,WDB:WFS"
 saviynt_nfs_raa,firm_name,raa
 saviynt_nfs_raa,date_threshold,2023-12-03
+saviynt_pershing_raa,remote_path,/opt/EDIP/saviynt/data/pershing/RAA
+saviynt_pershing_raa,source_path,/opt/EDIP/saviynt/localdata/pershing/RAA
+saviynt_pershing_raa,file_name_regex,^(.+?)(?=_(\d{8})$)
+saviynt_pershing_raa,file_date_format,%Y%m%d
+saviynt_pershing_raa,is_full_load,FALSE
+saviynt_pershing_raa,keep_history,TRUE
+saviynt_pershing_raa,table_prefix,pershing_raa
+saviynt_pershing_raa,schema_path,./saviynt/config/pershing_schema
+saviynt_pershing_raa,firm_name,raa
+saviynt_pershing_raa,date_threshold,2023-12-03
+saviynt_pershing_raa,is_zip_file,FALSE
+saviynt_pershing_raa,file_name_like_list,SPAT

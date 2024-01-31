@@ -98,8 +98,6 @@ def file_meta_exists_in_history(config:Config, file_meta:FileMeta=None, **kwargs
         WHERE {check_dict_filter}
         '''
 
-    logger.debug(exists_sql)
-
     output = execute_sql_queries(sql_list=[exists_sql], connection=config.elt_connection)
     return output[0][0][0]>0
 

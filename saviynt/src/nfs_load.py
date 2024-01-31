@@ -9,17 +9,16 @@ Load NFS files for Saviynt
 
 # %% Import Libraries
 
-import os, re, json, shutil, tempfile, csv
+import os, re, shutil, tempfile, csv
 from datetime import datetime
 from collections import defaultdict
 from distutils.dir_util import remove_tree
 from collections import OrderedDict
-from typing import List, Dict
 
-from saviynt_modules.settings import init_app, get_csv_rows, normalize_name
+from saviynt_modules.settings import init_app, get_csv_rows
 from saviynt_modules.logger import logger, catch_error
 from saviynt_modules.migration import recursive_migrate_all_files, file_meta_exists_in_history
-from saviynt_modules.common import clean_delimiter_value_for_bcp, common_delimiter
+from saviynt_modules.common import common_delimiter, picture_to_decimals, normalize_name
 
 
 
@@ -32,7 +31,6 @@ args = {
     'header_record': 'H',
     'data_record': 'D',
     'trailer_record': 'T',
-    'final_file_date_format': r'%Y%m%d',
     }
 
 
@@ -63,7 +61,7 @@ headerrecordclientid_map = config.convert_string_map_to_dict(map_str=config.clie
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def clean_row(row):
     """
     Use cleaned up / normalized version of the row data
@@ -71,21 +69,10 @@ def clean_row(row):
     if not row:
         return {}
 
-    pic = row['source_field_pic'].upper().replace('PIC','').replace(' ','').split('V')
-    if len(pic)<=1:
-        decimals = 0
-    else:
-        d = pic[-1]
-        if any(x.isalpha() for x in d):
-            decimals = 0
-        elif '(' in d:
-            dx = d.split('(')
-            dx = dx[1].split(')')
-            decimals = int(dx[0])
-        else:
-            decimals = d.count('9')
+    pic = row['source_field_pic'].upper().replace('PIC','')
+    decimals = picture_to_decimals(pic=pic)
 
-    clean_row = {
+    cleaned_row = {
         'file_type': normalize_name(row['source_file_description']),
         'column_name': normalize_name(row['business_name']),
         'record_number': normalize_name(row['record_number']),
@@ -97,13 +84,13 @@ def clean_row(row):
         'decimals': decimals,
         'overlap': row['overlap'].strip().lower(),
     }
-    return clean_row
+    return cleaned_row
 
 
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def get_nfs_schema():
     """
     Get Header file_title position information from schema
@@ -151,7 +138,7 @@ file_titles = {x: file_titles[x] for x in ['user_id_administration_transmission'
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def convert_header_datetime(datetime_str:str, format:str):
     """
     Convert datetime string based on specific format to generic datetime object
@@ -171,7 +158,7 @@ def convert_header_datetime(datetime_str:str, format:str):
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
     """
     Get file header info, and filter unwanted files.
@@ -247,7 +234,7 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
             file_meta['key_datetime'] = convert_header_datetime(datetime_str=key_datetime, format=key_datetime_format)
             file_meta['out_file_path'] = os.path.join(config.source_path,
                                                        file_meta['table_name']
-                                                       + '.' + file_meta['key_datetime'].strftime(config.final_file_date_format)
+                                                       + '.' + file_meta['key_datetime'].strftime(config.file_date_format)
                                                        + '.' + file_meta['file_name_noext']
                                                        + config.final_file_ext)
             break
@@ -258,7 +245,7 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def new_record(file_meta:dict):
     """
     Create new record with basic info
@@ -276,7 +263,7 @@ def new_record(file_meta:dict):
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def extract_values_from_line(line:str, record_schema:list):
     """
     Extract all values from single line string based on its schema
@@ -305,7 +292,7 @@ def extract_values_from_line(line:str, record_schema:list):
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def get_field_properties(column_name:str, record_schema:list):
     """
     Extract all the properties of field for given column_name
@@ -321,30 +308,7 @@ def get_field_properties(column_name:str, record_schema:list):
 
 # %%
 
-def json_to_psv_record(columns:List, json_record:OrderedDict):
-    """
-    Convert json record to PSV record with semi-sturctured data
-    """
-    psv_list = []
-    for column in columns:
-        if column in json_record:
-            value = json_record[column]
-            if isinstance(value, list) or isinstance(value, dict):
-                value = json.dumps(value)
-            else:
-                value = str(value)
-            value = clean_delimiter_value_for_bcp(value=value)
-        else:
-            value = ''
-        psv_list.append(value)
-
-    return common_delimiter.join(psv_list)
-
-
-
-# %%
-
-@catch_error(logger)
+@catch_error()
 def process_lines_user_id_administration(file_meta:dict):
     """
     Process all lines for user_id_administration table
@@ -368,7 +332,7 @@ def process_lines_user_id_administration(file_meta:dict):
         file_path = os.path.join(config.source_path,
                                     file_meta['table_name']
                                     + (('_'+record_desription) if record_number != '1' else '')
-                                    + '.' + file_meta['key_datetime'].strftime(config.final_file_date_format)
+                                    + '.' + file_meta['key_datetime'].strftime(config.file_date_format)
                                     + '.' + file_meta['file_name_noext']
                                     + config.final_file_ext)
 
@@ -418,8 +382,8 @@ process_lines_map = { # Select only what is needed for Saviynt
 
 # %%
 
-@catch_error(logger)
-def convert_nfs2_to_csv(file_meta:dict):
+@catch_error()
+def convert_nfs2_to_psv(file_meta:dict):
     """
     Convert given NFS2 DAT file to Json format.
     """
@@ -440,7 +404,7 @@ def convert_nfs2_to_csv(file_meta:dict):
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def process_single_nfs2(file_path:str):
     """
     Process single nfs2 file
@@ -467,16 +431,16 @@ def process_single_nfs2(file_path:str):
         logger.info(f"File already exists, skipping: {file_meta['out_file_path']}")
         return
 
-    convert_nfs2_to_csv(file_meta=file_meta)
+    convert_nfs2_to_psv(file_meta=file_meta)
 
 
 
 # %%
 
-@catch_error(logger)
+@catch_error()
 def iterate_over_all_nfs2(remote_path:str):
     """
-    Main function to iterate over all the files in source_path and add bulk_id
+    Main function to iterate over all the files
     """
     if not remote_path:
         logger.warning('Empty Remote Path - skipping')

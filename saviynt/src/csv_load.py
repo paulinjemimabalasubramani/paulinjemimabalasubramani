@@ -10,14 +10,14 @@ Load CSV data to SQL Server
 # %% Import Libraries
 
 from saviynt_modules.settings import init_app
-from saviynt_modules.logger import logger, catch_error
+from saviynt_modules.logger import logger
 from saviynt_modules.migration import recursive_migrate_all_files
 
 
 
 # %% Parameters
 
-test_pipeline_key = 'test01'
+test_pipeline_key = 'saviynt_mips'
 
 args = {}
 

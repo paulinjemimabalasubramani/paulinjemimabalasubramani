@@ -12,14 +12,14 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, saviynt_s
 
 # %% Pipeline Parameters
 
-pipelinekey_prefix = 'saviynt_nfs_'
+pipelinekey_prefix = 'saviynt_pershing_'
 
-tags = ['db:saviynt', 'sc:nfs']
+tags = ['db:saviynt', 'sc:pershing']
 
 bd_map = {
-    'raa': '25 15 * * *',
-    'sai': '28 15 * * *',
-    'tri': '31 15 * * *',
+    'raa': '33 15 * * *',
+    'ifx': '36 15 * * *',
+    'sai': '39 15 * * *',
     }
 
 
@@ -44,7 +44,7 @@ def create_dag(bd_name, schedule_interval):
 
         main_pipeline = BashOperator(
             task_id = f'{pipelinekey}_task',
-            bash_command = f'python {saviynt_src_path}/nfs_load.py --pipeline_key {pipelinekey}',
+            bash_command = f'python {saviynt_src_path}/pershing_load.py --pipeline_key {pipelinekey}',
             dag = dag,
             execution_timeout = timedelta(seconds=7200),
             )

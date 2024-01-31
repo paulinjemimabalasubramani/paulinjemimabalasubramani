@@ -6,7 +6,7 @@ Metadata driven coding
 
 # %% Import Libraries
 
-import yaml, csv, re, platform, psutil, os, logging
+import yaml, csv, platform, psutil, os, logging
 from typing import List, Dict
 from collections import OrderedDict
 from datetime import datetime
@@ -14,6 +14,7 @@ from typing import List, Dict
 
 from .logger import logger, catch_error, get_env, environment
 from .connections import Connection
+from .common import normalize_name
 
 
 
@@ -23,8 +24,6 @@ if environment.environment < environment.qa:
     config_folder_path:str = './saviynt/config'
 else:
     config_folder_path:str = '/opt/EDIP/saviynt/config'
-
-name_regex:str = r'[\W]+'
 
 
 
@@ -49,20 +48,6 @@ def system_info(logger=None):
         'pwd': os.path.realpath('.'),
     }
     return sysinfo
-
-
-
-# %%
-
-@catch_error()
-def normalize_name(name:str):
-    """
-    Clean up name and make it standard looking
-    """
-    for ch in ['"', '[', ']']:
-        name = name.replace(ch, '')
-
-    return re.sub(name_regex, '_', str(name).lower().strip())
 
 
 
