@@ -22,6 +22,54 @@ SELECT
     [meta_end_date],
     [meta_is_current]
 FROM [dbo].[nfs_raa_user_id_administration] WHERE [meta_is_current] = 1
+UNION ALL
+SELECT
+    [header_firm_name],
+    [header_client_id],
+    [record_type],
+    [record_number],
+    [portal_user_id],
+    [user_id_first_name],
+    [user_id_last_name],
+    [user_id_create_date],
+    [user_id_create_user],
+    [user_id_update_date],
+    [user_id_update_user],
+    [user_id_status_end_date],
+    [user_id_status_code],
+    [cupid_id_indicator],
+    [meta_pipeline_key],
+    [meta_is_full_load],
+    [meta_run_date],
+    [meta_date_of_data],
+    [meta_start_date],
+    [meta_end_date],
+    [meta_is_current]
+FROM [dbo].[nfs_sai_user_id_administration] WHERE [meta_is_current] = 1
+UNION ALL
+SELECT
+    [header_firm_name],
+    [header_client_id],
+    [record_type],
+    [record_number],
+    [portal_user_id],
+    [user_id_first_name],
+    [user_id_last_name],
+    [user_id_create_date],
+    [user_id_create_user],
+    [user_id_update_date],
+    [user_id_update_user],
+    [user_id_status_end_date],
+    [user_id_status_code],
+    [cupid_id_indicator],
+    [meta_pipeline_key],
+    [meta_is_full_load],
+    [meta_run_date],
+    [meta_date_of_data],
+    [meta_start_date],
+    [meta_end_date],
+    [meta_is_current]
+FROM [dbo].[nfs_tri_user_id_administration] WHERE [meta_is_current] = 1
 ;
 
 
@@ -55,6 +103,64 @@ SELECT
     ,[meta_end_date]
     ,[meta_is_current]
 FROM [dbo].[nfs_raa_user_id_administration_account_linking] WHERE [meta_is_current] = 1
+UNION ALL
+SELECT
+     [header_firm_name]
+    ,[header_client_id]
+    ,[record_type]
+    ,[record_number]
+    ,[portal_user_id]
+    ,[super_branch]
+    ,[branch]
+    ,[registered_rep_owning_rep_rr_]
+    ,[registered_rep_exec_rep_rr2_]
+    ,[registered_rep_rep_of_record_ror_]
+    ,[registered_rep_pay_to_rep_ptr_account_level]
+    ,[agency_code]
+    ,[account_classification]
+    ,[product_level]
+    ,[product_class]
+    ,[super_user_indicator]
+    ,[ficis_id]
+    ,[active_rule_indicator]
+    ,[g_number]
+    ,[meta_pipeline_key]
+    ,[meta_is_full_load]
+    ,[meta_run_date]
+    ,[meta_date_of_data]
+    ,[meta_start_date]
+    ,[meta_end_date]
+    ,[meta_is_current]
+FROM [dbo].[nfs_sai_user_id_administration_account_linking] WHERE [meta_is_current] = 1
+UNION ALL
+SELECT
+     [header_firm_name]
+    ,[header_client_id]
+    ,[record_type]
+    ,[record_number]
+    ,[portal_user_id]
+    ,[super_branch]
+    ,[branch]
+    ,[registered_rep_owning_rep_rr_]
+    ,[registered_rep_exec_rep_rr2_]
+    ,[registered_rep_rep_of_record_ror_]
+    ,[registered_rep_pay_to_rep_ptr_account_level]
+    ,[agency_code]
+    ,[account_classification]
+    ,[product_level]
+    ,[product_class]
+    ,[super_user_indicator]
+    ,[ficis_id]
+    ,[active_rule_indicator]
+    ,[g_number]
+    ,[meta_pipeline_key]
+    ,[meta_is_full_load]
+    ,[meta_run_date]
+    ,[meta_date_of_data]
+    ,[meta_start_date]
+    ,[meta_end_date]
+    ,[meta_is_current]
+FROM [dbo].[nfs_tri_user_id_administration_account_linking] WHERE [meta_is_current] = 1
 ;
 
 
@@ -78,6 +184,44 @@ SELECT
     ,[meta_end_date]
     ,[meta_is_current]
 FROM [dbo].[nfs_raa_user_id_administration_product] WHERE [meta_is_current] = 1
+UNION ALL
+SELECT
+     [header_firm_name]
+    ,[header_client_id]
+    ,[record_type]
+    ,[record_number]
+    ,[portal_user_id]
+    ,[product_id]
+    ,[group_id]
+    ,[group_name]
+    ,[group_type_code]
+    ,[meta_pipeline_key]
+    ,[meta_is_full_load]
+    ,[meta_run_date]
+    ,[meta_date_of_data]
+    ,[meta_start_date]
+    ,[meta_end_date]
+    ,[meta_is_current]
+FROM [dbo].[nfs_sai_user_id_administration_product] WHERE [meta_is_current] = 1
+UNION ALL
+SELECT
+     [header_firm_name]
+    ,[header_client_id]
+    ,[record_type]
+    ,[record_number]
+    ,[portal_user_id]
+    ,[product_id]
+    ,[group_id]
+    ,[group_name]
+    ,[group_type_code]
+    ,[meta_pipeline_key]
+    ,[meta_is_full_load]
+    ,[meta_run_date]
+    ,[meta_date_of_data]
+    ,[meta_start_date]
+    ,[meta_end_date]
+    ,[meta_is_current]
+FROM [dbo].[nfs_tri_user_id_administration_product] WHERE [meta_is_current] = 1
 ;
 
 
