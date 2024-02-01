@@ -74,8 +74,8 @@ saviynt_pershing_raa,remote_path,/opt/EDIP/saviynt/data/pershing/RAA
 saviynt_pershing_raa,source_path,/opt/EDIP/saviynt/localdata/pershing/RAA
 saviynt_pershing_raa,file_name_regex,^(.+?)(?=_(\d{8})$)
 saviynt_pershing_raa,file_date_format,%Y%m%d
-saviynt_pershing_raa,is_full_load,FALSE
-saviynt_pershing_raa,keep_history,TRUE
+saviynt_pershing_raa,is_full_load,TRUE
+saviynt_pershing_raa,keep_history,FALSE
 saviynt_pershing_raa,table_prefix,pershing_raa
 saviynt_pershing_raa,schema_path,/opt/EDIP/saviynt/config/pershing_schema
 saviynt_pershing_raa,firm_name,raa

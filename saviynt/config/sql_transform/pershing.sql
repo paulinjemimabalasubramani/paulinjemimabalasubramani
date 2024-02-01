@@ -36,6 +36,44 @@ SELECT
     [meta_is_current],
     [meta_hash_key]
 FROM [dbo].[pershing_raa_spat_e] WHERE [meta_is_current] = 1
+UNION ALL
+SELECT
+    [header_name],
+    [header_firm_name],
+    [header_remote_id],
+    [header_refreshed_updated],
+    [header_run_date],
+    [header_run_time],
+    [transaction_code],
+    [record_identifier],
+    [record_id_sequence_number],
+    [user_id],
+    [introducing_broker_dealer_ibd_number],
+    [user_first_name],
+    [user_last_name],
+    [id_creation_date],
+    [effective_start_date_of_user_job_content_entitlement],
+    [effective_end_date_of_user_content_entitlement],
+    [job_function_entitlement_status_code],
+    [user_id_of_administrator],
+    [user_job_function_entitlement_update_date],
+    [for_pershing_internal_use_only],
+    [job_function_entitlement_name],
+    [job_function_entitlement_description],
+    [template_owner],
+    [job_function_template_alternate_key_id],
+    [introducing_firm],
+    [introducing_firm_context_enabled_indicator],
+    [context_entitlement_name],
+    [meta_pipeline_key],
+    [meta_is_full_load],
+    [meta_run_date],
+    [meta_date_of_data],
+    [meta_start_date],
+    [meta_end_date],
+    [meta_is_current],
+    [meta_hash_key]
+FROM [dbo].[pershing_sai_spat_e] WHERE [meta_is_current] = 1
 ;
 
 
@@ -77,6 +115,43 @@ SELECT
     [meta_is_current],
     [meta_hash_key]
 FROM [dbo].[pershing_raa_spat_j] WHERE [meta_is_current] = 1
+UNION ALL
+SELECT
+    [header_name],
+    [header_firm_name],
+    [header_remote_id],
+    [header_refreshed_updated],
+    [header_run_date],
+    [header_run_time],
+    [transaction_code],
+    [record_identifier],
+    [record_id_sequence_number],
+    [for_pershing_internal_use_only],
+    [introducing_broker_dealer_ibd_number],
+    [job_function_name],
+    [effective_start_date_of_job_function],
+    [effective_end_date_of_user_content_entitlement],
+    [job_function_create_or_update_date],
+    [user_id_of_administrator],
+    [category_name],
+    [id_unique_bfe_identifier],
+    [bfe_name],
+    [bfe_access_level],
+    [bfe_description],
+    [template_owner],
+    [job_function_template_alternate_key_id],
+    [introducing_firm],
+    [introducing_firm_context_enabled_indicator],
+    [context_entitlement_name],
+    [meta_pipeline_key],
+    [meta_is_full_load],
+    [meta_run_date],
+    [meta_date_of_data],
+    [meta_start_date],
+    [meta_end_date],
+    [meta_is_current],
+    [meta_hash_key]
+FROM [dbo].[pershing_sai_spat_j] WHERE [meta_is_current] = 1
 ;
 
 
@@ -117,6 +192,42 @@ SELECT
     [meta_is_current],
     [meta_hash_key]
 FROM [dbo].[pershing_raa_spat_m] WHERE [meta_is_current] = 1
+UNION ALL
+SELECT
+    [header_name],
+    [header_firm_name],
+    [header_remote_id],
+    [header_refreshed_updated],
+    [header_run_date],
+    [header_run_time],
+    [transaction_code],
+    [record_identifier],
+    [record_id_sequence_number],
+    [user_id],
+    [introducing_broker_dealer_ibd_number],
+    [user_first_name],
+    [user_last_name],
+    [id_creation_date],
+    [effective_start_of_date_profile],
+    [end_date_of_data_profile],
+    [data_profile_update_status_code],
+    [user_id_of_administrator],
+    [user_content_entitlement_update_date],
+    [data_profile_id],
+    [data_profile_name],
+    [data_profile_description],
+    [introducing_firm],
+    [introducing_firm_context_enabled_indicator],
+    [context_entitlement_name],
+    [meta_pipeline_key],
+    [meta_is_full_load],
+    [meta_run_date],
+    [meta_date_of_data],
+    [meta_start_date],
+    [meta_end_date],
+    [meta_is_current],
+    [meta_hash_key]
+FROM [dbo].[pershing_sai_spat_m] WHERE [meta_is_current] = 1
 ;
 
 
@@ -193,9 +304,9 @@ WHERE 1=1
     --AND M.ELT_FIRM = 'RAA'
     --AND M.INTRODUCING_BROKER_DEALER_IBD_NUMBER = '028'
     --AND J.BFE_NAME IS NULL
-    AND M.INTRODUCING_BROKER_DEALER_IBD_NUMBER NOT IN ('084')
-    AND E.TEMPLATE_OWNER NOT IN ('084')
-    AND J.TEMPLATE_OWNER NOT IN ('084')
+    AND COALESCE(M.INTRODUCING_BROKER_DEALER_IBD_NUMBER,'') NOT IN ('084')
+    AND COALESCE(E.TEMPLATE_OWNER,'') NOT IN ('084')
+    AND COALESCE(J.TEMPLATE_OWNER,'') NOT IN ('084')
 ;
 
 
