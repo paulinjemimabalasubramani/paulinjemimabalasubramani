@@ -1,22 +1,31 @@
 # %%
 
 from zipfile import ZipFile
+import os
+
+
+# %%
+
+zip_file = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_TRI/2023/June.zip'
+#zip_file = r'C:\myworkdir\temp\temp.zip'
+
+source_path = r'/opt/EDIP/tri_nfs_book'
 
 
 # %%
 
 
-zip_file = r'C:\myworkdir\temp\temp.zip'
+for month in ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']:
+    zip_file = rf'/opt/EDIP/remote/fasoma05bprd/DownloadData/_TRI/2023/{month}.zip'
+    print('\n'+zip_file)
+    with ZipFile(zip_file, 'r') as zipobj:
+        zipinfo_list = zipobj.infolist()
+        for zipinfo in zipinfo_list:
+            if '_NFS_BOOK_' in zipinfo.filename.upper():
+                print(f'{zipinfo.file_size/1024:9.3f} {zipinfo.filename}')
 
-
-
-# %%
-
-
-with ZipFile(zip_file, 'r') as zipobj:
-    zipinfo_list = zipobj.infolist()
-    for zipinfo in zipinfo_list:
-        print(f'{zipinfo.file_size/1024:9.3f} {zipinfo.filename}')
+                zipobj.extract(member=zipinfo, path=source_path)
+                file_path=os.path.join(source_path, zipinfo.filename)
 
 
 
