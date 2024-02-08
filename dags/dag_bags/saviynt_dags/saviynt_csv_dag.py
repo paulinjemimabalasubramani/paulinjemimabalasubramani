@@ -15,9 +15,9 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, saviynt_s
 pipelinekey_prefix = 'saviynt_'
 
 source_map = {
-    'mips': '30 15 * * *',
-    'sabos': '33 15 * * *',
-    'investalink': '36 15 * * *',
+    'mips': '30 */1 * * *',
+    'sabos': '33 */1 * * *',
+    'investalink': '36 */1 * * *',
     'one_time_load': None,
     }
 

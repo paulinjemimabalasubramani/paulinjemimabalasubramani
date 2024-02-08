@@ -16,7 +16,7 @@ pipelinekey = 'saviynt_envestnet'
 
 tags = ['db:saviynt', 'sc:envestnet']
 
-schedule_interval = '20 15 * * *' # https://crontab.guru/
+schedule_interval = '20 */1 * * *' # https://crontab.guru/
 
 
 
