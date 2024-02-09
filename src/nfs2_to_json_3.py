@@ -693,7 +693,9 @@ iterate_over_all_nfs2(source_path=data_settings.source_path)
 if hasattr(data_settings, 'source_path2'):
     iterate_over_all_nfs2(source_path=data_settings.source_path2)
 
-if data_settings.pipeline_firm.lower() == 'sai':
+if 'HISTORY' in data_settings.pipelinekey.upper():
+    pass
+elif data_settings.pipeline_firm.lower() == 'sai':
     base_path = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_SAI/MIPS'
     folder_levels = [r'%Y', r'%b', 'NFSBOOK'] # for bookkeeping data
     source_path = find_latest_folder(remote_path=base_path, folder_levels=folder_levels)

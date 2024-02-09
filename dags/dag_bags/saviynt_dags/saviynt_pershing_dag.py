@@ -17,9 +17,9 @@ pipelinekey_prefix = 'saviynt_pershing_'
 tags = ['db:saviynt', 'sc:pershing']
 
 bd_map = {
-    'raa': '33 15 * * *',
-    'ifx': '36 15 * * *',
-    'sai': '39 15 * * *',
+    'raa': '33 */1 * * *',
+    'ifx': '36 */1 * * *',
+    'sai': '39 */1 * * *',
     }
 
 

@@ -17,9 +17,9 @@ pipelinekey_prefix = 'saviynt_nfs_'
 tags = ['db:saviynt', 'sc:nfs']
 
 bd_map = {
-    'raa': '25 15 * * *',
-    'sai': '28 15 * * *',
-    'tri': '31 15 * * *',
+    'raa': '25 */1 * * *',
+    'sai': '28 */1 * * *',
+    'tri': '31 */1 * * *',
     }
 
 

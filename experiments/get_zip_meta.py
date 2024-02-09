@@ -6,10 +6,10 @@ import os
 
 # %%
 
-zip_file = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_TRI/2023/June.zip'
+#zip_file = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_TRI/2023/June.zip'
 #zip_file = r'C:\myworkdir\temp\temp.zip'
 
-source_path = r'/opt/EDIP/tri_nfs_book'
+source_path = r'/opt/EDIP/nfs_history_load'
 
 
 # %%
