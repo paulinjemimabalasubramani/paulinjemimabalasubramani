@@ -15,7 +15,7 @@ from azure.identity import ClientSecretCredential
 
 # %% Parameters
 
-azure_filesystem_uri = 'dfs.core.windows.net' # 'privatelink.dfs.osaic-azure.osaic.com'
+azure_filesystem_uri = 'privatelink.dfs.osaic-azure.osaic.com' # 'dfs.core.windows.net'
 # KV URL OLD = https://edip-primary-kv.vault.azure.net/
 
 default_datalake_file_format = 'delta'

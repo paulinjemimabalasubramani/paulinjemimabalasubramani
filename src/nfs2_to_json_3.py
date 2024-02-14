@@ -200,11 +200,11 @@ def extract_nfs2_file_meta(file_path:str, zip_file_path:str=None):
 
             table_suffix = ''
             client_id_iws = ''
-            if row['table_name'] in ['bookkeeping', 'account_balance', 'trade_revenue', 'position', 'order', 'rmd', 'scheduled_events', 'suitability', 'tas_closed', 'tas_open', 'user_id_administration', 'wealthscape_id']:
+            if row['table_name'] in ['bookkeeping', 'account_balance', 'trade_revenue', 'position', 'order', 'rmd', 'scheduled_events', 'suitability', 'tas_closed', 'tas_open', 'user_id_administration', 'wealthscape_id', 'name_and_address']:
                 client_id_iws = HEADER[1:6].strip() # get client id for IWS files (different from NFS headers).
                 if len(client_id_iws)>3:
                     table_suffix = '_iws'
-            elif row['table_name'] in ['name_and_address']:
+            if row['table_name'] in ['name_and_address']:
                 H2 = HEADER2[:50].strip().upper() 
                 if H2 == 'CH SECURITIESAMERICA':
                     client_id_iws = '00133'
@@ -632,6 +632,7 @@ def process_single_nfs2(file_path:str):
     """
     Process single nfs2 file
     """
+    logger.info(f'Processing {file_path}')
     file_meta = extract_nfs2_file_meta(file_path=file_path)
     if not file_meta:
         logger.warning(f'Unable to get header info for file: {file_path} -> skipping')
@@ -667,6 +668,7 @@ def iterate_over_all_nfs2(source_path:str):
         logger.warning('Empty Source Path - skipping')
         return
 
+    logger.info(f'Checking path: {source_path}')
     for root, dirs, files in os.walk(source_path):
         for file_name in files:
             file_path = os.path.join(root, file_name)
