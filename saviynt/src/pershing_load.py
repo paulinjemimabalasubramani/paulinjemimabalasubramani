@@ -357,8 +357,19 @@ def process_single_pershing(file_path:str):
 
     logger.info(f"Finished converting {file_meta['file_path']} to {out_file_paths}")
 
+    is_full_file = True
+    for out_file_path in out_file_paths: # to check whether it is full file or incremental. Proceed only if full file.
+        file_size_kb = os.path.getsize(filename=out_file_path) / 1024.0
+        if out_file_path.find('RAA/spat_e_')>=0 and file_size_kb < 2500.0: is_full_file = False
+        if out_file_path.find('IFX/spat_e_')>=0 and file_size_kb < 500.0: is_full_file = False
+        if out_file_path.find('SAI/spat_e_')>=0 and file_size_kb < 900.0: is_full_file = False
+
     for out_file_path in out_file_paths:
-        recursive_migrate_all_files(file_type='csv', file_paths=out_file_path, config=config)
+        if is_full_file:
+            recursive_migrate_all_files(file_type='csv', file_paths=out_file_path, config=config)
+        else:
+            logger.info(f'Not a full file, skipping {out_file_path}')
+
         logger.info(f'Deleting file {out_file_path}')
         os.remove(path=out_file_path)
 
