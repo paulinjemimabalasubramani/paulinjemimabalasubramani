@@ -112,7 +112,7 @@ def remove_last_line_from_file(file_path:str, last_line_text_seek:str):
 # %%
 
 catch_error()
-def run_process(command:str):
+def run_process(command:str, mask_error:bool=False, hint:str=''):
     """
     Run command line process. Returns None if error.
     """
@@ -146,7 +146,11 @@ def run_process(command:str):
     #stdout, stderr = stdout.decode(encoding), stderr.decode(encoding)
 
     if process.returncode != 0:
-        logger.error(f'Error in running command: {command}')
+        if mask_error:
+            logger.error(f'Error in running run_process, returncode={process.returncode}, hint={hint}')
+        else:
+            logger.error(f'Error in running command: {command}')
+            logger.error(stderr)
         return None
 
     return stdout
