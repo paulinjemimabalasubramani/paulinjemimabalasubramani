@@ -44,7 +44,7 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
 
     stdout = None
     try:
-        stdout = run_process(command=bcp_str)
+        stdout = run_process(command=bcp_str, mask_error=True, hint=bcp_str_ex_auth)
     except Exception as e:
         logger.error(f'Error in running BCP command: {bcp_str_ex_auth}')
     if not stdout: return

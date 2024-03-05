@@ -233,9 +233,34 @@ FROM [dbo].[pershing_sai_spat_m] WHERE [meta_is_current] = 1
 
 
 CREATE VIEW [dbo].[pershing_netx360_backoffice_user_identity] AS
-SELECT E.*
+SELECT
+e.header_firm_name,
+e.header_remote_id,
+e.introducing_broker_dealer_ibd_number,
+e.user_id,
+e.user_id_of_administrator,
+e.user_first_name,
+e.user_last_name,
+e.id_creation_date,
+e.effective_start_date_of_user_job_content_entitlement,
+e.effective_end_date_of_user_content_entitlement,
+e.job_function_entitlement_status_code,
+e.job_function_entitlement_name,
+e.job_function_entitlement_description,
+j.job_function_name,
+e.template_owner,
+e.job_function_template_alternate_key_id,
+j.category_name,
+j.id_unique_bfe_identifier,
+j.bfe_name,
+j.bfe_access_level,
+j.bfe_description
 FROM [dbo].[pershing_spat_e] E
+INNER JOIN [dbo].[pershing_spat_J] J
+	ON j.job_function_template_alternate_key_id = e.job_function_template_alternate_key_id
+	AND j.header_remote_id = e.header_remote_id
 WHERE E.job_function_entitlement_name = 'HOME OFFICE V2020 TEMPLATE'
 ;
+
 
 
