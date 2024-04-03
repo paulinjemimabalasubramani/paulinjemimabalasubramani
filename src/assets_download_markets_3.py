@@ -108,7 +108,11 @@ def download_all_symbols(symbols:list[str]):
     first_flag = True
     with open(output_file, mode='w', newline='', encoding=csv_encoding) as out_file:
         for symbol in symbols:
-            clean_data = fetch_data(symbol)
+            try:
+                clean_data = fetch_data(symbol)
+            except Exception as e:
+                logger.error(f'Error while trying to download symbol {symbol}. Error Message: {str(e)}')
+                continue
 
             if first_flag:
                 first_flag = False

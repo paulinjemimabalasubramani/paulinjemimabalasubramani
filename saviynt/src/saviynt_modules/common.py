@@ -32,15 +32,12 @@ def clean_delimiter_value_for_bcp(value:str):
 
 # %%
 
-@catch_error()
 def normalize_name(name:str):
     """
     Clean up name and make it standard looking
     """
-    for ch in ['"', '[', ']']:
-        name = name.replace(ch, '')
-
-    name = re.sub(name_regex, '_', str(name).lower().strip())
+    name = re.sub(r'\[|\]|\"', '', str(name).lower().strip())
+    name = re.sub(name_regex, '_', str(name).strip())
 
     if name and name[0].isdigit():
         name = '_' + name

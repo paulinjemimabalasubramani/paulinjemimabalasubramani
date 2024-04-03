@@ -116,6 +116,7 @@ class FileMeta:
     @catch_error()
     def add_file_os_info(self):
         """
+        Add OS info of file
         """
         self.file_size_kb = os.path.getsize(filename=self.file_path) / 1024.0
         self.file_modified_date = datetime.fromtimestamp(os.path.getmtime(filename=self.file_path))
