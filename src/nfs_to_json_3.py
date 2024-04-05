@@ -37,7 +37,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, column_regex, get_csv_rows, zip_delete_1_file
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, name_regex, get_csv_rows, zip_delete_1_file
 from modules3.migrate_files import file_meta_exists_for_select_files
 from modules3.nfs_header import get_header_info
 
@@ -83,7 +83,7 @@ def get_nfs_schema(table_name_no_firm:str):
         record_type = row['record_type'].upper().strip()
         record_number = str(row['record_number']).upper().strip()
         record_segment = str(row['record_segment']).upper().strip()
-        field_name = re.sub(column_regex, '_', row['field_name'].lower().strip())
+        field_name = re.sub(name_regex, '_', row['field_name'].lower().strip())
         conditional_changes = row['conditional_changes'].upper().strip()
 
         if not field_name or (field_name in ['', 'not_used', 'filler', '_', '__', 'n_a', 'na', 'none', 'null', 'value']) \

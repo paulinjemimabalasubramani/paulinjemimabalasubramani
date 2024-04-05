@@ -14,7 +14,7 @@ https://spark.apache.org/docs/latest/configuration
 # %% libraries
 import os, re
 
-from .common_functions import logger, catch_error, is_pc, get_extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, ELT_PROCESS_ID_str, column_regex
+from .common_functions import logger, catch_error, is_pc, get_extraClassPath, execution_date, EXECUTION_DATE_str, data_settings, ELT_PROCESS_ID_str, name_regex
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
@@ -163,7 +163,7 @@ def remove_column_spaces(table):
     """
     Removes spaces from column names
     """
-    table = table.select([col(f'`{c}`').alias(re.sub(column_regex, '_', c.strip())) for c in table.columns])
+    table = table.select([col(f'`{c}`').alias(re.sub(name_regex, '_', c.strip())) for c in table.columns])
     table = to_string(table, col_types = ['timestamp'])
     return table
 

@@ -9,7 +9,7 @@ import os, hashlib, re
 
 from datetime import datetime
 
-from .common_functions import catch_error, data_settings, logger, column_regex, get_csv_rows
+from .common_functions import catch_error, data_settings, logger, name_regex, get_csv_rows
 
 
 
@@ -57,7 +57,7 @@ def get_pershing_schema(schema_file_name:str, table_name:str=''):
     schema = []
     record_names = []
     for row in get_csv_rows(csv_file_path=schema_file_path):
-        field_name = re.sub(column_regex, '_', row['field_name'].lower().strip())
+        field_name = re.sub(name_regex, '_', row['field_name'].lower().strip())
         position = row['position'].strip()
         record_name = row['record_name'].upper().strip()
         conditional_changes = row['conditional_changes'].upper().strip()
