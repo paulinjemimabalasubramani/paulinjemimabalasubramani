@@ -241,7 +241,7 @@ def get_sql_table_columns(table_name_with_schema:str, connection:Connection) -> 
 # %%
 
 @catch_error(logger)
-def download_sql_server(file_path:str, sql_query:str, connection:Connection, delimiter:str=delimiter, bcp_batch_size:int=10000, bcp_packet_size:int=32768) -> int:
+def download_sql_server_query_to_file(file_path:str, sql_query:str, connection:Connection, delimiter:str=delimiter, bcp_batch_size:int=10000, bcp_packet_size:int=32768) -> int:
     """
     Download data from SQL Server using bcp tool and save to a file
 
@@ -327,7 +327,7 @@ def download_one_sql_table(table_info:Dict, connection=Connection):
     download_file_name = normalize_name(table_name_with_schema) + download_file_ext
     download_file_path = os.path.join(data_settings.source_path, download_file_name)
 
-    rows_copied = download_sql_server(file_path=body_file_path, sql_query=sql_query, connection=connection)
+    rows_copied = download_sql_server_query_to_file(file_path=body_file_path, sql_query=sql_query, connection=connection)
 
     if rows_copied and rows_copied>0:
         with open(file=download_file_path, mode='wt', encoding='UTF-8') as download_file:
