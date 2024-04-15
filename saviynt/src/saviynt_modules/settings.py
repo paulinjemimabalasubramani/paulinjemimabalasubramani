@@ -276,7 +276,7 @@ def init_app(__file__:str, __description__:str='Data Migration', args:Dict={}, t
 
     for c in ['pipeline_key', 'msteams_webhook_url']:
         if hasattr(config, c):
-            logger.msteams_webhook_url = getattr(config, c)
+            setattr(logger, c, getattr(config, c))
 
     return config
 

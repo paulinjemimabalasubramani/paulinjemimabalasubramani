@@ -884,7 +884,18 @@ def json_to_spark(spark, json_data):
 
 
 # %%
+@catch_error()
+def remove_square_parenthesis(table_name_with_schema:str):
+    """
+    Remove square parenthesis from table_name_with_schema (for comparison purposes)
+    """
+    return re.sub(r'\[|\]', '', table_name_with_schema)
 
+
+
+# %%
+
+@catch_error()
 def normalize_name(name:str):
     """
     Clean up name and make it standard looking
