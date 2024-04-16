@@ -10,7 +10,7 @@ import os, re
 from collections import defaultdict
 from datetime import datetime
 
-from .common_functions import catch_error, data_settings, logger, column_regex, convert_string_map_to_dict
+from .common_functions import catch_error, data_settings, logger, name_regex, convert_string_map_to_dict
 
 
 
@@ -68,7 +68,7 @@ def get_header_info(file_path:str):
     for field_name, pos in master_header_schema.items():
         header_info[field_name] = re.sub(' +', ' ', HEADER[pos['position_start']: pos['position_end']].strip())
 
-    table_name = re.sub(column_regex, '_', header_info['filetitle'].lower())
+    table_name = re.sub(name_regex, '_', header_info['filetitle'].lower())
     if table_name not in table_name_map:
         logger.warning(f'Unknown Table Name "{table_name}" in file {file_path}')
         return

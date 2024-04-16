@@ -26,7 +26,7 @@ from .filemeta import FileMeta
 # %%
 
 @catch_error()
-def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_schema:str, delimiter:str=','):
+def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_schema:str, delimiter:str=',', bcp_batch_size:int=10000):
     """
     Send CSV/PSV data file to SQL Server using bcp tool
     if no username or password given, then use trusted connection
@@ -37,7 +37,7 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
     """
     authentication_str = '-T' if connection.trusted_connection else f"-U {connection.username} -P '{connection.password}'"
 
-    bcp_str_ex_auth = f'bcp {connection.database}.{table_name_with_schema} in "{file_path}" -S {connection.server} -c -t "{delimiter}" -F 2'
+    bcp_str_ex_auth = f'bcp {connection.database}.{table_name_with_schema} in "{file_path}" -S {connection.server} -c -t "{delimiter}" -F 2 -b {bcp_batch_size}'
     bcp_str = f'{bcp_str_ex_auth} {authentication_str}'
 
     logger.debug(f'BCP Command: {bcp_str_ex_auth}')
@@ -52,7 +52,7 @@ def bcp_to_sql_server_csv(file_path:str, connection:Connection, table_name_with_
     try:
         rows_copied = int(stdout[:stdout.find(' rows copied.')].split('\n')[-1])
     except Exception as e:
-        logger.error(f'Exceptin on extracting rows_copied: {str(e)}')
+        logger.error(f'Exception on extracting rows_copied: {str(e)}')
         return
 
     logger.info(f'Server: {connection.server}; Table: {connection.database}.{table_name_with_schema}; Rows copied: {rows_copied}; File: {file_path}')

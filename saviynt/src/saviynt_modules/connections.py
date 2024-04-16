@@ -16,6 +16,23 @@ from .logger import catch_error, get_env, environment, logger
 
 # %%
 
+@catch_error()
+def get_azure_key_vault_client(config):
+    """
+    Get Azure Key Vault Handler
+    """
+    client_id = get_env('AZURE_KV_ID')
+    client_secret = get_env('AZURE_KV_SECRET')
+    vault_url = f'https://{config.key_vault_account}.vault.azure.net/'
+
+    credential = ClientSecretCredential(tenant_id=config.azure_tenant_id, client_id=client_id, client_secret=client_secret)
+    client = SecretClient(vault_url=vault_url, credential=credential, logging_enable=True)
+    return client
+
+
+
+# %%
+
 class Connection:
     """
     Store connection data
@@ -46,24 +63,10 @@ class Connection:
 
 
     @catch_error()
-    def get_azure_key_vault_client(self):
-        """
-        Get Azure Key Vault Handler
-        """
-        client_id = get_env('AZURE_KV_ID')
-        client_secret = get_env('AZURE_KV_SECRET')
-        vault_url = f'https://{self.config.key_vault_account}.vault.azure.net/'
-
-        credential = ClientSecretCredential(tenant_id=self.config.azure_tenant_id, client_id=client_id, client_secret=client_secret)
-        client = SecretClient(vault_url=vault_url, credential=credential, logging_enable=True)
-        return client
-
-
-    @catch_error()
     def property_kv_name(self, kv_suffix:str, spacing:str='_'):
         """
-        Key Vault name wihout last suffix
-        e.g. DEV_SAVIYNT_ELT_ID
+        Key Vault name
+        e.g. QA_SAVIYNT_ELT_ID
         """
         ENV = environment.QA if environment.environment<environment.qa else environment.ENVIRONMENT # because we don't have dedicated DEV credentials in Azure KV
         return spacing.join([ENV, self.config.key_vault_prefix, self.key_vault_name, kv_suffix]).upper()
@@ -75,7 +78,7 @@ class Connection:
         Get secret from Azure KV
         """
         if not hasattr(self, '__key_vault_client'):
-            self.__key_vault_client = self.get_azure_key_vault_client()
+            self.__key_vault_client = get_azure_key_vault_client(config=self.config)
         return self.__key_vault_client.get_secret(name.upper()).value
 
 

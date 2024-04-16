@@ -4,7 +4,7 @@ Library for common generic functions
 """
 
 # %% Import Libraries
-import os, shutil, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, re, csv
+import os, shutil, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, re, csv, subprocess
 
 from typing import List, Dict, Union
 from logging import StreamHandler
@@ -28,7 +28,7 @@ execution_date_start = datetime.strptime(execution_date, strftime) # to ensure i
 EXECUTION_DATE_str = 'elt_execution_date'
 ELT_PROCESS_ID_str = 'elt_process_id'
 
-column_regex = r'[\W]+'
+name_regex = r'[\W]+'
 
 generic_pipelinekey = 'GENERIC'
 
@@ -128,6 +128,9 @@ def get_env(variable_name:str, default:str=None, logger=None, raise_error_if_no_
 
 
 sys.app.environment = get_env(variable_name='ENVIRONMENT').upper()
+
+if sys.app.environment == 'DEV': # fix compatiblity issue with running code in laptop with DEV environment
+    sys.app.environment = 'QA'
 
 
 
@@ -881,12 +884,29 @@ def json_to_spark(spark, json_data):
 
 
 # %%
+@catch_error()
+def remove_square_parenthesis(table_name_with_schema:str):
+    """
+    Remove square parenthesis from table_name_with_schema (for comparison purposes)
+    """
+    return re.sub(r'\[|\]', '', table_name_with_schema)
 
-def normalize_name(name):
+
+
+# %%
+
+@catch_error()
+def normalize_name(name:str):
     """
-    Clean up column/table name and make it standard looking
+    Clean up name and make it standard looking
     """
-    return re.sub(column_regex, '_', str(name).lower().strip())
+    name = re.sub(r'\[|\]|\"', '', str(name).lower().strip())
+    name = re.sub(name_regex, '_', str(name).strip())
+
+    #if name and name[0].isdigit(): # Enable in future upgrades
+    #    name = '_' + name
+
+    return name
 
 
 
@@ -1075,6 +1095,48 @@ def find_latest_folder(remote_path:str, folder_levels:List[str], level:int=0) ->
         return None
 
     return find_latest_folder(remote_path=paths[max(paths)], folder_levels=folder_levels, level=level+1)
+
+
+
+# %%
+
+catch_error()
+def run_process(command:str, mask_error:bool=False, hint:str=''):
+    """
+    Run command line process. Returns None if error.
+    """
+    encoding = 'UTF-8'
+    command_regex = r'\r?\n' # remove line endings
+    command = re.sub(command_regex, ' ', command) # remove line endings
+
+    process = subprocess.Popen(
+        args = command,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.PIPE,
+        shell = True,
+        )
+
+    stdout, stderr = '', ''
+    while True:
+        out, err = process.stdout.readline(), process.stderr.readline()
+        if not out and not err:
+            break
+
+        out, err = out.decode(encoding), err.decode(encoding)
+        if out: print(out, end='')
+        if err: print(err, end='')
+        stdout += out
+        stderr += err
+
+    if stderr:
+        if mask_error:
+            logger.error(f'Error in running run_process, hint={hint}')
+        else:
+            logger.error(f'Error in running command: {command}')
+            logger.error(stderr)
+        return None
+
+    return stdout
 
 
 

@@ -125,26 +125,20 @@ def run_process(command:str, mask_error:bool=False, hint:str=''):
         )
 
     stdout, stderr = '', ''
+    while True:
+        out, err = process.stdout.readline(), process.stderr.readline()
+        if not out and not err:
+            break
 
-    k = 0
-    while k<2:
-        out = process.stdout.read().decode(encoding).rstrip('\n')
-        err = process.stderr.read().decode(encoding).rstrip('\n')
-
-        if out: print(out)
-        if err: print(err)
+        out, err = out.decode(encoding), err.decode(encoding)
+        if out: print(out, end='')
+        if err: print(err, end='')
         stdout += out
         stderr += err
 
-        if process.poll() is not None:
-            k += 1
-
-    #stdout, stderr = process.communicate()
-    #stdout, stderr = stdout.decode(encoding), stderr.decode(encoding)
-
-    if process.returncode != 0:
+    if stderr:
         if mask_error:
-            logger.error(f'Error in running run_process, returncode={process.returncode}, hint={hint}')
+            logger.error(f'Error in running run_process, hint={hint}')
         else:
             logger.error(f'Error in running command: {command}')
             logger.error(stderr)

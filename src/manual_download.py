@@ -39,8 +39,9 @@ tables = [
 
 
 tables = [
-    ('Com.F_CommissionClientRevenue', "select * from Com.F_CommissionClientRevenue(nolock) where left(StatementDateID, 4) in ('2023', '2024');"),
+    ('Com.F_CommissionClientRevenue', "select * from Com.F_CommissionClientRevenue(nolock) where left(StatementDateID, 4) in ('2018');"),
 ]
+
 
 
 # %% Constants
