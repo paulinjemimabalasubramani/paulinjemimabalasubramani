@@ -71,7 +71,7 @@ sys.app.parent_name = os.path.basename(__file__)
 from typing import Union, List, Dict
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, get_secrets, normalize_name, run_process,\
-    remove_square_parenthesis, pipeline_metadata_conf
+    remove_square_parenthesis, pipeline_metadata_conf, execute_sql_queries, KeyVaultList, Connection
 
 
 
@@ -88,32 +88,7 @@ driver_map = {
 }
 
 
-
 # %%
-
-class KeyVaultList:
-    """
-    Store and retrieve key vault secrets in order to reduce repeat requests to key vault.
-    """
-
-    @catch_error(logger)
-    def __init__(self):
-        self.key_vaults = {}
-
-    @catch_error(logger)
-    def get(self, key_vault_name):
-        if key_vault_name not in self.key_vaults:
-            _, username, password = get_secrets(key_vault_name)
-            self.key_vaults[key_vault_name] = {
-                'username': username,
-                'password': password,
-            }
-        else:
-            username = self.key_vaults[key_vault_name][username]
-            password = self.key_vaults[key_vault_name][password]
-
-        return username, password
-
 
 key_vault = KeyVaultList()
 
@@ -121,98 +96,7 @@ key_vault = KeyVaultList()
 
 # %%
 
-class Connection:
-    """
-    Store connection data
-    """
-    @catch_error(logger)
-    def __init__(
-            self,
-            driver:str,
-            server:str,
-            database:str,
-            username:str = None,
-            password:str = None,
-            trusted_connection:bool = False,
-            key_vault_name:str = None,
-            ):
-        """
-        Initiate single connection
-        """
-        self.driver = driver
-        self.server = server
-        self.database = database
-        
-        if not trusted_connection:
-            if not username or not password:
-                _, username, password = key_vault.get(key_vault_name=key_vault_name)
-            self.username = username
-            self.password = password
-
-        self.trusted_connection = trusted_connection
-        self.key_vault_name = key_vault_name
-
-
-    @catch_error(logger)
-    def get_connection_str_sql(self):
-        """
-        Get connection string for SQL server
-        """
-        if self.trusted_connection:
-            authentication_str = 'Trusted_Connection=yes;'
-        else:
-            authentication_str = f'UID={self.username};PWD={self.password}'
-
-        connection_str = f'DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};{authentication_str}'
-        return connection_str
-
-    @catch_error(logger)
-    def get_connection_str_bcp(self):
-        """
-        Get connection string for BCP tool
-        """
-        if self.trusted_connection:
-            authentication_str = '-T'
-        else:
-            authentication_str = f"-U {self.username} -P '{self.password}'"
-
-        connection_str = f'-S {self.server} -d {self.database} {authentication_str}'
-        return connection_str
-
-
-
-# %%
-
 os.makedirs(data_settings.source_path, exist_ok=True)
-
-
-
-# %%
-
-@catch_error(logger)
-def execute_sql_queries(sql_list:Union[List,str], connection:Connection) -> List:
-    """
-    Execute given list of SQL queries
-    """
-    if isinstance(sql_list, str):
-        sql_list = [sql_list]
-
-    outputs = []
-    with pyodbc.connect(connection.get_connection_str_sql()) as conn:
-        cursor = conn.cursor()
-        for sql_str in sql_list:
-            if is_pc:
-                print(sql_str)
-            cursor.execute(sql_str)
-            if cursor.description:
-                results = cursor.fetchall()
-            elif cursor.rowcount>=0:
-                results = [f'{cursor.rowcount} row(s) affected']
-            else:
-                results = ['Statement executed successfully']
-            outputs.append(results)
-        conn.commit()
-    return outputs
 
 
 
@@ -230,7 +114,7 @@ def get_sql_table_columns(table_name_with_schema:str, connection:Connection) -> 
     '''
 
     columns = []
-    res = execute_sql_queries([sql_str], connection=connection)
+    res = execute_sql_queries([sql_str], connection_string=connection.get_connection_str_sql())
     if res[0]:
         columns = [c[0] for c in res[0]]
 
@@ -377,7 +261,7 @@ def get_table_info_list():
     """
 
     table_info_list = []
-    table_info_list_raw = execute_sql_queries(sql_list=sql_str, connection=connection)
+    table_info_list_raw = execute_sql_queries(sql_list=sql_str, connection_string=connection.get_connection_str_sql())
     for table_info_raw in table_info_list_raw[0]:
         table_info_list.append({c:table_info_raw[i] for i, c in enumerate(database_server_ingestion_columns)})
 
@@ -400,7 +284,8 @@ def download_all_sql_tables():
             server = table_info['server_name'],
             database = table_info['database_name'],
             key_vault_name = table_info['key_vault'],
-            trusted_connection = is_pc, # Remove this
+            trusted_connection = is_pc,
+            key_vault = key_vault,
         )
 
         download_one_sql_table(table_info=table_info, connection=connection)
