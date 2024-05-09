@@ -1213,7 +1213,7 @@ class Connection:
             password:str = None,
             trusted_connection:bool = False,
             key_vault_name:str = None,
-            key_vault = None,
+            key_vault:KeyVaultList = None,
             ):
         """
         Initiate single connection
@@ -1221,10 +1221,10 @@ class Connection:
         self.driver = driver
         self.server = server
         self.database = database
-        
+
         if not trusted_connection:
             if not username or not password:
-                _, username, password = key_vault.get(key_vault_name=key_vault_name)
+                username, password = key_vault.get(key_vault_name=key_vault_name)
             self.username = username
             self.password = password
 
