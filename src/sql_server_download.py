@@ -240,7 +240,7 @@ def get_table_info_list():
     """
     master_list_name_table = '[database_server_ingestion]'
 
-    logger.info(f"Getting list of tables from SQL Server {pipeline_metadata_conf['sql_server']} Database {pipeline_metadata_conf['sql_database']} Table {master_list_name_table}")
+    logger.info(f"Getting list of tables from SQL Server {pipeline_metadata_conf['sql_server']} Database {pipeline_metadata_conf['sql_database']} Table {pipeline_metadata_conf['sql_schema']}.{master_list_name_table}")
 
     connection = Connection(
         driver = data_settings.sql_driver,
