@@ -135,6 +135,7 @@ def download_sql_server_query_to_file(file_path:str, sql_query:str, connection:C
     """
     bcp_str_ex_conn = f'bcp "{sql_query}" queryout "{file_path}" -c -t "{delimiter}" -C RAW -b {bcp_batch_size} -a {bcp_packet_size}'
     bcp_str = f'{bcp_str_ex_conn} {connection.get_connection_str_bcp()}'
+    logger.info(bcp_str_ex_conn)
 
     if is_pc:
         print(f'BCP Command: {bcp_str}')
@@ -204,6 +205,7 @@ def download_one_sql_table(table_info:Dict, connection=Connection):
     Download one sql table to a file
     """
     table_name_with_schema, sql_query, columns  = get_sql_query_from_table_tuple(table_info=table_info, connection=connection)
+    logger.info(f'Downloading table: {table_name_with_schema}')
 
     body_file_name = normalize_name(table_name_with_schema) + body_file_ext
     body_file_path = os.path.join(data_settings.source_path, body_file_name)
@@ -236,6 +238,10 @@ def get_table_info_list():
     """
     Get list of tables to ingest
     """
+    master_list_name_table = '[database_server_ingestion]'
+
+    logger.info(f"Getting list of tables from SQL Server {pipeline_metadata_conf['sql_server']} Database {pipeline_metadata_conf['sql_database']} Table {master_list_name_table}")
+
     connection = Connection(
         driver = data_settings.sql_driver,
         server = pipeline_metadata_conf['sql_server'],
@@ -256,7 +262,7 @@ def get_table_info_list():
 
     sql_str = f"""
     SELECT {','.join(database_server_ingestion_columns)}
-    FROM {pipeline_metadata_conf['sql_schema']}.[database_server_ingestion]
+    FROM {pipeline_metadata_conf['sql_schema']}.{master_list_name_table}
     WHERE pipeline_key = '{data_settings.pipelinekey.upper()}'
     """
 
