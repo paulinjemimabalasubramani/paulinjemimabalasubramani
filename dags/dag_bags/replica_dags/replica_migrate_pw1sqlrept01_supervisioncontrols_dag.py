@@ -17,7 +17,7 @@ python_spark_code = 'migrate_csv_3'
 
 tags = ['DB:REPLICA', 'SC:PW1SQLREPT01_SUPERVISIONCONTROLS']
 
-schedule_interval = '16 35 * * *' # https://crontab.guru/
+schedule_interval = '35 12 * * *' # https://crontab.guru/
 
 
 
@@ -58,7 +58,7 @@ with DAG(
 ) as dag:
 
     run_sql = BashOperator(
-        task_id = f'API_{pipelinekey}',
+        task_id = f'DOWNLOAD_{pipelinekey}_MANUAL',
         bash_command = f'python {src_path}/one_time_sql_script_run.py --pipelinekey {pipelinekey}',
         dag = dag,
         #execution_timeout = timedelta(seconds=7200), # set execution timeout for this API
