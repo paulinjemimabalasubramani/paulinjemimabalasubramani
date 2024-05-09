@@ -4,7 +4,7 @@ Library for common generic functions
 """
 
 # %% Import Libraries
-import os, shutil, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, re, csv, subprocess
+import os, shutil, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, re, csv, subprocess, pyodbc
 
 from typing import List, Dict, Union
 from logging import StreamHandler
@@ -1141,5 +1141,121 @@ def run_process(command:str, mask_error:bool=False, hint:str=''):
 
 
 # %%
+
+@catch_error(logger)
+def execute_sql_queries(sql_list:Union[List,str], connection_string:str) -> List:
+    """
+    Execute given list of SQL queries
+    """
+    if isinstance(sql_list, str):
+        sql_list = [sql_list]
+
+    outputs = []
+    with pyodbc.connect(connection_string) as conn:
+        cursor = conn.cursor()
+        for sql_str in sql_list:
+            if is_pc:
+                print(sql_str)
+            cursor.execute(sql_str)
+            if cursor.description:
+                results = cursor.fetchall()
+            elif cursor.rowcount>=0:
+                results = [f'{cursor.rowcount} row(s) affected']
+            else:
+                results = ['Statement executed successfully']
+            outputs.append(results)
+        conn.commit()
+    return outputs
+
+
+
+# %%
+
+class KeyVaultList:
+    """
+    Store and retrieve key vault secrets in order to reduce repeat requests to key vault.
+    """
+
+    @catch_error(logger)
+    def __init__(self):
+        self.key_vaults = {}
+
+    @catch_error(logger)
+    def get(self, key_vault_name):
+        if key_vault_name not in self.key_vaults:
+            _, username, password = get_secrets(key_vault_name)
+            self.key_vaults[key_vault_name] = {
+                'username': username,
+                'password': password,
+            }
+        else:
+            username = self.key_vaults[key_vault_name][username]
+            password = self.key_vaults[key_vault_name][password]
+
+        return username, password
+
+
+
+# %%
+
+
+class Connection:
+    """
+    Store connection data
+    """
+    @catch_error(logger)
+    def __init__(
+            self,
+            driver:str,
+            server:str,
+            database:str,
+            username:str = None,
+            password:str = None,
+            trusted_connection:bool = False,
+            key_vault_name:str = None,
+            key_vault = None,
+            ):
+        """
+        Initiate single connection
+        """
+        self.driver = driver
+        self.server = server
+        self.database = database
+        
+        if not trusted_connection:
+            if not username or not password:
+                _, username, password = key_vault.get(key_vault_name=key_vault_name)
+            self.username = username
+            self.password = password
+
+        self.trusted_connection = trusted_connection
+        self.key_vault_name = key_vault_name
+
+
+    @catch_error(logger)
+    def get_connection_str_sql(self):
+        """
+        Get connection string for SQL server
+        """
+        if self.trusted_connection:
+            authentication_str = 'Trusted_Connection=yes;'
+        else:
+            authentication_str = f'UID={self.username};PWD={self.password}'
+
+        connection_str = f'DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};{authentication_str}'
+        return connection_str
+
+    @catch_error(logger)
+    def get_connection_str_bcp(self):
+        """
+        Get connection string for BCP tool
+        """
+        if self.trusted_connection:
+            authentication_str = '-T'
+        else:
+            authentication_str = f"-U {self.username} -P '{self.password}'"
+
+        connection_str = f'-S {self.server} -d {self.database} {authentication_str}'
+        return connection_str
 
 
