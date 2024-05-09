@@ -1189,8 +1189,8 @@ class KeyVaultList:
                 'password': password,
             }
         else:
-            username = self.key_vaults[key_vault_name][username]
-            password = self.key_vaults[key_vault_name][password]
+            username = self.key_vaults[key_vault_name]['username']
+            password = self.key_vaults[key_vault_name]['password']
 
         return username, password
 
