@@ -4,7 +4,7 @@ Library for common generic functions
 """
 
 # %% Import Libraries
-import os, shutil, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, re, csv, subprocess, pyodbc
+import os, shutil, sys, logging, platform, psutil, yaml, json, requests, hashlib, hmac, base64, pymssql, re, csv, subprocess, pyodbc, shlex
 
 from typing import List, Dict, Union
 from logging import StreamHandler
@@ -1106,37 +1106,33 @@ def run_process(command:str, mask_error:bool=False, hint:str=''):
     Run command line process. Returns None if error.
     """
     encoding = 'UTF-8'
-    command_regex = r'\r?\n' # remove line endings
-    command = re.sub(command_regex, ' ', command) # remove line endings
 
-    process = subprocess.Popen(
-        args = command,
-        stdout = subprocess.PIPE,
-        stderr = subprocess.PIPE,
-        shell = True,
-        )
+    try:
+        process = subprocess.Popen(
+                args=shlex.split(command),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
 
-    stdout, stderr = '', ''
-    while True:
-        out, err = process.stdout.readline(), process.stderr.readline()
-        if not out and not err:
-            break
+        stdout, stderr = process.communicate(timeout=60*60*5) # 5 hours of run time.
+        stdout, stderr = stdout.decode(encoding), stderr.decode(encoding)
 
-        out, err = out.decode(encoding), err.decode(encoding)
-        if out: print(out, end='')
-        if err: print(err, end='')
-        stdout += out
-        stderr += err
+        if stdout:
+            print(stdout)
 
-    if stderr:
-        if mask_error:
-            logger.error(f'Error in running run_process, hint={hint}')
-        else:
-            logger.error(f'Error in running command: {command}')
-            logger.error(stderr)
+        if stderr:
+            if mask_error:
+                logger.error(f'Error in running run_process, hint={hint}')
+            else:
+                logger.error(f'Error in running command: {command}')
+                logger.error(stderr)
+            return None
+
+        return stdout
+
+    except subprocess.TimeoutExpired:
+        logger.error(f'Process timed out, hint={hint}')
         return None
-
-    return stdout
 
 
 
