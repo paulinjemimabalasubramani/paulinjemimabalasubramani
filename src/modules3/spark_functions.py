@@ -41,6 +41,8 @@ delta_partitionBy = lambda value: f'{partitionBy_str}={value}'
 elt_audit_columns = [EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str, KEY_DATETIME_str, ELT_PROCESS_ID_str, ELT_FIRM_str, ELT_PipelineKey_str]
 elt_audit_columns = [c.lower() for c in elt_audit_columns]
 
+custom_delimiters = ['#!#!', '|', '\t', ',']
+
 
 
 # %% Add ELT Audit Columns
@@ -355,12 +357,10 @@ def read_csv(spark, file_path:str):
     with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as f:
         HEADER = f.readline()
 
-    if '|' in HEADER:
-        delimiter = '|'
-    elif '\t' in HEADER:
-        delimiter = '\t'
-    else:
-        delimiter = ','
+    delimiter = ','
+    for custom_delimiter in custom_delimiters:
+        if custom_delimiter in HEADER:
+            delimiter = custom_delimiter
 
     csv_table = (spark.read # https://github.com/databricks/spark-csv
         .format('csv')
