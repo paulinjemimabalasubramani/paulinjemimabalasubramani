@@ -1,0 +1,464 @@
+﻿record_name,position,picture,type,conditional_changes,field_name,scale,description,notes
+HEADER,001-018,X(18),AN,,b_of_pershing,,Literally “BOFPERSHING” (beginning of Pershing file),
+HEADER,019-036,X(18),AN,,global_cust_pos,,Literally “GLOBALCUSTPOS”,
+HEADER,037-046,X(10),AN,,data_of,,Literally “DATAOF”,
+HEADER,047-056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+HEADER,057-067,X(11),AN,,to_remote,,Literally “TOREMOTE”,
+HEADER,068-071,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+HEADER,072-085,X(14),AN,,begins_here,,Literally “BEGINSHERE”,
+HEADER,086-095,X(10),AN,,run_date,,RUN DATE = “MM/DD/CCYY”,
+HEADER,096-096,X(01),AN,,not_used,,Not Used,
+HEADER,097-104,X(08),AN,,run_time,,RUN TIME = “HH:MM:SS”,
+HEADER,105-118,X(14),AN,,not_used,,Not Used,
+HEADER,119-127,X(09),AN,,refreshed_updated,,Indicates if the file is REFRESHED/UPDATED – literally “REFRESHED” or “UPDATED”,
+HEADER,128-749,X(622),AN,,not_used,,Not Used,
+HEADER,750-750,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates the end of the header record,
+A,001-002,X(02),AN,,transaction_code,,"TRANSACTION CODE
+Values include:
+“GC” = GCUS (Brokerage)
+“M1” = GCS1 (Bank Custody)",
+A,003-003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “A”,
+A,004-011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
+Begins with “00000001”",
+A,012-020,X(9),AN,,account_number,,"ACCOUNT NUMBER
+Including Office (3), 
+Base Account (5), 
+Check Digit (1)",
+A,021-021,X(01),AN,,account_type,,"ACCOUNT TYPE
+“0” = Cash on Delivery
+“1” = Cash/Principal Accounting for Bank Custody
+“2” = Margin
+“3” = Short
+“8” = Precious Metals
+“9” = Income/Income Accounting for Bank Custody",
+A,022-030,X(09),AN,,cusip_number,,CUSIP  NUMBER,
+A,031-033,X(03),AN,,portfolio_currency,,"PORTFOLIO CURRENCY
+Populated only for Bank Custody accounts; 
+For Brokerage accounts, this field will be spaces",
+A,034-034,X(01),AN,,not_used,,Not Used,
+A,035-043,X(09),AN,,underlying_cusip_number,,UNDERLYING CUSIP NUMBER,
+A,044-045,X(02),AN,,country_code,,"COUNTRY CODE
+See Appendix Q for values, 
+Effective early 3rd  Q, 2017
+For GCS1, this represents country where trade was executed; 
+Includes additional value:
+“X9” = Country unknown or unavailable
+For GCUS, this represents country of security’s issuance","NOTE: For GCS1, this represents country where trade was executed
+NOTE: For GCUS, this represents country of security’s issuance"
+A,046-047,X(02),AN,,not_used,,Not Used,
+A,048-050,X(03),AN,,investment_professional_ip_of_record_number,,INVESTMENT PROFESSIONAL (IP) OF RECORD NUMBER,
+A,051-053,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+A,054-054,X(01),AN,,currency_security_indicator,,"CURRENCY/SECURITY INDICATOR
+Values include:
+“C” = Currency Position
+“S” = Security Position",
+A,055-057,X(03),AN,,issue_currency,,"ISSUE CURRENCY
+See Appendix N, “Currency Codes”",
+A,058-065,9(08),N,,date_stamp_trade_date,,"DATE STAMP/TRADE DATE
+In CCYYMMDD format; the date the TRADE DATE quantity was last updated",
+A,066-073,9(08),N,,date_stamp_settlement_date,,"DATE STAMP/SETTLEMENT DATE
+In CCYYMMDD
+format; the date the S/DATE quantity was last updated",
+A,074-091,9(13)v9(05),N,,trade_date_quantity,5,"TRADE DATE QUANTITY
+Number of shares traded, but not yet settled 
+(add Pending/Split Quantity in Record A, 283-300, to this field to equal the T/D Quantity in NetX360)",
+A,092-092,X(01),AN,,trade_date_quantity_sign,,"TRADE DATE QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,093-110,9(13)v9(05),N,,settlement_date_quantity,5,"SETTLEMENT DATE QUANTITY
+The books and records position (for instance, the position shown on your clients’ brokerage statements);
+It reflects all securities that are received or delivered and all settled trades; 
+It does not include pending trades (add Pending/Split Quantity in Record A, 283-300, to this field to equal the S/D Quantity in NetX360)",
+A,111-111,X(01),AN,,settlement_date_quantity_sign,,"SETTLEMENT DATE QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,112-129,9(13)v9(05),N,,seg_quantity_memo,5,"SEG QUANTITY (MEMO)
+The securities held in street name",
+A,130-130,X(01),AN,,seg_quantity_sign,,"SEG QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,131-148,9(13)v9(05),N,,safekeeping_quantity_memo,5,"SAFEKEEPING QUANTITY (MEMO)
+Number of shares registered in the customer’s name",
+A,149-149,X(01),AN,,safekeeping_quantity_sign,,"SAFEKEEPING QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,150-167,9(13)v9(05),N,,transfer_quantity_memo,5,"TRANSFER QUANTITY (MEMO)
+Number of shares in the process of being registered in the customer’s name",
+A,168-168,X(01),AN,,transfer_quantity_sign,,"TRANSFER QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,169-186,9(13)v9(05),N,,pending_transfer_quantity,5,"PENDING TRANSFER QUANTITY
+The number of shares currently pending the transfer process",
+A,187-187,X(01),AN,,pending_transfer_quantity_sign,,"PENDING TRANSFER QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,188-205,9(13)v9(05),N,,legal_transfer_quantity,5,"LEGAL TRANSFER QUANTITY
+The number of shares awaiting clearance at the transfer agent",
+A,206-206,X(01),AN,,legal_transfer_quantity_sign,,"LEGAL TRANSFER QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,207-224,9(13)v9(05),N,,tendered_reorg_quantity_memo,5,"TENDERED (REORG) QUANTITY (MEMO)
+Number of shares submitted with instructions to participate in a corporate reorganization 
+(e.g., exchange, tender, redemption, etc.)",
+A,225-225,X(01),AN,,tendered_quantity_sign,,"TENDERED QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,226-243,9(13)v9(05),N,,pending_papers_memo,5,"PENDING PAPERS (MEMO)
+Number of shares pending the receipt of documents to make them negotiable",
+A,244-244,X(01),AN,,pending_papers_sign,,"PENDING PAPERS SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,245-262,9(13)v9(05),N,,short_against_the_box_quantity_memo,5,SHORT AGAINST THE BOX QUANTITY (MEMO),
+A,263-263,X(01),AN,,short_against_the_box_quantity_sign,,"SHORT AGAINST THE BOX QTY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,264-281,9(13)v9(05),N,,networked_quantity_memo,5,NETWORKED QUANTITY (MEMO),
+A,282-282,X(01),AN,,networked_quantity_sign,,"NETWORKED QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,283-300,9(13)v9(05),N,,pending_split_quantity_memo,5,"PENDING SPLIT QUANTITY (MEMO)
+Quantity of the security that is subject to a pending stock distribution",
+A,301-301,X(01),AN,,pending_split_quantity_sign,,"PENDING SPLIT QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,302-319,9(13)v9(05),N,,quantity_covering_options_or_covered_quantity,5,QUANTITY COVERING OPTIONS or COVERED QTY,
+A,320-320,X(01),AN,,quantity_covering_options_or_covered_quantity_sign,,"QUANTITY COVERING OPTIONS or COVERED QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,321-338,9(13)v9(05),N,,trade_date_quantity_bought,5,TRADE DATE QUANTITY BOUGHT,
+A,339-339,X(01),AN,,trade_date_quantity_bought_sign,,"TRADE DATE QUANTITY BOUGHT SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,340-357,9(13)v9(05),N,,trade_date_quantity_sold,5,TRADE DATE QUANTITY SOLD,
+A,358-358,X(01),AN,,trade_date_quantity_sold_sign,,"TRADE DATE QUANTITY SOLD SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",
+A,359-376,9(16)v9(02),N,,fed_reg_t_requirement,2,FED (REG T) REQUIREMENT,REQUIREMENTS
+A,377-377,X(01),AN,,fed_requirement_sign,,"FED REQUIREMENT SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",REQUIREMENTS
+A,378-395,9(16)v9(02),N,,house_pershing_margin_requirement,2,HOUSE (PERSHING) MARGIN REQUIREMENT,REQUIREMENTS
+A,396-396,X(01),AN,,house_margin_requirement_sign,,"HOUSE MARGIN REQUIREMENT SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",REQUIREMENTS
+A,397-414,9(16)v9(02),N,,exchange_nyse_requirement,2,EXCHANGE (NYSE) REQUIREMENT,REQUIREMENTS
+A,415-415,X(01),AN,,exchange_requirement_sign,,"EXCHANGE REQUIREMENT SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",REQUIREMENTS
+A,416-433,9(16)v9(02),N,,equity_requirement,2,EQUITY REQUIREMENT,REQUIREMENTS
+A,434-434,X(01),AN,,equity_requirement_sign,,"EQUITY REQUIREMENT SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",REQUIREMENTS
+A,435-443,X(09),AN,,security_symbol,,SECURITY SYMBOL,SELECTED SECURITY INFORMATION
+A,444-444,X(01),AN,,security_type,,"SECURITY TYPE
+See Appendix B, “Security Code Matrix”",SELECTED SECURITY INFORMATION
+A,445-445,X(01),AN,,security_mod,,"SECURITY MOD
+See Appendix B, “Security Code Matrix”",SELECTED SECURITY INFORMATION
+A,446-446,X(01),AN,,security_calc,,"SECURITY CALC
+See Appendix B, “Security Code Matrix”",SELECTED SECURITY INFORMATION
+A,447-449,X(03),AN,,minor_product_code,,"MINOR PRODUCT CODE
+See Appendix B",SELECTED SECURITY INFORMATION
+A,450-450,X(01),AN,,network_eligibility_indicator,,NETWORK ELIGIBILITY INDICATOR,SELECTED SECURITY INFORMATION
+A,451-468,9(09)v9(09),N,,strike_price,9,STRIKE PRICE,SELECTED SECURITY INFORMATION
+A,469-469,X(01),AN,,strike_price_sign,,"STRIKE PRICE SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",SELECTED SECURITY INFORMATION
+A,470-477,9(08),N,,expiration_maturity_date,,"EXPIRATION/MATURITY DATE
+in CCYYMMDD",SELECTED SECURITY INFORMATION
+A,478-495,9(13)v9(05),N,,contract_size,5,CONTRACT SIZE,SELECTED SECURITY INFORMATION
+A,496-513,9(09)v9(09),N,,conversion_ratio,9,CONVERSION RATIO,SELECTED SECURITY INFORMATION
+A,514-523,X(10),AN,,account_short_name,,ACCOUNT SHORT NAME,SELECTED CUSTOMER ACCOUNT INFORMATION (for positions 514-529)
+A,524-526,X(03),AN,,state_code,,STATE CODE,SELECTED CUSTOMER ACCOUNT INFORMATION (for positions 514-529)
+A,527-529,X(03),AN,,country_code,,"COUNTRY CODE
+(of account-level citizenship)",SELECTED CUSTOMER ACCOUNT INFORMATION (for positions 514-529)
+A,530-533,X(04),AN,,for_pershing_internal_use,,For Pershing Internal Use,SELECTED CUSTOMER ACCOUNT INFORMATION (for positions 514-529)
+A,534-537,9(04),N,,number_of_security_description_lines,,NUMBER OF SECURITY DESCRIPTION LINES,SECURITY DESCRIPTION INFORMATION
+A,538-557,X(20),AN,,security_description_line_1,,SECURITY DESCRIPTION LINE 1,SECURITY DESCRIPTION INFORMATION
+A,558-577,X(20),AN,,security_description_line_2,,SECURITY DESCRIPTION LINE 2,SECURITY DESCRIPTION INFORMATION
+A,578-597,X(20),AN,,security_description_line_3,,SECURITY DESCRIPTION LINE 3,SECURITY DESCRIPTION INFORMATION
+A,598-617,X(20),AN,,security_description_line_4,,SECURITY DESCRIPTION LINE 4,SECURITY DESCRIPTION INFORMATION
+A,618-637,X(20),AN,,security_description_line_5,,SECURITY DESCRIPTION LINE 5,SECURITY DESCRIPTION INFORMATION
+A,638-657,X(20),AN,,security_description_line_6,,SECURITY DESCRIPTION LINE 6,SECURITY DESCRIPTION INFORMATION
+A,658-658,X(01),AN,,dividend_option,,"DIVIDEND OPTION
+Applies to Equities and Mutual funds only
+Values include:
+“C” = Cash
+“R” = Reinvest
+“” = Not Applicable",SECURITY DESCRIPTION INFORMATION
+A,659-659,X(01),AN,,long_term_capital_gains_option,,"LONG TERM CAPITAL GAINS OPTION
+Applies to Mutual Funds only
+Values include:
+“C” = Cash
+“R” = Reinvest
+“” = Not Applicable",SECURITY DESCRIPTION INFORMATION
+A,660-660,X(01),AN,,short_term_capital_gains_option,,"SHORT TERM CAPITAL GAINS OPTION
+Applies to both Equities and Mutual Funds
+Values include:
+“C” = Cash
+“R” = Reinvest
+“” = Not Applicable",SECURITY DESCRIPTION INFORMATION
+A,661-661,X(01),AN,,firm_trading_indicator,,FIRM TRADING INDICATOR,SECURITY DESCRIPTION INFORMATION
+A,662-664,X(03),AN,,position_currency,,POSITION CURRENCY,SECURITY DESCRIPTION INFORMATION
+A,665-682,9(15)v9(03),N,,trade_date_liquidating_value,3,"TRADE DATE LIQUIDATING VALUE
+Add Pending Split Quantity Liquidating Value in Record B, 454-471, to this field to equal the T/D Liquidating Value displayed on NetX360",SECURITY DESCRIPTION INFORMATION
+A,683-683,X(01),AN,,trade_date_liquidating_value_sign,,"TRADE DATE LIQUIDATING VALUE SIGN
+Values include:
+“+” = Long Market Value
+“-” = Short Market Value
+“” = Not Applicable",SECURITY DESCRIPTION INFORMATION
+A,684-693,9(02)v9(08),N,,pool_factor,8,POOL FACTOR,SECURITY DESCRIPTION INFORMATION
+A,694-694,X(01),AN,,pool_factor_sign,,"POOL FACTOR SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",SECURITY DESCRIPTION INFORMATION
+A,695-712,9(08)v9(10),N,,exchange_rate,10,EXCHANGE RATE,SECURITY DESCRIPTION INFORMATION
+A,713-713,X(01),AN,,exchange_rate_sign,,"EXCHANGE RATE SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",SECURITY DESCRIPTION INFORMATION
+A,714-731,9(15)v9(03),N,,settlement_date_liquidating_value,3,"SETTLEMENT DATE LIQUIDATING VALUE
+Add Pending Split Quantity Liquidating Value in Record B, 454-471, to this field to equal the S/D Liquidating Value displayed on NetX360",SECURITY DESCRIPTION INFORMATION
+A,732-732,X(01),AN,,settlement_date_liquidating_value_sign,,"SETTLEMENT DATE LIQUIDATING VALUE SIGN
+Values include:
+“+” = Long Market Value
+“-” = Short Market Value
+“” = Not Applicable",SECURITY DESCRIPTION INFORMATION
+A,733-735,X(03),AN,,for_internal_pershing_use_display_currency,,For Internal Pershing Use (Display Currency),SECURITY DESCRIPTION INFORMATION
+A,736-736,X(01),AN,,alternate_security_id_type,,"ALTERNATE SECURITY ID TYPE
+Value includes:
+“I” = ISIN",SECURITY DESCRIPTION INFORMATION
+A,737-748,X(12),AN,,alternate_security_id,,ALTERNATE SECURITY ID,SECURITY DESCRIPTION INFORMATION
+A,749-749,X(01),AN,,for_pershing_internal_use_only,,For Pershing Internal Use Only,
+A,750-750,X(01),AN,,end_of_detail_record_a,,Literally “X”; indicates the end of detail record A,
+B,001-002,X(02),AN,,transaction_code,,"TRANSACTION CODE
+Values include:
+“GC” = GCUS (Brokerage)
+“M1” = GCS1 (Bank Custody)",
+B,003-003,X(01),AN,,record_indicator_value,,RECORD INDICATOR VALUE = “B”,
+B,004-011,9(08),N,,record_id_sequence_number,,"RECORD ID SEQUENCE NUMBER
+Begins with “00000001”",
+B,012-020,X(9),AN,,account_number,,"ACCOUNT NUMBER
+Including Office (3), 
+Base Account (5), 
+Check Digit (1)",
+B,021-021,X(01),AN,,account_type,,"ACCOUNT TYPE
+“0” = Cash on Delivery
+“1” = Cash/Principal Accounting for Bank Custody
+“2” = Margin
+“3” = Short
+“8” = Precious Metals
+“9” = Income/Income Accounting for Bank Custody",
+B,022-030,X(09),AN,,cusip_number,,CUSIP NUMBER,
+B,031-033,X(03),AN,,portfolio_currency,,"PORTFOLIO CURRENCY
+Populated only for Bank Custody accounts; for Brokerage accounts, this field will be spaces",
+B,034-034,X(01),AN,,not_used,,Not Used,
+B,035-043,X(09),AN,,underlying_cusip_number,,UNDERLYING CUSIP NUMBER,
+B,044-045,X(02),AN,,country_code,,"COUNTRY CODE
+See Appendix Q for values, 
+Effective early 3rd  Q, 2017, TBA
+For GCS1, this represents country where trade was executed; 
+Includes additional value:
+“X9” = Country unknown or unavailable
+For GCUS, this represents country of security’s issuance",
+B,046-047,X(02),AN,,not_used,,Not Used,
+B,048-050,X(03),AN,,investment_professional_ip_of_record_number,,INVESTMENT PROFESSIONAL (IP) OF RECORD NUMBER,
+B,051-053,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
+B,054-071,9(13)v9(05),N,,fully_paid_lending_quantity,5,FULLY PAID LENDING QUANTITY,
+B,072-072,X(01),AN,,fully_paid_lending_quantity_sign,,"FULLY PAID LENDING QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity",
+B,073-090,9(15)v9(03),N,,fully_paid_lending_quantity_collateral_amt,3,FULLY PAID LENDING QUANTITY COLLATERAL AMT,
+B,091-091,X(01),AN,,fully_paid_lending_quantity_collateral_amt_sign,,"FULLY PAID LENDING QUANTITY COLLATERAL AMOUNT SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount",
+B,092-097,X(06),AN,,option_root_id,,OPTION ROOT ID,OCC DATA SET – The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol.  They apply only to Options Products.
+B,098-103,9(06),N,,expiration_date,,"EXPIRATION DATE
+In YYMMDD format",OCC DATA SET – The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol.  They apply only to Options Products.
+B,104-104,X(01),AN,,call_put_indicator,,"CALL/PUT INDICATOR
+Values include:
+“B” = Bank Pledge (Call)
+“C” = Call
+“D” = Bank Pledge (Put)
+“E” = Escrow Receipt
+“L” = Letter of Credit (Call)
+“M” = Letter of Credit (Put)
+“P” = Put",OCC DATA SET – The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol.  They apply only to Options Products.
+B,105-112,9(05)v9(03),N,,strike_price,3,STRIKE PRICE,OCC DATA SET – The following four fields comprise the OCC DATA SET to be used in lieu of the OPRA Symbol.  They apply only to Options Products.
+B,113-130,9(13)v9(05),N,,trade_date_repo_quantity,5,TRADE DATE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,131-131,X(01),AN,,trade_date_repo_quantity_sign,,"TRADE DATE REPO QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,132-149,9(13)v9(05),N,,settlement_date_repo_quantity,5,SETTLEMENT DATE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,150-150,X(01),AN,,settlement_date_repo_quantity_sign,,"SETTLEMENT DATE REPO QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,151-168,9(13)v9(05),N,,trade_date_reverse_repo_quantity,5,TRADE DATE REVERSE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,169-169,X(01),AN,,trade_date_reverse_repo_quantity_sign,,"T/D REVERSE REPO QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,170-187,9(13)v9(05),N,,settlement_date_reverse_repo_quantity,5,SETTLEMENT DATE REVERSE REPO QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,188-188,X(01),AN,,settlement_date_reverse_repo_quantity_sign,,"S/D REVERSE REPO QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,189-206,9(13)v9(05),N,,collateral_pledge_quantity,5,COLLATERAL PLEDGE QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,207-207,X(01),AN,,collateral_pledge_quantity_sign,,"COLLATERAL PLEDGE QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,208-225,9(13)v9(05),N,,corporate_executive_services_collateral_pledge_quantity,5,CORPORATE EXECUTIVE SERVICES COLLATERAL PLEDGE QUANTITY,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,226-226,X(01),AN,,corporate_executive_services_collateral_pledge_quantity_sign,,"CORPORATE EXECUTIVE SERVICES COLLATERAL PLEDGE QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,227-244,9(15)v9(03),N,,trade_date_repo_liquidating_value,3,TRADE DATE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,245-245,X(01),AN,,trade_date_repo_liquidating_value_sign,,"T/D REPO LIQUIDATING VALUE SIGN
+Values include:
+“+” = Long Market Value
+“-” = Short Market Value
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,246-263,9(15)v9(03),N,,settlement_date_repo_liquidating_value,3,SETTLEMENT DATE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,264-264,X(01),AN,,settlement_date_repo_liquidating_value_sign,,"S/D REPO LIQUIDATING VALUE SIGN
+Values include:
+“+” = Long Market Value
+“-” = Short Market Value
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,265-282,9(15)v9(03),N,,trade_date_reverse_repo_liquidating_value,3,TRADE DATE REVERSE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,283-283,X(01),AN,,trade_date_reverse_repo_liquidating_value_sign,,"T/D REVERSE REPO LIQUIDATING VALUE SIGN
+Values include:
+“+” = Long Market Value
+“-” = Short Market Value
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,284-301,9(15)v9(03),N,,settlement_date_reverse_repo_liquidating_value,3,SETTLEMENT DATE REVERSE REPO LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,302-302,X(01),AN,,settlement_date_reverse_repo_liquidating_value_sign,,"SETTLEMENT DATE REVERSE REPO LIQUIDATING VALUE SIGN
+Values include:
+“+” = Long Market Value
+“-” = Short Market Value
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,303-320,9(15)v9(03),N,,collateral_pledge_liquidating_value,3,COLLATERAL PLEDGE LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,321-321,X(01),AN,,collateral_pledge_liquidating_value_sign,,"COLLATERAL PLEDGE LIQUIDATING VALUE SIGN
+Values include:
+“+” = Long Market Value
+“-” = Short Market Value
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,322-339,9(15)v9(03),N,,corporate_executive_services_collateral_pledge_liquidating_value,3,CORPORATE EXECUTIVE SERVICES COLLATERAL PLEDGE LIQUIDATING VALUE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,340-340,X(01),AN,,corporate_executive_services_collateral_pledge_liquidating_value_sign,,"CORPORATE EXECUTIVE SERVICES COLLATERAL PLEDGE LIQUIDATING VALUE SIGN
+Values include:
+“+” = Long Market Value
+“-” = Short Market Value
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,341-358,9(15)v9(03),N,,trade_date_repo_loan_amount,3,TRADE DATE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,359-359,X(01),AN,,trade_date_repo_loan_amount_sign,,"T/D REPO LOAN AMOUNT SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,360-377,9(15)v9(03),N,,settlement_date_repo_loan_amount,3,SETTLEMENT DATE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,378-378,X(01),AN,,settlement_date_repo_loan_amount_sign,,"S/D REPO LOAN AMOUNT SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,379-396,9(15)v9(03),N,,trade_date_reverse_repo_loan_amount,3,TRADE DATE REVERSE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,397-397,X(01),AN,,trade_date_reverse_repo_loan_amount_sign,,"T/D REVERSE REPO LOAN AMOUNT SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,398-415,9(15)v9(03),N,,settlement_date_reverse_repo_loan_amount,3,SETTLEMENT DATE REVERSE REPO LOAN AMOUNT,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,416-416,X(01),AN,,settlement_date_reverse_repo_loan_amount_sign,,"S/D REVERSE REPO LOAN AMOUNT SIGN
+Values include:
+“+” = Positive Amount
+“-” = Negative Amount
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,417-434,9(15)v9(03),N,,accrued_interest_value_from_last_payable_date,3,"ACCRUED INTEREST VALUE FROM LAST PAYABLE DATE
+Based on trade date quantity",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,435-435,X(01),AN,,accrued_interest_value_sign,,"ACCRUED INTEREST VALUE SIGN
+Values include:
+“+” = Positive Value
+“-” = Negative Value
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,436-453,9(09)v9(09),N,,dividend_or_coupon_rate,9,DIVIDEND or COUPON RATE,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,454-471,9(15)v9(03),N,,pending_split_quantity_liquidating_value,3,"PENDING SPLIT QUANTITY LIQUIDATING VALUE
+(add this value to T/D or S/D Liquidating Values in Record A to equal Market Value displayed on NetX360); 
+Effective 08/02/2013",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,472-472,X(01),AN,,pending_split_quantity_liquidating_value_sign,,"PENDING SPLIT QUANTITY LIQUIDATING VALUE SIGN
+Values include:
+“+” = Long Market Value
+“-” = Short Market Value
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,473-510,X(38),AN,,for_pershing_internal_use_only,,For Pershing Internal Use Only,REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,511-526,X(16),AN,,international_non_dollar_symbol,,INTERNATIONAL NON-DOLLAR SYMBOL (effective 02/07/2014),REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,527-544,9(13)v9(05),N,,pledged_quantity_memo,5,"PLEDGED QUANTITY (MEMO), applies only to brokerage; effective mid-2nd  Q, 2017",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,545-545,X(01),AN,,pledged_quantity_sign,,"PLEDGED QUANTITY SIGN
+Values include:
+“+” = Long Quantity
+“-” = Short Quantity
+“” = Not Applicable",REPO /REVERSE REPO/COLLATERAL PLEDGE INFORMATION
+B,546-749,X(204),AN,,not_used,,Not Used,
+B,750-750,X(01),AN,,end_of_detail_record_b,,Literally “X”; indicates the end of detail record B,
+TRAILER,001-018,X(18),AN,,e_of_pershing,,Literally “EOFPERSHING” (end of Pershing file),
+TRAILER,019-036,X(18),AN,,global_cust_pos,,Literally “GLOBALCUSTPOS”,
+TRAILER,037-046,X(10),AN,,data_of,,Literally “DATAOF”,
+TRAILER,047-056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+TRAILER,057-067,X(11),AN,,to_remote,,Literally “TOREMOTE”,
+TRAILER,068-071,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+TRAILER,072-105,X(34),AN,,ends_here,,Literally“ENDSHERE.TOTALDETAIL RECORDS:                                             ”,
+TRAILER,106-115,9(10),N,,number_of_detail_records,,NUMBER OF DETAIL RECORDS,
+TRAILER,116-118,X(03),AN,,not_used,,Not Used,
+TRAILER,119-127,X(09),AN,,refreshed_updated,,Indicates if the file is REFRESHED/UPDATED – literally “REFRESHED” or “UPDATED”,
+TRAILER,128-749,X(622),AN,,not_used,,Not Used,
+TRAILER,750-750,X(01),AN,,end_of_the_trailer_record,,Literally “Z”; indicates the end of the trailer record,
