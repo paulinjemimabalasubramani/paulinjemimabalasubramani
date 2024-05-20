@@ -1,0 +1,555 @@
+record_name,position,picture,type,conditional_changes,field_name,scale,description,notes
+HEADER,001-018,X(18),AN,,not_used,,Literally “BOFPERSHING” (beginning of Pershing file),
+HEADER,019-036,X(18),AN,,not_used,,Literally “CHECK&FUNDDTL”,
+HEADER,037-046,X(10),AN,,not_used,,Literally “DATAOF”,
+HEADER,047-056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+HEADER,057-067,X(11),AN,,not_used,,Literally “TOREMOTE”,
+HEADER,068-071,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+HEADER,072-085,X(14),AN,,not_used,,Literally “BEGINSHERE”,
+HEADER,086-095,X(10),AN,,run_date,,RUN DATE = “MM/DD/CCYY”,
+HEADER,096-096,X(01),AN,,not_used,,Not Used,
+HEADER,097-104,X(08),AN,,run_time,,RUN TIME = “HH:MM:SS”,
+HEADER,105-499,X(395),AN,,not_used,,Not Used,
+HEADER,500-500,X(01),AN,,not_used,,Literally “A”; indicates the end of the header record,
+A,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+A,003-003,X(01),AN,,record_type,,RECORD TYPE = “A”,
+A,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+A,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6) and Type (1); values for Type include:
+“0” = Cash on Delivery
+“1” = Cash/Principal accounting for Bank Custody
+“2” = Margin
+“3” = Short
+“8” = Precious Metals
+“9” = Income/Income accounting for Bank Custody",
+A,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of the fed fund being sent,
+A,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+A,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+A,039-042,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+A,043-072,X(34),AN,,intermediary_institution,,INTERMEDIARY INSTITUTION,Expanded
+A,073-107,X(35),AN,,intermediary_description_line_1,,"INTERMEDIARY DESCRIPTION, Line 1",
+A,108-142,X(35),AN,,intermediary_description_line_2,,"INTERMEDIARY DESCRIPTION, Line 2",
+A,143-176,X(34),AN,,account_with_institution,,ACCOUNT WITH INSTITUTION,
+A,177-211,X(35),AN,,beneficiary_customer_1,,BENEFICIARY CUSTOMER 1,
+A,212-246,X(35),AN,,beneficiary_customer_2,,BENEFICIARY CUSTOMER 2,
+A,247-281,X(35),AN,,beneficiary_customer_3,,BENEFICIARY CUSTOMER 3,
+A,282-316,X(35),AN,,beneficiary_customer_4,,BENEFICIARY CUSTOMER 4,
+A,317-336,X(20),AN,,outgoing_wires_additional_information_1,,OUTGOING WIRES ADDITIONAL INFORMATION 1 (or DESCRIPTION OF TRANSACTION if ACH transaction),
+A,337-356,X(20),AN,,outgoing_wires_additional_information_2,,"OUTGOING WIRES ADDITIONAL INFORMATION 2 (or ABA NUMBER if ACH transaction, literal “ACH999999999”)",
+A,357-376,X(20),AN,,outgoing_wires_additional_information_3,,OUTGOING WIRES ADDITIONAL INFORMATION 3 (or DDA NUMBER if ACH transaction),
+A,377-396,X(20),AN,,outgoing_wires_additional_information_4,,"OUTGOING WIRES/ACH ADDITIONAL INFORMATION, Line 4",
+A,397-416,X(20),AN,,outgoing_wires_additional_information_5,,"OUTGOING WIRES/ACH ADDITIONAL INFORMATION, Line 5",
+A,417-436,X(20),AN,,outgoing_wires_additional_information_6,,"OUTGOING WIRES/ACH ADDITIONAL INFORMATION, Line 6",
+A,437-456,X(20),AN,,outgoing_wires_additional_information_7,,"OUTGOING WIRES/ACH ADDITIONAL INFORMATION, Line 7",
+A,457-476,X(20),AN,,outgoing_wires_additional_information_8,,"OUTGOING WIRES/ACH ADDITIONAL INFORMATION, Line 8",
+A,477-496,X(20),AN,,outgoing_wires_additional_information_9,,"OUTGOING WIRES/ACH ADDITIONAL INFORMATION, Line 9",
+A,497-497,X(01),AN,,duplicate_record_indicator,,"DUPLICATE RECORD INDICATOR; for Fed Funds; values include:
+“Y” = Record Duplicated in Records “F” & “G”
+“” = Record Not Duplicated in Records “F” & “G”",
+A,498-499,X(02),AN,,not_used,,Not Used,
+A,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record A,
+B,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+B,003-003,X(01),AN,,record_type,,RECORD TYPE = “B”,
+B,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+B,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+B,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of check,
+B,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+B,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+B,039-070,X(32),AN,,payee_information_line_1,,"PAYEE INFORMATION, Line 1",
+B,071-102,X(32),AN,,payee_information_line_2,,"PAYEE INFORMATION, Line 2",
+B,103-134,X(32),AN,,payee_information_line_3,,"PAYEE INFORMATION, Line 3",
+B,135-154,X(20),AN,,check_disbursements_additional_information_line_1,,CHECK NUMBER (or CHECK DISBURSEMENTS ADDITIONAL INFORMATION 1),
+B,155-174,X(20),AN,,check_disbursements_additional_information_line_2,,"CHECK DISBURSEMENTS ADDITIONAL INFORMATION, Line 2",
+B,175-194,X(20),AN,,check_disbursements_additional_information_line_3,,"CHECK DISBURSEMENTS ADDITIONAL INFORMATION, Line 3",
+B,195-214,X(20),AN,,check_disbursements_additional_information_line_4,,"CHECK DISBURSEMENTS ADDITIONAL INFORMATION, Line 4",
+B,215-234,X(20),AN,,check_disbursements_additional_information_line_5,,"CHECK DISBURSEMENTS ADDITIONAL INFORMATION, Line 5",
+B,235-254,X(20),AN,,check_disbursements_additional_information_line_6,,"CHECK DISBURSEMENTS ADDITIONAL INFORMATION, Line 6",
+B,255-274,X(20),AN,,check_disbursements_additional_information_line_7,,"CHECK DISBURSEMENTS ADDITIONAL INFORMATION, Line 7",
+B,275-294,X(20),AN,,check_disbursements_additional_information_line_8,,"CHECK DISBURSEMENTS ADDITIONAL INFORMATION, Line 8",
+B,295-314,X(20),AN,,check_disbursements_additional_information_line_9,,"CHECK DISBURSEMENTS ADDITIONAL INFORMATION, Line 9",
+B,315-315,X(01),AN,,third_party_indicator,,"THIRD PARTY INDICATOR; values include:
+“Y” = Third Party
+“N” = First Party",
+B,316-493,X(184),AN,,not_used,,Not Used,Expanded
+B,494-497,X(04) ,AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+B,498-499,X(02) ,AN,,not_used,,Not Used,Expanded
+B,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record B,
+C,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+C,003-003,X(01),AN,,record_type,,RECORD TYPE = “C”,
+C,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+C,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+C,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of deposit,
+C,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+C,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+C,039-039,X(01),AN,,description_code,,"DESCRIPTION CODE; values for Retail and Retirement accounts are indicated in value list below
+Retail Account values:
+“” = Not Available
+“A” and “0” = Checks Received
+“B” = Dividend/Interest Received
+“C” = Purchase of Securities
+“D” = Alliance Purchase
+“E” = IRA/KEOGH Deposit Current Year
+“F” = IRA/KEOGH Deposit Previous Year
+“G” = IRA/KEOGH Deposit Rollover
+“H” = Contribution
+“J” = Monetary Instrument Received
+“K” = Cashier’s Check
+“L” = Money Order
+“M” = Second Party Checks
+Retirement Account values:
+“1” = Employee Deferral
+“2” = Employer Matching
+“3” = Voluntary After Tax
+“4” = Qualified Non Elect Contribution
+“5” = Qualified Match Contribution
+“6” = ROTH IRA Contribution from IRA
+“7” = Conversion Fee Paid
+“8” = Recharacterization
+“9” = Reconversion
+“A” = QRP Loan Interest
+“B” = Employee Deferral Previous Year
+“C” = QRP Loan Fee Payment
+“J” = Administration Fee
+“K” = Current Year Contribution
+“L” = Current Year Employer (Non-Deferral)
+“M” = Maintenance Fee Paid
+“N” = Rollover Contribution
+“O” = Previous Year Contribution
+“P” = Previous Year Employer (Non-Deferral)
+“Q” = Partnership Distribution
+“R” = Special Product Fee
+“S” = Transfer
+“T” = Termination Fee Paid
+“V” = QRP Maintenance Fee
+“W” = QRP Termination Fee
+“X” = QRP Forfeiture Contribution
+“Y” = QRP Forfeiture Reversal
+“Z” = QRP Loan Repayment",
+C,040-059,X(20),AN,,description,,DESCRIPTION; literal of DESCRIPTION CODE above,
+C,060-079,X(20),AN,,check_deposit_additional_information_line_1,,ADDITIONAL DESCRIPTION; continued from description field in position 040-059 (or CHECK DEPOSIT ADDITIONAL INFORMATION 1; if description is not populated),
+C,080-099,X(20),AN,,check_deposit_additional_information_line_2,,"CHECK DEPOSIT ADDITIONAL INFORMATION, Line 2",
+C,100-119,X(20),AN,,check_deposit_additional_information_line_3,,"CHECK DEPOSIT ADDITIONAL INFORMATION, Line 3",
+C,120-139,X(20),AN,,check_deposit_additional_information_line_4,,"CHECK DEPOSIT ADDITIONAL INFORMATION, Line 4",
+C,140-159,X(20),AN,,check_deposit_additional_information_line_5,,"CHECK DEPOSIT ADDITIONAL INFORMATION, Line 5",
+C,160-179,X(20),AN,,check_deposit_additional_information_line_6,,"CHECK DEPOSIT ADDITIONAL INFORMATION, Line 6",
+C,180-199,X(20),AN,,check_deposit_additional_information_line_7,,"CHECK DEPOSIT ADDITIONAL INFORMATION, Line 7",
+C,200-219,X(20),AN,,check_deposit_additional_information_line_8,,"CHECK DEPOSIT ADDITIONAL INFORMATION, Line 8",
+C,220-239,X(20),AN,,check_deposit_additional_information_line_9,,"CHECK DEPOSIT ADDITIONAL INFORMATION, Line 9",
+C,240-493,X(260),AN,,not_used,,Not Used,Expanded
+C,494-497,X(04) ,AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+C,498-499,X(02) ,AN,,not_used,,Not Used,Expanded
+C,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record C,
+D,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+D,003-003,X(01),AN,,record_type,,RECORD TYPE = “D”,
+D,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+D,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+D,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of Fed Fund being received,
+D,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+D,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+D,039-073,X(35),AN,,ultimate_beneficiary_information_line_1,,"ULTIMATE BENEFICIARY INFORMATION, Line 1",
+D,074-108,X(35),AN,,ultimate_beneficiary_information_line_2,,"ULTIMATE BENEFICIARY INFORMATION, Line 2",
+D,109-143,X(35),AN,,ultimate_beneficiary_information_line_3,,"ULTIMATE BENEFICIARY INFORMATION, Line 3",
+D,144-178,X(35),AN,,ultimate_beneficiary_information_line_4,,"ULTIMATE BENEFICIARY INFORMATION, Line 4",
+D,179-213,X(35),AN,,ultimate_beneficiary_information_line_5,,"ULTIMATE BENEFICIARY INFORMATION, Line 5",
+D,214-248,X(35),AN,,ultimate_beneficiary_information_line_6,,"ULTIMATE BENEFICIARY INFORMATION, Line 6",
+D,249-283,X(35),AN,,bank_name,,BANK NAME,
+D,284-303,X(20),AN,,ordering_institution_information_1,,ORDERING INSTITUTION INFORMATION 1 (or DESCRIPTION OF TRANSACTION IF ACH TRANSACTION) (or ADDITIONAL INFOMATION 1),
+D,304-323,X(20),AN,,ordering_institution_information_2,,"ORDERING INSTITUTION INFORMATION 2 (or ABA NUMBER IF ACH TRANSACTION, literal “ACH999999999”) (or ADDITIONAL INFORMATION 2)",
+D,324-343,X(20),AN,,ordering_institution_information_3,,ORDERING INSTITUTION INFORMATION 3 (or DDA NUMBER IF ACH TRANSACTION) (or ADDITIONAL INFORMATION 3),
+D,344-363,X(20),AN,,ordering_institution_information_4,,ORDERING INSTITUTION INFORMATION 4 (or ADDITIONAL INFORMATION 4),
+D,364-383,X(20),AN,,ordering_institution_information_5,,ORDERING INSTITUTION INFORMATION 5 (or ADDITIONAL INFORMATION 5),
+D,384-403,X(20),AN,,ordering_institution_information_6,,ORDERING INSTITUTION INFORMATION 6 (or ADDITIONAL INFORMATION 6),
+D,404-423,X(20),AN,,ordering_institution_information_7,,ORDERING INSTITUTION INFORMATION 7 (or ADDITIONAL INFORMATION 7),
+D,424-443,X(20),AN,,ordering_institution_information_8,,ORDERING INSTITUTION INFORMATION 8 (or ADDITIONAL INFORMATION 8),
+D,444-463,X(20),AN,,ordering_institution_information_9,,ORDERING INSTITUTION INFORMATION 9 (or ADDITIONAL INFORMATION 9),
+D,464-464,X(01),AN,,incoming_wire_indicator,,"INCOMING WIRE INDICATOR; values include:
+“Y” = Transaction is an incoming wire; details available on optional H record
+“” = Not Applicable",
+D,465-480,X(16),AN,,transaction_identifier,,TRANSACTION IDENTIFIER,
+D,481-493,X(19),AN,,not_used,,Not Used,Expanded
+D,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+D,498-499,X(02),AN,,not_used,,Not Used,Expanded
+D,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record D,
+E,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+E,003-003,X(01),AN,,record_type,,RECORD TYPE = “E”,
+E,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+E,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+E,020-034,9(15),N,,not_used,,Not Used; will be populated with zeroes,
+E,035-035,X(01),AN,,not_used,,Not Used,
+E,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+E,039-039,X(01),AN,,not_used,,Not Used,
+E,040-054,X(15),AN,,not_used,,Literally “CHECKNUMBER-”,
+E,055-058,X(04),AN,,check_number,,CHECK NUMBER; 4 digits,
+E,059-069,9(09)v9(02),N,,check_amount,,CHECK AMOUNT,
+E,070-070,X(01),AN,,check_amount_sign,,"CHECK AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+E,071-076,X(06),AN,,check_date,,"CHECK DATE, in MMDDYY format",
+E,077-096,X(20),AN,,payee_of_check_description_line_1,,"PAYEE OF CHECK DESCRIPTION, Line 1",
+E,097-116,X(20),AN,,payee_of_check_description_line_2,,"PAYEE OF CHECK DESCRIPTION, Line 2",
+E,117-136,X(20),AN,,payee_of_check_description_line_3,,"PAYEE OF CHECK DESCRIPTION, Line 3",
+E,137-156,X(20),AN,,payee_of_check_description_line_4,,"PAYEE OF CHECK DESCRIPTION, Line 4",
+E,157-176,X(20),AN,,payee_of_check_description_line_5,,"PAYEE OF CHECK DESCRIPTION, Line 5",
+E,177-196,X(20),AN,,payee_of_check_description_line_6,,"PAYEE OF CHECK DESCRIPTION, Line 6",
+E,197-493,X(303),AN,,not_used,,Not Used,Expanded
+E,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+E,498-499,X(02),AN,,not_used,,Not Used,Expanded
+E,500-500,X(01),AN,,not_used,,Literally = “X”; indicates end of detail record E,
+F,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+F,003-003,X(01),AN,,record_type,,RECORD TYPE = “F”,
+F,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+F,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+F,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of fed fund being sent,
+F,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+F,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+F,039-047,X(09),AN,,first_bank_aba_number,,FIRST BANK ABA NUMBER,
+F,048-082,X(35),AN,,first_bank_name,,FIRST BANK NAME,
+F,083-102,X(20),AN,,first_bank_city,,FIRST BANK CITY,
+F,103-104,X(02),AN,,first_bank_state,,FIRST BANK STATE,
+F,105-139,X(35),AN,,branch_bank_name,,BRANCH – BANK NAME,
+F,140-159,X(20),AN,,branch_city,,BRANCH – CITY,
+F,160-161,X(02),AN,,branch_state,,BRANCH – STATE,
+F,162-170,X(09),AN,,second_bank_aba_number,,SECOND BANK ABA NUMBER,
+F,171-205,X(35),AN,,second_bank_name,,SECOND BANK NAME,
+F,206-225,X(20),AN,,second_bank_city,,SECOND BANK CITY,
+F,226-227,X(02),AN,,second_bank_state,,SECOND BANK STATE,
+F,228-262,X(35),AN,,second_bank_bank_account_text,,SECOND BANK BANK ACCOUNT TEXT,
+F,263-297,X(35),AN,,international_secondary_bank_information_line_1,,"INTERNATIONAL SECONDARY BANK INFORMATION, Line 1",
+F,298-332,X(35),AN,,international_secondary_bank_information_line_2,,"INTERNATIONAL SECONDARY BANK INFORMATION, Line 2",
+F,333-362,X(30),AN,,international_secondary_bank_country,,INTERNATIONAL SECONDARY BANK COUNTRY,
+F,363-363,X(01),AN,,regulation_e_indicator,,"REGULATION E INDICATOR; values include:
+“Y” = Regulation E eligible wire
+“N” = Not Regulation E eligible wire",
+F,364-379,X(16),AN,,transaction_identifier,,TRANSACTION IDENTIFIER,
+F,380-390,X(11),AN,,international_secondary_bank_bic_id,,INTERNATIONAL SECONDARY BANK BIC ID effective Q1 2023,
+F,391-392,X(02),AN,,second_bank_branch_code,,SECOND BANK BRANCH CODE effective Q1 2023,
+F,393-427,X(35),AN,,second_bank_account_number,,SECOND BANK ACCOUNT NUMBER effective Q1 2023,
+F,428-493,X(71),AN,,not_used,,Not Used,Expanded
+F,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+F,498-498,X(02),AN,,not_used,,Not Used,Expanded
+F,499-499,X(01),AN,,ultimate_beneficiary_third_party_indicator,,"ULTIMATE BENEFICIARY THIRD PARTY INDICATOR; values include:
+“Y” = Third Party
+“N” = First Party",
+F,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record F,
+G,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+G,003-003,X(01),AN,,record_type,,RECORD TYPE = “G”,
+G,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+G,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+G,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of fed fund being sent,
+G,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+G,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+G,039-073,X(35),AN,,further_credit_bank_account,,FURTHER CREDIT BANK ACCOUNT; free-form account number,
+G,074-143,X(70),AN,,further_credit_bank_account_name,,FURTHER CREDIT BANK ACCOUNT NAME; free-form account name; field shortened to match front-end length,
+G,144-173,X(30),AN,,further_credit_bank_account_country,,FURTHER CREDIT BANK ACCOUNT COUNTRY,
+G,174-177,X(04) ,AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+G,178-184,X(11),AN,,not_used,,Not Used,Expanded
+G,185-219,X(35),AN,,ultimate_beneficiary_name_1,,"ULTIMATE BENEFICIARY, NAME 1",
+G,220-254,X(35),AN,,ultimate_beneficiary_name_2,,"ULTIMATE BENEFICIARY, NAME 2",
+G,255-289,X(35),AN,,ultimate_beneficiary_bank_account_number,,ULTIMATE BENEFICIARY – BANK ACCOUNT NUMBER,
+G,290-324,X(35),AN,,ultimate_beneficiary_additional_instructions_line_1,,"ULTIMATE BENEFICIARY – ADDITIONAL INSTRUCTIONS, Line 1",
+G,325-359,X(35),AN,,ultimate_beneficiary_additional_instructions_line_2,,"ULTIMATE BENEFICIARY – ADDITIONAL INSTRUCTIONS, Line 2",
+G,360-394,X(35),AN,,ultimate_beneficiary_additional_instructions_line_3,,"ULTIMATE BENEFICIARY – ADDITIONAL INSTRUCTIONS, Line 3",
+G,395-429,X(35),AN,,ultimate_beneficiary_additional_instructions_line_4,,"ULTIMATE BENEFICIARY – ADDITIONAL INSTRUCTIONS, Line 4",
+G,430-464,X(35),AN,,ultimate_beneficiary_additional_instructions_line_5,,"ULTIMATE BENEFICIARY – ADDITIONAL INSTRUCTIONS, Line 5",
+G,465-499,X(35),AN,,ultimate_beneficiary_additional_instructions_line_6,,"ULTIMATE BENEFICIARY – ADDITIONAL INSTRUCTIONS, Line 6",
+G,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record G,
+H,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+H,003-003,X(01),AN,,record_type,,RECORD TYPE = “H”,
+H,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+H,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+H,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of wire,
+H,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+H,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+H,039-073,X(35),AN,,sending_bank_information_line_1,,"SENDING BANK INFORMATION, Line 1",
+H,074-108,X(35),AN,,sending_bank_information_line_2,,"SENDING BANK INFORMATION, Line 2",
+H,109-143,X(35),AN,,sending_bank_information_line_3,,"SENDING BANK INFORMATION, Line 3",
+H,144-178,X(35),AN,,sending_bank_information_line_4,,"SENDING BANK INFORMATION, Line 4",
+H,179-213,X(35),AN,,sending_bank_information_line_5,,"SENDING BANK INFORMATION, Line 5",
+H,214-248,X(35),AN,,intermediary_or_receiving_bank_information_line_1,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 1",
+H,249-283,X(35),AN,,intermediary_or_receiving_bank_information_line_2,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 2",
+H,284-318,X(35),AN,,intermediary_or_receiving_bank_information_line_3,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 3",
+H,319-353,X(35),AN,,intermediary_or_receiving_bank_information_line_4,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 4",
+H,354-388,X(35),AN,,intermediary_or_receiving_bank_information_line_5,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 5",
+H,389-423,X(35),AN,,intermediary_or_receiving_bank_information_line_6,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 6",
+H,424-493,X(76),AN,,not_used,,Not Used,Expanded
+H,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+H,498-499,X(02),AN,,not_used,,Not Used,Expanded
+H,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record H,
+I,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+I,003-003,X(01),AN,,record_type,,RECORD TYPE = “I”,
+I,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+I,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+I,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of wire,
+I,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+I,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+I,039-043,X(05),AN,,sender_reference,,SENDER REFERENCE,
+I,044-078,X(35),AN,,ordering_party_information_line_1,,"ORDERING PARTY INFORMATION, Line 1",
+I,079-113,X(35),AN,,ordering_party_information_line_2,,"ORDERING PARTY INFORMATION, Line 2",
+I,114-148,X(35),AN,,ordering_party_information_line_3,,"ORDERING PARTY INFORMATION, Line 3",
+I,149-183,X(35),AN,,ordering_party_information_line_4,,"ORDERING PARTY INFORMATION, Line 4",
+I,184-218,X(35),AN,,ordering_party_information_line_5,,"ORDERING PARTY INFORMATION, Line 5",
+I,219-253,X(35),AN,,account_with_institution_1,,ACCOUNT WITH INSTITUTION 1,
+I,254-288,X(35),AN,,account_with_institution_2,,ACCOUNT WITH INSTITUTION 2,
+I,289-323,X(35),AN,,account_with_institution_3,,ACCOUNT WITH INSTITUTION 3,
+I,324-358,X(35),AN,,account_with_institution_4,,ACCOUNT WITH INSTITUTION 4,
+I,359-393,X(35),AN,,account_with_institution_5,,ACCOUNT WITH INSTITUTION 5,
+I,394-493,X(106),AN,,not_used,,Not Used,Expanded
+I,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+I,498-499,X(02),AN,,not_used,,Not Used,Expanded
+I,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record I,
+J,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+J,003-003,X(01),AN,,record_type,,RECORD TYPE = “J”,
+J,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+J,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+J,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of wire,
+J,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+J,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+J,039-073,X(35),AN,,remittance_information_line_1,,"REMITTANCE INFORMATION, Line 1",
+J,074-108,X(35),AN,,remittance_information_line_2,,"REMITTANCE INFORMATION, Line 2",
+J,109-143,X(35),AN,,remittance_information_line_3,,"REMITTANCE INFORMATION, Line 3",
+J,144-178,X(35),AN,,remittance_information_line_4,,"REMITTANCE INFORMATION, Line 4",
+J,179-213,X(35),AN,,ordering_institution_1,,ORDERING INSTITUTION 1,
+J,214-248,X(35),AN,,ordering_institution_2,,ORDERING INSTITUTION 2,
+J,249-283,X(35),AN,,ordering_institution_3,,ORDERING INSTITUTION 3,
+J,284-318,X(35),AN,,ordering_institution_4,,ORDERING INSTITUTION 4,
+J,319-353,X(35),AN,,ordering_institution_5,,ORDERING INSTITUTION 5,
+J,354-493,X(146),AN,,not_used,,Not Used,Expanded
+J,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+J,498-499,X(02),AN,,not_used,,Not Used,Expanded
+J,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record J,
+K,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+K,003-003,X(01),AN,,record_type,,RECORD TYPE = “K”,
+K,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+K,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+K,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of the RTP being sent,
+K,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+K,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+K,039-039,X(01),AN,,reserved,,Reserved,
+K,040-051,X(12),AN,,enterprise_id,,ENTERPRISE ID,
+K,052-052,X(01),AN,,direction_of_funds,,"DIRECTION OF FUNDS; values include: ""I"" = Incoming “O"" = Outgoing",
+K,053-061,9(09),N,,standing_instruction_sequence_number,,STANDING INSTRUCTION SEQUENCE NUMBER,
+K,062-096,X(35),AN,,standing_instruction_description,,STANDING INSTRUCTION DESCRIPTION,
+K,97-105,X(09),AN,,aba_number,,ABA NUMBER,
+K,106-140,X(35),AN,,bank_name,,BANK NAME,
+K,141-157,X(17),AN,,bank_account_number,,BANK ACCOUNT NUMBER (DDA),
+K,158-158,X(01),AN,,bank_account_type,,"BANK ACCOUNT TYPE; values include: ""C"" = Checking “S"" = Savings",
+K,159-159,X(01),AN,,account_holder_type,,"ACCOUNT HOLDER TYPE; values include: ""E"" = Entity “I"" = Individuals “U"" = Unknown",
+K,160-194,X(35),AN,,account_holder_1_name,,ACCOUNT HOLDER (1) NAME,
+K,195-229,X(35),AN,,account_holder_2_name,,ACCOUNT HOLDER (2) NAME,
+K,230-264,X(35),AN,,account_holder_3_name,,ACCOUNT HOLDER (3) NAME,
+K,265-299,X(35),AN,,account_holder_4_name,,ACCOUNT HOLDER (4) NAME,
+K,300-307,9(08),N,,last_used_date,,"LAST USED DATE, in CCYYMMDD format",
+K,308-308,X(01),AN,,allowed_direction,,"ALLOWED DIRECTION; values include: ""D"" = Deposit “W” = Withdrawal “B” = Both “” = Not Applicable",
+K,309-309,X(01),AN,,third_party_indicator,,"THIRD PARTY INDICATOR; values include: ""Y"" = Third Party “N"" = First Party “” = Not Applicable",
+K,310-493,X(186),AN,,not_used,,Not Used,Expanded
+K,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+K,498-499,X(02),AN,,not_used,,Not Used,Expanded
+K,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record K,
+M,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+M,003-003,X(01),AN,,record_type,,RECORD TYPE = “M”,
+M,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+M,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+M,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of Fed Fund being sent,
+M,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+M,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+M,039-049,X(11),AN,,first_bank_bic_id,,FIRST BANK BIC ID,
+M,050-084,X(35),AN,,first_bank_name,,FIRST BANK NAME,
+M,085-104,X(20),AN,,first_bank_city,,FIRST BANK CITY,
+M,105-134,X(30),AN,,first_bank_country,,FIRST BANK COUNTRY,
+M,135-136,X(02),AN,,first_bank_branch_code,,FIRST BANK BRANCH CODE,
+M,137-171,X(35),AN,,first_bank_account_number,,FIRST BANK ACCOUNT NUMBER,
+M,172-201,X(30),AN,,not_used,,Not Used,
+M,202-212,X(11),AN,,second_bank_bic_id,,SECOND BANK BIC ID,
+M,213-247,X(35),AN,,second_bank_name,,SECOND BANK NAME,
+M,248-267,X(20),AN,,second_bank_city,,SECOND BANK CITY,
+M,268-297,X(30),AN,,second_bank_country,,SECOND BANK COUNTRY,
+M,298-332,X(35),AN,,second_bank_account_number,,SECOND BANK ACCOUNT NUMBER,
+M,333-362,X(30),AN,,not_used,,Not Used,
+M,363-363,X(01),AN,,regulation_e_indicator,,"REGULATION E INDICATOR; values include:
+“Y” = Regulation E eligible wire
+“N” = Not Regulation E eligible wire",
+M,364-379,X(16),AN,,transaction_identifier,,TRANSACTION IDENTIFIER,
+M,380-382,X(03),AN,,currency_code,,CURRENCY CODE; see Appendix N for values,
+M,383-390,9(08),N,,value_date,,"VALUE DATE, in CCYYMMDD format; the date the wire is credited at the receiving bank and is recorded in Pershing’s books",
+M,391-493,X(108),AN,,not_used,,Not Used,Expanded
+M,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+M,498-498,X(02),AN,,not_used,,Not Used,Expanded
+M,499-499,X(01),AN,,ultimate_beneficiary_third_party_indicator,,"ULTIMATE BENEFICIARY THIRD PARTY INDICATOR; values include:
+“Y” = First party
+“N” = Third party",
+M,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record M,
+N,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+N,003-003,X(01),AN,,record_type,,RECORD TYPE = “N”,
+N,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+N,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+N,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of Fed Fund being sent,
+N,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+N,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+N,039-073,X(35),AN,,further_credit_bank_account_number,,FURTHER CREDIT BANK ACCOUNT NUMBER; free-form,
+N,074-143,X(70),AN,,further_credit_bank_account_name,,FURTHER CREDIT BANK ACCOUNT NAME; free-form,
+N,144-173,X(30),AN,,further_credit_bank_account_country,,FURTHER CREDIT BANK ACCOUNT COUNTRY,
+N,174-177,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+N,178-184,X(11),AN,,not_used,,Not Used,Expanded
+N,185-219,X(35),AN,,ultimate_beneficiary_name_line_1,,"ULTIMATE BENEFICIARY NAME, Line 1",
+N,220-254,X(35),AN,,ultimate_beneficiary_name_line_2,,"ULTIMATE BENEFICIARY NAME, Line 2",
+N,255-289,X(35),AN,,ultimate_beneficiary_bank_account_number,,ULTIMATE BENEFICIARY BANK ACCOUNT NUMBER,
+N,290-324,X(35),AN,,ultimate_beneficiary_additional_instructions_line_1,,"ULTIMATE BENEFICIARY ADDITIONAL INSTRUCTIONS, Line 1",
+N,325-359,X(35),AN,,ultimate_beneficiary_additional_instructions_line_2,,"ULTIMATE BENEFICIARY ADDITIONAL INSTRUCTIONS, Line 2",
+N,360-394,X(35),AN,,ultimate_beneficiary_additional_instructions_line_3,,"ULTIMATE BENEFICIARY ADDITIONAL INSTRUCTIONS, Line 3",
+N,395-429,X(35),AN,,ultimate_beneficiary_additional_instructions_line_4,,"ULTIMATE BENEFICIARY ADDITIONAL INSTRUCTIONS, Line 4",
+N,430-464,X(35),AN,,ultimate_beneficiary_additional_instructions_line_5,,"ULTIMATE BENEFICIARY ADDITIONAL INSTRUCTIONS, Line 5",
+N,465-499,X(35),AN,,ultimate_beneficiary_additional_instructions_line_6,,"ULTIMATE BENEFICIARY ADDITIONAL INSTRUCTIONS, Line 6",
+N,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record N,
+O,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+O,003-003,X(01),AN,,record_type,,RECORD TYPE = “O”,
+O,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+O,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+O,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of Fed Fund being sent,
+O,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+O,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+O,039-073,X(35),AN,,additional_beneficiary_information_line_1,,"ADDITIONAL BENEFICIARY INFORMATION, Line 1",
+O,074-108,X(35),AN,,additional_beneficiary_information_line_2,,"ADDITIONAL BENEFICIARY INFORMATION, Line 2",
+O,109-143,X(35),AN,,additional_beneficiary_information_line_3,,"ADDITIONAL BENEFICIARY INFORMATION, Line 3",
+O,144-178,X(35),AN,,additional_beneficiary_information_line_4,,"ADDITIONAL BENEFICIARY INFORMATION, Line 4",
+O,179-213,X(35),AN,,additional_beneficiary_information_line_5,,"ADDITIONAL BENEFICIARY INFORMATION, Line 5",
+O,214-248,X(35),AN,,bank_name,,BANK NAME,
+O,249-283,X(35),AN,,sender_to_receiver_information_line_1,,"SENDER TO RECEIVER INFORMATION, Line 1",
+O,284-318,X(35),AN,,sender_to_receiver_information_line_2,,"SENDER TO RECEIVER INFORMATION, Line 2",
+O,319-353,X(35),AN,,sender_to_receiver_information_line_3,,"SENDER TO RECEIVER INFORMATION, Line 3",
+O,354-388,X(35),AN,,sender_to_receiver_information_line_4,,"SENDER TO RECEIVER INFORMATION, Line 4",
+O,389-423,X(35),AN,,sender_to_receiver_information_line_5,,"SENDER TO RECEIVER INFORMATION, Line 5",
+O,424-458,X(35),AN,,sender_to_receiver_information_line_6,,"SENDER TO RECEIVER INFORMATION, Line 6",
+O,459-464,X(06),AN,,not_used,,Not Used,
+O,465-480,X(16),AN,,transaction_identifier,,TRANSACTION IDENTIFIER; Request ID,
+O,481-483,X(03),AN,,currency_code,,CURRENCY CODE; see Appendix N for values,
+O,484-493,X(16),AN,,not_used,,Not Used,Expanded
+O,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+O,498-499,X(02),AN,,not_used,,Not Used,Expanded
+O,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record O,
+P,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+P,003-003,X(01),AN,,record_type,,RECORD TYPE = “P”,
+P,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+P,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+P,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of Fed Fund being sent,
+P,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+P,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+P,039-073,X(35),AN,,sending_bank_information_line_1,,"SENDING BANK INFORMATION, Line 1",
+P,074-108,X(35),AN,,sending_bank_information_line_2,,"SENDING BANK INFORMATION, Line 2",
+P,109-143,X(35),AN,,sending_bank_information_line_3,,"SENDING BANK INFORMATION, Line 3",
+P,144-178,X(35),AN,,sending_bank_information_line_4,,"SENDING BANK INFORMATION, Line 4",
+P,179-213,X(35),AN,,sending_bank_information_line_5,,"SENDING BANK INFORMATION, Line 5",
+P,214-248,X(35),AN,,intermediary_or_receiving_bank_information_line_1,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 1",
+P,249-283,X(35),AN,,intermediary_or_receiving_bank_information_line_2,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 2",
+P,284-318,X(35),AN,,intermediary_or_receiving_bank_information_line_3,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 3",
+P,319-353,X(35),AN,,intermediary_or_receiving_bank_information_line_4,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 4",
+P,354-388,X(35),AN,,intermediary_or_receiving_bank_information_line_5,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 5",
+P,389-423,X(35),AN,,intermediary_or_receiving_bank_information_line_6,,"INTERMEDIARY or RECEIVING BANK INFORMATION, Line 6",
+P,424-439,X(16),AN,,related_reference,,RELATED REFERENCE,
+P,440-455,X(16),AN,,additional_related_reference,,ADDITIONAL RELATED REFERENCE,
+P,456-493,X(44),AN,,not_used,,Not Used,Expanded
+P,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+P,498-499,X(02),AN,,not_used,,Not Used,Expanded
+P,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record P,
+Q,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+Q,003-003,X(01),AN,,record_type,,RECORD TYPE = “Q”,
+Q,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+Q,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+Q,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of Fed Fund being sent,
+Q,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+Q,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+Q,039-043,X(05),AN,,not_used,,Not Used,
+Q,044-078,X(35),AN,,ordering_party_information_line_1,,"ORDERING PARTY INFORMATION, Line 1",
+Q,079-113,X(35),AN,,ordering_party_information_line_2,,"ORDERING PARTY INFORMATION, Line 2",
+Q,114-148,X(35),AN,,ordering_party_information_line_3,,"ORDERING PARTY INFORMATION, Line 3",
+Q,149-183,X(35),AN,,ordering_party_information_line_4,,"ORDERING PARTY INFORMATION, Line 4",
+Q,184-218,X(35),AN,,ordering_party_information_line_5,,"ORDERING PARTY INFORMATION, Line 5",
+Q,219-253,X(35),AN,,account_with_institution_line_1,,"ACCOUNT WITH INSTITUTION, Line 1",
+Q,254-288,X(35),AN,,account_with_institution_line_2,,"ACCOUNT WITH INSTITUTION, Line 2",
+Q,289-323,X(35),AN,,account_with_institution_line_3,,"ACCOUNT WITH INSTITUTION, Line 3",
+Q,324-358,X(35),AN,,account_with_institution_line_4,,"ACCOUNT WITH INSTITUTION, Line 4",
+Q,359-393,X(35),AN,,account_with_institution_line_5,,"ACCOUNT WITH INSTITUTION, Line 5",
+Q,394-493,X(106),AN,,not_used,,Not Used,
+Q,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+Q,498-499,X(02),AN,,not_used,,Not Used,Expanded
+Q,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record Q,
+R,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “CF”,
+R,003-003,X(01),AN,,record_type,,RECORD TYPE = “R”,
+R,004-009,9(06),N,,record_id_sequence_number,,RECORD ID SEQUENCE NUMBER; begins with “000001”,
+R,010-019,X(10),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (6), and Type (1); see Record A position 010-019 for values",
+R,020-034,9(13)v9(02),N,,transaction_amount,,TRANSACTION AMOUNT; amount of Fed Fund being sent,
+R,035-035,X(01),AN,,transaction_amount_sign,,"TRANSACTION AMOUNT SIGN; values include:
+“–” = Negative
+“+” = Positive
+“” = Unavailable or Zero Value",
+R,036-038,X(03),AN,,investment_professional_ip_number_legacy,,INVESTMENT PROFESSIONAL (IP) NUMBER,
+R,039-073,X(35),AN,,remittance_information_line_1,,"REMITTANCE INFORMATION, Line 1",
+R,074-108,X(35),AN,,remittance_information_line_2,,"REMITTANCE INFORMATION, Line 2",
+R,109-143,X(35),AN,,remittance_information_line_3,,"REMITTANCE INFORMATION, Line 3",
+R,144-178,X(35),AN,,remittance_information_line_4,,"REMITTANCE INFORMATION, Line 4",
+R,179-213,X(35),AN,,ordering_institution_information_line_1,,"ORDERING INSTITUTION INFORMATION, Line 1",
+R,214-248,X(35),AN,,ordering_institution_information_line_2,,"ORDERING INSTITUTION INFORMATION, Line 2",
+R,249-283,X(35),AN,,ordering_institution_information_line_3,,"ORDERING INSTITUTION INFORMATION, Line 3",
+R,284-318,X(35),AN,,ordering_institution_information_line_4,,"ORDERING INSTITUTION INFORMATION, Line 4",
+R,319-353,X(35),AN,,ordering_institution_information_line_5,,"ORDERING INSTITUTION INFORMATION, Line 5",
+R,354-388,X(35),AN,,sender_correspondent_bank_line_1,,"SENDER CORRESPONDENT BANK, Line 1",
+R,389-423,X(35),AN,,sender_correspondent_bank_line_2,,"SENDER CORRESPONDENT BANK, Line 2",
+R,424-458,X(35),AN,,sender_correspondent_bank_line_3,,"SENDER CORRESPONDENT BANK, Line 3",
+R,459-493,X(35),AN,,sender_correspondent_bank_line_4,,"SENDER CORRESPONDENT BANK, Line 4",
+R,494-497,X(04),AN,,investment_professional_ip_number,,EXPANDED INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
+R,498-499,X(02),AN,,not_used,,Not Used,Expanded
+R,500-500,X(01),AN,,not_used,,Literally “X”; indicates the end of detail record R,
+TRAILER,001-018,X(18),AN,,not_used,,Literally “EOFPERSHING” (end of Pershing file),
+TRAILER,019-036,X(18),AN,,not_used,,Literally “CHECK&FUNDDTL”,
+TRAILER,037-046,X(10),AN,,not_used,,Literally “DATAOF”,
+TRAILER,047-056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+TRAILER,057-067,X(11),AN,,not_used,,Literally “TOREMOTE”,
+TRAILER,068-071,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+TRAILER,072-105,X(34),AN,,not_used,,Literally “ENDSHERE.TOTALDETAILRECORDS:”,
+TRAILER,106-115,9(10),N,,number_of_detail_records,,NUMBER OF DETAIL RECORDS,
+TRAILER,116-499,X(384),AN,,not_used,,Not Used,
+TRAILER,500-500,X(01),AN,,not_used,,Literally “Z”; indicates the end of the trailer record,

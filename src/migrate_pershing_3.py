@@ -7,6 +7,32 @@ https://standardfiles.pershing.com/
 
 This code assumes bulk_id has been added to the front of each line in the file.
 
+\\dw1appbatc01\D\DW\DW Conversion Team -1\Repcode Expansion\Pershing XAT Files\royago03\seymur
+
+Pershing file - CKFF (CKFQ)
+Pershing file - GACT (4GAC)
+Pershing file - GCUS (4GCU)
+Pershing file - GMON (4GMO)
+Pershing file - GSDE (4GSD)
+Pershing file - GTDE (4GTD)
+Pershing file - SPAT
+Pershing file - SRSI (4RSI)
+Pershing file - ACCT (4ACC)
+Pershing file - ISCA (4ISA)
+
+
+raa_check_fund_dtl	CKFF.CKFF.bulk - Type 2
+raa_customer_acct_info	ACCT.ACCT.bulk - Type 1
+raa_expanded_sec_desc	ISCA.ISCA.bulk - No Changes - rework required.
+raa_glbl_domestic_s_d	GSDE.GSDE.bulk - Type 1
+raa_glbl_domestic_trds	GTDE.GTDE.bulk - Type 1
+raa_global_activity	GACT.GACT.bulk - Type 2
+raa_global_cust_pos	GCUS.GCUS.bulk - Type 1
+raa_global_moneyline	GMON.GMON.bulk - Type 1
+raa_scheduled_instru	SRSI.SRSI.bulk - Type 1
+raa_security_profile_a	SPAT.SPAT_A.bulk - Type 1
+
+
 """
 
 

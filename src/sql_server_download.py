@@ -33,6 +33,14 @@ VALUES (
 sp_spaceused '[dbo].[D_Rep]';
 sp_spaceused '[AUM].[DWRep]';
 
+
+SELECT STRING_AGG(COLUMN_NAME, ',') WITHIN GROUP (ORDER BY ORDINAL_POSITION) AS COLUMNS
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_CATALOG = 'SupervisionControls'
+    AND TABLE_SCHEMA = 'Affirm'
+    AND TABLE_NAME = 'ArrDestination'
+;
+
 """
 
 
