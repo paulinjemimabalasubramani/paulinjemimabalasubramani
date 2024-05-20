@@ -16,14 +16,15 @@ python_spark_code = 'migrate_pershing_3'
 tags = ['DB:Assets', 'SC:Pershing']
 
 firm_map = {
-    'FSC': '55 */2 * * *',
+    #'FSC': '55 */2 * * *',
     'RAA': '50 */2 * * *',
     'SAI': '45 */2 * * *',
-    'SPF': '40 */2 * * *',
+    #'SPF': '40 */2 * * *',
     'TRI': '35 */2 * * *',
-    'WFS': '30 */2 * * *',
+    #'WFS': '30 */2 * * *',
     'IFX': '25 */2 * * *',
     'APH': '20 */2 * * *',
+    'RAA_EXPANDED': '50 */2 * * *',
     }
 
 

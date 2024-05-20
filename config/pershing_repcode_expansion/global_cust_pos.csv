@@ -45,8 +45,8 @@ Includes additional value:
 “X9” = Country unknown or unavailable
 For GCUS, this represents country of security’s issuance","NOTE: For GCS1, this represents country where trade was executed
 NOTE: For GCUS, this represents country of security’s issuance"
-A,046-047,X(02),AN,,not_used,,Not Used,
-A,048-050,X(03),AN,,investment_professional_ip_of_record_number,,INVESTMENT PROFESSIONAL (IP) OF RECORD NUMBER,
+A,046-046,X(02),AN,,not_used,,Not Used,expanded
+A,047-050,X(03),AN,,investment_professional_ip_of_record_number,,INVESTMENT PROFESSIONAL (IP) OF RECORD NUMBER,expanded
 A,051-053,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 A,054-054,X(01),AN,,currency_security_indicator,,"CURRENCY/SECURITY INDICATOR
 Values include:
@@ -302,8 +302,8 @@ For GCS1, this represents country where trade was executed;
 Includes additional value:
 “X9” = Country unknown or unavailable
 For GCUS, this represents country of security’s issuance",
-B,046-047,X(02),AN,,not_used,,Not Used,
-B,048-050,X(03),AN,,investment_professional_ip_of_record_number,,INVESTMENT PROFESSIONAL (IP) OF RECORD NUMBER,
+B,046-046,X(02),AN,,not_used,,Not Used,expanded
+B,047-050,X(03),AN,,investment_professional_ip_of_record_number,,INVESTMENT PROFESSIONAL (IP) OF RECORD NUMBER,expanded
 B,051-053,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 B,054-071,9(13)v9(05),N,,fully_paid_lending_quantity,5,FULLY PAID LENDING QUANTITY,
 B,072-072,X(01),AN,,fully_paid_lending_quantity_sign,,"FULLY PAID LENDING QUANTITY SIGN

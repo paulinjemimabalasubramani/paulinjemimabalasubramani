@@ -33,8 +33,8 @@ A,031 - 034,X(04),AN,,not_used,,Not Used,
 A,035 - 043,X(09),AN,,underlying_cusip_number,,UNDERLYING CUSIP; may be blank,
 A,044 - 047,X(04),AN,,not_used,,Not Used,
 A,048 - 063,X(16),AN,,security_symbol,,SECURITY SYMBOL,
-A,064 - 066,X(03),AN,,investment_professional_of_record,,INVESTMENT PROFESSIONAL OF RECORD,
-A,067 - 069,X(03),AN,,executing_investment_professional,,EXECUTING INVESTMENT PROFESSIONAL; trades only,
+A,064 - 066,X(03),AN,,investment_professional_of_record_legacy,,INVESTMENT PROFESSIONAL OF RECORD,expanded
+A,067 - 069,X(03),AN,,executing_investment_professional_legacy,,EXECUTING INVESTMENT PROFESSIONAL; trades only,expanded
 A,070 - 070,X(01),AN,,transaction_type,,"TRANSACTION TYPE; values include:
 “T” = Trade Date Trade
 “S” = Settlement Date Trade
@@ -225,7 +225,7 @@ A,574 - 574,X(01),AN,,omnibus_indicator,,"OMNIBUS INDICATOR; values include:
 A,575 - 594,X(20),AN,,external_order_id,,EXTERNAL ORDER ID,
 A,595 - 597,X(03),AN,,not_used,,Not Used,
 A,598 - 615,9(16)v9(02),N,,market_value_of_transaction,2,MARKET VALUE OF TRANSACTION,
-A,616 - 618,X(03),AN,,ip_nbr_parsed_from_gmar_description_for_firm_acct_transactions,,IP NUMBER PARSED FROM GMAR DESCRIPTION for FIRM ACCOUNT TRANSACTIONS,
+A,616 - 618,X(03),AN,,ip_nbr_parsed_from_gmar_description_for_firm_acct_transactions_legacy,,IP NUMBER PARSED FROM GMAR DESCRIPTION for FIRM ACCOUNT TRANSACTIONS,expanded
 A,619 - 636,9(09)v9(09),N,,reported_price,9,REPORTED PRICE,
 A,637 - 637,X(01),AN,,reported_price_sign,,"REPORTED PRICE SIGN; values include:
 “+” = Debit Amount
@@ -259,7 +259,10 @@ Not used for tax reporting; values include:
 “N” = Not qualified
 “O” = Other
 “     ” = Not Applicable","The following two fields apply to specific dividend income source codes; effective 3rd Q, 2022, TBA)"
-A,698 - 729,X(32),AN,,not_used,,Not Used,
+A,698-701,X(04),AN,,investment_professional_of_record,,,expanded
+A,702-705,X(04),AN,,executing_investment_professional,,,expanded
+A,706-709,X(04),,,ip_nbr_parsed_from_gmar_description_for_firm_acct_transactions,,,expanded
+A,710 - 729,X(32),AN,,not_used,,Not Used,expanded
 A,730 - 741,X(12),AN,,for_pershing_internal_use_only,,For Pershing Internal Use Only,
 A,742 - 749,X(08),AN,,reserved,,Reserved,
 A,750 - 750,X(01),AN,,end_of_detail_record_a,,Literally “X”; indicates the end of record A,

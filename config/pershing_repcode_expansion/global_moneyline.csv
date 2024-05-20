@@ -21,8 +21,7 @@ Begins with “00000001”",
 A,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 Including Office (3), Base (6)",
 A,021 - 021,X(01),AN,,not_used,,Not Used,
-A,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
-A,025 - 025,X(01),AN,,not_used,,Not Used,
+A,022 - 025,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
 A,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 A,029 - 046,9(16)v9(02),N,,usde_td_balance_for_all_account_types,2,"USDE T/D BALANCE FOR ALL ACCOUNT TYPES
 Equivalent to Net Balance on NetX360.
@@ -107,8 +106,7 @@ begins with “00000001”",
 B,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
 B,021 - 021,X(01),AN,,not_used,,Not Used,
-B,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
-B,025 - 025,X(01),AN,,not_used,,Not Used,
+B,022 - 025,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
 B,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 B,029 - 046,9(16)v9(02),N,,usde_sd_balance_for_all_account_types,2,"USDE S/D BALANCE FOR ALL ACCOUNT TYPES
 Total netted balances of all A/C types combined, as of the last S/D, in USDE.",
@@ -188,8 +186,7 @@ begins with “00000001”",
 C,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
 C,021 - 021,X(01),AN,,not_used,,Not Used,
-C,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
-C,025 - 025,X(01),AN,,not_used,,Not Used,
+C,022 - 025,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
 C,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 C,029 - 046,9(16)v9(02),N,,settlement_date_net_worth_of_account_for_all_account_types,2,"SETTLEMENT DATE NET WORTH OF ACCOUNT FOR ALL ACCOUNT TYPES
 Liquidating Equity plus Money Market Fund Balances.",
@@ -225,8 +222,7 @@ including Office (3), Base (6)",
 value includes:
 “1” = Cash/Principal accounting for Bank Custody
 “9” = Income/Income accounting for Bank Custody",
-1,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
-1,025 - 025,X(01),AN,,not_used,,Not Used,
+1,022 - 025,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
 1,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 1,029 - 036,9(08),N,,type_1_9_account_usd_td_datestamp,,"TYPE 1/9 ACCOUNT USD T/D DATESTAMP
 in CCYYMMDD format",
@@ -295,8 +291,7 @@ begins with “00000001”",
 2,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
 2,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “2” (margin),
-2,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
-2,025 - 025,X(01),AN,,not_used,,Not Used,
+2,022 - 025,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
 2,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 2,029 - 036,9(08),N,,type_2_account_usd_td_datestamp,,"TYPE 2 ACCOUNT USD T/D DATESTAMP
 in CCYYMMDD format",
@@ -359,8 +354,7 @@ begins with “00000001”",
 4,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
 4,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “2” (margin account currency),
-4,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
-4,025 - 025,X(01),AN,,not_used,,Not Used,
+4,022 - 025,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
 4,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 4,029 - 046,9(16)v9(02),N,,portfolio_margin_house_requirement,2,"PORTFOLIO MARGIN HOUSE REQUIREMENT
 the portfolio margin house requirement for eligible securities",
@@ -404,8 +398,7 @@ begins with “00000001”",
 3,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
 3,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “3” (short),
-3,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
-3,025 - 025,X(01),AN,,not_used,,Not Used,
+3,022 - 025,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
 3,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 3,029 - 036,9(08),N,,type_3_account_usd_td_datestamp,,"TYPE 3 ACCOUNT USD T/D DATESTAMP 
 in CCYYMMDD format",
@@ -457,8 +450,7 @@ begins with “00000001”",
 5,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
 5,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “3” (short account currency),
-5,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
-5,025 - 025,X(01),AN,,not_used,,Not Used,
+5,022 - 025,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
 5,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 5,029 - 158,X(130),AN,,not_used,,Not Used,
 5,159 - 176,9(16)v9(02),N,,type_3_account_td_foreign_currency_credit_balance_in_usde,2,TYPE 3 ACCOUNT T/D FOREIGN CURRENCY CREDIT BALANCE IN USDE,
@@ -490,8 +482,7 @@ begins with “00000001”",
 8,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
 8,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “8” (precious metals),
-8,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
-8,025 - 025,X(01),AN,,not_used,,Not Used,
+8,022 - 025,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
 8,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 8,029 - 036,9(08),N,,type_8_account_usd_td_datestamp,,"TYPE 8 ACCOUNT USD T/D DATESTAMP
 in CCYYMMDD format",
@@ -559,8 +550,7 @@ begins with “00000001”",
 0,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER
 including Office (3), Base (6)",
 0,021 - 021,X(01),AN,,account_type,,ACCOUNT TYPE = “0” (DVP/RVP [COD]),
-0,022 - 024,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,
-0,025 - 025,X(01),AN,,not_used,,Not Used,
+0,022 - 025,X(03),AN,,investment_professional_ip_number,,INVESTMENT PROFESSIONAL (IP) NUMBER,Expanded
 0,026 - 028,X(03),AN,,introducing_broker_dealer_ibd_number,,INTRODUCING BROKER DEALER (IBD) NUMBER,
 0,029 - 036,9(08),N,,type_0_account_usd_td_datestamp,,"TYPE 0 ACCOUNT USD T/D DATESTAMP
 in CCYYMMDD format",

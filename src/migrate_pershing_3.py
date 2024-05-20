@@ -21,29 +21,16 @@ Pershing file - ACCT (4ACC)
 Pershing file - ISCA (4ISA)
 
 
-raa_check_fund_dtl	CKFF.CKFF.bulk
-raa_expanded_sec_desc	ISCA.ISCA.bulk
-raa_glbl_domestic_s_d	GSDE.GSDE.bulk
-raa_glbl_domestic_trds	GTDE.GTDE.bulk
-raa_global_activity	GACT.GACT.bulk
-raa_global_cust_pos	GCUS.GCUS.bulk
-raa_global_moneyline	GMON.GMON.bulk
-raa_scheduled_instru	SRSI.SRSI.bulk
-raa_security_profile_a	SPAT.SPAT_A.bulk
-raa_customer_acct_info	ACCT.ACCT.bulk
-
-
-
-CKFF - Type 2
-ISCA - 
-GSDE - 
-GTDE - 
-GACT - Type 2
-GCUS - Type 3
-GMON - Type 1
-SRSI - 
-SPAT - 
-ACCT - Type 3
+raa_check_fund_dtl	CKFF.CKFF.bulk - Type 2
+raa_customer_acct_info	ACCT.ACCT.bulk - Type 1
+raa_expanded_sec_desc	ISCA.ISCA.bulk - No Changes - rework required.
+raa_glbl_domestic_s_d	GSDE.GSDE.bulk - Type 1
+raa_glbl_domestic_trds	GTDE.GTDE.bulk - Type 1
+raa_global_activity	GACT.GACT.bulk - Type 2
+raa_global_cust_pos	GCUS.GCUS.bulk - Type 1
+raa_global_moneyline	GMON.GMON.bulk - Type 1
+raa_scheduled_instru	SRSI.SRSI.bulk - Type 1
+raa_security_profile_a	SPAT.SPAT_A.bulk - Type 1
 
 
 """
