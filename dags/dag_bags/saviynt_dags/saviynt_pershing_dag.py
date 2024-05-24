@@ -14,7 +14,7 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, saviynt_s
 
 pipelinekey_prefix = 'saviynt_pershing_'
 
-tags = ['db:saviynt', 'sc:pershing']
+tags = ['DB:Saviynt', 'SC:Pershing']
 
 bd_map = {
     'raa': '33 */1 * * *',
