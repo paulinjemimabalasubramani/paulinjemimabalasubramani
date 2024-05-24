@@ -15,22 +15,22 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, saviynt_s
 pipelinekey_prefix = 'saviynt_'
 
 source_map = {
-    'mips': '30 */1 * * *',
-    'sabos': '33 */1 * * *',
-    'investalink': '36 */1 * * *',
-    'one_time_load': None,
+    'MIPS': '30 */1 * * *',
+    'SABOS': '33 */1 * * *',
+    'INVESTALINK': '36 */1 * * *',
+    'ONE_TIME_LOAD': None,
     }
 
 
 
 # %% Create DAGs
 
-def create_dag(source, schedule_interval):
+def create_dag(source:str, schedule_interval:str):
     """
     Create DAG
     """
-    pipelinekey = pipelinekey_prefix + source
-    tags = ['db:saviynt', f'sc:{source}']
+    pipelinekey = (pipelinekey_prefix + source).lower()
+    tags = ['DB:Saviynt', f'SC:{source}']
 
     with DAG(
         dag_id = pipelinekey.lower(),

@@ -14,7 +14,7 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, saviynt_s
 
 pipelinekey = 'saviynt_envestnet'
 
-tags = ['db:saviynt', 'sc:envestnet']
+tags = ['DB:Saviynt', 'SC:ENVESTNET']
 
 schedule_interval = '20 */1 * * *' # https://crontab.guru/
 

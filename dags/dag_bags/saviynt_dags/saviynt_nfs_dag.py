@@ -14,7 +14,7 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, saviynt_s
 
 pipelinekey_prefix = 'saviynt_nfs_'
 
-tags = ['db:saviynt', 'sc:nfs']
+tags = ['DB:Saviynt', 'SC:NFS2']
 
 bd_map = {
     'raa': '25 */1 * * *',
