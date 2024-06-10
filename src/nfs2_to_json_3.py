@@ -297,8 +297,9 @@ def extract_values_from_line(line:str, record_schema:list):
                 raise ValueError(f'Schema Scale mismatch for field "{field["column_name"]}" field value "{field_value}". Field Value should be all digits!')
             x = len(field_value) - field['decimals']
             if x<0:
-                raise ValueError(f'Length of number {field_value} is less than the decimal number {field["decimals"]} for field "{field["column_name"]}"')
-            field_value = str(float(field_value[:x] + '.' + field_value[x:]))
+                logger.warning(f'Length of number {field_value} is less than the decimal number {field["decimals"]} for field "{field["column_name"]}"')
+            else:
+                field_value = str(float(field_value[:x] + '.' + field_value[x:]))
 
         field_values[field['column_name']] = field_value
 
