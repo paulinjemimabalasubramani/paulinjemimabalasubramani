@@ -41,7 +41,9 @@ delta_partitionBy = lambda value: f'{partitionBy_str}={value}'
 elt_audit_columns = [EXECUTION_DATE_str, ELT_SOURCE_str, ELT_LOAD_TYPE_str, ELT_DELETE_IND_str, DML_TYPE_str, KEY_DATETIME_str, ELT_PROCESS_ID_str, ELT_FIRM_str, ELT_PipelineKey_str]
 elt_audit_columns = [c.lower() for c in elt_audit_columns]
 
-custom_delimiters = ['#!#!', '|', '\t', ',']
+bcp_carriage_return = '$#$#'
+bcp_delimiter = '#!#!'
+custom_delimiters = [bcp_delimiter, '|', '\t', ',']
 
 
 
@@ -352,15 +354,20 @@ def read_csv(spark, file_path:str):
     """
     Read CSV File using Spark
     """
+    max_char_to_read = 5000
+
     logger.info(f'Reading CSV file: {file_path}')
 
     with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as f:
-        HEADER = f.readline()
+        HEADER = f.readline(max_char_to_read)
 
     delimiter = ','
     for custom_delimiter in custom_delimiters:
         if custom_delimiter in HEADER:
             delimiter = custom_delimiter
+
+    #if delimiter == bcp_delimiter and (len(HEADER) >= max_char_to_read or bcp_carriage_return in HEADER):
+        
 
     csv_table = (spark.read # https://github.com/databricks/spark-csv
         .format('csv')
