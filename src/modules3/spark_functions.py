@@ -366,9 +366,6 @@ def read_csv(spark, file_path:str):
         if custom_delimiter in HEADER:
             delimiter = custom_delimiter
 
-    #if delimiter == bcp_delimiter and (len(HEADER) >= max_char_to_read or bcp_carriage_return in HEADER):
-        
-
     csv_table = (spark.read # https://github.com/databricks/spark-csv
         .format('csv')
         .option('header', 'true')
@@ -380,9 +377,13 @@ def read_csv(spark, file_path:str):
         .option('comment', None)
         .option('mode', 'PERMISSIVE')
         .option('parserLib', 'commons')
-        .option('inferSchema','false')
-        .load(file_path)
+        .option('inferSchema', 'false')
     )
+
+    if delimiter == bcp_delimiter and (len(HEADER) >= max_char_to_read or bcp_carriage_return in HEADER):
+        csv_table = csv_table.option('lineSep', bcp_carriage_return)
+
+    csv_table = csv_table.load(file_path)
 
     if csv_table.rdd.isEmpty():
         logger.warning(f'CSV file is empty. Skipping {file_path}')
