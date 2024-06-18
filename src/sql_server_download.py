@@ -91,11 +91,11 @@ body_file_ext = '_body.txt'
 
 delimiter = '#\!#\!'
 carriage_return = '$#$#'
-carriage_return = None
 
 driver_map = {
     'MSSQL': '{ODBC Driver 17 for SQL Server}',
 }
+
 
 
 # %%
@@ -312,6 +312,7 @@ def download_all_sql_tables():
 
 
 download_all_sql_tables()
+
 
 
 # %% Close Connections / End Program
