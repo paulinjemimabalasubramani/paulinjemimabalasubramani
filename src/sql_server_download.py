@@ -90,7 +90,9 @@ header_file_ext = '_header.txt'
 body_file_ext = '_body.txt'
 
 delimiter = '#\!#\!'
+delimiter = '|'
 carriage_return = '$#$#'
+carriage_return = None
 
 driver_map = {
     'MSSQL': '{ODBC Driver 17 for SQL Server}',
@@ -170,10 +172,10 @@ def download_sql_server_query_to_file(file_path:str, sql_query:str, connection:C
 
 
 
-# %%
+# %% NOT USED !!!!!!!
 
 @catch_error(logger)
-def get_sql_query_from_table_tuple(table_info:Dict, connection:Connection):
+def get_sql_query_from_table_tuple_not_used(table_info:Dict, connection:Connection):
     """
     Construct SQL query from Table Name / Custom Table Tuple (table_name_with_schema, custom_query, custom_columns)
 
@@ -212,7 +214,44 @@ def get_sql_query_from_table_tuple(table_info:Dict, connection:Connection):
 # %%
 
 @catch_error(logger)
-def download_one_sql_table(table_info:Dict, connection=Connection):
+def get_sql_query_from_table_tuple(table_info:Dict, connection:Connection):
+    """
+    Construct SQL query from Table Name / Custom Table Tuple (table_name_with_schema, custom_query, custom_columns)
+    """
+    table_name_with_schema = table_info['table_name_with_schema']
+    custom_query = table_info['custom_query'].strip() if table_info['custom_query'] else ''
+    custom_columns = table_info['custom_columns'].strip() if table_info['custom_columns'] else ''
+
+    if custom_query and not custom_columns:
+        logger.error(f'Custom query is given without any custom columns. Table: {table_name_with_schema} Query: {custom_query}')
+        return None, None, None
+
+    if not custom_query:
+        custom_query = f'SELECT * FROM {table_name_with_schema}(NOLOCK)'
+
+    if custom_columns:
+        columns = [c.strip() for c in custom_columns.lower().split(',') if c.strip()]
+    else:
+        columns = get_sql_table_columns(table_name_with_schema=table_name_with_schema, connection=connection)
+
+    columns_list_str = "'" + "', '".join(columns) + "'"
+    columns_convert_nvarchar_str = ", ".join([f"NULLIF(REPLACE(CONVERT(NVARCHAR(4000),[{c}]),'|',':'),'')" for c in columns])
+
+    sql_query = f'''
+    SELECT {columns_list_str}
+    UNION ALL
+    SELECT {columns_convert_nvarchar_str}
+    FROM ({custom_query}) T
+    '''
+
+    return table_name_with_schema, sql_query, columns
+
+
+
+# %% NOT USED !!!
+
+@catch_error(logger)
+def download_one_sql_table_not_used(table_info:Dict, connection=Connection):
     """
     Download one sql table to a file
     """
@@ -240,6 +279,24 @@ def download_one_sql_table(table_info:Dict, connection=Connection):
 
     logger.info(f'Removing body file {body_file_path}')
     os.remove(path=body_file_path)
+    return rows_copied
+
+
+
+# %%
+
+@catch_error(logger)
+def download_one_sql_table(table_info:Dict, connection=Connection):
+    """
+    Download one sql table to a file
+    """
+    table_name_with_schema, sql_query, columns  = get_sql_query_from_table_tuple(table_info=table_info, connection=connection)
+    logger.info(f'Downloading table: {table_name_with_schema}')
+
+    download_file_name = normalize_name(table_name_with_schema) + download_file_ext
+    download_file_path = os.path.join(data_settings.source_path, download_file_name)
+
+    rows_copied = download_sql_server_query_to_file(file_path=download_file_path, sql_query=sql_query, connection=connection)
     return rows_copied
 
 
