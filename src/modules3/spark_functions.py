@@ -380,8 +380,8 @@ def read_csv(spark, file_path:str):
         .option('inferSchema', 'false')
     )
 
-    if delimiter == bcp_delimiter and (len(HEADER) >= max_char_to_read or bcp_carriage_return in HEADER):
-        csv_table = csv_table.option('lineSep', bcp_carriage_return)
+    #if delimiter == bcp_delimiter and (len(HEADER) >= max_char_to_read or bcp_carriage_return in HEADER):
+    #    csv_table = csv_table.option('lineSep', bcp_carriage_return)
 
     csv_table = csv_table.load(file_path)
 
