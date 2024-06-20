@@ -46,7 +46,7 @@ WHERE TABLE_CATALOG = 'SupervisionControls'
 
 # %% Parse Arguments
 
-if False: # Set to False for Debugging
+if True: # Set to False for Debugging
     import argparse
 
     parser = argparse.ArgumentParser(description=description)
