@@ -10,16 +10,17 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_d
 
 # %% Pipeline Parameters
 
-pipelinekey = 'REPLICA_MIGRATE_PW1SQLDATA01_DW_DAILY'
+
+pipelinekey = 'COMM_MIGRATE_CLIENTREVENUE_DAILY'
 python_spark_code = 'migrate_csv_3'
 
-tags = ['DB:REPLICA', 'SC:PW1SQLDATA01_DW']
+tags = ['DB:COMM', 'SC:PROD_COMM']
 
-schedule_interval = '0 13 * 1-12 1-7' # https://crontab.guru/
+schedule_interval = '0 13 * * *' # https://crontab.guru/
 
 
 
-# %% REPLICA_MIGRATE_PW1SQLDATA01_DW_DAILY
+# %% COMM_MIGRATE_CLIENTREVENUE_DAILY
 
 with DAG(
     dag_id = pipelinekey.lower(),
@@ -43,7 +44,7 @@ with DAG(
 
 
 
-# %% REPLICA_MIGRATE_PW1SQLDATA01_DW_DAILY_MANUAL
+# %% COMM_MIGRATE_CLIENTREVENUE_DAILY_MANUAL
 
 with DAG(
     dag_id = (pipelinekey+'_MANUAL').lower(),
