@@ -137,7 +137,7 @@ def get_sql_table_columns(table_name_with_schema:str, connection:Connection) -> 
 # %%
 
 @catch_error(logger)
-def download_sql_server_query_to_file(file_path:str, sql_query:str, connection:Connection, delimiter:str=delimiter, carriage_return:str=carriage_return, bcp_batch_size:int=10000, bcp_packet_size:int=32768) -> int:
+def download_sql_server_query_to_file(file_path:str, sql_query:str, connection:Connection, delimiter:str=delimiter, carriage_return:str=carriage_return, bcp_batch_size:int=20000, bcp_packet_size:int=32768) -> int:
     """
     Download data from SQL Server using bcp tool and save to a file
 
