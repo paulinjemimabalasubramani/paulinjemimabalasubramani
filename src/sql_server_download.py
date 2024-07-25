@@ -236,7 +236,7 @@ def get_sql_query_from_table_tuple(table_info:Dict, connection:Connection):
 
     columns_list_str = "'" + "', '".join(columns) + "'"
     ##columns_convert_nvarchar_str = ", ".join([f"NULLIF(REPLACE(REPLACE(REPLACE(CONVERT(NVARCHAR(MAX),[{c}]),'|',':'),CHAR(10),' '),CHAR(13),' '),'')" for c in columns])
-    columns_convert_nvarchar_str = ", ".join([f"NULLIF(REPLACE(REPLACE(REPLACE(REPLACE(CONVERT(NVARCHAR(MAX),{c}),'|',':'),'\"',''''),CHAR(10),' '),CHAR(13),' ')))" for c in columns])
+    columns_convert_nvarchar_str = ", ".join([f"NULLIF(REPLACE(REPLACE(REPLACE(REPLACE(CONVERT(NVARCHAR(MAX),{c}),'|',':'),'\"',''''),CHAR(10),' '),CHAR(13),' '),'')" for c in columns])
 
     sql_query = f'''
     SELECT {columns_list_str}
