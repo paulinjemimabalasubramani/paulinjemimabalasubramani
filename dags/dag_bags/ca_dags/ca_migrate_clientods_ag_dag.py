@@ -14,7 +14,7 @@ python_spark_code = 'migrate_csv_3'
 
 tags = ['DB:ClientAccount', 'SC:ClientODS']
 
-schedule_interval = '15 6 * * *' # https://crontab.guru/
+schedule_interval = '0 7 * * *' # https://crontab.guru/
 
 
 
