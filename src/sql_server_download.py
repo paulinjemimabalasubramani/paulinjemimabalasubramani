@@ -92,7 +92,7 @@ body_file_ext = '_body.txt'
 delimiter = '#\!#\!'
 delimiter = data_settings.get_value('bcp_delimiter','|')
 carriage_return = '$#$#'
-carriage_return = data_settings.get_value('bcp_delimiter',None)
+carriage_return = data_settings.get_value('bcp_carriage_return',None)
 
 driver_map = {
     'MSSQL': '{ODBC Driver 17 for SQL Server}',
