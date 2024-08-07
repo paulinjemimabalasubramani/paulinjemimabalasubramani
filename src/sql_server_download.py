@@ -90,9 +90,9 @@ header_file_ext = '_header.txt'
 body_file_ext = '_body.txt'
 
 delimiter = '#\!#\!'
-delimiter = '|'
+delimiter = data_settings.get_value('bcp_delimiter','|')
 carriage_return = '$#$#'
-carriage_return = None
+carriage_return = data_settings.get_value('bcp_delimiter',None)
 
 driver_map = {
     'MSSQL': '{ODBC Driver 17 for SQL Server}',
@@ -225,7 +225,14 @@ def get_sql_query_from_table_tuple(table_info:Dict, connection:Connection):
 
     if custom_query and not custom_columns:
         logger.error(f'Custom query is given without any custom columns. Table: {table_name_with_schema} Query: {custom_query}')
-        return None, None, None
+        columns = get_sql_table_columns(table_name_with_schema=table_name_with_schema, connection=connection)
+        columns_list_str = "'" + "', '".join(columns) + "'"
+        sql_query = f'''
+                    SELECT {columns_list_str}
+                    UNION ALL
+                   SELECT * FROM {table_name_with_schema}(NOLOCK)
+                   ''' 
+        return table_name_with_schema, sql_query, columns
 
     if not custom_query:
         custom_query = f'SELECT * FROM {table_name_with_schema}(NOLOCK)'
