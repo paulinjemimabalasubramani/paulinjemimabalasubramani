@@ -230,7 +230,7 @@ def get_sql_query_from_table_tuple(table_info:Dict, connection:Connection):
         sql_query = f'''
                     SELECT {columns_list_str}
                     UNION ALL
-                   SELECT * FROM {table_name_with_schema}(NOLOCK)
+                     {custom_query}
                    ''' 
         return table_name_with_schema, sql_query, columns
 
