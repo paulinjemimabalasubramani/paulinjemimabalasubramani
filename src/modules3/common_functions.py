@@ -1163,6 +1163,40 @@ def execute_sql_queries(sql_list:Union[List,str], connection_string:str) -> List
         conn.commit()
     return outputs
 
+@catch_error(logger)
+def process_file(source_file:str, record_separator:str):    
+    with open(source_file, 'r', encoding='cp1252') as src_fh, open(source_file+'_tmp', 'w') as des_fh:
+        buffer = ''
+        c = 0
+        
+        while True:
+            # Read chunks of data from the source file
+            chunk = src_fh.read(8192)  # Adjust the chunk size if needed
+            if not chunk:
+                break
+            
+            # Add the chunk to the buffer
+            buffer += chunk
+            
+            # Process records in the buffer
+            while record_separator in buffer:
+                record, buffer = buffer.split(record_separator, 1)
+                
+                # Replace patterns
+                record = record.replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ').replace('"', '\'').replace('|', ':').replace('~:~', '|').replace('\0', '')
+                des_fh.write(record+'\r\n')
+                c += 1
+        
+        # Process any remaining data in the buffer
+        if buffer:
+            buffer = buffer.replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ').replace('"', '\'').replace('|', ':').replace('~:~', '|').replace('\0', '')
+            des_fh.write(buffer)
+            c += 1
+
+        print(f"Processed {c} records.")
+        print(f"Renameing file from {source_file+'_tmp'} to {source_file}")
+        os.remove(source_file)
+        os.rename(source_file+'_tmp', source_file)
 
 
 # %%
