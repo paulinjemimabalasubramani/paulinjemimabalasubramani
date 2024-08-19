@@ -15,7 +15,7 @@ def write_to_file(record):
         gvar['des_fh'] = des_fh
     gvar['rec_count'] += 1
     des_fh.write(record)
- 
+ ##--
 def process_source_file():
     linesize = 751
     with open(source_file, 'r', encoding='utf-8') as src_fh:
