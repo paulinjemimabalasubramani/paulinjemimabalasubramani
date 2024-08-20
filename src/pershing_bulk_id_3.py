@@ -41,6 +41,7 @@ from modules3.common_functions import catch_error, data_settings, logger, mark_e
 from modules3.pershing_header import total_hash_length, hash_func, bulk_file_ext, HEADER_str, TRAILER_str, get_header_info
 
 from distutils.dir_util import remove_tree
+from raa_expanded_accf_file_split import split_accf_files
 
 
 
@@ -195,6 +196,14 @@ def iterate_over_all_fwf(source_path:str):
                 target_file_path = os.path.join(data_settings.target_path, file_name + bulk_file_ext)
                 logger.info(f'Processing {source_file_path}')
                 process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path)
+            
+            if data_settings.split_only_files and os.path.exists(source_path+'/'+data_settings.split_only_files):
+                # Split the /opt/EDIP/data/PERSHING-CA/RAA/ACCF.ACCF into multiple chunk
+                split_accf_files(source_path+'/'+data_settings.split_only_files)
+                # Remove /opt/EDIP/data/PERSHING-CA/RAA/ACCF.ACCF
+                os.remove(source_path+'/'+data_settings.split_only_files)
+                # Move the /opt/EDIP/data/PERSHING-CA/RAA/ACCF.ZIP file to /opt/EDIP/data/PERSHING-CA/RAA/temp
+                shutil.move(source_file_path,source_path+'/temp')
 
             if hasattr(data_settings, 'delete_files_after') and data_settings.delete_files_after.upper()=='TRUE':
                 logger.info(f'Deleting {source_file_path}')
