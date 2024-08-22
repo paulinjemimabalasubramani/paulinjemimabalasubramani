@@ -191,23 +191,27 @@ def iterate_over_all_fwf(source_path:str):
                     extract_dir = tmpdir
                     logger.info(f'Extracting {source_file_path} to {extract_dir}')
                     shutil.unpack_archive(filename=source_file_path, extract_dir=extract_dir, format='zip')
+                    splitAccountFullFile(source_path,source_file_path,zip_extract_dir=extract_dir)
                     iterate_over_all_fwf(source_path=extract_dir)
             else:
                 target_file_path = os.path.join(data_settings.target_path, file_name + bulk_file_ext)
-                logger.info(f'Processing {source_file_path}')
+                logger.info(f'Processing {source_file_path} , target file path {target_file_path}')
                 process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path)
-            
-            if data_settings.split_only_files and os.path.exists(source_path+'/'+data_settings.split_only_files):
-                # Split the /opt/EDIP/data/PERSHING-CA/RAA/ACCF.ACCF into multiple chunk
-                split_accf_files(source_path+'/'+data_settings.split_only_files)
-                # Remove /opt/EDIP/data/PERSHING-CA/RAA/ACCF.ACCF
-                os.remove(source_path+'/'+data_settings.split_only_files)
-                # Move the /opt/EDIP/data/PERSHING-CA/RAA/ACCF.ZIP file to /opt/EDIP/data/PERSHING-CA/RAA/temp
-                shutil.move(source_file_path,source_path+'/temp')
 
             if hasattr(data_settings, 'delete_files_after') and data_settings.delete_files_after.upper()=='TRUE':
                 logger.info(f'Deleting {source_file_path}')
                 os.remove(source_file_path)
+
+def splitAccountFullFile(source_path:str,source_file_path:str,zip_extract_dir:str):
+    # data_settings.split_only_files defined in Pipelineconfiguration table
+    if data_settings.split_only_files and os.path.exists(zip_extract_dir+'/'+data_settings.split_only_files):
+        logger.info(f'splitAccountFullFile : source_path -> {source_file_path} , source_file_path -> {source_file_path} , zip_extract_dir -> {zip_extract_dir}')
+        # Split the zip_extract_dir/ACCF.ACCF into multiple chunk
+        split_accf_files(zip_extract_dir+'/'+data_settings.split_only_files)
+        # Remove zip_extract_dir/ACCF.ACCF
+        os.remove(zip_extract_dir+'/'+data_settings.split_only_files)
+        # Move the /opt/EDIP/data/PERSHING-CA/RAA/ACCF.ZIP file to /opt/EDIP/data/PERSHING-CA/RAA/temp
+        shutil.move(source_file_path,source_path+'/temp')
 
 
 
