@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 import sys
 from datetime import datetime
-
-RecordsPerFile = 400
-
+ 
+RecordsPerFile = 30000
+ 
 def write_to_file(record):
     des_fh = gvar['des_fh']
     if gvar['rec_count'] % RecordsPerFile == 0:
@@ -44,7 +44,10 @@ def process_source_file():
         print(f"Processed {no_of_lines} lines.")
         return prev_record
  
-if __name__ == "__main__":
+def split_accf_files(s_file):
+    global source_file
+    global gvar
+    source_file=s_file
     gvar = {
         'rec_count': 0,    # For Number of Account Records Count.
         'des_fh'   : None, # For Output File handle
@@ -55,12 +58,16 @@ if __name__ == "__main__":
                      + " " * 624 + "Z")  # For Trailer Row
                      }
  
+    total_record = process_source_file()
+    gvar['des_fh'].write(gvar['trailer'].format(gvar['dod'],
+        RecordsPerFile if total_record % RecordsPerFile == 0
+        else total_record % RecordsPerFile))
+    gvar['des_fh'].close()
+
+
+if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python raa_expanded.py <source_file>")
     else:
         source_file = sys.argv[1]
-        total_record = process_source_file()
-        gvar['des_fh'].write(gvar['trailer'].format(gvar['dod'],
-            RecordsPerFile if total_record % RecordsPerFile == 0
-            else total_record % RecordsPerFile))
-        gvar['des_fh'].close()
+        split_accf_files(source_file)
