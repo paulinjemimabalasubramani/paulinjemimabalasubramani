@@ -210,10 +210,6 @@ def splitAccountFullFile(source_path:str,source_file_path:str,zip_extract_dir:st
         split_accf_files(zip_extract_dir+'/'+data_settings.split_only_files)
         # Remove zip_extract_dir/ACCF.ACCF
         os.remove(zip_extract_dir+'/'+data_settings.split_only_files)
-        # Move the /opt/EDIP/data/PERSHING-CA/RAA/ACCF.ZIP file to /opt/EDIP/data/PERSHING-CA/RAA/temp
-        shutil.move(source_file_path,source_path+'/temp/')
-
-
 
 iterate_over_all_fwf(source_path=data_settings.source_path)
 
