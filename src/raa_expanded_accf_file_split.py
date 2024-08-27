@@ -2,15 +2,15 @@
 import sys
 from datetime import datetime
  
-RecordsPerFile = 60000
+AccountsPerFile = 60000
  
 def write_to_file(record):
     des_fh = gvar['des_fh']
-    if gvar['rec_count'] % RecordsPerFile == 0:
+    if gvar['rec_count'] % AccountsPerFile == 0:
         if des_fh:
-            des_fh.write(gvar['trailer'].format(gvar['dod'], RecordsPerFile))
+            des_fh.write(gvar['trailer'].format(gvar['dod'], AccountsPerFile))
             des_fh.close()
-        file_num = gvar['rec_count'] // RecordsPerFile
+        file_num = gvar['rec_count'] // AccountsPerFile
         des_fh = open(f"{source_file}_{file_num:02d}", 'w', encoding='utf-8')
         des_fh.write(gvar['header'].format(datetime.now()))
         gvar['des_fh'] = des_fh
@@ -21,7 +21,7 @@ def process_source_file():
     linesize = 751
     with open(source_file, 'r', encoding='cp1252', errors='replace') as src_fh:
         header = src_fh.read(linesize) # size of each line with end of a line character 
-        gvar['header'] = header[0:85]+'{:%m/%d/%Y %H:%M:%S}'+header[104:118]+'UPDATED  '+header[127:]
+        gvar['header'] = header[0:85]+'{:%m/%d/%Y %H:%M:%S}'+header[104:118]+'REFRESHED'+header[127:]
         gvar['dod'] = header[46:56]
         buffer = ''
         prev_record = 1
@@ -34,9 +34,9 @@ def process_source_file():
             c1, c2, c3 = chunk[:3], int(chunk[3:11]), chunk[11:]
             if c2 != prev_record:
                 write_to_file(buffer)
-                buffer = c1+'{:08d}'.format(c2%RecordsPerFile if c2%RecordsPerFile else RecordsPerFile)+c3
+                buffer = c1+'{:08d}'.format(c2%AccountsPerFile if c2%AccountsPerFile else AccountsPerFile)+c3
             else:
-                buffer += c1+'{:08d}'.format(c2%RecordsPerFile if c2%RecordsPerFile else RecordsPerFile)+c3
+                buffer += c1+'{:08d}'.format(c2%AccountsPerFile if c2%AccountsPerFile else AccountsPerFile)+c3
             prev_record = c2
             no_of_lines += 1
  
@@ -60,8 +60,8 @@ def split_accf_files(s_file):
  
     total_record = process_source_file()
     gvar['des_fh'].write(gvar['trailer'].format(gvar['dod'],
-        RecordsPerFile if total_record % RecordsPerFile == 0
-        else total_record % RecordsPerFile))
+        AccountsPerFile if total_record % AccountsPerFile == 0
+        else total_record % AccountsPerFile))
     gvar['des_fh'].close()
 
 
