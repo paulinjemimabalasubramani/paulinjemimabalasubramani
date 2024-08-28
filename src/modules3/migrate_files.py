@@ -55,7 +55,7 @@ cloud_file_history_columns = [
 def get_metadata_key_column_names(
         base:list = ['database_name', 'schema_name', 'table_name'],
         with_load:list = ['is_full_load'],
-        with_load_n_date:list = ['key_datetime'],
+        with_load_n_date:list = ['key_datetime','file_name'],
         ):
     """
     Get Key Column Names for sorting the data files for uniqueness
@@ -255,10 +255,13 @@ def file_meta_exists_in_history(file_meta:dict):
 
     key_columns = []
     for c in data_settings.metadata_key_column_names['with_load_n_date']:
-        cval = to_sql_value(file_meta[c])
-        key_columns.append(f"{c}='{cval}'")
+        if file_meta.get(c,False):
+            cval = to_sql_value(file_meta[c])
+            key_columns.append(f"{c}='{cval}'")
     key_columns = ' AND '.join(key_columns)
     sqlstr_meta_exists = f'SELECT COUNT(*) AS CNT FROM {full_table_name} WHERE {key_columns} AND reingest_file = 0;'
+
+    logger.info(f'file_meta_exists_in_history -> sqlstr_meta_exists -> {sqlstr_meta_exists}')
 
     with pymssql.connect(
         server = cloud_file_hist_conf['sql_server'],
@@ -341,8 +344,10 @@ def write_file_meta_to_history(file_meta:dict, additional_file_meta_columns:list
 
     key_columns = []
     for c in key_column_names:
-        cval = to_sql_value(file_meta[c])
-        key_columns.append(f"{c}='{cval}'")
+        if file_meta.get(c,False):
+            cval = to_sql_value(file_meta[c])
+            key_columns.append(f"{c}='{cval}'")
+
     key_columns = ' AND '.join(key_columns)
 
     sqlstr_update = f'UPDATE {full_table_name} SET reingest_file = 0 WHERE {key_columns} AND reingest_file > 0;'
