@@ -204,7 +204,7 @@ def iterate_over_all_fwf(source_path:str):
 
 def splitAccountFullFile(source_path:str,source_file_path:str,zip_extract_dir:str):
     # data_settings.split_only_files defined in Pipelineconfiguration table
-    if data_settings.split_only_files and os.path.exists(zip_extract_dir+'/'+data_settings.split_only_files):
+    if data_settings.get_value('split_only_files',None) and os.path.exists(zip_extract_dir+'/'+data_settings.split_only_files):
         logger.info(f'splitAccountFullFile : source_path -> {source_path} , source_file_path -> {source_file_path} , zip_extract_dir -> {zip_extract_dir}')
         # Split the zip_extract_dir/ACCF.ACCF into multiple chunk
         split_accf_files(zip_extract_dir+'/'+data_settings.split_only_files)
