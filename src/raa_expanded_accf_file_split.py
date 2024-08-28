@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 import sys
-from datetime import datetime
  
 AccountsPerFile = 60000
  
@@ -12,7 +11,7 @@ def write_to_file(record):
             des_fh.close()
         file_num = gvar['rec_count'] // AccountsPerFile
         des_fh = open(f"{source_file}_{file_num:02d}", 'w', encoding='utf-8')
-        des_fh.write(gvar['header'].format(datetime.now()))
+        des_fh.write(gvar['header'])
         gvar['des_fh'] = des_fh
     gvar['rec_count'] += 1
     des_fh.write(record)
@@ -20,9 +19,9 @@ def write_to_file(record):
 def process_source_file():
     linesize = 751
     with open(source_file, 'r', encoding='cp1252', errors='replace') as src_fh:
-        header = src_fh.read(linesize) # size of each line with end of a line character 
-        gvar['header'] = header[0:85]+'{:%m/%d/%Y %H:%M:%S}'+header[104:118]+'REFRESHED'+header[127:]
-        gvar['dod'] = header[46:56]
+        gvar['header'] = src_fh.read(linesize) # size of each line with end of a line character 
+        gvar['dod'] = gvar['header'][46:56]
+
         buffer = ''
         prev_record = 1
         no_of_lines = 0
