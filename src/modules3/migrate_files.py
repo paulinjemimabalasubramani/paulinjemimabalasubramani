@@ -55,7 +55,7 @@ cloud_file_history_columns = [
 def get_metadata_key_column_names(
         base:list = ['database_name', 'schema_name', 'table_name'],
         with_load:list = ['is_full_load'],
-        with_load_n_date:list = ['key_datetime','file_name'],
+        with_load_n_date:list = ['key_datetime'],
         ):
     """
     Get Key Column Names for sorting the data files for uniqueness
@@ -63,6 +63,11 @@ def get_metadata_key_column_names(
     key_column_names = dict()
     key_column_names['base'] = base
     key_column_names['with_load'] = key_column_names['base'] + with_load
+
+    if(data_settings.get_value('include_file_name_in_process_check',None)):
+        with_load_n_date.append('file_name')
+        logger.info(f'with_load_n_date, including file name -> {with_load_n_date}')
+
     key_column_names['with_load_n_date'] = key_column_names['with_load'] + with_load_n_date
     return key_column_names
 
