@@ -127,7 +127,12 @@ def save_adls_gen2(
         table.coalesce(1).write.json(path=data_path, mode='overwrite')
     elif file_format == 'csv':
         table.coalesce(1).write.csv(path=data_path, header='true', mode='overwrite')
+    elif file_format == 'delta' and table_name in data_settings.get_value('tables_no_spark_partition_required','').split(',') :
+        logger.info(f'No partitions required for table_name : {table_name}')
+        userMetadata = execution_date
+        table.write.save(path=data_path, format=file_format, mode='overwrite', partitionBy=partitionBy_str, overwriteSchema='true', userMetadata=userMetadata)
     elif file_format == 'delta':
+        logger.info(f'Partitions required for table_name : {table_name}')
         if table.rdd.isEmpty():
             logger.warning(f'Skipping saving of empty table to ADLS Gen 2 -> {data_path}')
             return False
