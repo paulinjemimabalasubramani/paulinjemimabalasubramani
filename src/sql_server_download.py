@@ -69,7 +69,7 @@ else:
 
 # %% Import Libraries
 
-import os, sys, pyodbc, shutil
+import os, sys, pyodbc, shutil,csv
 
 class app: pass
 sys.app = app
@@ -212,7 +212,28 @@ def get_sql_query_from_table_tuple_not_used(table_info:Dict, connection:Connecti
 
     return table_name_with_schema, sql_query, columns
 
-
+@catch_error(logger)
+def check_get_one_time_history_data_from_table(custom_query:str,table_name_with_schema:str):
+    if data_settings.getvalue('one_time_history',None) and data_settings.getvalue('one_time_history_csv_config_path',None):
+        
+        with open(data_settings.getvalue('one_time_history_csv_config_path'), mode='r', newline='') as file:
+            reader = csv.DictReader(file)
+            process_date = next((row for row in reader if row['STATUS'] == 'NOT_YET_LOADED'), None)
+        
+        if process_date:            
+            custom_query.format(START_DATE=process_date['START_DATE'],END_DATE=process_date['END_DATE'])
+            logger.info(f'History data load query => table_name_with_schema : {table_name_with_schema},Process Start date : {process_date['START_DATE']},Process End date :{process_date['END_DATE']},custom_query : {custom_query} ')
+            data_settings.update({
+                'history_year_quarter': process_date['YEAR_QUARTER'],
+                'history_start_date': process_date['START_DATE'],
+                'history_end_date': process_date['END_DATE'],
+                'history_status': 'COMPLETE'
+                })                    
+        else:
+            logger.info(f'All history load is completed for table: {table_name_with_schema} Query: {custom_query}')
+            custom_query = None        
+            
+    return custom_query
 
 # %%
 
@@ -224,6 +245,11 @@ def get_sql_query_from_table_tuple(table_info:Dict, connection:Connection):
     table_name_with_schema = table_info['table_name_with_schema']
     custom_query = table_info['custom_query'].strip() if table_info['custom_query'] else ''
     custom_columns = table_info['custom_columns'].strip() if table_info['custom_columns'] else ''
+
+    custom_query = check_get_one_time_history_data_from_table(custom_query=custom_query,table_name_with_schema=table_name_with_schema)
+
+    if not custom_query and data_settings.getvalue('one_time_history',None):
+        return None, None, None
 
     if custom_query and not custom_columns and (delimiter != '|' or carriage_return is not None):
         logger.error(f'Custom query is given without any custom columns. Table: {table_name_with_schema} Query: {custom_query}')
