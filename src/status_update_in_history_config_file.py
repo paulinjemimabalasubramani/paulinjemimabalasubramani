@@ -1,5 +1,28 @@
-import csv
-from modules3.common_functions import catch_error,logger, data_settings
+
+if True: # Set to False for Debugging
+    import argparse
+
+    parser = argparse.ArgumentParser(description='HISTORY_CONFIG_FILE_UPDATE')
+
+    parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
+
+    args = parser.parse_args().__dict__
+
+else:
+    args = {
+        'pipelinekey': 'COMM_MIGRATE_CLIENTREVENUE_INCREMENT_ONE_TIME_HISTORY',
+        'delete_files_after': 'TRUE',
+        'source_path': r'C:\myworkdir\Shared\ALBRIDGE\WFS',
+        }
+
+import os, sys, csv
+
+class app: pass
+sys.app = app
+sys.app.args = args
+sys.app.parent_name = os.path.basename(__file__)
+
+from modules3.common_functions import catch_error,logger, data_settings, mark_execution_end
 
 @catch_error(logger)
 def status_update_in_history_config_file():
@@ -7,13 +30,13 @@ def status_update_in_history_config_file():
     Update the status of the processed quarter in history_date.csv to COMPLETE.    
     """
 
-    csv_file_path = data_settings.getvalue('one_time_history_csv_config_path',None)
+    csv_file_path = data_settings.get_value('one_time_history_csv_config_path',None)
 
     if not csv_file_path:
         logger.info('Skipping onetime history status since one_time_history_csv_config_path is empty')
         return   
     
-    history_dates = None
+    history_dates = []
 
     with open(csv_file_path, mode='r', newline='') as file:
             reader = csv.DictReader(file)
@@ -21,10 +44,11 @@ def status_update_in_history_config_file():
                 history_dates.append(row)
                 
     if history_dates:
+        logger.info(f"history_dates to update : {history_dates}, data_settings => {data_settings.history_year_quarter}")
         for row in history_dates:
-            if row['YEAR_QUARTER'] == data_settings['year_quarter']:
-                row['STATUS'] = 'COMPLETE'
-                break
+           if row['YEAR_QUARTER'] == data_settings.history_year_quarter:
+               row['STATUS'] = 'COMPLETE'
+               break
                 
         with open(csv_file_path, mode='w', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=history_dates[0].keys())
@@ -32,5 +56,9 @@ def status_update_in_history_config_file():
             writer.writerows(history_dates)
 
 status_update_in_history_config_file()
+
+# %% Close Connections / End Program
+
+mark_execution_end()
 
 # %%
