@@ -23,6 +23,7 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error,logger, data_settings, mark_execution_end
+from airflow.models import Variable
 
 @catch_error(logger)
 def status_update_in_history_config_file():
@@ -36,6 +37,9 @@ def status_update_in_history_config_file():
         logger.info('Skipping onetime history status since one_time_history_csv_config_path is empty')
         return   
     
+    history_year_quarter = Variable.get("history_year_quarter")
+    logger.info(f"Process completed for history_year_quarter : {history_year_quarter}")
+
     history_dates = []
 
     with open(csv_file_path, mode='r', newline='') as file:
@@ -43,10 +47,10 @@ def status_update_in_history_config_file():
             for row in reader:
                 history_dates.append(row)
                 
-    if history_dates:
-        logger.info(f"history_dates to update : {history_dates}, data_settings => {data_settings.history_year_quarter}")
+    if history_dates:        
         for row in history_dates:
-           if row['YEAR_QUARTER'] == data_settings.history_year_quarter:
+           if row['YEAR_QUARTER'] == history_year_quarter:
+               logger.info(f"YEAR_QUARTER {history_year_quarter} to update the status")
                row['STATUS'] = 'COMPLETE'
                break
                 
