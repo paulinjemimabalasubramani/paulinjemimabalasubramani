@@ -77,10 +77,12 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from typing import Union, List, Dict
+from airflow.models import XCom
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, is_pc, get_secrets, normalize_name, run_process,\
     remove_square_parenthesis, pipeline_metadata_conf, execute_sql_queries, KeyVaultList, Connection,process_file
 
+from airflow.models import Variable
 
 
 # %% Paramters
@@ -213,22 +215,21 @@ def get_sql_query_from_table_tuple_not_used(table_info:Dict, connection:Connecti
     return table_name_with_schema, sql_query, columns
 
 @catch_error(logger)
-def check_get_one_time_history_data_from_table(custom_query:str,table_name_with_schema:str):
-    if data_settings.getvalue('one_time_history',None) and data_settings.getvalue('one_time_history_csv_config_path',None):
-        
-        with open(data_settings.getvalue('one_time_history_csv_config_path'), mode='r', newline='') as file:
+def check_get_one_time_history_data_from_table(custom_query:str,table_name_with_schema:str, ti=None):
+    if data_settings.get_value('one_time_history',None) and data_settings.get_value('one_time_history_csv_config_path',None):
+        csv_file = data_settings.get_value('one_time_history_csv_config_path',None)
+        with open(csv_file, mode='r', newline='') as file:
             reader = csv.DictReader(file)
             process_date = next((row for row in reader if row['STATUS'] == 'NOT_YET_LOADED'), None)
         
         if process_date:            
-            custom_query.format(START_DATE=process_date['START_DATE'],END_DATE=process_date['END_DATE'])
-            logger.info(f'History data load query => table_name_with_schema : {table_name_with_schema},Process Start date : {process_date['START_DATE']},Process End date :{process_date['END_DATE']},custom_query : {custom_query} ')
-            data_settings.update({
-                'history_year_quarter': process_date['YEAR_QUARTER'],
-                'history_start_date': process_date['START_DATE'],
-                'history_end_date': process_date['END_DATE'],
-                'history_status': 'COMPLETE'
-                })                    
+            custom_query = custom_query.format(START_DATE=process_date['START_DATE'],END_DATE=process_date['END_DATE'])
+            logger.info(f"History data load query => table_name_with_schema : {table_name_with_schema},Process Start date : {process_date['START_DATE']},Process End date :{process_date['END_DATE']},custom_query : {custom_query} ")
+            
+            ti.xcom_push(key='history_year_quarter', value=process_date['YEAR_QUARTER']) 
+            ti.xcom_push(key='start_date', value=process_date['START_DATE']) 
+            ti.xcom_push(key='end_date', value=process_date['END_DATE'])
+            
         else:
             logger.info(f'All history load is completed for table: {table_name_with_schema} Query: {custom_query}')
             custom_query = None        
@@ -248,7 +249,7 @@ def get_sql_query_from_table_tuple(table_info:Dict, connection:Connection):
 
     custom_query = check_get_one_time_history_data_from_table(custom_query=custom_query,table_name_with_schema=table_name_with_schema)
 
-    if not custom_query and data_settings.getvalue('one_time_history',None):
+    if not custom_query and data_settings.get_value('one_time_history',None):
         return None, None, None
 
     if custom_query and not custom_columns and (delimiter != '|' or carriage_return is not None):
