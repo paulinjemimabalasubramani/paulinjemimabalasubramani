@@ -220,9 +220,7 @@ def check_get_one_time_history_data_from_table(custom_query:str,table_name_with_
         csv_file = data_settings.get_value('one_time_history_csv_config_path',None)
         history_dates = []        
         with open(csv_file, mode='r', newline='') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                history_dates.append(row)
+            history_dates = [row for row in csv.DictReader(file)]
 
         process_date = next((row for row in history_dates if row['STATUS'] == 'NOT_YET_LOADED' and row['TABLE_NAME'] == table_name_with_schema), None)
 

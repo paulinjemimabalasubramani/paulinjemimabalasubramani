@@ -38,9 +38,7 @@ def status_update_in_history_config_file():
     
     history_dates = []
     with open(csv_file_path, mode='r', newline='') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                history_dates.append(row)
+        history_dates = [row for row in csv.DictReader(file)]
                 
     if history_dates:        
         for row in history_dates:
@@ -55,7 +53,7 @@ def status_update_in_history_config_file():
 
 status_update_in_history_config_file()
 
-# %% Close Connections / End Program
+# %% End Program
 
 mark_execution_end()
 
