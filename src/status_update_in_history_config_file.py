@@ -23,10 +23,9 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error,logger, data_settings, mark_execution_end
-from airflow.models import Variable, XCom
 
 @catch_error(logger)
-def status_update_in_history_config_file(ti=None):
+def status_update_in_history_config_file():
     """
     Update the status of the processed quarter in history_date.csv to COMPLETE.    
     """
@@ -37,11 +36,7 @@ def status_update_in_history_config_file(ti=None):
         logger.info('Skipping onetime history status since one_time_history_csv_config_path is empty')
         return   
     
-    history_year_quarter = ti.xcom_pull(task_ids='COMM_MIGRATE_CLIENTREVENUE_INCREMENT_ONE_TIME_HISTORY', key='history_year_quarter')
-    logger.info(f"Process completed for history_year_quarter : {history_year_quarter}")
-
     history_dates = []
-
     with open(csv_file_path, mode='r', newline='') as file:
             reader = csv.DictReader(file)
             for row in reader:
@@ -49,11 +44,10 @@ def status_update_in_history_config_file(ti=None):
                 
     if history_dates:        
         for row in history_dates:
-           if row['YEAR_QUARTER'] == history_year_quarter:
-               logger.info(f"YEAR_QUARTER {history_year_quarter} to update the status")
-               row['STATUS'] = 'COMPLETE'
-               break
-                
+            if row['STATUS'] == 'IN_PROGRESS':
+                logger.info(f'Update status IN_PROGRESS to COMPLETE for {row}')
+                row['STATUS'] = 'COMPLETE'
+               
         with open(csv_file_path, mode='w', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=history_dates[0].keys())
             writer.writeheader()
