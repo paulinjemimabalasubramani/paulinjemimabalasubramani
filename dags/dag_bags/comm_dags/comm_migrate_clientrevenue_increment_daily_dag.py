@@ -73,8 +73,7 @@ with DAG(
 
     extractdata = BashOperator(
         task_id = f'DOWNLOAD_{pipeline_one_time_history_key}',
-        bash_command = f'python {src_path}/sql_server_download.py --pipelinekey {pipeline_one_time_history_key}',
-        xcom_push=True,
+        bash_command = f'python {src_path}/sql_server_download.py --pipelinekey {pipeline_one_time_history_key}',        
         dag = dag
     )
 
