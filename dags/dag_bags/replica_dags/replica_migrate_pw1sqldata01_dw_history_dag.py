@@ -58,7 +58,37 @@ with DAG(
     start_pipe(dag) >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
 
 
+################ ONE TIME HISTORY PIPELINE #######################
 
+pipeline_one_time_history_key = 'REPLICA_MIGRATE_PW1SQLDATA01_DW_ONE_TIME_HISTORY'
+# 1130 pm to 330 am and every 36 mints interval
+history_schedule_interval = '*/36 4-8 * * *'
+
+# %% REPLICA_MIGRATE_PW1SQLDATA01_DW_ONE_TIME_HISTORY
+
+with DAG(
+    dag_id=(pipeline_one_time_history_key).lower(),
+    default_args=default_args,
+    description=(pipeline_one_time_history_key),
+    schedule_interval=history_schedule_interval,
+    start_date=days_ago(1),
+    tags=tags,
+    catchup=False,
+) as dag:
+
+    extractdata = BashOperator(
+        task_id = f'DOWNLOAD_{pipeline_one_time_history_key}',
+        bash_command = f'python {src_path}/sql_server_download.py --pipelinekey {pipeline_one_time_history_key}',        
+        dag = dag
+    )
+
+    status_update_in_history_config_file = BashOperator(
+        task_id = f'STATUS_UPDATE_IN_HISTORY_CONFIG_FILE_{pipeline_one_time_history_key}',
+        bash_command = f'python {src_path}/status_update_in_history_config_file.py --pipelinekey {pipeline_one_time_history_key}',
+        dag = dag
+    )
+    
+    start_pipe(dag) >> extractdata >> migrate_data(dag, pipeline_one_time_history_key, python_spark_code) >> delete_files(dag, pipeline_one_time_history_key) >> status_update_in_history_config_file >> end_pipe(dag)
 # %%
 
 
