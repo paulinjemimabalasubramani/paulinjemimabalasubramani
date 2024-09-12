@@ -57,7 +57,7 @@ with DAG(
 
 pipeline_one_time_history_key = 'COMM_MIGRATE_CLIENTREVENUE_INCREMENT_ONE_TIME_HISTORY'
 # 1130 pm to 330 am and every 36 mints interval
-history_schedule_interval = '*/36 4-8 * * *'
+history_schedule_interval = '*/36 1-6 * * *'
 
 # %% COMM_MIGRATE_CLIENTREVENUE_INCREMENT_ONE_TIME_HISTORY
 
