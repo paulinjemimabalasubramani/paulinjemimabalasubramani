@@ -62,7 +62,7 @@ with DAG(
 
 pipeline_one_time_history_key = 'REPLICA_MIGRATE_PW1SQLDATA01_DW_ONE_TIME_HISTORY'
 # 1130 pm to 330 am and every 36 mints interval
-history_schedule_interval = '*/36 4-8 * * *'
+history_schedule_interval = '*/40 1-6 * * *'
 
 # %% REPLICA_MIGRATE_PW1SQLDATA01_DW_ONE_TIME_HISTORY
 
