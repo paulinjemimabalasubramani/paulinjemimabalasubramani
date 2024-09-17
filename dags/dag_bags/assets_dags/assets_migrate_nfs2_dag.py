@@ -23,8 +23,10 @@ firm_map = {
     'TRI': '49 */2 * * *',
     'WFS': '53 */2 * * *',
     'OFS': '57 */2 * * *',
-    'LFG_DAILY': '57 */2 * * *',
-    'LFG_WEEKLY': '57 */2 * * *',
+    'LFA_DAILY': '57 */2 * * *',
+    'LFA_WEEKLY': '57 */2 * * *',
+    'LFS_DAILY': '57 */2 * * *',
+    'LFS_WEEKLY': '57 */2 * * *',
     'HISTORY': None,
     }
 
