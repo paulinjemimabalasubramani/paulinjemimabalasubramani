@@ -1165,7 +1165,7 @@ def execute_sql_queries(sql_list:Union[List,str], connection_string:str) -> List
 
 @catch_error(logger)
 def process_file(source_file:str, record_separator:str):    
-    with open(source_file, 'r', encoding='cp1252') as src_fh, open(source_file+'_tmp', 'w') as des_fh:
+    with open(source_file, 'r', encoding='cp1252', errors='replace') as src_fh, open(source_file+'_tmp', 'w') as des_fh:
         buffer = ''
         c = 0
         
