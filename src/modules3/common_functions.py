@@ -1098,6 +1098,32 @@ def find_latest_folder(remote_path:str, folder_levels:List[str], level:int=0) ->
 
 
 
+# %% Find latest file from specified path
+
+catch_error()
+def find_latest_file(source_path, pattern):
+    """
+    Finds the latest file in the source_path matching the given pattern.
+
+    Parameters:
+    source_path (str): The directory path where to look for files.
+    pattern (str): The pattern to match files.
+
+    Returns:
+    str: The path to the latest file matching the pattern, or None if no files match.
+    """
+    search_pattern = os.path.join(source_path, pattern)
+    files = glob.glob(search_pattern)
+    
+    if not files:
+        print("No files found matching the pattern.")
+    else:
+        latest_file = max(files, key=os.path.getmtime)
+    return latest_file
+
+
+
+
 # %%
 
 catch_error()
@@ -1165,7 +1191,7 @@ def execute_sql_queries(sql_list:Union[List,str], connection_string:str) -> List
 
 @catch_error(logger)
 def process_file(source_file:str, record_separator:str):    
-    with open(source_file, 'r', encoding='cp1252') as src_fh, open(source_file+'_tmp', 'w') as des_fh:
+    with open(source_file, 'r', encoding='cp1252', errors='replace') as src_fh, open(source_file+'_tmp', 'w') as des_fh:
         buffer = ''
         c = 0
         
