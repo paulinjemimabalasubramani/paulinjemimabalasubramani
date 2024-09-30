@@ -40,7 +40,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, get_csv_rows, normalize_name, convert_string_map_to_dict, zip_delete_1_file, find_latest_folder, max_folder_name
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, get_csv_rows, normalize_name, convert_string_map_to_dict, zip_delete_1_file, find_latest_folder,find_latest_file, max_folder_name
 from modules3.migrate_files import file_meta_exists_in_history
 
 from collections import defaultdict
@@ -698,6 +698,16 @@ if hasattr(data_settings, 'source_path2'):
 
 if 'HISTORY' in data_settings.pipelinekey.upper():
     pass
+
+elif 'LFA_WEEKLY' in data_settings.pipelinekey.upper() or 'LFS_WEEKLY' in data_settings.pipelinekey.upper():
+    if data_settings.find_latest_file_name_pattern:
+        for file_name_pattern in data_settings.find_latest_file_name_pattern.split(','):
+            latest_file = find_latest_file(source_path=data_settings.source_path, pattern=file_name_pattern)
+            if latest_file:
+                process_single_nfs2(latest_file)
+    else:
+        iterate_over_all_nfs2(source_path=data_settings.source_path)
+
 elif data_settings.pipeline_firm.lower() == 'sai':
     base_path = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_SAI/MIPS'
     folder_levels = [r'%Y', r'%b', 'NFSBOOK'] # for bookkeeping data

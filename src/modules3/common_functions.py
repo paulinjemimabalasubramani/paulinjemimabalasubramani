@@ -1098,6 +1098,32 @@ def find_latest_folder(remote_path:str, folder_levels:List[str], level:int=0) ->
 
 
 
+# %% Find latest file from specified path
+
+catch_error()
+def find_latest_file(source_path, pattern):
+    """
+    Finds the latest file in the source_path matching the given pattern.
+
+    Parameters:
+    source_path (str): The directory path where to look for files.
+    pattern (str): The pattern to match files.
+
+    Returns:
+    str: The path to the latest file matching the pattern, or None if no files match.
+    """
+    search_pattern = os.path.join(source_path, pattern)
+    files = glob.glob(search_pattern)
+    
+    if not files:
+        print("No files found matching the pattern.")
+    else:
+        latest_file = max(files, key=os.path.getmtime)
+    return latest_file
+
+
+
+
 # %%
 
 catch_error()
