@@ -1113,13 +1113,16 @@ def find_latest_file(source_path, pattern):
     str: The path to the latest file matching the pattern, or None if no files match.
     """
     search_pattern = os.path.join(source_path, pattern)
-    files = glob.glob(search_pattern)
+    print(search_pattern)
+    files = list(glob.glob(search_pattern))
     
     if not files:
         print("No files found matching the pattern.")
+        return None
     else:
         latest_file = max(files, key=os.path.getmtime)
-    return latest_file
+        print(latest_file)
+        return latest_file
 
 
 
