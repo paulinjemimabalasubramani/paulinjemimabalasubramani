@@ -280,7 +280,7 @@ def new_record(file_meta:dict):
 # %%
 
 @catch_error(logger)
-def extract_values_from_line(line:str, record_schema:list):
+def extract_values_from_line(line:str, record_schema:list,line_number:str=None):
     """
     Extract all values from single line string based on its schema
     """
@@ -302,7 +302,10 @@ def extract_values_from_line(line:str, record_schema:list):
                 field_value = str(float(field_value[:x] + '.' + field_value[x:]))
 
         field_values[field['column_name']] = field_value
-
+        
+    if line_number:
+        field_values['file_line_number'] = line_number
+    
     return field_values
 
 
@@ -333,12 +336,17 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
     record_schema = all_schema[(file_meta['file_type'], 'record')]
 
     first = True
+       
+    line_number = 0 if file_meta['table_name_no_firm'] == 'bookkeeping' else None
+    
     for line in fsource:
         if line[0]!='D':
             continue
 
+        line_number = line_number+1 if line_number is not None else None
+        
         record = new_record(file_meta=file_meta)
-        record = {**record, **extract_values_from_line(line=line, record_schema=record_schema)}
+        record = {**record, **extract_values_from_line(line=line, record_schema=record_schema,line_number=line_number)}
 
         if not first:
             ftarget.write(',\n')
