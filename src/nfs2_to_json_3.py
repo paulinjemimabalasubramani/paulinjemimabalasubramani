@@ -697,7 +697,7 @@ def iterate_over_all_nfs2(source_path:str):
 
             process_single_nfs2(file_path=file_path)
 
-if 'LFA_WEEKLY' in data_settings.pipelinekey.upper() or 'LFS_WEEKLY' in data_settings.pipelinekey.upper():
+if 'LFA_FULL' in data_settings.pipelinekey.upper() or 'LFS_FULL' in data_settings.pipelinekey.upper():
     if data_settings.find_latest_file_name_pattern:
         file_name_patterns = data_settings.find_latest_file_name_pattern.split(',')
         print('file_name_patterns', str(file_name_patterns))

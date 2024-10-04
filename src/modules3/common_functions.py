@@ -1120,9 +1120,11 @@ def find_latest_file(source_path, pattern):
         print("No files found matching the pattern.")
         return None
     else:
+        # Extract the date part from the modification time
         latest_file = max(files, key=lambda x: datetime.fromtimestamp(os.path.getmtime(x)).date())
         print(latest_file)
         return latest_file
+
 
 
 
