@@ -1129,6 +1129,13 @@ def find_latest_file(source_path, pattern):
 
 
 
+#  find mathching files%%
+
+def find_files(source_path, pattern):
+    
+    return glob.glob(os.path.join(source_path, pattern))
+
+
 # %%
 
 catch_error()
