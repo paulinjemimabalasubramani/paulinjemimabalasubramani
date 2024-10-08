@@ -697,6 +697,17 @@ def iterate_over_all_nfs2(source_path:str):
 
             process_single_nfs2(file_path=file_path)
 
+if 'LFA_DAILY' in data_settings.pipelinekey.upper() or 'LFS_DAILY' in data_settings.pipelinekey.upper():
+    if data_settings.file_pattern:
+        file_name_patterns = data_settings.file_pattern.split(',')
+        print('file_name_patterns', str(file_name_patterns))
+        for file_name_pattern in file_name_patterns:
+            matching_files = find_files(source_path=data_settings.source_path, pattern=file_name_pattern)
+            for file in matching_files:
+                process_single_nfs2(file)
+                 
+
+
 if 'LFA_FULL' in data_settings.pipelinekey.upper() or 'LFS_FULL' in data_settings.pipelinekey.upper():
     if data_settings.find_latest_file_name_pattern:
         file_name_patterns = data_settings.find_latest_file_name_pattern.split(',')
@@ -705,8 +716,7 @@ if 'LFA_FULL' in data_settings.pipelinekey.upper() or 'LFS_FULL' in data_setting
             latest_file = find_latest_file(source_path=data_settings.source_path, pattern=file_name_pattern)
             if latest_file:
                 process_single_nfs2(latest_file)
-else:
-    iterate_over_all_nfs2(source_path=data_settings.source_path)
+
 
 
 if hasattr(data_settings, 'source_path2'):
