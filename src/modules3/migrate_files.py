@@ -264,8 +264,7 @@ def file_meta_exists_in_history(file_meta:dict):
             cval = to_sql_value(file_meta[c])
             key_columns.append(f"{c}='{cval}'")
     key_columns = ' AND '.join(key_columns)
-    file_name_condition = f"file_name = '{file_meta['file_name']}'"
-    sqlstr_meta_exists = f'SELECT COUNT(*) AS CNT FROM {full_table_name} WHERE {file_name_condition} AND {key_columns} AND reingest_file = 0;'
+    sqlstr_meta_exists = f'SELECT COUNT(*) AS CNT FROM {full_table_name} WHERE {key_columns} AND reingest_file = 0;'
 
     logger.info(f'file_meta_exists_in_history -> sqlstr_meta_exists -> {sqlstr_meta_exists}')
 
