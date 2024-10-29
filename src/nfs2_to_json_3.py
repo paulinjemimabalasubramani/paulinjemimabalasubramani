@@ -337,7 +337,7 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
 
     first = True
        
-    line_number = 0 if file_meta['table_name_no_firm'] == 'bookkeeping' else None
+    line_number = 0 if 'bookkeeping' in file_meta['table_name_no_firm'] else None
     
     for line in fsource:
         if line[0]!='D':
