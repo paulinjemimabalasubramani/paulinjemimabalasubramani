@@ -21,6 +21,7 @@ if True: # Set to False for Debugging
 
 else:
     args = {
+        'pipelinekey': 'Commission_Sabos',
         'source_path': r'C:\myworkdir\Shared\SABOS',
         'schema_file_path': r'C:\myworkdir\EDIP-Code\config\Sabos\Sabos_Schema.csv',
         }
@@ -106,9 +107,7 @@ def select_files():
 
             try:
                 if file_ext.lower() == '.zip':
-                    file_date_str = file_name_noext[-8:]
-                else:
-                    file_date_str = file_name_noext[-10:-2]
+                    file_date_str = file_name_noext[-8:] 
 
                 key_datetime = datetime.strptime(file_date_str, data_settings.date_format)
                 if key_datetime < data_settings.key_datetime: continue
@@ -142,8 +141,6 @@ def get_schema():
         column_name = row['column_name'].strip().lower()
         if column_name in ['', 'n/a', 'none', '_', '__', 'na', 'null', '-', '.']:
             column_name = unused_column_name
-
-        file_type_desc = row['file_type_desc'].strip()
 
         for file_type in file_types:
             ftype = file_type.strip()
