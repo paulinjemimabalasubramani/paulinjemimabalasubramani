@@ -1,51 +1,51 @@
 file_type,file_type_desc,is_primary_key,column_name,data_type,max_size,is_null,description
-S,ADJDET,Y,AdjustmentID,Char,20,N,Unique Identifier for Adjustment
-S,ADJDET,N,AdjustmentDetailType,Char,5,N,Type of Adjustment
-S,ADJDET,N,Amount,Char,15,Y,Adjustment Amount
-S,ADJDET,N,RepCode,Char,3,N,Representative Code associated with Adjustment
-S,ADJDET,N,BranchCode,Int,5,N,Branch Code for Identification
-S,ADJDET,N,Rate,Char,10,Y,Rate asscoiated with Adjustment
-S,ADJDET,N,BonusGroup,Char,10,Y,Bonus Group for Adjustment
-S,ADJREAS,Y,ReasonCode,Int,10,N,Reason Code for Adjustment
-S,ADJREAS,N,Description,Char,1000,N,Reason Code Description for Adjustment
-S,ADJREAS,N,IsTaxable,Char,1,N,Is it taxable or not
-S,ADJREAS,N,IsDeferredComp,Char,1,Y,Is it deferred or not
-S,ADJUST,Y,AdjustmentID,Char,20,N,Unique Identifier for Adjustment
-S,ADJUST,N,Company,Char,20,Y,Company
-S,ADJUST,N,RepCode,Char,3,N,RepCode
-S,ADJUST,N,BranchCode,Int,5,N,BranchCode
-S,ADJUST,N,AdjustmentType,Int,2,Y,AdjustmentType
-S,ADJUST,N,CycleDate,Int,8,N,CycleDate
-S,ADJUST,N,TransactionDate,Int,8,N,TransactionDate
-S,ADJUST,N,AdjustmentAmount,Char,15,N,AdjustmentAmount
-S,ADJUST,N,AccountNumber,Char,20,Y,AccountNumber
-S,ADJUST,N,Description,Char,1000,N,Description
-S,ADJUST,N,TradeNumber,Char,15,Y,TradeNumber
-S,ADJUST,N,BuySellIndicator,Char,1,Y,BuySellIndicator
-S,ADJUST,N,CancelCorrectCode,Char,1,Y,CancelCorrectCode
-S,ADJUST,N,CancellationReason,Char,10,Y,CancellationReason
-S,ADJUST,N,CancellationDate,Char,8,Y,CancellationDate
-S,ADJUST,N,OriginalAdjustmentID,Char,30,Y,OriginalAdjustmentID
-S,ADJUST,N,CancelledByAdjustmentID,Char,10,Y,CancelledByAdjustmentID
-S,ADJUST,N,TransactionID,Char,25,Y,TransactionID
-S,ADJUST,N,ReasonCode,Int,10,N,ReasonCode
-S,ADJUST,N,BusinessDevCode,Char,5,Y,BusinessDevCode
-S,ADJUST,N,ClientSSN,Char,9,Y,ClientSSN
-S,ADJUST,N,OriginalRepCode,Char,3,Y,OriginalRepCode
-S,ADJUST,N,SplitTransactionNumber,Char,20,Y,SplitTransactionNumber
-S,ADJUST,N,ClearingHouse,Char,10,Y,ClearingHouse
-S,ADJUST,N,BonusGroup,Char,10,Y,BonusGroup
-S,GROUPRP,Y,GroupID,Char,3,N,Group Rep Code
-S,GROUPRP,N,GroupName,Char,1000,N,GroupName
-S,GROUPRP,N,RepCode,Char,3,N,RepCode
-S,GROUPRP,N,SplitPercent,Char,10,N,SplitPercentage
-S,GROUPRP,N,ProductCategory,Int,5,Y,ProductCategory
-S,HIERTREE,Y,StatementDate,Char,8,N,StatementDate
-S,HIERTREE,N,Level1BrachID,Char,5,Y,Level1BrachID
-S,HIERTREE,N,Level1Rep,Char,3,Y,Level1Rep
-S,HIERTREE,N,Level2BranchID,Char,5,Y,Level2BranchID
-S,HIERTREE,N,Level2Rep,Char,3,Y,Level2Rep
-S,HIERTREE,N,Level3BranchID,Char,5,Y,Level3BranchID
-S,HIERTREE,N,Level3Rep,Char,3,Y,Level3Rep
-S,HIERTREE,N,RepBranchID,Char,5,N,RepBranchID
-S,HIERTREE,N,RepCode,Char,3,N,RepCode
+ADJDET,ADJDET,Y,AdjustmentID,Char,20,N,Unique Identifier for Adjustment
+ADJDET,ADJDET,N,AdjustmentDetailType,Char,5,N,Type of Adjustment
+ADJDET,ADJDET,N,Amount,Char,15,Y,Adjustment Amount
+ADJDET,ADJDET,N,RepCode,Char,3,N,Representative Code associated with Adjustment
+ADJDET,ADJDET,N,BranchCode,Int,5,N,Branch Code for Identification
+ADJDET,ADJDET,N,Rate,Char,10,Y,Rate asscoiated with Adjustment
+ADJDET,ADJDET,N,BonusGroup,Char,10,Y,Bonus Group for Adjustment
+ADJREAS,ADJREAS,Y,ReasonCode,Int,10,N,Reason Code for Adjustment
+ADJREAS,ADJREAS,N,Description,Char,1000,N,Reason Code Description for Adjustment
+ADJREAS,ADJREAS,N,IsTaxable,Char,1,N,Is it taxable or not
+ADJREAS,ADJREAS,N,IsDeferredComp,Char,1,Y,Is it deferred or not
+ADJUST,ADJUST,Y,AdjustmentID,Char,20,N,Unique Identifier for Adjustment
+ADJUST,ADJUST,N,Company,Char,20,Y,Company
+ADJUST,ADJUST,N,RepCode,Char,3,N,RepCode
+ADJUST,ADJUST,N,BranchCode,Int,5,N,BranchCode
+ADJUST,ADJUST,N,AdjustmentType,Int,2,Y,AdjustmentType
+ADJUST,ADJUST,N,CycleDate,Int,8,N,CycleDate
+ADJUST,ADJUST,N,TransactionDate,Int,8,N,TransactionDate
+ADJUST,ADJUST,N,AdjustmentAmount,Char,15,N,AdjustmentAmount
+ADJUST,ADJUST,N,AccountNumber,Char,20,Y,AccountNumber
+ADJUST,ADJUST,N,Description,Char,1000,N,Description
+ADJUST,ADJUST,N,TradeNumber,Char,15,Y,TradeNumber
+ADJUST,ADJUST,N,BuySellIndicator,Char,1,Y,BuySellIndicator
+ADJUST,ADJUST,N,CancelCorrectCode,Char,1,Y,CancelCorrectCode
+ADJUST,ADJUST,N,CancellationReason,Char,10,Y,CancellationReason
+ADJUST,ADJUST,N,CancellationDate,Char,8,Y,CancellationDate
+ADJUST,ADJUST,N,OriginalAdjustmentID,Char,30,Y,OriginalAdjustmentID
+ADJUST,ADJUST,N,CancelledByAdjustmentID,Char,10,Y,CancelledByAdjustmentID
+ADJUST,ADJUST,N,TransactionID,Char,25,Y,TransactionID
+ADJUST,ADJUST,N,ReasonCode,Int,10,N,ReasonCode
+ADJUST,ADJUST,N,BusinessDevCode,Char,5,Y,BusinessDevCode
+ADJUST,ADJUST,N,ClientSSN,Char,9,Y,ClientSSN
+ADJUST,ADJUST,N,OriginalRepCode,Char,3,Y,OriginalRepCode
+ADJUST,ADJUST,N,SplitTransactionNumber,Char,20,Y,SplitTransactionNumber
+ADJUST,ADJUST,N,ClearingHouse,Char,10,Y,ClearingHouse
+ADJUST,ADJUST,N,BonusGroup,Char,10,Y,BonusGroup
+GROUPRP,GROUPRP,Y,GroupID,Char,3,N,Group Rep Code
+GROUPRP,GROUPRP,N,GroupName,Char,1000,N,GroupName
+GROUPRP,GROUPRP,N,RepCode,Char,3,N,RepCode
+GROUPRP,GROUPRP,N,SplitPercent,Char,10,N,SplitPercentage
+GROUPRP,GROUPRP,N,ProductCategory,Int,5,Y,ProductCategory
+HIERTREE,HIERTREE,Y,StatementDate,Char,8,N,StatementDate
+HIERTREE,HIERTREE,N,Level1BrachID,Char,5,Y,Level1BrachID
+HIERTREE,HIERTREE,N,Level1Rep,Char,3,Y,Level1Rep
+HIERTREE,HIERTREE,N,Level2BranchID,Char,5,Y,Level2BranchID
+HIERTREE,HIERTREE,N,Level2Rep,Char,3,Y,Level2Rep
+HIERTREE,HIERTREE,N,Level3BranchID,Char,5,Y,Level3BranchID
+HIERTREE,HIERTREE,N,Level3Rep,Char,3,Y,Level3Rep
+HIERTREE,HIERTREE,N,RepBranchID,Char,5,N,RepBranchID
+HIERTREE,HIERTREE,N,RepCode,Char,3,N,RepCode
