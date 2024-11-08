@@ -34,7 +34,6 @@ import os, sys
 from datetime import datetime
 from collections import defaultdict
 
-import zipfile
 import re
 
 class app: pass
@@ -108,6 +107,8 @@ def select_files():
             try:
                 if file_ext.lower() == '.zip':
                     file_date_str = file_name_noext[-8:] 
+                else:
+                    file_date_str = file_name_noext[-8:]
 
                 key_datetime = datetime.strptime(file_date_str, data_settings.date_format)
                 if key_datetime < data_settings.key_datetime: continue
@@ -133,6 +134,7 @@ def get_schema():
     Read and Pre-process the schema table to make it code-friendly
     """
     schema = defaultdict(list)
+    SB_file_types = dict()
 
     for row in get_csv_rows(csv_file_path=data_settings.schema_file_path):
         file_types = row['file_type'].upper().split(',')
@@ -141,6 +143,8 @@ def get_schema():
         column_name = row['column_name'].strip().lower()
         if column_name in ['', 'n/a', 'none', '_', '__', 'na', 'null', '-', '.']:
             column_name = unused_column_name
+        
+        file_type_desc = row['file_type_desc'].strip()
 
         for file_type in file_types:
             ftype = file_type.strip()
@@ -148,48 +152,65 @@ def get_schema():
                 'is_primary_key': is_primary_key,
                 'column_name': column_name,
                 })
+            
+            if ftype not in SB_file_types:
+                SB_file_types[ftype] = file_type_desc
 
-    return schema
+    return schema,SB_file_types
 
 
-schema = get_schema()
+schema, SB_file_types  = get_schema()
 
 
-# %% Extract Meta Data from Albridge file
+# %% Extract Meta Data from SABOS/BRACS file
 
 @catch_error(logger)
 def extract_file_meta(file_path:str, zip_file_path:str=None):
     """
-    Extract Meta Data from Albridge file (reading 1st line (header metadata) from inside the file)
+    Extract Meta Data from SABOS/BRACS file (reading 1st line (header metadata) from inside the file)
     """
-    zip_file_name = os.path.basename(zip_file_path)
-    bdid = get_bdid(zip_file_name)
-    if bdid is None:
+    zip_file_name = os.path.basename(zip_file_path) if zip_file_path else None
+    zip_file_name_noext, zip_file_ext = os.path.splitext(zip_file_name)
+    bdid = get_bdid(zip_file_name_noext) if zip_file_name else None
+    if bdid is None and zip_file_name:
         logger.warning(f"Skipping unrecognized zip file: {zip_file_name}")
-        return None
+        return
 
-    file_meta_data = []
-    with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
-        for file_name in zip_file.namelist():
-            if file_name:
-                # Process each file to extract FileDate from header
-                with zip_file.open(file_name) as f:
-                    first_line = f.readline().decode("utf-8")
-                    file_date = extract_file_date(first_line)
-                    if file_date:
-                        file_meta = {
-                            'table_name': os.path.basename(file_name).lower(),
-                            'file_path': file_path,
-                            'file_name': os.path.basename(file_name),
-                            'file_type': os.path.basename(file_name),
-                            'folder_path': os.path.dirname(file_path),
-                            'bdid': bdid,
-                            'file_date': file_date,
-                            'zip_file': zip_file_name,
-                            'zip_file_path': zip_file_path
-                        }
-                        file_meta_data.append(file_meta)
-    return file_meta_data   
+    file_name = os.path.basename(file_path)
+    file_name_noext, file_ext = os.path.splitext(file_name)
+    bdid = get_bdid(file_name_noext)
+    if bdid is None:
+        logger.warning(f"Skipping unrecognized file: {file_name}")
+        return
+    
+    with open(file_path, 'rb') as f:
+        first_line = f.readline().decode("utf-8")
+    file_date = extract_file_date(first_line)
+
+    file_type = file_name_noext
+   # table_name = SB_file_types[file_type].lower()
+
+    date_str = zip_file_name_noext[-8:] if zip_file_name else None
+    date_str = file_name_noext[-8:]
+    key_datetime = datetime.strptime(date_str, "%Y%m%d")
+
+    file_meta = {
+        'table_name': file_type.lower(),
+        'file_name': file_name,
+        'file_path': file_path,
+        'folder_path': os.path.dirname(file_path),
+        'zip_file_path': zip_file_path,
+        'zip_file': zip_file_name,
+        'is_full_load': False,
+        'key_datetime': key_datetime,
+
+        'file_date': file_date,
+        'bdid': bdid,
+        #'file_type_desc': SB_file_types[file_type],
+        'file_type': file_type
+        }                
+
+    return file_meta 
 
 
 def parse_line(line):
@@ -197,7 +218,7 @@ def parse_line(line):
     return [x.strip() for x in pattern.split(line) if x.strip() and x != ',']
 
 
-# %% Create table from given Albridge file and its schema
+# %% Create table from given file and its schema
 
 @catch_error(logger)
 def create_table_from_file(file_meta:dict):
@@ -233,27 +254,25 @@ def create_table_from_file(file_meta:dict):
 
 
 
-# %% Main Processing of an Albridge File
+# %% Main Processing of a File
 
 @catch_error(logger)
-def process_zip_file(file_meta_data):
+def process_zip_file(file_meta:dict):
 
-    """Process each zip file's metadata to extract and process files within."""
-    for file_meta in file_meta_data:
-        zip_file_path = file_meta['zip_file_path']
-        with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
-            for file_name in zip_file.namelist():
-                if file_name == file_meta['file_name']:
-                    with zip_file.open(file_name) as f:
-                        # Process the file content according to schema
-                        table, key_column_names = create_table_from_file(file_meta)
-                        if not table: return
-                        table = remove_column_spaces(table=table)
-                        table = add_id_key(table=table, key_column_names=key_column_names)
-                        dml_type = 'I' if file_meta['is_full_load'] else 'U'
-                        table = add_elt_columns(table=table, file_meta=file_meta, dml_type=dml_type)
-                        if is_pc: table.show(5)
-                        return {file_meta['table_name']: (table, key_column_names)}
+    """Main Processing of each file"""
+
+    table, key_column_names = create_table_from_file(file_meta=file_meta)
+    if not table: return
+
+    table = remove_column_spaces(table=table)
+    table = add_id_key(table=table, key_column_names=key_column_names)
+
+    dml_type = 'I' if file_meta['is_full_load'] else 'U'
+    table = add_elt_columns(table=table, file_meta=file_meta, dml_type=dml_type)
+
+    if is_pc: table.show(5)
+
+    return {file_meta['table_name']: (table, key_column_names)}
 
 
 
