@@ -188,14 +188,14 @@ def extract_file_meta(file_path:str, zip_file_path:str=None):
     file_date = extract_file_date(first_line)
 
     file_type = file_name_noext
-   # table_name = SB_file_types[file_type].lower()
+    table_name = SB_file_types[file_type].lower()
 
     date_str = zip_file_name_noext[-8:] if zip_file_name else None
     date_str = file_name_noext[-8:]
     key_datetime = datetime.strptime(date_str, "%Y%m%d")
 
     file_meta = {
-        'table_name': file_type.lower(),
+        'table_name': table_name,
         'file_name': file_name,
         'file_path': file_path,
         'folder_path': os.path.dirname(file_path),
@@ -206,7 +206,7 @@ def extract_file_meta(file_path:str, zip_file_path:str=None):
 
         'file_date': file_date,
         'bdid': bdid,
-        #'file_type_desc': SB_file_types[file_type],
+        'file_type_desc': SB_file_types[file_type],
         'file_type': file_type
         }                
 
@@ -257,7 +257,7 @@ def create_table_from_file(file_meta:dict):
 # %% Main Processing of a File
 
 @catch_error(logger)
-def process_zip_file(file_meta:dict):
+def process_file(file_meta:dict):
 
     """Main Processing of each file"""
 
@@ -296,7 +296,7 @@ migrate_all_files(
     spark = spark,
     fn_extract_file_meta = extract_file_meta,
     additional_file_meta_columns = additional_file_meta_columns,
-    fn_process_file = process_zip_file,
+    fn_process_file = process_file,
     fn_select_files = select_files,
     fn_get_dtypes = get_dtypes,
     )
