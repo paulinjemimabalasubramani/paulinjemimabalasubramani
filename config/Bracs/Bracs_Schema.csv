@@ -1,7 +1,7 @@
 file_type,file_type_desc,is_primary_key,column_name,data_type,max_size,is_null,description
-B,BRACS,Y,AdjustmentID,Char,20,N,Unique Identifier for Adjustment
-B,BRACS,N,AdjustmentDetailType,Char,5,N,Type of Adjustment
-B,BRACS,N,Amount,Char,15,Y,Adjustment Amount
-B,BRACS,N,RepCode,Char,3,N,Representative Code associated with Adjustment
-B,BRACS,N,BranchCode,Int,5,N,Branch Code for Identification
-B,BRACS,N,Rate,Char,10,Y,Rate asscoiated with Adjustment
+ADJDET,ADJUSTMENT_DETAIL,Y,AdjustmentID,Char,20,N,Unique Identifier for Adjustment
+ADJDET,ADJUSTMENT_DETAIL,N,AdjustmentDetailType,Char,5,N,Type of Adjustment
+ADJDET,ADJUSTMENT_DETAIL,N,Amount,Char,15,Y,Adjustment Amount
+ADJDET,ADJUSTMENT_DETAIL,N,RepCode,Char,3,N,Representative Code associated with Adjustment
+ADJDET,ADJUSTMENT_DETAIL,N,BranchCode,Int,5,N,Branch Code for Identification
+ADJDET,ADJUSTMENT_DETAIL,N,Rate,Char,10,Y,Rate asscoiated with Adjustment
