@@ -503,8 +503,6 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
     """
     Mirgate all files recursively unzipping any files
     """
-    preserve_file_name = getattr(data_settings, 'preserve_file_name', True)
-
     if not selected_file_paths:
         if not os.path.isdir(source_path):
             logger.info(f'Path does not exist: {source_path}')
@@ -529,7 +527,7 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
 
         if file_ext.lower() == '.zip':
             with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
-                extract_dir = os.path.join(tmpdir, file_name_noext) if preserve_file_name else tmpdir
+                extract_dir = os.path.join(tmpdir, file_name_noext) if data_settings.preserve_file_name else tmpdir
                 os.makedirs(extract_dir, exist_ok=True)
                 logger.info(f'Extracting {file_path} to {extract_dir}')
                 shutil.unpack_archive(filename=file_path, extract_dir=extract_dir, format='zip')
