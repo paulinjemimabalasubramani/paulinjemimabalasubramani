@@ -15,8 +15,8 @@ python_spark_code = 'Commission_Sabos_Bracs_load'
 tags = ['DB:Comm', 'SC:Client_Revenue']
 
 source_map = {
-    'SABOS': '0 */2 * * *',
-    'BRACS': '5 */2 * * *',
+    'SABOS': '0 19 * * 4',
+    'BRACS': '0 23 * * 4',
     }
 
 
