@@ -35,11 +35,11 @@ ADJUST,ADJUSTMENT,N,OriginalRepCode,Char,3,Y,OriginalRepCode
 ADJUST,ADJUSTMENT,N,SplitTransactionNumber,Char,20,Y,SplitTransactionNumber
 ADJUST,ADJUSTMENT,N,ClearingHouse,Char,10,Y,ClearingHouse
 ADJUST,ADJUSTMENT,N,BonusGroup,Char,10,Y,BonusGroup
-GROUPRP,GROUP_REPCODE,Y,GroupID,Char,3,N,Group Rep Code
-GROUPRP,GROUP_REPCODE,N,GroupName,Char,1000,N,GroupName
-GROUPRP,GROUP_REPCODE,N,RepCode,Char,3,N,RepCode
-GROUPRP,GROUP_REPCODE,N,SplitPercent,Char,10,N,SplitPercentage
-GROUPRP,GROUP_REPCODE,N,ProductCategory,Int,5,Y,ProductCategory
+GROUPRP,GroupRepCode,Y,GroupID,Char,3,N,Group Rep Code
+GROUPRP,GroupRepCode,N,GroupName,Char,1000,N,GroupName
+GROUPRP,GroupRepCode,N,RepCode,Char,3,N,RepCode
+GROUPRP,GroupRepCode,N,SplitPercent,Char,10,N,SplitPercentage
+GROUPRP,GroupRepCode,N,ProductCategory,Int,5,Y,ProductCategory
 HIERTREE,RepHierarchyTree,Y,StatementDate,Char,8,N,StatementDate
 HIERTREE,RepHierarchyTree,N,Level1BrachID,Char,5,Y,Level1BrachID
 HIERTREE,RepHierarchyTree,N,Level1Rep,Char,3,Y,Level1Rep
