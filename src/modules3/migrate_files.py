@@ -527,7 +527,8 @@ def recursive_migrate_all_files(source_path:str, fn_extract_file_meta, additiona
 
         if file_ext.lower() == '.zip':
             with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
-                extract_dir = tmpdir
+                extract_dir = os.path.join(tmpdir, file_name_noext) if data_settings.preserve_file_name else tmpdir
+                os.makedirs(extract_dir, exist_ok=True)
                 logger.info(f'Extracting {file_path} to {extract_dir}')
                 shutil.unpack_archive(filename=file_path, extract_dir=extract_dir, format='zip')
                 zip_file_path = zip_file_path if zip_file_path_exists else file_path # to keep original zip file path, rather than the last zip file path

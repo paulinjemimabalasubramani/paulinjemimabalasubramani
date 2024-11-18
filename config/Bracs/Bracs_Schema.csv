@@ -1,0 +1,185 @@
+file_type,file_type_desc,is_primary_key,column_name,data_type,max_size,is_null,description
+ADJDET,ADJUSTMENT_DETAIL,Y,AdjustmentID,Char,20,N,Unique Identifier for Adjustment
+ADJDET,ADJUSTMENT_DETAIL,N,AdjustmentDetailType,Char,5,N,Type of Adjustment
+ADJDET,ADJUSTMENT_DETAIL,N,Amount,Char,15,Y,Adjustment Amount
+ADJDET,ADJUSTMENT_DETAIL,N,RepCode,Char,3,N,Representative Code associated with Adjustment
+ADJDET,ADJUSTMENT_DETAIL,N,BranchCode,Int,5,N,Branch Code for Identification
+ADJDET,ADJUSTMENT_DETAIL,N,Rate,Char,10,Y,Rate asscoiated with Adjustment
+ADJREAS,ADJUSTMENT_REASONCODE,Y,ReasonCode,Int,10,N,Reason Code for Adjustment
+ADJREAS,ADJUSTMENT_REASONCODE,N,Description,Char,1000,N,Reason Code Description for Adjustment
+ADJREAS,ADJUSTMENT_REASONCODE,N,IsTaxable,Char,1,N,Is it taxable or not
+ADJREAS,ADJUSTMENT_REASONCODE,N,IsDeferredComp,Char,1,Y,Is it deferred or not
+ADJUST,ADJUSTMENT,Y,AdjustmentID,Char,20,N,Unique Identifier for Adjustment
+ADJUST,ADJUSTMENT,N,Company,Char,20,Y,Company
+ADJUST,ADJUSTMENT,N,RepCode,Char,3,N,RepCode
+ADJUST,ADJUSTMENT,N,BranchCode,Int,5,N,BranchCode
+ADJUST,ADJUSTMENT,N,AdjustmentType,Int,2,Y,AdjustmentType
+ADJUST,ADJUSTMENT,N,CycleDate,Int,8,N,CycleDate
+ADJUST,ADJUSTMENT,N,TransactionDate,Int,8,N,TransactionDate
+ADJUST,ADJUSTMENT,N,AdjustmentAmount,Char,15,N,AdjustmentAmount
+ADJUST,ADJUSTMENT,N,AccountNumber,Char,20,Y,AccountNumber
+ADJUST,ADJUSTMENT,N,Description,Char,1000,N,Description
+ADJUST,ADJUSTMENT,N,TradeNumber,Char,15,Y,TradeNumber
+ADJUST,ADJUSTMENT,N,BuySellIndicator,Char,1,Y,BuySellIndicator
+ADJUST,ADJUSTMENT,N,CancelCorrectCode,Char,1,Y,CancelCorrectCode
+ADJUST,ADJUSTMENT,N,CancellationReason,Char,10,Y,CancellationReason
+ADJUST,ADJUSTMENT,N,CancellationDate,Char,8,Y,CancellationDate
+ADJUST,ADJUSTMENT,N,OriginalAdjustmentID,Char,30,Y,OriginalAdjustmentID
+ADJUST,ADJUSTMENT,N,CancelledByAdjustmentID,Char,10,Y,CancelledByAdjustmentID
+ADJUST,ADJUSTMENT,N,TransactionID,Char,25,Y,TransactionID
+ADJUST,ADJUSTMENT,N,ReasonCode,Int,10,N,ReasonCode
+ADJUST,ADJUSTMENT,N,BusinessDevCode,Char,5,Y,BusinessDevCode
+ADJUST,ADJUSTMENT,N,ClientSSN,Char,9,Y,ClientSSN
+ADJUST,ADJUSTMENT,N,OriginalRepCode,Char,3,Y,OriginalRepCode
+ADJUST,ADJUSTMENT,N,SplitTransactionNumber,Char,20,Y,SplitTransactionNumber
+ADJUST,ADJUSTMENT,N,ClearingHouse,Char,10,Y,ClearingHouse
+ADJUST,ADJUSTMENT,N,BonusGroup,Char,10,Y,BonusGroup
+GROUPRP,GroupRepCode,Y,GroupID,Char,3,N,Group Rep Code
+GROUPRP,GroupRepCode,N,GroupName,Char,1000,N,GroupName
+GROUPRP,GroupRepCode,N,RepCode,Char,3,N,RepCode
+GROUPRP,GroupRepCode,N,SplitPercent,Char,10,N,SplitPercentage
+GROUPRP,GroupRepCode,N,ProductCategory,Int,5,Y,ProductCategory
+HIERTREE,RepHierarchyTree,Y,StatementDate,Char,8,N,StatementDate
+HIERTREE,RepHierarchyTree,N,Level1BrachID,Char,5,Y,Level1BrachID
+HIERTREE,RepHierarchyTree,N,Level1Rep,Char,3,Y,Level1Rep
+HIERTREE,RepHierarchyTree,N,Level2BranchID,Char,5,Y,Level2BranchID
+HIERTREE,RepHierarchyTree,N,Level2Rep,Char,3,Y,Level2Rep
+HIERTREE,RepHierarchyTree,N,Level3BranchID,Char,5,Y,Level3BranchID
+HIERTREE,RepHierarchyTree,N,Level3Rep,Char,3,Y,Level3Rep
+HIERTREE,RepHierarchyTree,N,RepBranchID,Char,5,N,RepBranchID
+HIERTREE,RepHierarchyTree,N,RepCode,Char,3,N,RepCode
+PRODCAT,ProductCategory,Y,Category,Int,10,N,Identifier for category of the product
+PRODCAT,ProductCategory,N,Group,Char,8,N,Category Group of the Product
+PRODCAT,ProductCategory,N,Description,Char,1000,N,Description for the product category
+PRODGRP,ProductGroup,Y,Group,Char,3,N,Group of the product
+PRODGRP,ProductGroup,N,Description,Char,1000,N,Description of group of the product
+PRODLIC,ProductLicense,Y,ProductID,Char,100,N,ID number of the product
+PRODLIC,ProductLicense,N,License,Char,6,N,License category
+PRODUCT,Product,Y,ProductID,Char,200,N,ID of the Product
+PRODUCT,Product,N,ProductCode,Char,50,N,Product Code
+PRODUCT,Product,N,SponsorCode,Char,5,N,Sponsor Code
+PRODUCT,Product,N,Cusip,Char,200,N,Cusip
+PRODUCT,Product,N,ProductName,Char,1000,N,Product Name
+PRODUCT,Product,N,ProductCategory,Int,6,N,Product Category
+PRODUCT,Product,N,OpenDate,Int,8,N,Open Date
+PRODUCT,Product,N,CloseDate,Int,8,N,Close Date
+PRODUCT,Product,N,Status,Char,3,N,Status
+PRODUCT,Product,N,IsRestricted,Char,1,Y,Is Restricted
+PRODUCT,Product,N,IsOffshore,Char,1,N,IsOffshore
+PRODUCT,Product,N,Symbol,Char,10,Y,Symbol
+PRODUCT,Product,N,RatingCode,Char,2,N,Rating Code
+PRODUCT,Product,N,IsProprietary,Char,1,Y,Is Proprietary
+PRODUCT,Product,N,ClassCode,Char,1,Y,Class Code
+R12DET,12B1Rebate,Y,TransactionID,Char,50,Y,TransactionID
+R12DET,12B1Rebate,N,RepCode,Char,5,N,RepCode
+R12DET,12B1Rebate,N,BranchCode,Char,10,N,BranchCode
+R12DET,12B1Rebate,N,StatementDate,Char,8,N,StatementDate
+R12DET,12B1Rebate,N,Cusip,Char,200,N,Cusip
+R12DET,12B1Rebate,N,Description,Char,1000,N,Description
+R12DET,12B1Rebate,N,ClientAccountNumber,Char,50,N,ClientAccountNumber
+R12DET,12B1Rebate,N,TransactionDate,Char,8,N,Transaction Date
+R12DET,12B1Rebate,N,Orig12B1Amount,Char,100,N,Orig12B1Amount
+R12DET,12B1Rebate,N,RePayment,Char,100,N,RePayment
+R12DET,12B1Rebate,N,HouseRetention,Char,100,N,HouseRetention
+R12DET,12B1Rebate,N,BonusGroup,Char,10,N,BonusGroup
+R12DET,12B1Rebate,N,DCPaid,Char,10,N,DCPaid
+R12DET,12B1Rebate,N,OriginalRepCode,Char,10,N,Original RepCode
+R12DET,12B1Rebate,N,ProductID,Char,30,N,Product ID
+R12DET,12B1Rebate,N,RebateRate,Char,20,N,Rebate Rate
+R12DET,12B1Rebate,N,ClearingHouse,Char,50,N,Clearing House
+RATECODE,RatingCode,Y,Code,Char,1,N,Code
+RATECODE,RatingCode,N,Description,Char,1000,N,Description
+REPHIER,RepHierarchy,Y,RepCode,Char,3,N,RepCode
+REPHIER,RepHierarchy,N,CycleDate,Char,8,N,Cycle Date
+REPHIER,RepHierarchy,Y,HierachyRep,Char,3,Y,Hierachy Rep
+REPHIER,RepHierarchy,N,Agency,Char,10,N,Agency
+REPHIER,RepHierarchy,Y,RepHierachyLevl,Char,3,N,RepHierachyLevl
+REPHIER,RepHierarchy,N,BranchID,Char,5,N,Branch ID
+REPHIST,RepHistory,Y,RepCode,Char,3,N,Rep Code
+REPHIST,RepHistory,N,StatementDate,Char,8,N,Statement Date
+REPHIST,RepHistory,N,DeferredCompensation,Char,20,N,Deferred Compensation
+REPHIST,RepHistory,N,OpeningBalance,Char,50,N,Opening Balance
+REPHIST,RepHistory,N,ClosingBalance,Char,50,N,Closing Balance
+REPHIST,RepHistory,N,1099Earnings,Char,50,N,1099Earnings
+REPHIST,RepHistory,N,LastPaidDate,Char,8,Y,LastPaidDate
+REPHIST,RepHistory,N,LastAmountInsurance,Char,50,N,LastAmountInsurance
+REPHIST,RepHistory,N,LastAmountSecurity,Char,50,N,LastAmountSecurity
+REPHIST,RepHistory,N,DebitDate,Char,8,Y,Debit Date
+REPHIST,RepHistory,N,DebitAmount,Char,20,Y,Debit Amount
+REPHIST,RepHistory,N,1099Flag,Char,1,N,1099Flag
+REPHIST,RepHistory,N,PaymentType,Char,1,N,Payment Type
+REPHIST,RepHistory,N,LastCheckNumber,Char,50,Y,Last Check Number
+REPHIST,RepHistory,N,BankAccountNumber,Char,100,Y,Bank Account Number
+REPHIST,RepHistory,N,BankAccountType,Char,1,Y,Bank Account Type
+REPHIST,RepHistory,N,HoldIndicator,Char,1,N,Hold Indicator
+REPHIST,RepHistory,N,HoldReason,Char,300,Y,Hold Reason
+REPHIST,RepHistory,N,CompanyID,Char,100,Y,Company ID
+REPHIST,RepHistory,N,BranchID,Char,20,N,Branch ID
+REPHIST,RepHistory,N,RecognitionProgram,Char,30,Y,Recognition Program
+REPHIST,RepHistory,N,RecognitionStatus,Char,50,Y,Recognition Status
+REPHIST,RepHistory,N,Level3YTDProduction,Char,100,Y,Level3YTDProduction
+REPHIST,RepHistory,N,Level2YTDProduction,Char,100,Y,Level2YTDProduction
+REPHIST,RepHistory,N,Level1YTDProduction,Char,100,Y,Level1YTDProduction
+REPHIST,RepHistory,N,RepStatus,Char,1,Y,RepStatus
+REPNAME,REPNAME,N,BDID,Int,1,N,BD ID
+REPNAME,REPNAME,Y,RepCode,Char,3,N,Rep Code
+REPNAME,REPNAME,N,SSN,Char,9,N,Social Security Number
+REPNAME,REPNAME,N,FirstName,Char,50,N,First Name
+REPNAME,REPNAME,N,MiddleName,Char,50,Y,Middle Name
+REPNAME,REPNAME,N,LastName,Char,50,N,Last Name
+REPNAME,REPNAME,N,RepFullName,Char,50,N,RepFullName
+REPNAME,REPNAME,N,CRDNumber,Char,50,N,CRD Number
+REVPRD,RevenuePeriodStage,Y,CycleDate,Char,8,N,Cycle Date
+REVPRD,RevenuePeriodStage,N,PaidDate,Char,8,N,Paid Date
+REVPRD,RevenuePeriodStage,N,CycleNumber,Char,50,Y,Cycle Number
+REVPRD,RevenuePeriodStage,N,PaidFromDate,Char,8,Y,Paid from Date
+REVPRD,RevenuePeriodStage,N,PaidThruDate,Char,8,Y, Paid through Date
+SPNELITE,SponsorElite,Y,SponsorCode,Char,5,N,Sponsor Code
+SPNELITE,SponsorElite,N,EliteCode,Char,10,N,Elite Code
+SPNELITE,SponsorElite,N,EffectiveStartDate,Char,8,N,Effective Start Date
+SPNELITE,SponsorElite,N,EffectiveEndDate,Char,8,Y,Effective End Date
+SPONSOR,Sponsor,Y,SponsorCode,Char,3,N,Sponsor Code
+SPONSOR,Sponsor,N,Name,Char,50,N,Name
+SPONSOR,Sponsor,N,Address1,Char,200,N,Address1
+SPONSOR,Sponsor,N,Address2,Char,200,Y,Address2
+SPONSOR,Sponsor,N,City,Char,100,N,City
+SPONSOR,Sponsor,N,State,Char,5,N,State
+SPONSOR,Sponsor,N,Zip,Char,15,N,Zip Code
+SPONSOR,Sponsor,N,ContactName,Char,200,Y,ContactName
+SPONSOR,Sponsor,N,Phone,Char,10,Y,Phone
+SPONSOR,Sponsor,N,Email,Char,100,Y,Email
+TRAN,Transaction,Y,TransactionID,Char,15,N,Transaction ID
+TRAN,Transaction,N,Company,Char,50,Y,Company
+TRAN,Transaction,N,ProductID,Char,50,N,Product ID
+TRAN,Transaction,N,RepCode,Char,3,N,Rep Code
+TRAN,Transaction,N,BranchCode,Char,20,N,Branch Code
+TRAN,Transaction,N,TransactionType,Char,10,N,Transaction Type
+TRAN,Transaction,N,CycleDate,Char,8,N,Cycle Date
+TRAN,Transaction,N,TransactionDate,Char,8,N,Transaction Date
+TRAN,Transaction,N,InvestmentAmount,Char,100,Y,Investment Amount
+TRAN,Transaction,N,GDCReceivableAmount,Char,100,Y,GDCReceivableAmount
+TRAN,Transaction,N,AccountNumber,Char,100,N,Account Number
+TRAN,Transaction,N,Description,Char,1000,N,Description
+TRAN,Transaction,N,TradeNumber,Char,50,Y,Trade Number
+TRAN,Transaction,N,BuySellIndicator,Char,100,Y,BuySellIndicator
+TRAN,Transaction,N,CancelCorrectCode,Char,100,Y,Cancel Correct Code
+TRAN,Transaction,N,CancellationReason,Char,100,Y,Cancellation Reason
+TRAN,Transaction,N,CancellationDate,Char,8,Y,Cancellation Date
+TRAN,Transaction,N,OriginalTransactionID,Char,100,Y,Original Transaction ID
+TRAN,Transaction,N,CancelledByTransactionID,Char,100,Y,CancelledByTransactionID
+TRAN,Transaction,N,BusinessDevCode,Char,10,N,BusinessDevCode
+TRAN,Transaction,N,ClientSSN,Char,9,Y,ClientSSN
+TRAN,Transaction,N,OriginalRepCode,Char,3,Y,OriginalRepCode
+TRAN,Transaction,N,SplitTransactionNumber,Char,13,Y,SplitTransactionNumber
+TRAN,Transaction,N,ClearingHouse,Char,30,Y,ClearingHouse
+TRANDET,TransationDetail,Y,TransactionID,Char,15,N,TransationDetail
+TRANDET,TransationDetail,N,TransactionDetailType,Char,3,N,Transaction Detail Type
+TRANDET,TransationDetail,N,Amount,Char,100,N,Amount
+TRANDET,TransationDetail,N,RepCodeID,Char,3,N,RepCodeID
+TRANDET,TransationDetail,N,BranchCode,Char,20,N,Branch Code
+TRANDET,TransationDetail,N,IsForfeited,Char,20,N,Is Forfeited
+TRANDET,TransationDetail,N,Rate,Char,40,N,Rate
+TRANTYPE,TransactionType,Y,TransactionType,Char,10,N,Transaction Type
+TRANTYPE,TransactionType,N,Description,Char,1000,N,Description
+TXNDETTP,TransactionDetailType,Y,TxnDetailType,Char,5,N,TxnDetailType
+TXNDETTP,TransactionDetailType,N,Description,Char,1000,N,Description
