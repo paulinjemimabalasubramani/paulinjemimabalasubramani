@@ -13,7 +13,7 @@ python_spark_code = 'migrate_csv_3'
 
 tags = ['DB:COMM', 'SC:CLIENT_REVENUE']
 
-schedule_interval = '0 7 * * *' # https://crontab.guru/
+schedule_interval = '0 11 * * *' # https://crontab.guru/
 
 # %% COMM_MIGRATE_CLIENTREVENUE_INCREMENT_DAILY
 
