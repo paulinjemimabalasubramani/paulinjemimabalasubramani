@@ -170,19 +170,27 @@ def extract_file_meta(file_path:str, zip_file_path:str=None):
     Extract Meta Data from SABOS/BRACS file (reading 1st line (header metadata) from inside the file)
     """
     zip_file_name = os.path.basename(zip_file_path) if zip_file_path else None
-    zip_file_name_noext, zip_file_ext = os.path.splitext(zip_file_name)
+    zip_file_name_noext, zip_file_ext = os.path.splitext(zip_file_name) if zip_file_name else (None, None)
     bdid = get_bdid(zip_file_name_noext) if zip_file_name else None
-    if bdid is None and zip_file_name:
-        logger.warning(f"Skipping unrecognized zip file: {zip_file_name}")
-        return
 
+    if bdid is None and zip_file_name:
+       logger.warning(f"Skipping unrecognized zip file: {zip_file_name}")
+       return
+
+    # Process regular file name
     file_name = os.path.basename(file_path)
     file_name_noext, file_ext = os.path.splitext(file_name)
-    bdid = get_bdid(file_name_noext)
-    if bdid is None:
-        logger.warning(f"Skipping unrecognized file: {file_name}")
-        return
+
+    if zip_file_name is None:
+       bdid = get_bdid(file_name_noext)
+    else:
+       bdid = get_bdid(zip_file_name_noext)
+
+    if bdid is None and zip_file_name is None:
+       logger.warning(f"Skipping unrecognized file: {file_name}")
+       return
     
+
     with open(file_path, 'rb') as f:
         first_line = f.readline().decode("utf-8")
     file_date = extract_file_date(first_line)
