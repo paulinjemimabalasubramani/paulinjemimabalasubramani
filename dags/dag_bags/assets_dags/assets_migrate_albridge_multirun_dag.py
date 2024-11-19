@@ -9,20 +9,15 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_d
 
 # %% Pipeline Parameters
 
-pipelinekey_prefix = 'ASSETS_MIGRATE_ALBRIDGE_'
-python_spark_code = 'assets_migrate_albridge_3'
+pipelinekey_prefix = 'ASSETS_MIGRATE_ALBRIDGE_MULTIRUN_'
+python_spark_code = 'assets_migrate_albridge_multirun_3'
 
-tags = ['DB:Assets', 'SC:Albridge']
+tags = ['DB:Assets', 'SC:Albridge_MULTIRUN']
 
 firm_map = {
-    'FSC': '0 */2 * * *',
-    'RAA': '5 */2 * * *',
-    'SAI': '10 */2 * * *',
-    'SPF': '15 */2 * * *',
-    'TRI': '20 */2 * * *',
-    'WFS': '25 */2 * * *',
-    'APH': '30 */2 * * *',
-    'IFX': '35 */2 * * *',
+   
+    'RAA': '*/30 * * * *'
+    
     }
 
 
