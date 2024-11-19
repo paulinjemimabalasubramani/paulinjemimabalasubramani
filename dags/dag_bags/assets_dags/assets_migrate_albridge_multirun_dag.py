@@ -1,6 +1,6 @@
 # %% Import Libraries
 
-from airflow  import DAG
+from airflow import DAG
 from airflow.utils.dates import days_ago
 
 from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_data, copy_files, delete_files
