@@ -196,6 +196,10 @@ def extract_file_meta(file_path:str, zip_file_path:str=None):
     file_date = extract_file_date(first_line)
 
     file_type = file_name_noext
+    if file_type not in SB_file_types:
+        logger.warning(f"Skipping unrecognized file type: {file_type}")
+        return None
+    
     table_name = SB_file_types[file_type].lower()
 
     date_str = zip_file_name_noext[-8:] if zip_file_name else None
