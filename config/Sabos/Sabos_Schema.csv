@@ -35,6 +35,20 @@ ADJUST,ADJUSTMENT,N,OriginalRepCode,Char,3,Y,OriginalRepCode
 ADJUST,ADJUSTMENT,N,SplitTransactionNumber,Char,20,Y,SplitTransactionNumber
 ADJUST,ADJUSTMENT,N,ClearingHouse,Char,10,Y,ClearingHouse
 ADJUST,ADJUSTMENT,N,BonusGroup,Char,10,Y,BonusGroup
+DET12B1,12B1Trails,N,RepCode,Char,5,N,RepCode
+DET12B1,12B1Trails,Y,SourceTransactionNumber,Char,20,N,Source Transaction Number
+DET12B1,12B1Trails,N,IsBrokerage,Char,1,N,IsBrokerage
+DET12B1,12B1Trails,N,ProductSponsorCode,Char,50,N,Product Sponsor Code
+DET12B1,12B1Trails,N,BranchCode,Char,10,N,Branch Code
+DET12B1,12B1Trails,N,StatementDate,Char,8,N,Statement Date
+DET12B1,12B1Trails,N,TransactionDate,Char,8,N,Transaction Date
+DET12B1,12B1Trails,N,TransactionType,Char,5,N,Transaction Type
+DET12B1,12B1Trails,N,ClientAccountNumber,Char,50,N,ClientAccountNumber
+DET12B1,12B1Trails,N,ClientName,Char,50,N,ClientName
+DET12B1,12B1Trails,N,CUSIP,Char,50,N,CUSIP
+DET12B1,12B1Trails,N,DCPaid,Char,1,N,DCPaid
+DET12B1,12B1Trails,N,Amount,Char,30,N,Amount
+DET12B1,12B1Trails,N,BonusGroup,Char,30,Y,BonusGroup
 GROUPRP,GroupRepCode,Y,GroupID,Char,3,N,Group Rep Code
 GROUPRP,GroupRepCode,N,GroupName,Char,1000,N,GroupName
 GROUPRP,GroupRepCode,N,RepCode,Char,3,N,RepCode
