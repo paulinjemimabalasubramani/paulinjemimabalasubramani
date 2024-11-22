@@ -227,7 +227,7 @@ def extract_file_meta(file_path:str, zip_file_path:str=None):
 
 def parse_line(line):
     pattern = re.compile(r'''((?:[^,"']|"[^"]*"|'[^']*')+)''')
-    return [x.strip() for x in pattern.split(line) if x.strip() and x != ',']
+    return [x.strip().strip('\"') for x in pattern.split(line) if x.strip() and x != ',']
 
 
 # %% Create table from given file and its schema
@@ -243,8 +243,8 @@ def create_table_from_file(file_meta:dict):
 
     # Apply the UDF to the DataFrame
     text_file = (text_file
-    .where(col('value').substr(0, 5) != lit('*BOF*'))  # Exclude the BOF line
-    .where(col('value').substr(0, 5) != lit('*EOF*'))  # Exclude the EOF line
+    .where(col('value').substr(0, 5) != lit('"*BOF'))  # Exclude the BOF line
+    .where(col('value').substr(0, 5) != lit('"*EOF'))  # Exclude the EOF line
     .withColumn('elt_value', parse_line_udf(col('value')))
     )
 
@@ -256,6 +256,7 @@ def create_table_from_file(file_meta:dict):
                 key_column_names.append(sch['column_name'])
 
     text_file = text_file.drop(col('elt_value'))
+    text_file = text_file.drop(col('value'))
 
     table_columns = text_file.columns
     for column_name in master_schema_header_columns:
