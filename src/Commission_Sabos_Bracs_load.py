@@ -202,8 +202,7 @@ def extract_file_meta(file_path:str, zip_file_path:str=None):
     
     table_name = SB_file_types[file_type].lower()
 
-    date_str = zip_file_name_noext[-8:] if zip_file_name else None
-    date_str = file_name_noext[-8:]
+    date_str = zip_file_name_noext[-8:] if zip_file_name else file_name_noext[-8:]
     key_datetime = datetime.strptime(date_str, "%Y%m%d")
 
     file_meta = {
