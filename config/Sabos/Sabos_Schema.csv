@@ -104,13 +104,13 @@ R12DET,SABOS_12B1Rebate,N,RebateRate,Char,20,N,Rebate Rate
 R12DET,SABOS_12B1Rebate,N,ClearingHouse,Char,50,N,Clearing House
 RATECODE,SABOS_RatingCode,Y,Code,Char,1,N,Code
 RATECODE,SABOS_RatingCode,N,Description,Char,1000,N,Description
-REPHIER,SABOS_RepHierarchy,Y,RepCode,Char,3,N,RepCode
+REPHIER,SABOS_RepHierarchy,N,RepCode,Char,3,N,RepCode
 REPHIER,SABOS_RepHierarchy,N,CycleDate,Char,8,N,Cycle Date
-REPHIER,SABOS_RepHierarchy,Y,HierachyRep,Char,3,Y,Hierachy Rep
+REPHIER,SABOS_RepHierarchy,N,HierachyRep,Char,3,Y,Hierachy Rep
 REPHIER,SABOS_RepHierarchy,N,Agency,Char,10,N,Agency
-REPHIER,SABOS_RepHierarchy,Y,RepHierachyLevl,Char,3,N,RepHierachyLevl
+REPHIER,SABOS_RepHierarchy,N,RepHierachyLevl,Char,3,N,RepHierachyLevl
 REPHIER,SABOS_RepHierarchy,N,BranchID,Char,5,N,Branch ID
-REPHIST,SABOS_RepHistory,Y,RepCode,Char,3,N,Rep Code
+REPHIST,SABOS_RepHistory,N,RepCode,Char,3,N,Rep Code
 REPHIST,SABOS_RepHistory,N,StatementDate,Char,8,N,Statement Date
 REPHIST,SABOS_RepHistory,N,DeferredCompensation,Char,20,N,Deferred Compensation
 REPHIST,SABOS_RepHistory,N,OpeningBalance,Char,50,N,Opening Balance
@@ -149,7 +149,7 @@ REVPRD,SABOS_RevenuePeriodStage,N,PaidDate,Char,8,N,Paid Date
 REVPRD,SABOS_RevenuePeriodStage,N,CycleNumber,Char,50,Y,Cycle Number
 REVPRD,SABOS_RevenuePeriodStage,N,PaidFromDate,Char,8,Y,Paid from Date
 REVPRD,SABOS_RevenuePeriodStage,N,PaidThruDate,Char,8,Y, Paid through Date
-SPNELITE,SABOS_SponsorElite,Y,SponsorCode,Char,5,N,Sponsor Code
+SPNELITE,SABOS_SponsorElite,N,SponsorCode,Char,5,N,Sponsor Code
 SPNELITE,SABOS_SponsorElite,N,EliteCode,Char,10,N,Elite Code
 SPNELITE,SABOS_SponsorElite,N,EffectiveStartDate,Char,8,N,Effective Start Date
 SPNELITE,SABOS_SponsorElite,N,EffectiveEndDate,Char,8,Y,Effective End Date
