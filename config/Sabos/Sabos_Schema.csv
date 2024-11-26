@@ -201,15 +201,15 @@ TRAN,SABOS_Transaction,N,OriginalRepCode,Char,3,Y,OriginalRepCode
 TRAN,SABOS_Transaction,N,SplitTransactionNumber,Char,13,Y,SplitTransactionNumber
 TRAN,SABOS_Transaction,N,ClearingHouse,Char,30,Y,ClearingHouse
 TRAN,SABOS_Transaction,N,BonusGroup,Char,30,Y,BonusGroup
-TRANDET,SABOS_TransationDetail,N,TransactionID,Char,15,N,TransationDetail
-TRANDET,SABOS_TransationDetail,N,TransactionDetailType,Char,3,N,Transaction Detail Type
-TRANDET,SABOS_TransationDetail,N,Amount,Char,100,N,Amount
-TRANDET,SABOS_TransationDetail,N,RepCodeID,Char,3,N,RepCodeID
-TRANDET,SABOS_TransationDetail,N,BranchCode,Char,20,N,Branch Code
-TRANDET,SABOS_TransationDetail,N,IsForfeited,Char,20,N,Is Forfeited
-TRANDET,SABOS_TransationDetail,N,Rate,Char,40,N,Rate
-TRANDET,SABOS_TransationDetail,N,BonusGroup,Char,5,Y,BonusGroup
+TRANDET,SABOS_TransactionDetail,N,TransactionID,Char,15,N,TransationDetail
+TRANDET,SABOS_TransactionDetail,N,TransactionDetailType,Char,3,N,Transaction Detail Type
+TRANDET,SABOS_TransactionDetail,N,Amount,Char,100,N,Amount
+TRANDET,SABOS_TransactionDetail,N,RepCodeID,Char,3,N,RepCodeID
+TRANDET,SABOS_TransactionDetail,N,BranchCode,Char,20,N,Branch Code
+TRANDET,SABOS_TransactionDetail,N,IsForfeited,Char,20,N,Is Forfeited
+TRANDET,SABOS_TransactionDetail,N,Rate,Char,40,N,Rate
+TRANDET,SABOS_TransactionDetail,N,BonusGroup,Char,5,Y,BonusGroup
 TRANTYPE,SABOS_TransactionType,Y,TransactionType,Char,10,N,Transaction Type
 TRANTYPE,SABOS_TransactionType,N,Description,Char,1000,N,Description
-TXNDETTP,SABOS_TransactionDetailType,Y,TxnDetailType,Char,5,N,TxnDetailType
+TXNDETTP,SABOS_TransactionDetailType,N,TxnDetailType,Char,5,N,TxnDetailType
 TXNDETTP,SABOS_TransactionDetailType,N,Description,Char,1000,N,Description
