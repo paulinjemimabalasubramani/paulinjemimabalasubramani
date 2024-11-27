@@ -34,8 +34,6 @@ import os, sys
 from datetime import datetime
 from collections import defaultdict
 
-import re
-
 class app: pass
 sys.app = app
 sys.app.args = args
@@ -49,7 +47,8 @@ from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit, udf
 from pyspark.sql.types import ArrayType, StringType
 
-
+import csv
+from io import StringIO
 
 
 # %% Parameters
@@ -225,8 +224,13 @@ def extract_file_meta(file_path:str, zip_file_path:str=None):
 
 
 def parse_line(line):
-    pattern = re.compile(r'''((?:[^,"']|"[^"]*"|'[^']*')+)''')
-    return [x.strip().strip('\"') for x in pattern.split(line) if x.strip() and x != ',']
+    """
+    Parse a comma-separated line, treating quoted fields as single values.
+    Handles consecutive commas as empty fields.
+    """
+    reader = csv.reader(StringIO(line), skipinitialspace=True)
+    parsed = next(reader)
+    return [field.strip() for field in parsed]
 
 
 # %% Create table from given file and its schema
