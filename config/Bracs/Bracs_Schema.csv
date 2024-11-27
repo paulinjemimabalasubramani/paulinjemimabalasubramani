@@ -6,11 +6,11 @@ ADJDET,BRACS_ADJUSTMENT_DETAIL,N,RepCode,Char,3,N,Representative Code associated
 ADJDET,BRACS_ADJUSTMENT_DETAIL,N,BranchCode,Int,5,N,Branch Code for Identification
 ADJDET,BRACS_ADJUSTMENT_DETAIL,N,Rate,Char,10,Y,Rate asscoiated with Adjustment
 ADJDET,BRACS_ADJUSTMENT_DETAIL,N,BonusGroup,Char,10,Y,Bonus Group for Adjustment
-ADJREAS,BRACS_ADJUSTMENT_REASONCODE,Y,ReasonCode,Int,10,N,Reason Code for Adjustment
+ADJREAS,BRACS_ADJUSTMENT_REASONCODE,N,ReasonCode,Int,10,N,Reason Code for Adjustment
 ADJREAS,BRACS_ADJUSTMENT_REASONCODE,N,Description,Char,1000,N,Reason Code Description for Adjustment
 ADJREAS,BRACS_ADJUSTMENT_REASONCODE,N,IsTaxable,Char,1,N,Is it taxable or not
 ADJREAS,BRACS_ADJUSTMENT_REASONCODE,N,IsDeferredComp,Char,1,Y,Is it deferred or not
-ADJUST,BRACS_ADJUSTMENT,Y,AdjustmentID,Char,20,N,Unique Identifier for Adjustment
+ADJUST,BRACS_ADJUSTMENT,N,AdjustmentID,Char,20,N,Unique Identifier for Adjustment
 ADJUST,BRACS_ADJUSTMENT,N,Company,Char,20,Y,Company
 ADJUST,BRACS_ADJUSTMENT,N,RepCode,Char,3,N,RepCode
 ADJUST,BRACS_ADJUSTMENT,N,BranchCode,Int,5,N,BranchCode
@@ -36,7 +36,7 @@ ADJUST,BRACS_ADJUSTMENT,N,SplitTransactionNumber,Char,20,Y,SplitTransactionNumbe
 ADJUST,BRACS_ADJUSTMENT,N,ClearingHouse,Char,10,Y,ClearingHouse
 ADJUST,BRACS_ADJUSTMENT,N,BonusGroup,Char,10,Y,BonusGroup
 DET12B1,BRACS_12B1Trails,N,RepCode,Char,5,N,RepCode
-DET12B1,BRACS_12B1Trails,Y,SourceTransactionNumber,Char,20,N,Source Transaction Number
+DET12B1,BRACS_12B1Trails,N,SourceTransactionNumber,Char,20,N,Source Transaction Number
 DET12B1,BRACS_12B1Trails,N,IsBrokerage,Char,1,N,IsBrokerage
 DET12B1,BRACS_12B1Trails,N,ProductSponsorCode,Char,50,N,Product Sponsor Code
 DET12B1,BRACS_12B1Trails,N,BranchCode,Char,10,N,Branch Code
@@ -63,14 +63,14 @@ HIERTREE,BRACS_RepHierarchyTree,N,Level3BranchID,Char,5,Y,Level3BranchID
 HIERTREE,BRACS_RepHierarchyTree,N,Level3Rep,Char,3,Y,Level3Rep
 HIERTREE,BRACS_RepHierarchyTree,N,RepBranchID,Char,5,N,RepBranchID
 HIERTREE,BRACS_RepHierarchyTree,N,RepCode,Char,3,N,RepCode
-PRODCAT,BRACS_ProductCategory,Y,Category,Int,10,N,Identifier for category of the product
+PRODCAT,BRACS_ProductCategory,N,Category,Int,10,N,Identifier for category of the product
 PRODCAT,BRACS_ProductCategory,N,Group,Char,8,N,Category Group of the Product
 PRODCAT,BRACS_ProductCategory,N,Description,Char,1000,N,Description for the product category
-PRODGRP,BRACS_ProductGroup,Y,Group,Char,3,N,Group of the product
+PRODGRP,BRACS_ProductGroup,N,Group,Char,3,N,Group of the product
 PRODGRP,BRACS_ProductGroup,N,Description,Char,1000,N,Description of group of the product
-PRODLIC,BRACS_ProductLicense,Y,ProductID,Char,100,N,ID number of the product
+PRODLIC,BRACS_ProductLicense,N,ProductID,Char,100,N,ID number of the product
 PRODLIC,BRACS_ProductLicense,N,License,Char,6,N,License category
-PRODUCT,BRACS_Product,Y,ProductID,Char,200,N,ID of the Product
+PRODUCT,BRACS_Product,N,ProductID,Char,200,N,ID of the Product
 PRODUCT,BRACS_Product,N,ProductCode,Char,50,N,Product Code
 PRODUCT,BRACS_Product,N,SponsorCode,Char,5,N,Sponsor Code
 PRODUCT,BRACS_Product,N,Cusip,Char,200,N,Cusip
@@ -85,7 +85,7 @@ PRODUCT,BRACS_Product,N,Symbol,Char,10,Y,Symbol
 PRODUCT,BRACS_Product,N,RatingCode,Char,2,N,Rating Code
 PRODUCT,BRACS_Product,N,IsProprietary,Char,1,Y,Is Proprietary
 PRODUCT,BRACS_Product,N,ClassCode,Char,1,Y,Class Code
-R12DET,BRACS_12B1Rebate,Y,TransactionID,Char,50,Y,TransactionID
+R12DET,BRACS_12B1Rebate,N,TransactionID,Char,50,Y,TransactionID
 R12DET,BRACS_12B1Rebate,N,RepCode,Char,5,N,RepCode
 R12DET,BRACS_12B1Rebate,N,BranchCode,Char,10,N,BranchCode
 R12DET,BRACS_12B1Rebate,N,StatementDate,Char,8,N,StatementDate
@@ -102,7 +102,7 @@ R12DET,BRACS_12B1Rebate,N,OriginalRepCode,Char,10,N,Original RepCode
 R12DET,BRACS_12B1Rebate,N,ProductID,Char,30,N,Product ID
 R12DET,BRACS_12B1Rebate,N,RebateRate,Char,20,N,Rebate Rate
 R12DET,BRACS_12B1Rebate,N,ClearingHouse,Char,50,N,Clearing House
-RATECODE,BRACS_RatingCode,Y,Code,Char,1,N,Code
+RATECODE,BRACS_RatingCode,N,Code,Char,1,N,Code
 RATECODE,BRACS_RatingCode,N,Description,Char,1000,N,Description
 REPHIER,BRACS_RepHierarchy,N,RepCode,Char,3,N,RepCode
 REPHIER,BRACS_RepHierarchy,N,CycleDate,Char,8,N,Cycle Date
@@ -136,8 +136,8 @@ REPHIST,BRACS_RepHistory,N,Level3YTDProduction,Char,100,Y,Level3YTDProduction
 REPHIST,BRACS_RepHistory,N,Level2YTDProduction,Char,100,Y,Level2YTDProduction
 REPHIST,BRACS_RepHistory,N,Level1YTDProduction,Char,100,Y,Level1YTDProduction
 REPHIST,BRACS_RepHistory,N,RepStatus,Char,1,Y,RepStatus
-REPNAME,BRACS_REPNAME,N,BDID,Int,1,N,BD ID
-REPNAME,BRACS_REPNAME,Y,RepCode,Char,3,N,Rep Code
+REPNAME,BRACS_REPNAME,N,SRC_DATA_BDID,Int,1,N,BD ID
+REPNAME,BRACS_REPNAME,N,RepCode,Char,3,N,Rep Code
 REPNAME,BRACS_REPNAME,N,SSN,Char,9,N,Social Security Number
 REPNAME,BRACS_REPNAME,N,FirstName,Char,50,N,First Name
 REPNAME,BRACS_REPNAME,N,MiddleName,Char,50,Y,Middle Name
@@ -153,7 +153,7 @@ SPNELITE,BRACS_SponsorElite,N,SponsorCode,Char,5,N,Sponsor Code
 SPNELITE,BRACS_SponsorElite,N,EliteCode,Char,10,N,Elite Code
 SPNELITE,BRACS_SponsorElite,N,EffectiveStartDate,Char,8,N,Effective Start Date
 SPNELITE,BRACS_SponsorElite,N,EffectiveEndDate,Char,8,Y,Effective End Date
-SPONSOR,BRACS_Sponsor,Y,SponsorCode,Char,3,N,Sponsor Code
+SPONSOR,BRACS_Sponsor,N,SponsorCode,Char,3,N,Sponsor Code
 SPONSOR,BRACS_Sponsor,N,Name,Char,50,N,Name
 SPONSOR,BRACS_Sponsor,N,Address1,Char,200,N,Address1
 SPONSOR,BRACS_Sponsor,N,Address2,Char,200,Y,Address2
@@ -176,7 +176,7 @@ TOTALS,BRACS_Totals,N,TotalRep 1099,Char,100,N,TotalRep
 TOTALS,BRACS_Totals,N,TotalInsurance,Char,100,Y,Total Insurance
 TOTALS,BRACS_Totals,N,TotalSecurity,Char,100,Y,Total Security
 TOTALS,BRACS_Totals,N,TotalDebit,Char,100,Y,Total Debit
-TRAN,BRACS_Transaction,Y,TransactionID,Char,15,N,Transaction ID
+TRAN,BRACS_Transaction,N,TransactionID,Char,15,N,Transaction ID
 TRAN,BRACS_Transaction,N,Company,Char,50,Y,Company
 TRAN,BRACS_Transaction,N,ProductID,Char,50,N,Product ID
 TRAN,BRACS_Transaction,N,RepCode,Char,3,N,Rep Code
@@ -209,7 +209,7 @@ TRANDET,BRACS_TransactionDetail,N,BranchCode,Char,20,N,Branch Code
 TRANDET,BRACS_TransactionDetail,N,IsForfeited,Char,20,N,Is Forfeited
 TRANDET,BRACS_TransactionDetail,N,Rate,Char,40,N,Rate
 TRANDET,BRACS_TransactionDetail,N,BonusGroup,Char,5,Y,BonusGroup
-TRANTYPE,BRACS_TransactionType,Y,TransactionType,Char,10,N,Transaction Type
+TRANTYPE,BRACS_TransactionType,N,TransactionType,Char,10,N,Transaction Type
 TRANTYPE,BRACS_TransactionType,N,Description,Char,1000,N,Description
 TXNDETTP,BRACS_TransactionDetailType,N,TxnDetailType,Char,5,N,TxnDetailType
 TXNDETTP,BRACS_TransactionDetailType,N,Description,Char,1000,N,Description
