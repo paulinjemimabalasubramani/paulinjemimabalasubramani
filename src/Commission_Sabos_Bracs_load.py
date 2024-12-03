@@ -44,7 +44,7 @@ from modules3.spark_functions import add_id_key, create_spark, read_text, remove
 from modules3.migrate_files import migrate_all_files, default_table_dtypes, file_meta_exists_for_select_files, add_firm_to_table_name
 
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, lit, udf
+from pyspark.sql.functions import col, lit, udf,monotonically_increasing_id
 from pyspark.sql.types import ArrayType, StringType
 
 import csv
@@ -254,7 +254,7 @@ def create_table_from_file(file_meta:dict):
     key_column_names = []
     for i, sch in enumerate(file_schema):
         if sch['column_name'].lower() != unused_column_name:
-            text_file = text_file.withColumn(sch['column_name'], col('elt_value').getItem(i))
+            text_file = text_file.withColumn(sch['column_name'], col('elt_value').getItem(i)).withColumn('line_number',monotonically_increasing_id())
             if sch['is_primary_key']:
                 key_column_names.append(sch['column_name'])
 
