@@ -64,7 +64,7 @@ def copy_files():
             for file_name in files:
                 remote_file_path = os.path.join(root, file_name)
 
-                if any(c in file_name for c in copy_only_files):
+                if any(c in file_name.lower() for c in copy_only_files):
                     relative_copy_file(remote_path=data_settings.remote_path, dest_path=data_settings.source_path, remote_file_path=remote_file_path)
                 else:
                     logger.info(f'{file_name} is not in [{data_settings.copy_only_files}] -> Skipping Copy')
