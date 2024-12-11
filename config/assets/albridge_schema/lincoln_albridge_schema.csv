@@ -1,0 +1,92 @@
+file_type,file_type_desc,is_primary_key,column_name,data_type,max_size,is_null,description
+M,Advisor,Y,FIN_INST_ID,Num,4,N,Financial Institution Name Id
+M,Advisor,Y,ADVISOR_TAX_ID,Char,9,N,Advisor SSN
+M,Advisor,,UNUSED,N/A,2,Y,This field is no longer used
+M,Advisor,,NAME_PREFIX,Char,10,Y,"Name Prefix. Mr, Mrs etc"
+M,Advisor,,LAST_NAME,Char,20,Y,Last Name
+M,Advisor,,FIRST_NAME,Char,20,Y,First Name
+M,Advisor,,MIDDLE_NAME,Char,20,Y,Middle Name
+M,Advisor,,NAME_SUFFIX,Char,35,Y,Name Suffix
+M,Advisor,,ADV_ADDR_LINE1,Char,100,Y,Address Line 1
+M,Advisor,,ADV_ADDR_LINE2,Char,100,Y,Address Line 2
+M,Advisor,,CITY,Char,30,Y,City
+M,Advisor,,STATE,Char,2,Y,State
+M,Advisor,,ZIP_CODE,Char,10,Y,Zip Code
+M,Advisor,,COUNTRY,Char,20,Y,Country (currently not in use)
+M,Advisor,,UNUSED,N/A,9,Y,This field is no longer used
+M,Advisor,,BUSINESS_PHONE,Char,20,Y,Business Phone Num
+M,Advisor,,HOME_PHONE,Char,20,Y,Home Phone Num
+M,Advisor,,FAX,Char,20,Y,Fax Num
+M,Advisor,,OTHER_PHONE,Char,20,Y,Alternate Phone Num
+M,Advisor,,BUSINESS_NAME,Char,125,Y,Business Name
+M,Advisor,,UNUSED,N/A,9,Y,This field is no longer used
+M,Advisor,,ACCT_METHOD,Char,4,Y,"Cost Basis Method – FIFO, LIFO, AVG"
+M,Advisor,,ADVISOR_NAME,Char,85,Y,Advisor Name
+M,Advisor,,BIRTHDATE,Char,8,Y,Advisor Birth Date
+M,Advisor,,PROF_TITLE,Char,30,Y,Advisor Professional Title
+M,Advisor,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+N,Advisor Rep Nums,Y,ADVISOR_REP_NUM,Char,9,N,Advisor Rep Num
+N,Advisor Rep Nums,Y,FIN_INST_ID,Num,4,N,Financial Institution Name Id
+N,Advisor Rep Nums,Y,INT_TYPE,Num,3,N,Data Source Interface Type Code. See Appendix
+N,Advisor Rep Nums,Y,VA_CODE,Char,20,N,Alias attribute used for many VAs and Managed Asset accounts
+N,Advisor Rep Nums,Y,ADVISOR_TAX_ID,Char,9,N,Advisor SSN
+N,Advisor Rep Nums,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+A,Account,Y,SSN_TIN,Char,23,N,Investor's SSN or Tax Identification Number
+A,Account,Y,ACCT_NUMBER,Char,20,N,Account Number
+A,Account,,FIN_INST_ID,Num,4,N,Financial Institution Name Id
+A,Account,,ACCT_TITLE,Char,280,Y,Account Registration
+A,Account,,ACCOUNT_TYPE,Char,60,Y,Account Type
+A,Account,,UNUSED,N/A,2,Y,This field is no longer used
+A,Account,,ACCT_NAME,Char,280,Y,Account Name
+A,Account,,ADVISOR_REP_NUM,Char,9,Y,Advisor's Rep Num
+A,Account,,INT_TYPE,Num,3,N,Data Source Interface Type Code.
+A,Account,,VA_CODE,Char,20,N,Alias attribute used for many VAs and Managed Asset accounts
+A,Account,,VIEWABLE,Char,1,N,"Viewable Flag. „Y‟- Viewable, „N‟- Not Viewable, „S‟- Suppressed – Manually applied at Rep or BD request."
+A,Account,,SRC_TYPE,Char,1,Y,"Account Source Type: „C‟ – Core from Data Source. Manual Accts: „A‟ – Advisor, „F‟ – FI, „I‟ – Investor"
+A,Account,,ACCT_METHOD,Char,4,Y,"Cost Basis Acct Method –FIFO (default), LIFO, AVG"
+A,Account,,TAX_STATUS,Num,1,Y,"Tax type of account: 1 – Non Qualified, 2 – Qualified, 3 – Undefined, 4 – Non-Qualified Retirement Account"
+A,Account,,SEGMENT_TYPE,Char,1,N,"Type of account: „C‟ – Core Data, „B‟ – Balance Only, ‟M‟ Manual, „A‟ Aggregated (screen scraped)"
+A,Account,,FEE_STATUS,Char,1,Y,"„Y‟ if this is a Fee Based account, otherwise „N‟ or ''"
+A,Account,,NORM_ACCT_TYPE,Char,60,Y,Normalized Account Type Description- This functionality is still in development
+A,Account,,SWP_OPT,Char,1,Y,Field used to indicate the account is setup for SWP transactions. „Y‟ or „N‟
+A,Account,,ROA_NUM_AMT,Char,30,Y,ROA Reference number and amount „#######I######‟ I = „D‟ or „S‟ for dollars or shares respectively.
+A,Account,,EST_DATE,Char,8,Y,The date an account was opened.
+A,Account,,NSCC_LEV,Number,2,Y,0=Non-networked broker account 1=Broker-controlled IRA/Margin account 2=Customer name brokerage account 3=Broker-controlled brokerage account 4=Fund-controlled brokerage account
+A,Account,,SOC_CODE,Char,3,Y,"Characterizes the owner of the account (such as male, female, joint tenant, trustee, charitable organization)female, joint tenant, trustee, charitable organization) from DST only Appendix"
+A,Account,,DLR_NUM,Char,9,Y,Dealer number from source.
+A,Account,,BRCH_NUM,Char,9,Y,Dealer/Branch number from source.
+A,Account,,NAV_CODE,Char,1,Y,Net Asset Value „Y‟ or „N‟
+A,Account,,CLSD,Char,1,Y,0=Closed 1= Open
+A,Account,,MAN_INDC,Char,1,Y,Managed Account indicator „Y‟ or „N‟
+A,Account,,SRC_DATE,Char,8,Y,Change date of account information from/on source system.
+A,Account,,DISCRT,Char,1,Y,Discretionary „Y‟ or „N‟
+A,Account,,DVP,Char,1,Y,Delivery vs. Payment „Y‟ or „N‟
+A,Account,,LOI_NUM_AMT,Char,30,Y,LOI Reference number and amount „#######I######‟ I = „D‟ or „S‟ for dollars or shares respectively.
+A,Account,,OPT_LEV,Num,2,Y,"Identifies the level of options trading authorized on the account. 1 = Covered equity call writing 2 = Level 1 privileges, plus purchase of equity and index calls and puts 3 = Levels 1 and 2 privileges, plus purchase of equity and index straddles or combinations, covered put writing, and equity spreads 4 = 1 - 3 privileges, plus uncovered writing of equity options, straddles, or combinations 5 = Levels 1 - 4 privileges, plus index spreads and uncovered writing of index options, straddles, or combinations"
+A,Account,,RESTRIC,Char,1,Y,Identifies a restriction on the account. „Y‟ or „N‟
+A,Account,,INCOM,Number,"20,2",Y,Income figure used in all income calculations representing the estimate based on the income range provided by the customer in the suitability information. Will be median of upper and lower boundary.
+A,Account,,INCOM_L,Number,"20,2",Y,Approximate annual income range of the household - lower boundary.
+A,Account,,INCOM_H,Number,"20,2",Y,Approximate annual income range of the household - Higher boundary.
+A,Account,,NETW,Number,"20,2",Y,Net worth figure used in all net worth calculations representing the estimate based on the net worth range provided by the customer in the suitability information. Will be the median of upper and lower boundary.
+A,Account,,NETW_L,Number,"20,2",Y,Approximate net worth range of the household - lower boundary.
+A,Account,,NETW_H,Number,"20,2",Y,Approximate net worth range of the household - upper boundary.
+A,Account,,OCCUP,Char,15,Y,Occupation of the account owner.
+A,Account,,TAX_BRCKT,Number,3,Y,Federal tax bracket.
+A,Account,,MAN_TYPE,Char,2,Y,Type of managed account. Appendix
+A,Account,,FEE_BAS_FLAG,Char,1,Y,Fee Based Flag „Y‟ or „N‟
+A,Account,,PROD_NAM_CODE,Char,20,Y,Code for advisory products provided by FI
+A,Account,,DSC_TYPE_CODE,Char,20,Y,Discretionary flag populated for Advisory products etc…
+A,Account,,EMPLOYEE_OWNED,Char,1,Y,Employee-owned account.
+A,Account,,MANAGEMENT_NAME,Char,150,Y,"This is only valid for direct business interfaces (eg DST, DAZL), it would not be valid for Brokerage interfaces. Account level information only, not asset-level."
+A,Account,,BILLING_FREQUENCY,Num,1,Y,DST stored value.
+A,Account,,BILLLING_AMOUNT,Num,"12,2",Y,DST stored value.
+A,Account,,ACCT_TYPE_CODE,Char,5,Y,internal Albridge code which corresponds to ACCOUNT_TYPE description provided in column 5 of this “Account File”
+A,Account,,ORG_ACCT_TYPE,Char,5,Y,Original Acct type code sent by the interface.
+A,Account,,ACTION_FLAG,Char,1,N,"A=Add, D=Delete, U=Update"
+HEADER,Header Record,,RECORD_TYPE,Char,1,N,Identifies this record as a Header – “H”
+HEADER,Header Record,,FILE_DESC,Char,40,N,A plain English description of the file contents.
+HEADER,Header Record,,EFF_DATE,Char,8,N,Processed through date (YYYYMMDD)
+HEADER,Header Record,,RUN_DATE,Char,8,N,Date Export was run (YYYYMMDD)
+HEADER,Header Record,,RUN_TIME,Char,6,N,Time Export was run (HHMMSS)
+TRAILER,Trailer Record,,RECORD_TYPE,Char,1,N,Identifies this record as a Trailer – “T”
+TRAILER,Trailer Record,,REC_CNT,Char,20,N,Total number of records in the file
