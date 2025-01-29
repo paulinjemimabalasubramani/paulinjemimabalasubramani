@@ -10,7 +10,7 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_d
 
 # %% Pipeline Parameters
 
-pipelinekey = 'ASSETS_MIGRATE_IFX_ENVESTNET'
+pipelinekey = 'ASSETS_MIGRATE_IFX_PERSHING_ENVESTNET'
 python_spark_code = 'migrate_csv_with_date_3'
 
 tags = ['DB:Assets', 'SC:ENVESTNET']
