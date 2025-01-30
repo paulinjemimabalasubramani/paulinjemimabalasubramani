@@ -24,7 +24,7 @@ else:
         'db_name': 'ASSETS',
         'schema_name': 'NFS2',
         'clientid_map': 'MAJ:RAA,FXA:SPF,FL2:FSC,00133:SAI,00436:TRI,WDB:WFS,0KS:SAI,TR1:TRI,033:TST',
-        'REJECT_FILES':'RMD,OPENLOT,CLOSEDLOT,ORDER,SCHDEVNT,SUITBASE'
+        'REJECT_FILES':'RMD,OPENLOT,CLOSEDLOT,ORDER,SCHDEVNT,SUITBASE',
         'file_history_start_date': '2016-01-15',
         'pipeline_firm': 'TST',
         'is_full_load': 'FALSE',
@@ -337,7 +337,7 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
 
     if any(keyword in os.path.basename(fsource.name).upper() for keyword in (data_settings.exclude_file_list.split(','))):        
         return False
-        
+
     record_schema = all_schema[(file_meta['file_type'], 'record')]
 
     first = True
