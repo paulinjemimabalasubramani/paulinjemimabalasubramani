@@ -333,7 +333,7 @@ def get_field_properties(column_name:str, record_schema:list):
 def process_lines_1_record(fsource, ftarget, file_meta:dict):
     """
     Process all lines for files that has only 1 record type
-    """
+    """"
     if data_settings.file_pattern:
         file_name_patterns = data_settings.file_pattern.split(',')
         print('file_name_patterns', str(file_name_patterns))
