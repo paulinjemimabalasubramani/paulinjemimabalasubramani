@@ -40,7 +40,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, get_csv_rows, normalize_name, convert_string_map_to_dict, zip_delete_1_file, find_latest_folder,find_latest_file,find_files, max_folder_name
+from modules3.common_functions import catch_error,data_settings , logger, mark_execution_end, get_csv_rows, normalize_name, convert_string_map_to_dict, zip_delete_1_file, find_latest_folder,find_latest_file,find_files, max_folder_name
 from modules3.migrate_files import file_meta_exists_in_history
 
 from collections import defaultdict
@@ -333,6 +333,11 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
     """
     Process all lines for files that has only 1 record type
     """
+    Reject_File = data_settings.Reject_File
+    if any(keyword in os.path.basename(fsource.name).upper() for keyword in Reject_File):  
+        return False
+    
+
     record_schema = all_schema[(file_meta['file_type'], 'record')]
 
     first = True
@@ -365,7 +370,10 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
     """
     Process all lines for name_and_address file
     """
-    if 'NAMED' in os.path.basename(fsource.name).upper(): # Use only full files
+   ## if 'NAMED' in os.path.basename(fsource.name).upper(): # Use only full files
+    ##    return False
+    
+    if 'NAMEF' in os.path.basename(fsource.name).upper(): # Use only full files
         return False
 
     get_record_schema = lambda record_number: all_schema[(file_meta['file_type'], 'record_'+record_number.lower())]
