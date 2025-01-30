@@ -334,15 +334,10 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
     """
     Process all lines for files that has only 1 record type
     """
-    if data_settings.file_pattern:
-        file_name_patterns = data_settings.file_pattern.split(',')
-        print('file_name_patterns', str(file_name_patterns))
-        for file_name_pattern in file_name_patterns:
-            matching_files = find_files(source_path=data_settings.source_path, pattern=file_name_pattern)
-            for file in matching_files: 
-             return False
-    
 
+    if any(keyword in os.path.basename(fsource.name).upper() for keyword in (data_settings.exclude_file_list.split(','))):        
+        return False
+        
     record_schema = all_schema[(file_meta['file_type'], 'record')]
 
     first = True
@@ -377,8 +372,10 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
     """
    ## if 'NAMED' in os.path.basename(fsource.name).upper(): # Use only full files
     ##    return False
+
+    ## Workaround to load delta due to large volume of full file    
     
-    if 'NAMEF' in os.path.basename(fsource.name).upper(): # Use only full files
+    if 'NAMEF' in os.path.basename(fsource.name).upper(): # Use only delta files
         return False
 
     get_record_schema = lambda record_number: all_schema[(file_meta['file_type'], 'record_'+record_number.lower())]
