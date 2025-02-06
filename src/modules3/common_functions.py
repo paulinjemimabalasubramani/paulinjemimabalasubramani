@@ -327,6 +327,7 @@ def get_data_settings(logger=None):
 
     if hasattr(data_settings, 'db_name'):  data_settings.domain_name = data_settings.db_name.lower()
     if hasattr(data_settings, 'schema_name'): data_settings.schema_name = data_settings.schema_name.upper()
+    if hasattr(data_settings, 'Multiline_file'): data_settings.Multiline_file = data_settings.Multiline_file.upper()
     data_settings.elt_process_id = '_'.join([data_settings.pipelinekey, execution_date_start.strftime(r'%Y%m%d%H%M%S')])
 
     to_storage_account = lambda storage_account_mid:  f"{data_settings.azure_storage_accounts_prefix}{storage_account_mid}{data_settings.azure_storage_accounts_suffix}".lower()
