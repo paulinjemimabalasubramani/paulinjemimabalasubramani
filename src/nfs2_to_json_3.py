@@ -43,7 +43,7 @@ sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error,data_settings , logger, mark_execution_end, get_csv_rows, normalize_name, convert_string_map_to_dict, zip_delete_1_file, find_latest_folder,find_latest_file,find_files, max_folder_name
 from modules3.migrate_files import file_meta_exists_in_history
-
+from modules3.Multiline_file_handle import split_files
 from collections import defaultdict
 from distutils.dir_util import remove_tree
 from datetime import datetime
@@ -370,13 +370,13 @@ def process_lines_name_and_address(fsource, ftarget, file_meta:dict):
     """
     Process all lines for name_and_address file
     """
-   ## if 'NAMED' in os.path.basename(fsource.name).upper(): # Use only full files
-    ##    return False
+    if 'NAMED' in os.path.basename(fsource.name).upper(): # Use only full files
+        return False
 
     ## Workaround to load delta due to large volume of full file    
     
-    if 'NAMEF' in os.path.basename(fsource.name).upper(): # Use only delta files
-        return False
+    #if 'NAMEF' in os.path.basename(fsource.name).upper(): # Use only delta files
+    #    return False
 
     get_record_schema = lambda record_number: all_schema[(file_meta['file_type'], 'record_'+record_number.lower())]
 
@@ -705,7 +705,13 @@ def iterate_over_all_nfs2(source_path:str):
                 logger.warning(f'Not a .DAT file: {file_path}')
                 continue
 
-            process_single_nfs2(file_path=file_path)
+            if(file_name in data_settings.Multiline_file) :
+                 handle_multi_line(file_name)
+                 for root, dir, files in os.walk(file_path):
+                     file_path = os.path.join(root, file_name)
+                     process_single_nfs2(file_path=file_path)
+            else:
+                process_single_nfs2(file_path=file_path)
 
 if 'LFA_DAILY' in data_settings.pipelinekey.upper() or 'LFS_DAILY' in data_settings.pipelinekey.upper():
     if data_settings.file_pattern:
@@ -766,8 +772,22 @@ elif data_settings.pipeline_firm.lower() == 'tri':
     iterate_over_all_nfs2(source_path=source_path)
 
 
-
-# %% Close Connections / End Program
+def handle_multi_line(file_name: str):
+    if file_name == 'RAA_NFS_NAMEF':
+     # Count the number of lines in the file
+        with open(file_name, 'r') as file:
+            num_row = sum(1 for line in file)
+        
+        # Call split_files with the calculated num_row
+        split_files(
+            source_file=file_name,
+            Number_of_entity_per_file=10000,
+            trailer='T',
+            trailer_format=f'T                    0000000000{num_row}    0000000000{num_row}-2',
+            identifier_start_position=11,
+            identifier_end_position=17,
+            linesize=701
+        )
 
 mark_execution_end()
 
