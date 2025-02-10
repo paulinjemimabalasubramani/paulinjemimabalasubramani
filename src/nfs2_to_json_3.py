@@ -35,7 +35,6 @@ else:
 # %% Import Libraries
 
 import os, sys, tempfile, shutil, json, re
-
 class app: pass
 sys.app = app
 sys.app.args = args
@@ -677,9 +676,32 @@ def process_single_nfs2(file_path:str):
 
 
 # %%
+def handle_multi_line(file_name: str):
+    print(f'filename is==== {file_name}')
+    
+    if file_name.startswith('RAA_NFS_NAMEF'):
+        # Construct the full file path
+        file_path = os.path.join(data_settings.source_path, file_name)
+        print(f'Checking file path: {file_path}')
+        
+        try:
+            # Call split_files with the calculated num_row
+            split_files(
+                source_file=file_path,
+                Number_of_entity_per_file=5000,
+                identifier_start_position=11,
+                identifier_end_position=17,
+                linesize=701
+            )
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+            print(f"Files in directory: {os.listdir(os.path.dirname(file_path))}")
+    else:
+        print(f"File name does not start with 'RAA_NFS_NAMEF': {file_name}")
+
 
 @catch_error(logger)
-def iterate_over_all_nfs2(source_path:str):
+def iterate_over_all_nfs2(source_path: str):
     """
     Main function to iterate over all the files in source_path and add bulk_id
     """
@@ -705,13 +727,27 @@ def iterate_over_all_nfs2(source_path:str):
                 logger.warning(f'Not a .DAT file: {file_path}')
                 continue
 
-            if(file_name in data_settings.Multiline_file) :
-                 handle_multi_line(file_name)
-                 for root, dir, files in os.walk(file_path):
-                     file_path = os.path.join(root, file_name)
-                     process_single_nfs2(file_path=file_path)
+            print(f"Checking file: {file_name}")
+            print(f"Patterns in data_settings.multiline_file: {data_settings.multiline_file}")
+
+            if any(file_name.startswith(pattern) for pattern in data_settings.multiline_file.split(',')):
+               print(f"File {file_name} matches a pattern in data_settings.multiline_file")
+               handle_multi_line(file_name)
+               split_files_dir = os.path.join(os.path.dirname(file_path), 'split_files')
+               if os.path.exists(split_files_dir):
+                  for split_root, split_dirs, split_files in os.walk(split_files_dir):
+                      for split_file in split_files:
+                          split_file_path = os.path.join(split_root, split_file)
+                          process_single_nfs2(file_path=split_file_path)
+                  # Delete the split_files directory after processing
+                  shutil.rmtree(split_files_dir)
+               else:      
+                   print(f"Error: split_files directory does not exist: {split_files_dir}")
             else:
+                print(f"File {file_name} does not match any pattern in data_settings.multiline_file")
+                # Process the file directly under the source path
                 process_single_nfs2(file_path=file_path)
+
 
 if 'LFA_DAILY' in data_settings.pipelinekey.upper() or 'LFS_DAILY' in data_settings.pipelinekey.upper():
     if data_settings.file_pattern:
@@ -721,8 +757,6 @@ if 'LFA_DAILY' in data_settings.pipelinekey.upper() or 'LFS_DAILY' in data_setti
             matching_files = find_files(source_path=data_settings.source_path, pattern=file_name_pattern)
             for file in matching_files:
                 process_single_nfs2(file)
-                 
-
 
 elif 'LFA_FULL' in data_settings.pipelinekey.upper() or 'LFS_FULL' in data_settings.pipelinekey.upper():
     if data_settings.find_latest_file_name_pattern:
@@ -732,12 +766,8 @@ elif 'LFA_FULL' in data_settings.pipelinekey.upper() or 'LFS_FULL' in data_setti
             latest_file = find_latest_file(source_path=data_settings.source_path, pattern=file_name_pattern)
             if latest_file:
                 process_single_nfs2(latest_file)
-                process_single_nfs2(latest_file)
 else:
     iterate_over_all_nfs2(source_path=data_settings.source_path)
-
-
-
 
 if hasattr(data_settings, 'source_path2'):
     iterate_over_all_nfs2(source_path=data_settings.source_path2)
@@ -747,51 +777,31 @@ if 'HISTORY' in data_settings.pipelinekey.upper():
 
 elif data_settings.pipeline_firm.lower() == 'sai':
     base_path = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_SAI/MIPS'
-    folder_levels = [r'%Y', r'%b', 'NFSBOOK'] # for bookkeeping data
+    folder_levels = [r'%Y', r'%b', 'NFSBOOK']  # for bookkeeping data
     source_path = find_latest_folder(remote_path=base_path, folder_levels=folder_levels)
     logger.info(f'source_path for bookkeeping data: {source_path}')
     iterate_over_all_nfs2(source_path=source_path)
 
     base_path = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_SAI'
-    folder_levels = [r'%Y', r'%b', r'%Y%m%d', 'FIDELITYIWS', max_folder_name, 'RAWDATA'] # for IWS data
+    folder_levels = [r'%Y', r'%b', r'%Y%m%d', 'FIDELITYIWS', max_folder_name, 'RAWDATA']  # for IWS data
     source_path = find_latest_folder(remote_path=base_path, folder_levels=folder_levels)
     logger.info(f'source_path for IWS data: {source_path}')
     iterate_over_all_nfs2(source_path=source_path)
 
 elif data_settings.pipeline_firm.lower() == 'tri':
     base_path = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_TRI'
-    folder_levels = [r'%Y', r'%b', r'%Y%m%d', 'NFS', max_folder_name, 'RAWDATA'] # for NFS data
+    folder_levels = [r'%Y', r'%b', r'%Y%m%d', 'NFS', max_folder_name, 'RAWDATA']  # for NFS data
     source_path = find_latest_folder(remote_path=base_path, folder_levels=folder_levels)
     logger.info(f'source_path for NFS data: {source_path}')
     iterate_over_all_nfs2(source_path=source_path)
 
     base_path = r'/opt/EDIP/remote/fasoma05bprd/DownloadData/_TRI'
-    folder_levels = [r'%Y', r'%b', r'%Y%m%d', 'FIDELITYIWS', max_folder_name, 'RAWDATA'] # for IWS data
+    folder_levels = [r'%Y', r'%b', r'%Y%m%d', 'FIDELITYIWS', max_folder_name, 'RAWDATA']  # for IWS data
     source_path = find_latest_folder(remote_path=base_path, folder_levels=folder_levels)
     logger.info(f'source_path for IWS data: {source_path}')
     iterate_over_all_nfs2(source_path=source_path)
 
-
-def handle_multi_line(file_name: str):
-    if file_name == 'RAA_NFS_NAMEF':
-     # Count the number of lines in the file
-        with open(file_name, 'r') as file:
-            num_row = sum(1 for line in file)
-        
-        # Call split_files with the calculated num_row
-        split_files(
-            source_file=file_name,
-            Number_of_entity_per_file=10000,
-            trailer='T',
-            trailer_format=f'T                    0000000000{num_row}    0000000000{num_row}-2',
-            identifier_start_position=11,
-            identifier_end_position=17,
-            linesize=701
-        )
-
 mark_execution_end()
-
-
 # %%
 
 
