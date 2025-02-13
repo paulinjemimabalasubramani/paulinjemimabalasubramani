@@ -688,7 +688,7 @@ def handle_multi_line(file_name: str):
             # Call split_files with the calculated num_row
             split_files(
                 source_file=file_path,
-                Number_of_entity_per_file=5000,
+                Number_of_entity_per_file=10000,
                 identifier_start_position=11,
                 identifier_end_position=17,
                 linesize=701
