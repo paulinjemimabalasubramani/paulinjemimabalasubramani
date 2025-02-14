@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import sys
 import os
+from modules3.common_functions import data_settings
 
 def write_to_file(record, source_file, Number_of_entity_per_file, encoding, final=False):
     des_fh = gvar['des_fh']
@@ -10,7 +11,8 @@ def write_to_file(record, source_file, Number_of_entity_per_file, encoding, fina
             des_fh.close()
         file_num = gvar['rec_count'] // Number_of_entity_per_file
         base_dir = os.path.dirname(source_file)
-        split_dir = os.path.join(base_dir, 'split_files')
+        split_dir = data_settings.get_value(attr_name=f'split_dir', default_value=os.path.join(base_dir, 'split_files'))
+        print(f'split_dir : {split_dir}')
         if not os.path.exists(split_dir):
             os.makedirs(split_dir)
         base_name, ext = os.path.splitext(os.path.basename(source_file))
