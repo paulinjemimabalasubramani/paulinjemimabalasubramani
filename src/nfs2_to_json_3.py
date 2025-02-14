@@ -733,7 +733,7 @@ def iterate_over_all_nfs2(source_path: str):
             if any(file_name.startswith(pattern) for pattern in data_settings.multiline_file.split(',')):
                print(f"File {file_name} matches a pattern in data_settings.multiline_file")
                handle_multi_line(file_name)
-               split_files_dir = os.path.join(os.path.dirname(file_path), 'split_files')
+               split_files_dir =  data_settings.get_value(attr_name=f'split_dir', default_value=os.path.join(os.path.dirname(file_path), 'split_files'))
                if os.path.exists(split_files_dir):
                   for split_root, split_dirs, split_files in os.walk(split_files_dir):
                       for split_file in split_files:
