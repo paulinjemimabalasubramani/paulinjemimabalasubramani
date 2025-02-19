@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import ijson
-import orjson
 from datetime import datetime
 from xml.sax import parse
 from xml.sax.saxutils import XMLGenerator
@@ -192,20 +191,31 @@ def split_file(file_path, filename, fileType, output_dir, max_size, max_lines, e
 
 
 @catch_error(logger)
-def split_csv_dat_txt_file(source_dir, output_dir, split_max_size_in_mb=1, max_lines=10000, encodingFormat='utf-8', header=None, trailerFormat=None, trailer_record_startwith=None):
+def split_csv_dat_txt_file(source_dir, output_dir=None, split_max_size_in_mb=20, max_lines=10000, encodingFormat='utf-8', header=None, trailerFormat=None, trailer_record_startwith=None):
     max_size = split_max_size_in_mb * 1024 * 1024
     if not os.path.exists(source_dir):
         logger.error(f"Source directory not found: {source_dir}. Skipping...")
         return
+    
+    # Create 'split_files' directory under source path if not provided
+    if output_dir is None:
+        output_dir = os.path.join(source_dir, 'split_files')
+    
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
     logger.info(f"Start processing files in source directory: {source_dir}")
     start_time = time.time()
+    
     for file in os.listdir(source_dir):
         file_path = os.path.join(source_dir, file)
         if os.path.isfile(file_path):
             split_file(file_path, file, os.path.splitext(file)[1], output_dir, max_size, max_lines, encodingFormat, header, trailerFormat, trailer_record_startwith)
+    
     end_time = time.time()
     logger.info(f"Finished processing files in source directory: {source_dir}")
     logger.info(f"Processing time for split_csv_dat_txt_file: {end_time - start_time:.2f} seconds\n")
+
 
 ################################################################################################################################################
 ################################################# MAIN FUNCTION ################################################################################
@@ -223,4 +233,4 @@ if __name__ == "__main__":
     # dat: split_csv_dat_txt_file(source_dir, output_dir,max_lines=1000,header='H',trailerFormat='T {0}',trailer_record_startwith='T')
     # txt: split_csv_dat_txt_file(source_dir, output_dir,max_lines=1000,header='*EOF*|',trailerFormat='*BOF*|{0}',trailer_record_startwith='*BOF*|')
     
-    split_csv_dat_txt_file(source_dir='C:\\Users\\pjemima\\Downloads\\Inputfile', output_dir='C:\\Users\\pjemima\\Downloads\\outputfile', max_lines=45000, header='UNIQUE_ID')
+    split_csv_dat_txt_file(source_dir, output_dir, max_lines=max_lines, header=header, trailerFormat=trailerFormat, trailer_record_startwith=trailer_record_startwith)
