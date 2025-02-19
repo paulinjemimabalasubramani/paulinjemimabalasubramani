@@ -55,9 +55,7 @@ def split_files(source_file, Number_of_entity_per_file, identifier_start_positio
         'trailer': None    # For Trailer Row
     }
 
-    if not os.path.exists('split_files'):
-        os.makedirs('split_files')
-
+    
     total_record = process_source_file(source_file, Number_of_entity_per_file, identifier_start_position, identifier_end_position, linesize, encoding)
     if gvar['des_fh']:
         gvar['des_fh'].write(gvar['trailer'])  # Write the trailer row
