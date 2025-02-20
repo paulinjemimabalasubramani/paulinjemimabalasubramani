@@ -43,7 +43,7 @@ sys.app.parent_name = os.path.basename(__file__)
 from modules3.common_functions import catch_error,data_settings , logger, mark_execution_end, get_csv_rows, normalize_name, convert_string_map_to_dict, zip_delete_1_file, find_latest_folder,find_latest_file,find_files, max_folder_name
 from modules3.migrate_files import file_meta_exists_in_history
 from modules3.Multiline_file_handle import split_files
-from modules3.split_large_file import split_csv_dat_txt_file
+from modules3.split_large_file import split_csv_dat_txt_file,split_file
 from collections import defaultdict
 from distutils.dir_util import remove_tree
 from datetime import datetime
@@ -658,12 +658,9 @@ def process_single_nfs2(file_path:str):
         logger.warning(f'Unable to get header info for file: {file_path} -> skipping')
         return
   
-
-    file_meta_copy = file_meta    
-    file_meta_copy['file_name'] = os.path.join(os.path.splitext(os.path.basename(file_path))[0].replace('.', '_')
-                                                       + '.' + file_meta['table_name']
-                                                       + '_' + file_meta['key_datetime'].strftime(json_file_date_format)
-                                                       + json_file_ext)
+    file_meta_copy = dict(file_meta)
+    file_meta_copy['file_name'] = file_meta['json_file_path'].split('/')[-1]
+    logger.info(f"file_meta_copy[file_name] => {file_meta_copy['file_name']}")
 
     if file_meta_exists_in_history(file_meta=file_meta_copy):
         logger.info(f'File already exists, skipping: {file_path}')
@@ -685,15 +682,13 @@ def process_single_nfs2(file_path:str):
 
 
 # %%
-def handle_multi_line(file_name: str):
+def handle_large_file(file_name: str):
     print(f'filename is==== {file_name}')
-
      # Construct the full file path
-    file_path = os.path.join(data_settings.source_path, file_name)
-    print(f'Checking file path: {file_path}')
+    file_path = os.path.join(data_settings.source_path, file_name)   
     
     if (file_name.startswith('RAA_NFS_NAMEF_S')):
-       
+        print(f'Split multiline file : {file_path}')
         try:
             # Call split_files with the calculated num_row
             split_files(
@@ -708,25 +703,28 @@ def handle_multi_line(file_name: str):
             print(f"Files in directory: {os.listdir(os.path.dirname(file_path))}")
     
     elif (file_name.startswith('RAA_NFS_POSITD_S')):
-   
+        print(f'Split normal file : {file_path}')
         try:
-            # Call split_csv_dat_txt_file with the calculated parameters
-            split_csv_dat_txt_file(
-                source_dir=os.path.dirname(file_path), 
-                output_dir=data_settings.split_dir, 
-                split_max_size_in_mb=10, 
-                max_lines=10000,  
-                header='HMAJ', 
-                trailerFormat='T', 
-                trailer_record_startwith='T'
-            )
+            if not os.path.exists(data_settings.split_dir):
+                os.makedirs(data_settings.split_dir)
+            
+            split_file(
+                file_path=file_path,
+                filename=file_name,
+                fileType=os.path.splitext(file_name)[1],
+                output_dir=data_settings.split_dir,
+                max_size=50,
+                max_lines=10000,                
+                header='HMAJ',
+                trailerFormat='T',
+                trailer_record_startwith='T')
+
         except FileNotFoundError as e:
             print(f"Error: {e}")
             print(f"Files in directory: {os.listdir(os.path.dirname(file_path))}")
             
     else:
         print(f"File name does not start with 'RAA_NFS_NAMEF' or 'RAA_NFS_POSITD': {file_name}")
-
 
 @catch_error(logger)
 def iterate_over_all_nfs2(source_path: str):
@@ -756,11 +754,15 @@ def iterate_over_all_nfs2(source_path: str):
                 continue
 
             print(f"Checking file: {file_name}")
-            print(f"Patterns in data_settings.multiline_file: {data_settings.multiline_file}")
 
-            if any(file_name.startswith(pattern) for pattern in data_settings.multiline_file.split(',')) or any(file_name.startswith(pattern) for pattern in data_settings.multiline_file.split(',')):
-               print(f"File {file_name} matches a pattern in data_settings.multiline_file")
-               handle_multi_line(file_name)
+            split_required_files = data_settings.multiline_file.split(',')
+            split_required_files.extend(data_settings.normal_file.split(','))
+
+            print(f"Patterns in data_settings.multiline_file and normal_file: {split_required_files}")
+
+            if any(file_name.startswith(pattern) for pattern in split_required_files):
+               print(f"File {file_name} matches a pattern to split")
+               handle_large_file(file_name)
                split_files_dir =  data_settings.get_value(attr_name=f'split_dir', default_value=os.path.join(os.path.dirname(file_path), 'split_files'))               
                
                if os.path.exists(split_files_dir):
