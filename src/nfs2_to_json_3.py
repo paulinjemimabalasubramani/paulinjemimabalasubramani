@@ -626,7 +626,9 @@ def convert_nfs2_to_json(file_meta:dict):
     target_file_path = file_meta['json_file_path']
 
     logger.info(f'Converting to JSON: {source_file_path}')
-    with open(source_file_path, mode='rt', encoding='utf-8', errors='ignore') as fsource:
+    source_encode = 'utf-8' if 'RAA_NFS_POSITD_S' in source_file_path else 'ISO-8859-1'
+    
+    with open(source_file_path, mode='rt', encoding=source_encode, errors='ignore') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
             ftarget.write('[\n')
             data_exists = process_lines_map[file_meta['table_name_no_firm']](fsource=fsource, ftarget=ftarget, file_meta=file_meta)
