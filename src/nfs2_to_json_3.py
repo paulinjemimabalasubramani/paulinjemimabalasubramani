@@ -282,7 +282,7 @@ def new_record(file_meta:dict):
 # %%
 
 @catch_error(logger)
-def extract_values_from_line(line: str, record_schema: list, line_number: str = None):
+def extract_values_from_line(line:str, record_schema:list,line_number:str=None):
     """
     Extract all values from single line string based on its schema
     """
@@ -294,25 +294,20 @@ def extract_values_from_line(line: str, record_schema: list, line_number: str = 
         field_value = line[field['pos_start']:field['pos_end']]
         field_value = re.sub(' +', ' ', field_value.strip())
 
-        if field['decimals'] > 0 and field_value:
-            # Remove any non-numeric characters except for the decimal point
-            field_value = re.sub(r'[^\d.]', '', field_value)
-            if not field_value.replace('.', '').isdigit():
-                raise ValueError(f'Schema Scale mismatch for field "{field["column_name"]}" field value "{field_value}". Field Value should be numeric!')
+        if field['decimals']>0 and field_value:
+            if not field_value.isdigit():
+                raise ValueError(f'Schema Scale mismatch for field "{field["column_name"]}" field value "{field_value}". Field Value should be all digits!')
             x = len(field_value) - field['decimals']
-            if x < 0:
+            if x<0:
                 logger.warning(f'Length of number {field_value} is less than the decimal number {field["decimals"]} for field "{field["column_name"]}"')
             else:
-                try:
-                    field_value = str(float(field_value[:x] + '.' + field_value[x:]))
-                except ValueError as e:
-                    raise ValueError(f'Error converting field "{field["column_name"]}" value "{field_value}" to float: {e}')
+                field_value = str(float(field_value[:x] + '.' + field_value[x:]))
 
         field_values[field['column_name']] = field_value
-
+        
     if line_number:
         field_values['file_line_number'] = line_number
-
+    
     return field_values
 
 
@@ -631,7 +626,7 @@ def convert_nfs2_to_json(file_meta:dict):
     target_file_path = file_meta['json_file_path']
 
     logger.info(f'Converting to JSON: {source_file_path}')
-    with open(source_file_path, mode='rt', encoding='ISO-8859-1', errors='ignore') as fsource:
+    with open(source_file_path, mode='rt', encoding='utf-8', errors='ignore') as fsource:
         with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
             ftarget.write('[\n')
             data_exists = process_lines_map[file_meta['table_name_no_firm']](fsource=fsource, ftarget=ftarget, file_meta=file_meta)
