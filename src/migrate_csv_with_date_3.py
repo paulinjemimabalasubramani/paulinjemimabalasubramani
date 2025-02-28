@@ -45,7 +45,7 @@ from modules3.migrate_files import migrate_all_files, get_key_column_names, defa
 
 # %% Parameters
 
-allowed_file_extensions = ['.txt', '.csv']
+allowed_file_extensions = ['.txt', '.csv', '.psv']
 
 
 

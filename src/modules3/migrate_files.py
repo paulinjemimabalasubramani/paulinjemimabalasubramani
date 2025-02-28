@@ -391,12 +391,14 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
         file_size = 0
 
     partition_by = '_'.join([datetime.strftime(file_meta['key_datetime'], r'%Y_%m_%d_%H_%M_%S'), uuid4().hex])
+    
+    print(f"Pipeline firm name: {data_settings.pipeline_firm}")
 
     file_meta = {
         **file_meta,
         'database_name': data_settings.domain_name,
         'schema_name': data_settings.schema_name,
-        'firm_name': data_settings.pipeline_firm.upper(),
+        'firm_name': data_settings.pipeline_firm.upper() if data_settings.pipeline_firm else None,
         EXECUTION_DATE_str.lower(): execution_date_start,
         ELT_PROCESS_ID_str.lower(): data_settings.elt_process_id,
         'pipelinekey': data_settings.pipelinekey,
