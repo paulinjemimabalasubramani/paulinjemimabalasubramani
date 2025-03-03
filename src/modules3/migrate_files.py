@@ -392,8 +392,7 @@ def migrate_single_file(file_path:str, zip_file_path:str, fn_extract_file_meta, 
 
     partition_by = '_'.join([datetime.strftime(file_meta['key_datetime'], r'%Y_%m_%d_%H_%M_%S'), uuid4().hex])
     
-    print(f"Pipeline firm name: {data_settings.pipeline_firm}")
-
+   
     file_meta = {
         **file_meta,
         'database_name': data_settings.domain_name,
