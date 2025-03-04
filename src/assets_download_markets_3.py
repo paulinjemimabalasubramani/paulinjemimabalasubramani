@@ -113,7 +113,7 @@ def download_all_symbols(symbols:list[str]):
                 clean_data = fetch_data(symbol)
             except Exception as e:
                 logger.error(f'Error while trying to download symbol {symbol}. Error Message: {str(e)}')
-                continue
+                raise e
 
             if first_flag:
                 first_flag = False
