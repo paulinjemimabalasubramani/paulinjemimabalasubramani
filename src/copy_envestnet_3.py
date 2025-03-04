@@ -124,12 +124,18 @@ def get_zip_files():
             file_name_noext, file_ext = os.path.splitext(file_name)
 
             date_str = file_name_noext[-8:]
-            if file_ext.lower()!='.zip' or not date_str.isdigit() or 'V35' not in file_name_noext:
+            
+            logger.info(f'remote_file_path: {remote_file_path}')
+            logger.info(f'file_name_noext: {file_name_noext}')
+            logger.info(f'date_str: {date_str}')
+           
+            if 'ASSETS_MIGRATE_IFX_PERSHING_ENVESTNET' not in data_settings.pipelinekey.upper() and (file_ext.lower()!='.zip' or not date_str.isdigit() or 'V35' not in file_name_noext):
                 logger.info(f'Not a valid Envestnet V35 ZIP file, skipping: {remote_file_path}')
                 continue
 
             try:
                 date_val = datetime.strptime(date_str, r'%Y%m%d')
+                logger.info(f'date_val: {date_val}')
             except:
                 logger.warning(f'Not a valid zip file date: {remote_file_path}')
                 continue
@@ -165,21 +171,25 @@ def parse_envestnet_file_name(file_name, zip_name):
     except:
         logger.warning(f'Invalid file date: {file_name} in zip archive {zip_name} -> skipping file')
         return None, None
+        
+    if 'ASSETS_MIGRATE_IFX_PERSHING_ENVESTNET' in data_settings.pipelinekey.upper() :
+        table_name = file_name_noext.split('_')[0]
+        file_version = 'AG_V19'
+    else:
+        file_name_noext = re.sub('_+', '_', file_name_noext[:-8])[:-1].lower()
+        file_prefix = 'AG_V35_'
+        if file_name_noext[:len(file_prefix)].upper() != file_prefix.upper():
+            logger.warning(f'File does not start with "{file_prefix}": {file_name} in zip archive {zip_name} -> skipping file')
+            return None, None
 
-    file_name_noext = re.sub('_+', '_', file_name_noext[:-8])[:-1].lower()
-    file_prefix = 'AG_V35_'
-    if file_name_noext[:len(file_prefix)].upper() != file_prefix.upper():
-        logger.warning(f'File does not start with "{file_prefix}": {file_name} in zip archive {zip_name} -> skipping file')
-        return None, None
+        file_name_split = file_name_noext.split('_')
 
-    file_name_split = file_name_noext.split('_')
+        if len(file_name_split)!=3:
+            logger.warning(f'Cannot parse file name: {file_name} in zip archive {zip_name} -> skipping file')
+            return None, None
 
-    if len(file_name_split)!=3:
-        logger.warning(f'Cannot parse file name: {file_name} in zip archive {zip_name} -> skipping file')
-        return None, None
-
-    table_name = file_name_split[2].lower()
-    file_version = file_name_split[1].upper()
+        table_name = file_name_split[2].lower()
+        file_version = file_name_split[1].upper()
 
     return table_name, file_version
 
@@ -225,17 +235,25 @@ def process_psv_file(file_path:str):
     """
     Process single unzipped PSV file
     """
+    
+    logger.info(f'process_psv_file file_path: {file_path}')
+    
     with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as f:
         HEADER = f.readline()
 
     if HEADER[:2] != 'H|':
         logger.warning(f'Header is not found in 1st line inside the file: {file_path}')
         return
-
+    
     HEADER = HEADER.split(sep='|')
     try:
         table_name = normalize_name(HEADER[1])
-        file_date = HEADER[2]
+        logger.info(f'process_psv_file table_name: {table_name}')
+        if 'ASSETS_MIGRATE_IFX_PERSHING_ENVESTNET' in data_settings.pipelinekey.upper() :            
+            file_date = datetime.strptime(HEADER[2], r'%m/%d/%Y').strftime(r'%Y%m%d')
+            logger.info(f"process_psv_file file_date: {file_date}")
+        else:
+            file_date = HEADER[2]
     except Exception as e:
         logger.warning(f'Error occurred while reading file HEADER info: {file_path}')
         return
@@ -255,6 +273,8 @@ def process_psv_file(file_path:str):
     logger.info(f'Processing file {file_path}')
     with open(file=file_path, mode='rt', encoding='utf-8-sig', errors='ignore') as fsource:
         _ = fsource.readline() # discard header line
+        if 'ASSETS_MIGRATE_IFX_PERSHING_ENVESTNET' in data_settings.pipelinekey.upper() :     
+           _ = fsource.readline() # discard 2nd line
         if len(table_schemas)==1: # does not have sub-tables
             final_table_name, field_list = get_field_list_from_table_schema(table_schemas=table_schemas, record_type='')
             destination_path = os.path.join(os.path.dirname(file_path), final_table_name+'_'+file_date+final_file_ext)
