@@ -15,7 +15,7 @@ python_spark_code = 'migrate_csv_with_date_3'
 
 tags = ['DB:Assets', 'SC:ENVESTNET']
 
-schedule_interval = '39 */8 * * *' # https://crontab.guru/
+schedule_interval = '30 9,13,16 * * *' # https://crontab.guru/
 
 
 
