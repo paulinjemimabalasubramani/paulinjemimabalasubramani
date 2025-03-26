@@ -4,7 +4,7 @@ generic,key_vault_prefix,SAVIYNT
 generic,azure_tenant_id,c1ef4e97-eeff-48b2-b720-0c8480a08061
 generic,logging_level,INFO
 generic,log_folder_path,/opt/EDIP/logs/ingestion
-generic,msteams_webhook_url,https://advisorgroup.webhook.office.com/webhookb2/17ec5d27-9782-46ab-9c9a-49a9cb61aab6@c1ef4e97-eeff-48b2-b720-0c8480a08061/IncomingWebhook/df6f9e5df21b49a68828e4b2b92376f1/b7629136-04d8-4058-8ba6-b8c085890b7b/V2nGYvA5OhqeagZH3C8KA4wRu1rXXNQbiHuZ8DwAeLK881
+generic,msteams_webhook_url,https://advisorgroup.webhook.office.com/webhookb2/17ec5d27-9782-46ab-9c9a-49a9cb61aab6@c1ef4e97-eeff-48b2-b720-0c8480a08061/IncomingWebhook/29f18f68922940029e7941cd77bd9282/4d1ebaa8-54ba-41cc-841e-1cb24f3b2eea
 generic,temporary_folder_path,/opt/EDIP/temp
 generic,target_driver,{ODBC Driver 17 for SQL Server}
 generic,target_server,PW1SQLDATA01.ibddomain.net
