@@ -8,7 +8,7 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_d
 
 # %% Pipeline Parameters
 
-pipelinekey_prefix = 'RPAG_CLIENT_MIGRATE'
+pipelinekey = 'RPAG_CLIENT_MIGRATE'
 python_spark_code = 'migrate_csv_3'
 
 tags = ['DB:ClientAccount', 'SC:RPAG']
