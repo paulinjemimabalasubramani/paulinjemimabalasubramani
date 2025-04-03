@@ -1,7 +1,7 @@
 if True: # Set to False for Debugging
     import argparse
 
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description='CA_MIGRATE_RPAG')
 
     parser.add_argument('--pipelinekey', '--pk', help='PipelineKey value from SQL Server PipelineConfiguration', required=True)
 
@@ -28,9 +28,6 @@ import time
 azure_kv_rpag_oas_account_name = 'rpag-oas'
 azure_kv_rpag_owi_account_name = 'rpag-owi'
 azure_kv_rpag_oii_account_name = 'rpag-oii'
-
-rpag_url=f'https://app.rpag.com/PMPRichUI.Services/api/clientplancrmapi/GetClientPlanCRMData'
-token_url = f'https://app.rpag.com/PMPRichUI.Services/api/Account/authorize'
 
 @catch_error(logger)
 def call_api(http_method,url,headers=None,data1=None,params1=None,max_retries=3, backoff_factor=1):
@@ -74,7 +71,16 @@ def get_oauth_rpag_token(broker_delear_key:str):
 @catch_error(logger)
 def download_rpag_client_data():
     
-    broker_delears = ['owi']
+    output_file_name=f'rpag_client_plan_crm.csv'
+    os.makedirs(data_settings.source_path, exist_ok=True)
+        
+    output_file = open(os.path.join(data_settings.source_path, output_file_name), mode='wt', newline='', encoding='utf-8')
+        
+    fieldnames=['client_id','firm_name','client_details']
+    csv_writer = csv.writer(output_file)
+    csv_writer.writerow(fieldnames)
+
+    broker_delears = data_settings.broker_dealers.split(',')
     
     for broker_dealer in broker_delears:
     
@@ -87,15 +93,6 @@ def download_rpag_client_data():
         results:list =  call_api("GET", data_settings.rpag_client_data_url, headers=headers)
         logger.info(f'Retrieved client data for broker dealer : {broker_dealer}')
 
-        output_file_name=f'rpag_{broker_dealer}.csv'
-        os.makedirs(data_settings.source_path, exist_ok=True)
-        
-        output_file = open(os.path.join(data_settings.source_path, output_file_name), mode='wt', newline='', encoding='utf-8')
-        
-        fieldnames=['client_id','firm_name','client_details']
-        csv_writer = csv.writer(output_file)
-        csv_writer.writerow(fieldnames)
-        
         for item in results:
             csv_writer.writerow([item['clientId'],broker_dealer.upper(),json.dumps(item)])
 
