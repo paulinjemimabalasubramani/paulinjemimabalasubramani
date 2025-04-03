@@ -71,12 +71,12 @@ def get_oauth_rpag_token(broker_delear_key:str):
 @catch_error(logger)
 def download_rpag_client_data():
     
-    output_file_name=f'rpag_client_plan_crm.csv'
+    output_file_name=f'crm_client_plan.csv'
     os.makedirs(data_settings.source_path, exist_ok=True)
         
     output_file = open(os.path.join(data_settings.source_path, output_file_name), mode='wt', newline='', encoding='utf-8')
         
-    fieldnames=['client_id','firm_name','client_details']
+    fieldnames=['client_id','firm_name','client_plan']
     csv_writer = csv.writer(output_file)
     csv_writer.writerow(fieldnames)
 
