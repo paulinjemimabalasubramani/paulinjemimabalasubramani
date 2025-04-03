@@ -80,7 +80,7 @@ def download_rpag_client_data():
     csv_writer = csv.writer(output_file)
     csv_writer.writerow(fieldnames)
 
-    broker_delears = ['owi']
+    broker_delears = data_settings.broker_dealers.split(',')
     
     for broker_dealer in broker_delears:
     
@@ -92,7 +92,7 @@ def download_rpag_client_data():
         
         results:list =  call_api("GET", data_settings.rpag_client_data_url, headers=headers)
         logger.info(f'Retrieved client data for broker dealer : {broker_dealer}')
-        
+
         for item in results:
             csv_writer.writerow([item['clientId'],broker_dealer.upper(),json.dumps(item)])
 
