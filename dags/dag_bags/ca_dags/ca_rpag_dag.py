@@ -5,7 +5,10 @@ from airflow.utils.dates import days_ago
 from airflow.operators.bash import BashOperator
 
 from datetime import timedelta
+
 from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_data, copy_files, delete_files, src_path
+
+
 
 # %% Pipeline Parameters
 
@@ -14,7 +17,9 @@ python_spark_code = 'migrate_csv_3'
 
 tags = ['DB:ClientAccount', 'SC:RPAG']
 
-schedule_interval = '20 20 * * *'
+schedule_interval = '20 20 * * *' # https://crontab.guru/
+
+
 
 # %% Create DAG
 
@@ -36,10 +41,6 @@ with DAG(
     )
 
     start_pipe(dag) >> extractdata >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
-
-
-
-# %%
 
 
 
