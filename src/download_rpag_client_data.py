@@ -60,10 +60,10 @@ def call_api(http_method,url,headers=None,data1=None,params1=None,max_retries=3,
 def get_oauth_rpag_token(broker_delear_key:str):
     
     payload = {
-        'clientID': '2438feae-e673-4b01-9db6-7804807640e8',    
-        'ClientSecret': '93A!=V3yp!qz%%rqDrL&&^gyYt3e@_cLE-=VK3Cq',
-        'userName': 'crmapi@yopmail.com',
-        'password':'Password@123'
+        'clientID': '',    
+        'ClientSecret': '',
+        'userName': '',
+        'password':''
     }
 
     response = call_api("POST",data_settings.rpag_token_url,headers={ 'Content-Type': 'application/json'},data1=json.dumps(payload))
