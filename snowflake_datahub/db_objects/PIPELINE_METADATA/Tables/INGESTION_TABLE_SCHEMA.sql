@@ -1,0 +1,23 @@
+create or replace TABLE DATAHUB.PIPELINE_METADATA.INGESTION_TABLE_SCHEMA (
+	TABLE_SCHEMA_ID NUMBER(38,0) NOT NULL COMMENT 'Table_schema_ID identifies ingestion_table_schema',
+	DATABASE_NAME VARCHAR(100) COMMENT 'database_name is the database name where the table is created',
+	STAGE_TABLE_SCHEMA VARCHAR(100) COMMENT 'Stage_Table_Schema is the schema name where the stage table is created',
+	STAGE_TABLE_NAME VARCHAR(100) COMMENT 'Stage_Table_Name is the STG_SRC_code_src_tablename_or_filename eg-STG_LR_OLTP_Branch',
+	BRONZE_SCHEMA_NAME VARCHAR(100) COMMENT 'Bronze_Schema_Name is the schema name where the bronze table is created',
+	BRONZE_TABLE_NAME VARCHAR(100) COMMENT 'Bronze_Table_Name is the BZ_SRC_code_SRC_tablename_or_filename eg-BZ_LR_OLTP_Branch',
+	FILE_ID VARCHAR(10) COMMENT 'FILE_ID is the pk of data feed file inventory',
+	COLUMN_NAME VARCHAR(50) COMMENT 'Column_Name is the name of the column to be created in table',
+	COLUMN_DATATYPE_TEXT VARCHAR(100) COMMENT 'Column_Datatype_text is the datatype of the column to be created in table',
+	COLUMN_COMMENT VARCHAR(1000) COMMENT 'Column_Comment is the comments for the table DDL',
+	NULLABLE_FLG VARCHAR(1) COMMENT 'Nullable_Flg is the column nullable',
+	COLUMN_SEQUENCE_NUMBER NUMBER(5,0) COMMENT 'Column_Sequence_Number is of the ingestion_table_schema',
+	NUMERIC_PRECISION NUMBER(10,0) COMMENT 'NUMERIC_PRECISION specifies the total number of digits in a number',
+	NUMERIC_SCALE NUMBER(10,0) COMMENT 'NUMERIC_SCALE indicates the number of digits to the right of the decimal point',
+	COLUMN_START_POSITION_NUMBER VARCHAR(10) COMMENT 'COLUMN_START_POSITION_NUMBER is for fixed length file',
+	COLUMN_END_POSITION_NUMBER VARCHAR(10) COMMENT 'COLUMN_END_POSITION_NUMBER is for fixed length file',
+	CASTING_LOGIC_TEXT VARCHAR(1000) COMMENT 'CASTING_LOGIC_TEXT is logic used to cast to decimals for precision',
+	CASTING_DATE_FORMAT_TEXT VARCHAR(100) COMMENT 'CASTING_DATE_FORMAT_TEXT logic used to convert to date format from text',
+	CREATED_BY_NAME VARCHAR(100) COMMENT 'Created_by_Name is of ingestion_table_schema',
+	CREATED_TS TIMESTAMP_NTZ(9) COMMENT 'Created_TS is of ingestion_table_schema',
+	constraint TABLESCHEMAID primary key (TABLE_SCHEMA_ID)
+);
