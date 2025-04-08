@@ -54,7 +54,7 @@ def create_dag(firm_name, schedule_interval):
     )
 
     process_multiline_files = BashOperator(
-        task_id=f'PROCESS_multiline_FILES_{pipelinekey}',
+        task_id=f'PROCESS_MULTILINE_FILES_{pipelinekey}',
         bash_command=f'python {src_path}/pershing_process_multiline_files.py --pipelinekey {pipelinekey}',
         dag=dag
     )
