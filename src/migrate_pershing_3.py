@@ -217,6 +217,8 @@ def generate_tables_from_fwt(
     """
     if table_name.lower().endswith('expanded_sec_desc'):
         start_ = start_line_pos_start - 2
+    elif table_name.lower().endswith('raa_account_asset'):
+        start_ = 90
     else: 
         start_ = start_line_pos_start
 
