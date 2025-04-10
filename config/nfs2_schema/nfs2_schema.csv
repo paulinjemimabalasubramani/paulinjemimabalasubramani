@@ -228,7 +228,7 @@ Asset Transfer Transmission Record 1,HEADER RECORD CLIENT ID,,Header,,,PIC X(03)
 Asset Transfer Transmission Record 1,FILLER,,Header,,,PIC X(17),17,21-May,5,21,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
 Asset Transfer Transmission Record 1,FILE ORIGIN,,Header,,,PIC X(16),16,22-37,22,37,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
 Asset Transfer Transmission Record 1,FILLER,,Header,,,PIC X(04),4,38-41,38,41,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
-Asset Transfer Transmission Record 1,FILE TITLE,,Header,transfer,TRANSFER,PIC X(14),14,42-55,42,55,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
+Asset Transfer Transmission Record 1,FILE TITLE,,Header,transfer_summary,TRANSFER,PIC X(14),14,42-55,42,55,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
 Asset Transfer Transmission Record 1,FILLER,,Header,,,PIC X(07),7,56-62,56,62,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
 Asset Transfer Transmission Record 1,TRANSMISSION CREATION DATE,,Header,,,PIC X(06),6,63-68,63,68,,,MMDDYY,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
 Asset Transfer Transmission Record 1,FILLER,,Header,,,PIC X(232),232,69-300,69,300,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
@@ -265,7 +265,7 @@ Asset Transfer Transmission Record 2,HEADER RECORD CLIENT ID,,Header,,,PIC X(03)
 Asset Transfer Transmission Record 2,FILLER,,Header,,,PIC X(17),17,21-May,5,21,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
 Asset Transfer Transmission Record 2,FILE ORIGIN,,Header,,,PIC X(16),16,22-37,22,37,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
 Asset Transfer Transmission Record 2,FILLER,,Header,,,PIC X(04),4,38-41,38,41,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
-Asset Transfer Transmission Record 2,FILE TITLE,,Header,asset_transfer,ASSET,PIC X(14),14,42-55,42,55,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
+Asset Transfer Transmission Record 2,FILE TITLE,,Header,transfer_detail,ASSET,PIC X(14),14,42-55,42,55,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
 Asset Transfer Transmission Record 2,FILLER,,Header,,,PIC X(07),7,56-62,56,62,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
 Asset Transfer Transmission Record 2,TRANSMISSION CREATION DATE,,Header,,,PIC X(06),6,63-68,63,68,,,MMDDYY,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE
 Asset Transfer Transmission Record 2,FILLER,,Header,,,PIC X(232),232,69-300,69,300,,,AN,4.0.5,01/19/23 - Corrected SETTLING LOCATION REASON CODE field length error,1/19/2023,,9/27/2005,TRUE

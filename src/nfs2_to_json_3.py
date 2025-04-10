@@ -344,9 +344,9 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
        
     line_number = 0 if 'bookkeeping' in file_meta['table_name_no_firm'] else None
     
-    account_transfer_tables=['raa_transfer','raa_asset_transfer']
+    asset_transfer_tables=['raa_transfer_summary','raa_transfer_detail']
     
-    if file_meta['table_name'] not in account_transfer_tables:
+    if file_meta['table_name'] not in asset_transfer_tables:
         valid_line_start_chars = ['D']
     else:
         valid_line_start_chars = ['1','2']
@@ -592,8 +592,8 @@ def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
 # %%
 
 process_lines_map = {
-    'transfer': process_lines_1_record,
-    'asset_transfer': process_lines_1_record,
+    'transfer_summary': process_lines_1_record,
+    'transfer_detail': process_lines_1_record,
     'bookkeeping': process_lines_1_record,
     'bookkeeping': process_lines_1_record,
     'bookkeeping_iws': process_lines_1_record,
