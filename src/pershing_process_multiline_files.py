@@ -48,8 +48,8 @@ def handle_pershing_multiline_files():
                     HEADER = lines[0]
                     TRAILER = lines[-1]
                     
-                    TRANSFER_HEADER = HEADER.replace('ACCOUNT TRANSFER', 'TRANSFER SUMMARY')
-                    ASSET_HEADER = HEADER.replace('ACCOUNT TRANSFER', 'TRANSFER DETAIL ')
+                    TRANSFER_HEADER = HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY')
+                    ASSET_HEADER = HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER DETAIL ')
                     TRANSFER_TRAILER = TRAILER
                     ASSET_TRAILER = TRAILER.replace('TRANSFER', 'ASSET   ')
                     
