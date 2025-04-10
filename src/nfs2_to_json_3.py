@@ -748,6 +748,8 @@ def iterate_over_all_nfs2(source_path: str):
     logger.info(f'Checking path: {source_path}')
     for root, dirs, files in os.walk(source_path):
         for file_name in files:
+            #As we are splitting the MAJ_TRANSFER.DAT into transfer and asset file. So excluding 
+            #for further processing. Please refer nfs2_process_multiline_files.py
             if(file_name == 'MAJ_TRANSFER.DAT'): continue
             file_path = os.path.join(root, file_name)
             file_name_noext, file_ext = os.path.splitext(file_name)
