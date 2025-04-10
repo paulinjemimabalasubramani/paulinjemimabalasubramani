@@ -1,6 +1,6 @@
 ﻿record_name,position,picture,type,conditional_changes,field_name,scale,description,notes
 HEADER,001-018,X(18),AN,,b_of_pershing,,Literally “BOF                           PERSHING     ” (beginning of Pershing file),
-HEADER,019-033,X(18),AN,,account_Asset,,Literally “ACCOUNT    ASSET             ”,
+HEADER,019-036,X(18),AN,,asset_transfer_detail,,Literally “ACCOUNT    ASSET             ”,
 HEADER,037-046,X(10),AN,,data_of ,,Literally “     DATA     OF         ”,
 HEADER,047-056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
 HEADER,057-067,X(11),AN,,to_remote,,Literally “     TO     REMOTE     ”,

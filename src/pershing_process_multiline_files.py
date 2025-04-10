@@ -47,16 +47,17 @@ def handle_pershing_multiline_files():
                     lines = f.readlines()
                     HEADER = lines[0]
                     TRAILER = lines[-1]
-                    TRANSFER_HEADER = HEADER
-                    ASSET_HEADER = HEADER.replace('TRANSFER', 'ASSET   ')
+                    
+                    TRANSFER_HEADER = HEADER.replace('ACCOUNT TRANSFER', 'TRANSFER SUMMARY')
+                    ASSET_HEADER = HEADER.replace('ACCOUNT TRANSFER', 'TRANSFER DETAIL ')
                     TRANSFER_TRAILER = TRAILER
                     ASSET_TRAILER = TRAILER.replace('TRANSFER', 'ASSET   ')
                     
                     print(f'TRANSFER_HEADER : {TRANSFER_HEADER}')
                     print(f'ASSET_HEADER : {ASSET_HEADER}')
                     
-                    aca_transfer = open(os.path.join(root, 'aca_transfer_detail.ACA2'), 'w')
-                    aca_asset = open(os.path.join(root, 'aca_asset_detail.ACA2'), 'w')
+                    aca_transfer = open(os.path.join(root, 'asset_transfer_summary.ACA2'), 'w')
+                    aca_asset = open(os.path.join(root, 'asset_transfer_detail.ACA2'), 'w')
 
                     aca_transfer.write(TRANSFER_HEADER)
                     aca_asset.write(ASSET_HEADER)
