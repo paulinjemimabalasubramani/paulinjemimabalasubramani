@@ -56,8 +56,14 @@ def create_dag(firm_name, schedule_interval):
         dag = dag,
         )
 
+    process_multiline_files = BashOperator(
+        task_id=f'PROCESS_MULTILINE_FILES_{pipelinekey}',
+        bash_command=f'python {src_path}/nfs2_process_multiline_files.py --pipelinekey {pipelinekey}',
+        dag=dag
+    )
+
     with dag:
-        start_pipe(dag) >> copy_files(dag, pipelinekey) >> convert_to_json >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
+        start_pipe(dag) >> copy_files(dag, pipelinekey) >> process_multiline_files >> convert_to_json >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
 
     globals()[dag.safe_dag_id] = dag
 
