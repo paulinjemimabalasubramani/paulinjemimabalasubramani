@@ -47,25 +47,25 @@ def handle_nfs_multiline_files():
                     lines = f.readlines()
                     HEADER = lines[0]
                     TRAILER = lines[-1]
-                    TRANSFER_HEADER = HEADER
-                    ASSET_HEADER = HEADER.replace('ASSET TRANSFER', 'TRANSFER      ')
-                    TRANSFER_TRAILER = TRAILER
-                    ASSET_TRAILER = TRAILER.replace('ASSET TRANSFER', 'ASSET         ')
-                   
+                    
+                    TRANSFER_HEADER = HEADER.replace('ASSET TRANSFER', 'TRANSFER      ')
+                    ASSET_HEADER = HEADER.replace('ASSET TRANSFER', 'ASSET         ')
+                    
                     aca_transfer = open(os.path.join(root, 'MAJ_ACCOUNT_TRANSFER.DAT'), 'w')
                     aca_asset = open(os.path.join(root, 'MAJ_ACCOUNT_ASSET.DAT'), 'w')
 
                     aca_transfer.write(TRANSFER_HEADER)
                     aca_asset.write(ASSET_HEADER)
 
-                    for line in lines[1:-1]:                        
+                    for line in lines[1:-1]:
+                        if line.startswith(' ') and line.strip() != '': continue
                         if(line[0] == '1'):
                             aca_transfer.write(line)
                         else:
                             aca_asset.write(line)
 
-                    aca_transfer.write(TRANSFER_TRAILER + '\n')
-                    aca_asset.write(ASSET_TRAILER + '\n')
+                    aca_transfer.write(TRAILER)
+                    aca_asset.write(TRAILER)
                     
                     aca_transfer.close()
                     aca_asset.close()

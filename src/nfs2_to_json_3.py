@@ -344,10 +344,17 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
        
     line_number = 0 if 'bookkeeping' in file_meta['table_name_no_firm'] else None
     
+    account_transfer_tables=['raa_transfer','raa_asset_transfer']
+    
+    if file_meta['table_name'] not in account_transfer_tables:
+        valid_line_start_chars = ['D']
+    else:
+        valid_line_start_chars = ['1','2']
+    
     for line in fsource:
-        if line[0]!='D':
-            continue
-
+        
+        if line[0] not in valid_line_start_chars: continue
+        
         line_number = line_number+1 if line_number is not None else None
         
         record = new_record(file_meta=file_meta)
@@ -585,6 +592,9 @@ def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
 # %%
 
 process_lines_map = {
+    'transfer': process_lines_1_record,
+    'asset_transfer': process_lines_1_record,
+    'bookkeeping': process_lines_1_record,
     'bookkeeping': process_lines_1_record,
     'bookkeeping_iws': process_lines_1_record,
     'account_balance': process_lines_1_record,
@@ -661,7 +671,6 @@ def process_single_nfs2(file_path:str):
   
     file_meta_copy = dict(file_meta)
     file_meta_copy['file_name'] = file_meta['json_file_path'].split('/')[-1]
-    logger.info(f"file_meta_copy[file_name] => {file_meta_copy['file_name']}")
 
     if file_meta_exists_in_history(file_meta=file_meta_copy):
         logger.info(f'File already exists, skipping: {file_path}')
@@ -739,6 +748,9 @@ def iterate_over_all_nfs2(source_path: str):
     logger.info(f'Checking path: {source_path}')
     for root, dirs, files in os.walk(source_path):
         for file_name in files:
+            #As we are splitting the MAJ_TRANSFER.DAT into transfer and asset file. So excluding 
+            #for further processing. Please refer nfs2_process_multiline_files.py
+            if(file_name == 'MAJ_TRANSFER.DAT'): continue
             file_path = os.path.join(root, file_name)
             file_name_noext, file_ext = os.path.splitext(file_name)
 
