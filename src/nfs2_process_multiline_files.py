@@ -51,8 +51,13 @@ def handle_nfs_multiline_files():
                     TRANSFER_HEADER = HEADER.replace('ASSET TRANSFER', 'TRANSFER      ')
                     ASSET_HEADER = HEADER.replace('ASSET TRANSFER', 'ASSET         ')
                     
-                    aca_transfer = open(os.path.join(root, 'MAJ_TRANSFER_SUMMARY.DAT'), 'w')
-                    aca_asset = open(os.path.join(root, 'MAJ_TRANSFER_DETAIL.DAT'), 'w')
+                    transfer_file_split_path=data_settings.transfer_file_split_path
+
+                    if not os.path.exists(transfer_file_split_path):
+                        os.makedirs(transfer_file_split_path)
+
+                    aca_transfer = open(os.path.join(transfer_file_split_path, 'MAJ_TRANSFER_SUMMARY.DAT'), 'w')
+                    aca_asset = open(os.path.join(transfer_file_split_path, 'MAJ_TRANSFER_DETAIL.DAT'), 'w')
 
                     aca_transfer.write(TRANSFER_HEADER)
                     aca_asset.write(ASSET_HEADER)
