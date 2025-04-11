@@ -282,7 +282,7 @@ def new_record(file_meta:dict):
 # %%
 
 @catch_error(logger)
-def extract_values_from_line(line:str, record_schema:list,line_number:str=None):
+def extract_values_from_line(line:str, record_schema:list,line_number:str=None,file_meta:dict=None):
     """
     Extract all values from single line string based on its schema
     """
@@ -307,6 +307,10 @@ def extract_values_from_line(line:str, record_schema:list,line_number:str=None):
         
     if line_number:
         field_values['file_line_number'] = line_number
+
+    if file_meta:        
+        if any(file_meta['table_name_no_firm'] in item for item in ['transfer_summary','transfer_detail']):
+            field_values['transmission_creation_date'] = file_meta['transmission_creation_date']
     
     return field_values
 
@@ -342,11 +346,11 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
 
     first = True
        
-    line_number = 0 if 'bookkeeping' in file_meta['table_name_no_firm'] else None
+    add_file_line_numbers_to_table = ['bookkeeping','transfer_summary','transfer_detail']
     
-    asset_transfer_tables=['raa_transfer_summary','raa_transfer_detail']
+    line_number = 0 if any(file_meta['table_name_no_firm'] in item for item in add_file_line_numbers_to_table) else None
     
-    if file_meta['table_name'] not in asset_transfer_tables:
+    if file_meta['table_name'] not in ['raa_transfer_summary','raa_transfer_detail']:
         valid_line_start_chars = ['D']
     else:
         valid_line_start_chars = ['1','2']
@@ -358,7 +362,7 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
         line_number = line_number+1 if line_number is not None else None
         
         record = new_record(file_meta=file_meta)
-        record = {**record, **extract_values_from_line(line=line, record_schema=record_schema,line_number=line_number)}
+        record = {**record, **extract_values_from_line(line=line, record_schema=record_schema,line_number=line_number,file_meta=file_meta)}
 
         if not first:
             ftarget.write(',\n')
@@ -792,7 +796,6 @@ def iterate_over_all_nfs2(source_path: str):
                 # Process the file directly under the source path
                 process_single_nfs2(file_path=file_path)
 
-
 if 'LFA_DAILY' in data_settings.pipelinekey.upper() or 'LFS_DAILY' in data_settings.pipelinekey.upper():
     if data_settings.file_pattern:
         file_name_patterns = data_settings.file_pattern.split(',')
@@ -812,6 +815,8 @@ elif 'LFA_FULL' in data_settings.pipelinekey.upper() or 'LFS_FULL' in data_setti
                 process_single_nfs2(latest_file)
 else:
     iterate_over_all_nfs2(source_path=data_settings.source_path)
+    iterate_over_all_nfs2(source_path=data_settings.transfer_file_split_path)
+    if os.path.isdir(data_settings.transfer_file_split_path): shutil.rmtree(data_settings.transfer_file_split_path)
 
 if hasattr(data_settings, 'source_path2'):
     iterate_over_all_nfs2(source_path=data_settings.source_path2)
