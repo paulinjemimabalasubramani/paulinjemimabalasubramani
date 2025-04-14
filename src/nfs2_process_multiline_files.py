@@ -62,8 +62,8 @@ def handle_nfs_multiline_files():
                     if len(parts) > 2 and parts[-1].split(".")[0].isdigit():
                         date_suffix = "_" + parts[-1].split(".")[0]
 
-                    aca_transfer = open(os.path.join(transfer_file_split_path, f'MAJ_TRANSFER_SUMMARY{date_suffix}.DAT'), 'w')
-                    aca_asset = open(os.path.join(transfer_file_split_path, f'MAJ_TRANSFER_DETAIL{date_suffix}.DAT'), 'w')
+                    aca_transfer = open(os.path.join(transfer_file_split_path, f'MAJ_ASSET_TRANSFER_SUMMARY{date_suffix}.DAT'), 'w')
+                    aca_asset = open(os.path.join(transfer_file_split_path, f'MAJ_ASSET_TRANSFER_DETAIL{date_suffix}.DAT'), 'w')
 
                     aca_transfer.write(TRANSFER_HEADER)
                     aca_asset.write(ASSET_HEADER)
