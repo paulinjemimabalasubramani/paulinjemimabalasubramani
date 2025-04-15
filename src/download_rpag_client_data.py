@@ -25,9 +25,6 @@ from modules3.common_functions import catch_error, data_settings, logger, mark_e
 import requests,json,csv
 import time
 
-azure_kv_rpag_oas_account_name = 'rpag-oas'
-azure_kv_rpag_owi_account_name = 'rpag-owi'
-azure_kv_rpag_oii_account_name = 'rpag-oii'
 
 @catch_error(logger)
 def call_api(http_method,url,headers=None,data1=None,params1=None,max_retries=3, backoff_factor=1):
@@ -55,12 +52,14 @@ def call_api(http_method,url,headers=None,data1=None,params1=None,max_retries=3,
 
 @catch_error(logger)
 def get_oauth_rpag_token(broker_delear_key:str):
-    
+
+    azure_kv_rpag_account_name = azure_rpag_kv[broker_delear_key]
+
     payload = {
-        'clientID': '',    
-        'ClientSecret': '',
-        'userName': '',
-        'password':''
+        'clientID': client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-client-id').value,    
+        'ClientSecret': client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-client-secret').value,
+        'userName': client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-username').value,
+        'password': client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-password').value
     }
 
     response = call_api("POST",data_settings.rpag_token_url,headers={ 'Content-Type': 'application/json'},data1=json.dumps(payload))
@@ -96,7 +95,13 @@ def download_rpag_client_data():
         for item in results:
             csv_writer.writerow([item['clientId'],broker_dealer.upper(),json.dumps(item)])
 
-if __name__ == '__main__':
+if __name__ == '__main__':    
     download_rpag_client_data()
     mark_execution_end()
 
+azure_tenant_id, azure_client = get_azure_key_vault()
+env_name = sys.app.environment.lower()
+azure_rpag_kv = {
+    'oas': 'rpag-oas',
+    'owi': 'rpag-owi',
+}
