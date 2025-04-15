@@ -309,7 +309,7 @@ def extract_values_from_line(line:str, record_schema:list,line_number:str=None,f
         field_values['file_line_number'] = line_number
 
     if file_meta:        
-        if any(file_meta['table_name_no_firm'] in item for item in ['transfer_summary','transfer_detail']):
+        if any(file_meta['table_name_no_firm'] in item for item in ['asset_transfer_summary','asset_transfer_detail']):
             field_values['transmission_creation_date'] = file_meta['transmission_creation_date']
     
     return field_values
@@ -346,11 +346,11 @@ def process_lines_1_record(fsource, ftarget, file_meta:dict):
 
     first = True
        
-    add_file_line_numbers_to_table = ['bookkeeping','transfer_summary','transfer_detail']
+    add_file_line_numbers_to_table = ['bookkeeping','asset_transfer_summary','asset_transfer_detail']
     
     line_number = 0 if any(file_meta['table_name_no_firm'] in item for item in add_file_line_numbers_to_table) else None
     
-    if file_meta['table_name'] not in ['raa_transfer_summary','raa_transfer_detail']:
+    if file_meta['table_name'] not in ['raa_asset_transfer_summary','raa_asset_transfer_detail']:
         valid_line_start_chars = ['D']
     else:
         valid_line_start_chars = ['1','2']
@@ -596,8 +596,8 @@ def process_lines_user_id_administration(fsource, ftarget, file_meta:dict):
 # %%
 
 process_lines_map = {
-    'transfer_summary': process_lines_1_record,
-    'transfer_detail': process_lines_1_record,
+    'asset_transfer_summary': process_lines_1_record,
+    'asset_transfer_detail': process_lines_1_record,
     'bookkeeping': process_lines_1_record,
     'bookkeeping': process_lines_1_record,
     'bookkeeping_iws': process_lines_1_record,
@@ -754,7 +754,7 @@ def iterate_over_all_nfs2(source_path: str):
         for file_name in files:
             #As we are splitting the MAJ_TRANSFER.DAT into transfer and asset file. So excluding 
             #for further processing. Please refer nfs2_process_multiline_files.py
-            if(file_name == 'MAJ_TRANSFER.DAT'): continue
+            if "MAJ_TRANSFER" in file_name: continue
             file_path = os.path.join(root, file_name)
             file_name_noext, file_ext = os.path.splitext(file_name)
 

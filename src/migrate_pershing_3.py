@@ -431,6 +431,12 @@ def extract_pershing_file_meta(file_path:str, zip_file_path:str=None):
 
     header_info = get_header_info(file_path=file_path)
 
+    if('asset_transfer_detail.ACA2' in file_path):
+        header_info['form_name'] = 'asset_transfer_detail'
+
+    if('asset_transfer_summary.ACA2' in file_path):
+        header_info['form_name'] = 'asset_transfer_summary'
+
     schema_file_name = re.sub(name_regex, ' ', header_info['form_name'].lower()).strip()
     schema_file_name = re.sub(' ', '_', schema_file_name)
     table_name = add_firm_to_table_name(table_name=schema_file_name)
