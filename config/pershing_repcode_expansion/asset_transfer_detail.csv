@@ -33,12 +33,12 @@ HEADER,506-506,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates 
 1,036-042,X(07),AN,,not used,,Not Used,
 1,043-102,X(60),AN,,asset_description,,ASSET DESCRIPTION,
 1,103-105,X(03),AN,,asset_status ,,ASSET STATUS; see Appendix T for values,
-1,106-123,9(13)v9(05),N,,actual_quantity,,ACTUAL QUANTITY,
+1,106-123,9(13)v9(05),N,,actual_quantity,5,ACTUAL QUANTITY,
 1,124-124,X(01),AN,,actual_quantity_sign,,"ACTUAL QUANTITY SIGN; values include:
 “+” = Positive Quantity
 “-” = Negative Quantity
 “ ” = Not Applicable",
-1,125-142,9(16)v9(02),N,,market_value_of_this_asset,,MARKET VALUE OF THIS ASSET,
+1,125-142,9(16)v9(02),N,,market_value_of_this_asset,2,MARKET VALUE OF THIS ASSET,
 1,143-143,X(01),AN,,market_value_sign,,"MARKET VALUE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -75,12 +75,12 @@ HEADER,506-506,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates 
 2,036-042,X(07),AN,,not used,,Not Used,
 2,043-102,X(60),AN,,asset_description,,ASSET DESCRIPTION,
 2,103-105,X(03),AN,,asset_status ,,ASSET STATUS; see Appendix T for values,
-2,106-123,13)v9(05),N,,actual_quantity,,ACTUAL QUANTITY,
+2,106-123,9(13)v9(05),N,,actual_quantity,5,ACTUAL QUANTITY,
 2,124-124,X(01),AN,,actual_quantity_sign,,"ACTUAL QUANTITY SIGN; values include:
 “+” = Positive Quantity
 “-” = Negative Quantity
 “ ” = Not Applicable",
-2,125-142,16)v9(02),N,,market_value_of_this_asset,,MARKET VALUE OF THIS ASSET,
+2,125-142,9(16)v9(02),N,,market_value_of_this_asset,2,MARKET VALUE OF THIS ASSET,
 2,143-143,X(01),AN,,market_value_sign,,"MARKET VALUE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -104,7 +104,7 @@ HEADER,506-506,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates 
 “L” = Letter of Credit (Call)
 “M” = Letter of Credit (Put)
 “P” = Put",
-2,163-170,9(05)v9(03),N,,strike_price,,STRIKE PRICE,
+2,163-170,9(05)v9(03),N,,strike_price,3,STRIKE PRICE,
 2,171-487,X(317),AN,,not used,,Not Used,
 2,488-499,X(12),AN,,request_id,,REQUEST ID,
 2,500-500,X(01),AN,,end_of_the_detail_record_2,,Literally “X”; indicates the end of detail record 2,
@@ -129,12 +129,12 @@ HEADER,506-506,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates 
 3,036-042,X(07),AN,,not used,,Not Used,
 3,043-102,X(60),AN,,asset_description,,ASSET DESCRIPTION,
 3,103-105,X(03),AN,,asset_status ,,ASSET STATUS; see Appendix T for values,
-3,106-123,9(13)v9(05),N,,actual_quantity,,ACTUAL QUANTITY,
+3,106-123,9(13)v9(05),N,,actual_quantity,5,ACTUAL QUANTITY,
 3,124-124,X(01),AN,,actual_quantity_sign,,"ACTUAL QUANTITY SIGN; values include:
 “+” = Positive Quantity
 “-” = Negative Quantity
 “” = Not Applicable",
-3,125-142,9(16)v9(02),N,,market_value_of_this_asset,,MARKET VALUE OF THIS ASSET,
+3,125-142,9(16)v9(02),N,,market_value_of_this_asset,2,MARKET VALUE OF THIS ASSET,
 3,143-143,X(01),AN,,market_value_sign,,"MARKET VALUE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -189,7 +189,7 @@ HEADER,506-506,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates 
 3,207-207,X(01),AN,,requested_quantity_indicator,,"REQUESTED QUANTITY INDICATOR; values include:
 “F” = Full Position Requested
 “P” = Partial Position Requested",
-3,208-225,9(13)v9(05),N,,requested_quantity,,REQUESTED QUANTITY; this will be zero when a Full Position is requested,
+3,208-225,9(13)v9(05),N,,requested_quantity,5,REQUESTED QUANTITY; this will be zero when a Full Position is requested,
 3,226-226,X(01),AN,,requested_quantity_sign,,"REQUESTED QUANTITY SIGN; values include:
 “+” = Positive Quantity
 “-” = Negative Quantity

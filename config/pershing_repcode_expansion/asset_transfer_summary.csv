@@ -42,7 +42,7 @@ A,110-117,9(08),N,,request_creation_date,,"REQUEST CREATION DATE, in CCYYMMDD fo
 A,118-125,X(08),AN,,request_creation_user_id,,REQUEST CREATION USER ID,
 A,126-133,9(08),N,,last_update_date,,"LAST UPDATE DATE, in CCYYMMDD format",
 A,134-141,X(08),AN,,last_update_user_id,,LAST UPDATE USER ID,
-A,142-159,9(16)v9(02),N,,total_market_value_of_transfer,,TOTAL MARKET VALUE OF TRANSFER,
+A,142-159,9(16)v9(02),N,,total_market_value_of_transfer,2,TOTAL MARKET VALUE OF TRANSFER,
 A,160-160,X(01),AN,,total_market_value_sign,,"TOTAL MARKET VALUE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -52,7 +52,7 @@ A,161-163,X(03),AN,,source_code,,"SOURCE CODE; values include:
 “DRQ” = Direct Rollover
 “ROC” = Roll Over Contribution
 “TOA” = Transfer of Account",
-A,164-181,9(16)v9(02),N,,special_memorandum_account,,SPECIAL MEMORANDUM ACCOUNT (SMA),
+A,164-181,9(16)v9(02),N,,special_memorandum_account,2,SPECIAL MEMORANDUM ACCOUNT (SMA),
 A,182-182,X(01),AN,,special memorandum account sign,,"SPECIAL MEMORANDUM ACCOUNT SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -93,7 +93,7 @@ B,110-117,9(08),N,,request_creation_date,,"REQUEST CREATION DATE, in CCYYMMDD fo
 B,118-125,X(08),AN,,request_creation_user_id,,REQUEST CREATION USER ID,
 B,126-133,9(08),N,,last_update_date,,"LAST UPDATE DATE, in CCYYMMDD format",
 B,134-141,X(08),AN,,last_update_user_id,,LAST UPDATE USER ID,
-B,142-159,9(16)v9(02),N,,total_market_value_of_transfer,,TOTAL MARKET VALUE OF TRANSFER,
+B,142-159,9(16)v9(02),N,,total_market_value_of_transfer,2,TOTAL MARKET VALUE OF TRANSFER,
 B,160-160,X(01),AN,,total_market_value_sign,,"TOTAL MARKET VALUE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -103,7 +103,7 @@ B,161-163,X(03),AN,,source_code,,"SOURCE CODE; values include:
 “DRQ” = Direct Rollover
 “ROC” = Rollover Contribution
 “TOA” = Transfer of Account",
-B,164-181,9(16)v9(02),N,,special_memorandum_account,,SPECIAL MEMORANDUM ACCOUNT (SMA),
+B,164-181,9(16)v9(02),N,,special_memorandum_account,2,SPECIAL MEMORANDUM ACCOUNT (SMA),
 B,182-182,X(01),AN,,special memorandum account sign,,SPECIAL MEMORANDUM ACCOUNT SIGN; see position 160 for values,
 B,183-222,X(40),AN,,customer_name,,CUSTOMER NAME,
 B,223-231,X(09),AN,,primary_tax_identification_number,,PRIMARY TAX IDENTIFICATION NUMBER,
@@ -143,7 +143,7 @@ C,110-117,9(08),N,,request_creation_date,,"REQUEST CREATION DATE, in CCYYMMDD fo
 C,118-125,X(08),AN,,request_creation_user_id,,REQUEST CREATION USER ID,
 C,126-133,9(08),N,,last_update_date,,"LAST UPDATE DATE, in CCYYMMDD format",
 C,134-141,X(08),AN,,last_update_user_id,,LAST UPDATE USER ID,
-C,142-159,9(16)v9(02),N,,total_market_value_of_transfer,,TOTAL MARKET VALUE OF TRANSFER,
+C,142-159,9(16)v9(02),N,,total_market_value_of_transfer,2,TOTAL MARKET VALUE OF TRANSFER,
 C,160-160,X(01),AN,,total_market_value_sign,,"TOTAL MARKET VALUE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -153,7 +153,7 @@ C,161-163,X(03),AN,,source_code,,"SOURCE CODE; values include:
 “DRQ” = Direct Rollover
 “ROC” = Roll Over Contribution
 “TOA” = Transfer of Account",
-C,164-181,9(16)v9(02),N,,special_memorandum_account,,SPECIAL MEMORANDUM ACCOUNT (SMA),
+C,164-181,9(16)v9(02),N,,special_memorandum_account,2,SPECIAL MEMORANDUM ACCOUNT (SMA),
 C,182-182,X(01),AN,,special memorandum account sign,,SPECIAL MEMORANDUM ACCOUNT SIGN; see position 160 for values,
 C,183-222,X(40),AN,,customer_name,,CUSTOMER NAME,
 C,223-231,X(09),AN,,primary_tax_identification_number,,PRIMARY TAX IDENTIFICATION NUMBER,
@@ -191,7 +191,7 @@ D,110-117,9(08),N,,request_creation_date,,"REQUEST CREATION DATE, in CCYYMMDD fo
 D,118-125,X(08),AN,,request_creation_user_id,,REQUEST CREATION USER ID,
 D,126-133,9(08),N,,last_update_date,,"LAST UPDATE DATE, in CCYYMMDD format",
 D,134-141,X(08),AN,,last_update_user_id,,LAST UPDATE USER ID,
-D,142-159,9(16)v9(02),N,,total_market_value_of_transfer,,TOTAL MARKET VALUE OF TRANSFER,
+D,142-159,9(16)v9(02),N,,total_market_value_of_transfer,2,TOTAL MARKET VALUE OF TRANSFER,
 D,160-160,X(01),AN,,total_market_value_sign,,"TOTAL MARKET VALUE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -201,7 +201,7 @@ D,161-163,X(03),AN,,source_code,,"SOURCE CODE; values include:
 “DRQ” = Direct Rollover
 “ROC” = Roll Over Contribution
 “TOA” = Transfer of Account",
-D,164-181,9(16)v9(02),N,,special_memorandum_account,,SPECIAL MEMORANDUM ACCOUNT (SMA),
+D,164-181,9(16)v9(02),N,,special_memorandum_account,2,SPECIAL MEMORANDUM ACCOUNT (SMA),
 D,182-182,X(01),AN,,special memorandum account sign,,SPECIAL MEMORANDUM ACCOUNT SIGN; see position 160 for values,
 D,183-222,X(40),AN,,customer_name,,CUSTOMER NAME,
 D,223-231,X(09),AN,,primary_tax_identification_number,,PRIMARY TAX IDENTIFICATION NUMBER,
@@ -239,7 +239,7 @@ E,110-117,9(08),N,,request_creation_date,,"REQUEST CREATION DATE, in CCYYMMDD fo
 E,118-125,X(08),AN,,request_creation_user_id,,REQUEST CREATION USER ID,
 E,126-133,9(08),N,,last_update_date,,"LAST UPDATE DATE, in CCYYMMDD format",
 E,134-141,X(08),AN,,last_update_user_id,,LAST UPDATE USER ID,
-E,142-159,9(16)v9(02),N,,total_market_value_of_transfer,,TOTAL MARKET VALUE OF TRANSFER,
+E,142-159,9(16)v9(02),N,,total_market_value_of_transfer,2,TOTAL MARKET VALUE OF TRANSFER,
 E,160-160,X(01),AN,,total_market_value_sign,,"TOTAL MARKET VALUE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -249,7 +249,7 @@ E,161-163,X(03),AN,,source_code,,"SOURCE CODE; values include:
 “DRQ” = Direct Rollover
 “ROC” = Rollover Contribution
 “TOA” = Transfer of Account",
-E,164-181,9(16)v9(02),N,,special_memorandum_account,,SPECIAL MEMORANDUM ACCOUNT (SMA),
+E,164-181,9(16)v9(02),N,,special_memorandum_account,2,SPECIAL MEMORANDUM ACCOUNT (SMA),
 E,182-182,X(01),AN,,special memorandum account sign,,SPECIAL MEMORANDUM ACCOUNT SIGN; see position 160 for values,
 E,183-222,X(40),AN,,customer_name,,CUSTOMER NAME,
 E,223-231,X(09),AN,,primary_tax_identification_number,,PRIMARY TAX IDENTIFICATION NUMBER,
@@ -290,7 +290,7 @@ F,110-117,9(08),N,,request_creation_date,,"REQUEST CREATION DATE, in CCYYMMDD fo
 F,118-125,X(08),AN,,request_creation_user_id,,REQUEST CREATION USER ID,
 F,126-133,9(08),N,,last_update_date,,"LAST UPDATE DATE, in CCYYMMDD format",
 F,134-141,X(08),AN,,last_update_user_id,,LAST UPDATE USER ID,
-F,142-159,9(16)v9(02),N,,total_market_value_of_transfer,,TOTAL MARKET VALUE OF TRANSFER,
+F,142-159,9(16)v9(02),N,,total_market_value_of_transfer,2,TOTAL MARKET VALUE OF TRANSFER,
 F,160-160,X(01),AN,,total_market_value_sign,,"TOTAL MARKET VALUE SIGN; values include:
 “+” = Debit Amount
 “-” = Credit Amount
@@ -300,7 +300,7 @@ F,161-163,X(03),AN,,source_code,,"SOURCE CODE; values include:
 “DRQ” = Direct Rollover
 “ROC” = Roll Over Contribution
 “TOA” = Transfer of Account",
-F,164-181,9(16)v9(02),N,,special_memorandum_account,,SPECIAL MEMORANDUM ACCOUNT (SMA),
+F,164-181,9(16)v9(02),N,,special_memorandum_account,2,SPECIAL MEMORANDUM ACCOUNT (SMA),
 F,182-182,X(01),AN,,special memorandum account sign,,SPECIAL MEMORANDUM ACCOUNT SIGN; see position 160 for values,
 F,183-222,X(40),AN,,customer_name,,CUSTOMER NAME,
 F,223-231,X(09),AN,,primary_tax_identification_number,,PRIMARY TAX IDENTIFICATION NUMBER,
