@@ -180,12 +180,12 @@ HEADER,506-506,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates 
 “T” = Pending Transmission
 “W” = Sent B50 / 3rd party instruction
 “Z” = Rejected Pershing",
-3,153-160,X(08),X(08),,last_status_update_user_id,,LAST STATUS UPDATE USER ID,
-3,161-168,9(08),9(08),,actual_fund_date_,,"ACTUAL FUND DATE, in CCYYMMDD format",
-3,169-176,X(08),X(08),,actual_fund_user_id,,ACTUAL FUND USER ID,
-3,177-196,X(20),X(20),,fund_account_number,,FUND ACCOUNT NUMBER,
-3,197-200,X(04),X(04),,fund_family_number,,FUND FAMILY NUMBER,
-3,201-206,X(06),X(06),,mfts_reference_number,,MFTS REFERENCE NUMBER,
+3,153-160,X(08),AN,,last_status_update_user_id,,LAST STATUS UPDATE USER ID,
+3,161-168,9(08),N,,actual_fund_date_,,"ACTUAL FUND DATE, in CCYYMMDD format",
+3,169-176,X(08),AN,,actual_fund_user_id,,ACTUAL FUND USER ID,
+3,177-196,X(20),AN,,fund_account_number,,FUND ACCOUNT NUMBER,
+3,197-200,X(04),AN,,fund_family_number,,FUND FAMILY NUMBER,
+3,201-206,X(06),AN,,mfts_reference_number,,MFTS REFERENCE NUMBER,
 3,207-207,X(01),AN,,requested_quantity_indicator,,"REQUESTED QUANTITY INDICATOR; values include:
 “F” = Full Position Requested
 “P” = Partial Position Requested",
@@ -198,7 +198,7 @@ HEADER,506-506,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates 
 3,488-499,X(12),AN,,request_id,,REQUEST ID,
 3,500-500,X(01),AN,,end_of_the_detail_record_3,,Literally “X”; indicates the end of detail record 3,
 TRAILER,001-018,X(18),AN,,e_of_pershing,,Literally “EOFPERSHING” (end of Pershing file),
-TRAILER,019-032,X(18),AN,,account_asset,,Literally “ACCOUNT ASSET”,
+TRAILER,019-036,X(18),AN,,account_asset,,Literally “ACCOUNT ASSET”,
 TRAILER,037-046,X(10),AN,,data_of,,Literally “DATA OF”,
 TRAILER,047-056,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
 TRAILER,057-067,X(11),AN,,o_remote,,Literally “TO REMOTE”,

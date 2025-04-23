@@ -74,8 +74,8 @@ def handle_pershing_multiline_files():
                         else:
                             aca_asset.write(line)
 
-                    aca_transfer.write(TRANSFER_TRAILER + '\n')
-                    aca_asset.write(ASSET_TRAILER + '\n')
+                    aca_transfer.write(TRANSFER_TRAILER)
+                    aca_asset.write(ASSET_TRAILER)
                     
                     aca_transfer.close()
                     aca_asset.close()
