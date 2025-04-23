@@ -143,11 +143,11 @@ def get_header_info(file_path:str, is_bulk_formatted:bool=True):
         prefix_length = total_prefix_length
 
     header_info = dict()
-    file_name=os.path.basename(file_path).split('.')[0]
-    pershing_asset_files=pershing_asset_multi_file_schema()
 
-    if file_name in pershing_asset_files:
-        header_schema = get_header_schema(file_name,file_name)        
+    schema_file_name=get_schema_name_by_file_name(os.path.basename(file_path).split('.')[0])
+
+    if schema_file_name != '' :
+        header_schema = get_header_schema(schema_file_name,schema_file_name)        
     else:
         header_schema = get_header_schema(master_schema_file,master_schema_form_name)
     
@@ -158,8 +158,15 @@ def get_header_info(file_path:str, is_bulk_formatted:bool=True):
 
     return header_info
 
-def pershing_asset_multi_file_schema():
-    return ['asset_transfer_summary_record_a','asset_transfer_summary_record_b','asset_transfer_summary_record_c','asset_transfer_summary_record_d','asset_transfer_summary_record_e','asset_transfer_summary_record_f','asset_transfer_detail_record_1','asset_transfer_detail_record_2','asset_transfer_detail_record_3']
+def get_schema_name_by_file_name(file_name:str):
+    asset_trns_files=['asset_transfer_summary_record_a','asset_transfer_summary_record_b','asset_transfer_summary_record_c','asset_transfer_summary_record_d','asset_transfer_summary_record_e','asset_transfer_summary_record_f','asset_transfer_detail_record_1','asset_transfer_detail_record_2','asset_transfer_detail_record_3']
+    schema_file_name=''
+    for trns_file in asset_trns_files:        
+        if trns_file in file_name:
+            logger.info(f'trns_file in file_name ==> {trns_file} : {file_name} ')
+            schema_file_name=trns_file
+            break
+    return schema_file_name
 
 # %%
 
