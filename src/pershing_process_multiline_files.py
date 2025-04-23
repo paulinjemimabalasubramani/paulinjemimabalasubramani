@@ -41,27 +41,35 @@ def handle_pershing_multiline_files():
     print(f'source_path : {data_settings.source_path}')
     for root, dir, files in os.walk(data_settings.source_path):
         for file_name in files:            
-            if (file_name =='ACA2.ACA2'):
+            if 'ACA2' in file_name:
                 source_file_path = os.path.join(root, file_name)
                 with open(file=source_file_path, mode='rt') as f:
                     lines = f.readlines()
                     HEADER = lines[0]
                     TRAILER = lines[-1]
-                    
-                    TRANSFER_HEADER = HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY')
-                    ASSET_HEADER = HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER DETAIL ')
-                    
-                    TRANSFER_HEADER = TRANSFER_HEADER.replace('BOF      PERSHING','BOFPERSHING')
-                    ASSET_HEADER = ASSET_HEADER.replace('BOF      PERSHING','BOFPERSHING')
 
-                    TRANSFER_TRAILER = TRAILER
-                    ASSET_TRAILER = TRAILER.replace('TRANSFER', 'ASSET   ')
+                    output_files = {
+                        'A': ('asset_transfer_summary_record_a', HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD A'), TRAILER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD A')),
+                        'B': ('asset_transfer_summary_record_b', HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD B'), TRAILER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD B')),
+                        'C': ('asset_transfer_summary_record_c', HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD C'), TRAILER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD C')),
+                        'D': ('asset_transfer_summary_record_d', HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD D'), TRAILER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD D')),
+                        'E': ('asset_transfer_summary_record_e', HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD E'), TRAILER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD E')),
+                        'F': ('asset_transfer_summary_record_f', HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD F'), TRAILER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER SUMMARY RECORD F')),
+                        '1': ('asset_transfer_detail_record_1', HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER DETAIL RECORD 1 '), TRAILER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER DETAIL RECORD 1 ')),
+                        '2': ('asset_transfer_detail_record_2', HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER DETAIL RECORD 2 '), TRAILER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER DETAIL RECORD 2 ')),
+                        '3': ('asset_transfer_detail_record_3', HEADER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER DETAIL RECORD 3 '), TRAILER.replace('ACCOUNT TRANSFER', 'ASSET TRANSFER DETAIL RECORD 3 '))
+                    }
 
-                    aca_transfer = open(os.path.join(root, 'asset_transfer_summary.ACA2'), 'w')
-                    aca_asset = open(os.path.join(root, 'asset_transfer_detail.ACA2'), 'w')
+                    # Determine the suffix for the split files
+                    date_suffix = ""
+                    parts = file_name.split("_")
+                    if len(parts) > 1 and parts[-1].split(".")[0].isdigit():
+                        date_suffix = "_" + parts[-1].split(".")[0]
 
-                    aca_transfer.write(TRANSFER_HEADER)
-                    aca_asset.write(ASSET_HEADER)
+                    file_handles = {key: open(os.path.join(root, f'{value[0]}{date_suffix}.ACA2'), 'w') for key, value in output_files.items()}
+
+                    for key, value in output_files.items():
+                        file_handles[key].write(value[1])
 
                     for line in lines[1:-1]:
                         # Char 25 will define that type of record
@@ -69,15 +77,16 @@ def handle_pershing_multiline_files():
                         # 1 => Equity Asset record
                         # 2 => Option Asset record
                         # 3 => Mutula Fund Asset record
-                        if(line[24] == '0'):
-                            aca_transfer.write(line)
-                        else:
-                            aca_asset.write(line)
+                        char_pos_25 = line[24]
+                        char_pos_03 = line[2]
 
-                    aca_transfer.write(TRANSFER_TRAILER)
-                    aca_asset.write(ASSET_TRAILER)
-                    
-                    aca_transfer.close()
-                    aca_asset.close()
+                        if char_pos_25 == '0' and char_pos_03 in file_handles:
+                            file_handles[char_pos_03].write(line)
+                        elif char_pos_25 in ['1','2','3']:
+                            file_handles[char_pos_25].write(line)
+
+                    for key, value in output_files.items():
+                        file_handles[key].write(value[2])
+                        file_handles[key].close()
 
 handle_pershing_multiline_files()

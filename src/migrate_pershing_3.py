@@ -217,7 +217,7 @@ def generate_tables_from_fwt(
     """
     if table_name.lower().endswith('expanded_sec_desc'):
         start_ = start_line_pos_start - 2
-    elif table_name.lower().endswith('raa_asset_transfer_detail'):
+    elif 'raa_asset_transfer_detail_record' in table_name.lower():
         start_ = 90
     else: 
         start_ = start_line_pos_start
@@ -430,12 +430,6 @@ def extract_pershing_file_meta(file_path:str, zip_file_path:str=None):
         return
 
     header_info = get_header_info(file_path=file_path)
-
-    if('asset_transfer_detail.ACA2' in file_path):
-        header_info['form_name'] = 'asset_transfer_detail'
-
-    if('asset_transfer_summary.ACA2' in file_path):
-        header_info['form_name'] = 'asset_transfer_summary'
 
     schema_file_name = re.sub(name_regex, ' ', header_info['form_name'].lower()).strip()
     schema_file_name = re.sub(' ', '_', schema_file_name)
