@@ -106,23 +106,21 @@ def get_pershing_schema(schema_file_name:str, table_name:str=''):
 # %% Get Header Schema from Master Pershing Schema
 
 @catch_error(logger)
-def get_header_schema():
+def get_header_schema(schema_file_name,schema_form_name):
     """
     Get Header Schema from Master Pershing Schema
     """
     position_fields = ['position_start', 'position_end', 'length']
 
-    schema = get_pershing_schema(schema_file_name=master_schema_file)
-    if not schema: raise Exception(f'Main Schema file "{master_schema_file}" is not found!')
+    schema = get_pershing_schema(schema_file_name)
+    if not schema: raise Exception(f'Main Schema file "{schema_file_name}" is not found!')
 
     header_schema = [c for c in schema if c['record_name'] == schema_header_str]
     header_schema = {r['field_name']: {field_name: r[field_name] for field_name in position_fields} for r in header_schema}
-    header_schema['form_name'] = header_schema.pop(master_schema_form_name)
+    header_schema['form_name'] = header_schema.pop(schema_form_name)
     return header_schema
 
-
-
-header_schema = get_header_schema()
+header_schema = get_header_schema(master_schema_file,master_schema_form_name)
 
 
 
@@ -145,13 +143,23 @@ def get_header_info(file_path:str, is_bulk_formatted:bool=True):
         prefix_length = total_prefix_length
 
     header_info = dict()
+    file_name=os.path.basename(file_path).split('.')[0]
+    pershing_asset_files=pershing_asset_multi_file_schema()
+
+    if file_name in pershing_asset_files:
+        header_schema = get_header_schema(file_name,file_name)        
+    else:
+        header_schema = get_header_schema(master_schema_file,master_schema_form_name)
+    
     for field_name, pos in header_schema.items():
         header_info[field_name] = re.sub(' +', ' ', HEADER[pos['position_start']-1-prefix_length: pos['position_end']-prefix_length].strip())
 
     header_info['date_of_data'] = datetime.strptime(header_info['date_of_data'], r'%m/%d/%Y')
+
     return header_info
 
-
+def pershing_asset_multi_file_schema():
+    return ['asset_transfer_summary_record_a','asset_transfer_summary_record_b','asset_transfer_summary_record_c','asset_transfer_summary_record_d','asset_transfer_summary_record_e','asset_transfer_summary_record_f','asset_transfer_detail_record_1','asset_transfer_detail_record_2','asset_transfer_detail_record_3']
 
 # %%
 
