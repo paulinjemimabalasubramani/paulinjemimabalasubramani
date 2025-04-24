@@ -154,6 +154,7 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
         else: # not SECURITY PROFILES
             with open(target_file_path, mode='wt', encoding='utf-8') as ftarget:
                 first = file_has_header
+                file_name = os.path.basename(source_file_path)
                 header_line = ''
                 lines = []
                 for line in fsource:
