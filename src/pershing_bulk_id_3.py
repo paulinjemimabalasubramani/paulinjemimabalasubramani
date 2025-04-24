@@ -162,7 +162,7 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
                         header_line = line
                         first = False
                     else:
-                        if is_start_line(line=line, header_line=header_line) and lines:
+                        if (is_start_line(line=line, header_line=header_line) or 'asset_transfer' in file_name ) and lines:
                             lines_to_hex(ftarget=ftarget, lines=lines)
                             lines = []
                         lines.append(line)

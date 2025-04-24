@@ -14,7 +14,7 @@ HEADER,134-142,X(09),AN,,refreshed_updated,,"Indicates if the file is REFRESHED/
 HEADER,143-514,X(372),AN,,not_used,,Not Used,
 HEADER,515-515,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates the end of the header record,
 2,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “AT”,
-2,003-003,X(01),AN,,transfer_type_code,,"RECORD INDICATOR TRANSFER TYPE; values include:
+2,003-003,X(01),AN,,record_indicator_transfer_type,,"RECORD INDICATOR TRANSFER TYPE; values include:
 “A” = Incoming ACAT transfer
 “B” = incoming Non-ACAT transfer
 “C” = Incoming CIT transfer
