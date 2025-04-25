@@ -43,7 +43,7 @@ def handle_nfs_multiline_files():
         for file_name in files:            
             if "MAJ_TRANSFER" in file_name:
                 source_file_path = os.path.join(root, file_name)
-                with open(file=source_file_path,encoding='ISO-8859-1', mode='rt') as f:
+                with open(file=source_file_path,encoding='windows-1252', mode='rt') as f:
                     lines = f.readlines()
                     HEADER = lines[0]
                     TRAILER = lines[-1]
