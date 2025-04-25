@@ -60,7 +60,7 @@ def create_dag(firm_name, schedule_interval):
     )
 
     with dag:
-        start_pipe(dag) >> copy_files(dag, pipelinekey) >> process_multiline_files >> add_bulk_id >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
+        start_pipe(dag) >> copy_files(dag, pipelinekey) >> add_bulk_id >> migrate_data(dag, pipelinekey, python_spark_code) >> delete_files(dag, pipelinekey) >> end_pipe(dag)
 
     globals()[dag.safe_dag_id] = dag
 
