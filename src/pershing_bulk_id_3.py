@@ -185,8 +185,8 @@ def iterate_over_all_fwf(source_path:str):
     """
     for root, dirs, files in os.walk(source_path):
         for file_name in files:
-            #As we are splitting the ACA2.ACA2 into transfer and asset file we are excluding ACA2.ACA2 for further processing. Please refer pershing_process_multiline_files.py
-            if(file_name == 'ACA2.ACA2'): continue
+            #As we are splitting the ACA2.ACA2 into transfer and asset file we are excluding ACA2.ACA2 for further processing. Please refer pershing_process_multiline_files.py           
+            if(file_name.startswith('ACA2')): continue
             source_file_path = os.path.join(root, file_name)
             file_name_noext, file_ext = os.path.splitext(file_name)
             if file_ext.lower() == '.zip':
