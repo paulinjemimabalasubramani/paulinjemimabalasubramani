@@ -1,0 +1,81 @@
+record_name,position,picture,type,conditional_changes,field_name,scale,description,notes
+HEADER,001-018,X(18),AN,,b_of_pershing,,Literally “BOF      PERSHING ” (beginning of Pershing file),
+HEADER,019-051,X(18),AN,,asset_transfer_detail_record_2,,Literally “ASSET TRANSFER DETAIL RECORD 2  ”,
+HEADER,052-061,X(10),AN,,data_of ,,Literally “ DATA OF  ”,
+HEADER,062-071,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+HEADER,072-082,X(11),AN,,to_remote,,Literally “ TO REMOTE ”,
+HEADER,083-086,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+HEADER,087-100,X(14),AN,,begins_here,,Literally “ BEGINS HERE  ”,
+HEADER,101-110,X(10),AN,,run_date,,RUN DATE = “MM/DD/CCYY”,
+HEADER,111-111,X(01),AN,,not_used,,Not Used,
+HEADER,112-119,X(08),AN,,run_time,,RUN TIME = “HH:MM:SS”,
+HEADER,120-133,X(14),AN,,not_used,,Not Used,
+HEADER,134-142,X(09),AN,,refreshed_updated,,"Indicates if the file is REFRESHED/UPDATED/NOT APPLICABLE – literally “REFRESHED”, “UPDATED         ”  or“                                                     “",
+HEADER,143-514,X(372),AN,,not_used,,Not Used,
+HEADER,515-515,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates the end of the header record,
+2,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “AT”,
+2,003-003,X(01),AN,,record_indicator_transfer_type,,"RECORD INDICATOR TRANSFER TYPE; values include:
+“A” = Incoming ACAT transfer
+“B” = incoming Non-ACAT transfer
+“C” = Incoming CIT transfer
+“D” = Outgoing ACAT transfer
+“E” = Outgoing Non-ACAT transfer
+“F” = Outgoing CIT transfer",
+2,004-011,9(08),N,,record_id_seq_num,,"RECORD ID SEQUENCE NUMBER, begins with“00000001”",
+2,012-020,X(09),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (5), Check Digit (1)",
+2,021-024,X(04),AN,,investment_professional_number,,INVESTMENT PROFESSIONAL (IP) NUMBER; NOTE: For three-character IP Numbers position 24 will be,
+2,025-025,X(01),AN,,record_type,,"RECORD TYPE; value includes:
+“1” = Equity Asset record",
+2,026-026,X(01),AN,,asset_type_id,,"ASSET TYPE ID; values include:
+“C” = CUSIP
+“M” = Memo",
+2,027-035,X(09),AN,,asset_number,,"ASSET NUMBER; if Asset Type ID in position 026 is “M” then this field will be zeroes and asset description becomes description of memo; if asset number = 888888888, then asset is credit; if asset number = 999999999, then asset is debit",
+2,036-042,X(07),AN,,not used,,Not Used,
+2,043-102,X(60),AN,,asset_description,,ASSET DESCRIPTION,
+2,103-105,X(03),AN,,asset_status ,,ASSET STATUS; see Appendix T for values,
+2,106-123,9(13)v9(05),N,,actual_quantity,5,ACTUAL QUANTITY,
+2,124-124,X(01),AN,,actual_quantity_sign,,"ACTUAL QUANTITY SIGN; values include:
+“+” = Positive Quantity
+“-” = Negative Quantity
+“ ” = Not Applicable",
+2,125-142,9(16)v9(02),N,,market_value_of_this_asset,2,MARKET VALUE OF THIS ASSET,
+2,143-143,X(01),AN,,market_value_sign,,"MARKET VALUE SIGN; values include:
+“+” = Debit Amount
+“-” = Credit Amount
+“
+” = Not Applicable",
+2,144-144,X(01),AN,,cash_margin_indicator,,"CASH MARGIN INDICATOR; values include:
+“C” = Cash
+“M” = Margin
+“S” = Short",
+2,145-148,X(04),AN,,nscc_method_of_delivery_code,,NSCC METHOD OF DELIVERY CODE; see Appendix T for values,
+2,149-149,X(01),AN,,long/short_indicator,,"LONG/SHORT INDICATOR; values include:
+“0” = Position Long
+“1” = Position Short",
+2,150-155,X(06),AN,,option_root_id,,OPTION ROOT ID,
+2,156-161,9(06),N,,expiration_date,,"EXPIRATION DATE, in YYMMDD format",
+2,162-162,X(01),AN,,put/call_code,,"PUT/CALL CODE; values include:
+“B” = Bank Pledge (Call)
+“C” = Call
+“D” = Bank Pledge (Put)
+“E” = Escrow Receipt
+“L” = Letter of Credit (Call)
+“M” = Letter of Credit (Put)
+“P” = Put",
+2,163-170,9(05)v9(03),N,,strike_price,3,STRIKE PRICE,
+2,171-487,X(317),AN,,not used,,Not Used,
+2,488-499,X(12),AN,,request_id,,REQUEST ID,
+2,500-500,X(01),AN,,end_of_the_detail_record_2,,Literally “X”; indicates the end of detail record 2,
+TRAILER,001-018,X(18),AN,,e_of_pershing,,Literally “EOFPERSHING” (end of Pershing file),
+TRAILER,019-051,X(18),AN,,asset_transfer_detail_record_2,,Literally “ACCOUNT ASSET”,
+TRAILER,052-061,X(10),AN,,data_of,,Literally “DATA OF”,
+TRAILER,062-071,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+TRAILER,072-082,X(11),AN,,o_remote,,Literally “TO REMOTE”,
+TRAILER,083-086,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+TRAILER,087-098,X(12),AN,,ends_here,,Literally “ENDS HERE.”,
+TRAILER,099-120,X(22),AN,,total_detail_records,,Literally “TOTAL DETAIL RECORDS:”,
+TRAILER,121-130,9(10),N,,number_of_detail_records,,NUMBER OF DETAIL RECORDS,
+TRAILER,131-133,X(03),AN,,not used,,Not Used,
+TRAILER,134-142,X(09),AN,,refreshed/updated/not_applicable,,"Indicates if the file is REFRESHED/UPDATED/NOT APPLICABLE – literally “REFRESHED”, “UPDATED”, or “ ”",
+TRAILER,143-514,X(372),AN,,not used,,Not Used,
+TRAILER,515-515,X(01),AN,,end_of_the_detail_record,,Literally “Z”; indicates the end of the trailer record,

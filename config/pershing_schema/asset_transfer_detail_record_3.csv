@@ -1,0 +1,117 @@
+record_name,position,picture,type,conditional_changes,field_name,scale,description,notes
+HEADER,001-018,X(18),AN,,b_of_pershing,,Literally “BOF      PERSHING ” (beginning of Pershing file),
+HEADER,019-051,X(18),AN,,asset_transfer_detail_record_3,,Literally “ASSET TRANSFER DETAIL RECORD 3  ”,
+HEADER,052-061,X(10),AN,,data_of ,,Literally “ DATA OF  ”,
+HEADER,062-071,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+HEADER,072-082,X(11),AN,,to_remote,,Literally “ TO REMOTE ”,
+HEADER,083-086,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+HEADER,087-100,X(14),AN,,begins_here,,Literally “ BEGINS HERE  ”,
+HEADER,101-110,X(10),AN,,run_date,,RUN DATE = “MM/DD/CCYY”,
+HEADER,111-111,X(01),AN,,not_used,,Not Used,
+HEADER,112-119,X(08),AN,,run_time,,RUN TIME = “HH:MM:SS”,
+HEADER,120-133,X(14),AN,,not_used,,Not Used,
+HEADER,134-142,X(09),AN,,refreshed_updated,,"Indicates if the file is REFRESHED/UPDATED/NOT APPLICABLE – literally “REFRESHED”, “UPDATED         ”  or“                                                     “",
+HEADER,143-514,X(372),AN,,not_used,,Not Used,
+HEADER,515-515,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates the end of the header record,
+3,001-002,X(02),AN,,transaction_code,,TRANSACTION CODE = “AT”,
+3,003-003,X(01),AN,,record_indicator_transfer_type,,"RECORD INDICATOR TRANSFER TYPE; values include:
+“A” = Incoming ACAT transfer
+“B” = incoming Non-ACAT transfer
+“C” = Incoming CIT transfer
+“D” = Outgoing ACAT transfer
+“E” = Outgoing Non-ACAT transfer
+“F” = Outgoing CIT transfer",
+3,004-011,9(08),N,,record_id_seq_num,,"RECORD ID SEQUENCE NUMBER, begins with“00000001”",
+3,012-020,X(09),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (5), Check Digit (1)",
+3,021-024,X(04),AN,,investment_professional_number,,INVESTMENT PROFESSIONAL (IP) NUMBER; NOTE: For three-character IP Numbers position 24 will be “”.,
+3,024-024,X(01),AN,,not used,,Not Used,
+3,025-025,X(01),AN,,record_type,,"RECORD TYPE; value includes:
+“3” = Mutual Fund Asset record",
+3,026-026,X(01),AN,,asset_type_id,,"ASSET TYPE ID; values include:
+“C” = CUSIP
+“M” = Memo",
+3,027-035,X(09),AN,,asset_number,,ASSET NUMBER; if Asset Type ID in position 026 is “M” then this field will be zeroes and asset description becomes description of memo,
+3,036-042,X(07),AN,,not used,,Not Used,
+3,043-102,X(60),AN,,asset_description,,ASSET DESCRIPTION,
+3,103-105,X(03),AN,,asset_status ,,ASSET STATUS; see Appendix T for values,
+3,106-123,9(13)v9(05),N,,actual_quantity,5,ACTUAL QUANTITY,
+3,124-124,X(01),AN,,actual_quantity_sign,,"ACTUAL QUANTITY SIGN; values include:
+“+” = Positive Quantity
+“-” = Negative Quantity
+“” = Not Applicable",
+3,125-142,9(16)v9(02),N,,market_value_of_this_asset,2,MARKET VALUE OF THIS ASSET,
+3,143-143,X(01),AN,,market_value_sign,,"MARKET VALUE SIGN; values include:
+“+” = Debit Amount
+“-” = Credit Amount
+“” = Not Applicable",
+3,144-144,X(01),AN,,cash_margin_indicator,,"CASH MARGIN INDICATOR; values include:
+“C” = Cash
+“M” = Margin
+“S” = Short",
+3,145-148,X(04),AN,,nscc_method_of_delivery_code,,NSCC METHOD OF DELIVERY CODE; see Appendix T for values,
+3,149-149,X(01),AN,,network_indicator,,"NETWORK INDICATOR; values include:
+“Y” = Yes
+“N” = No",
+3,150-150,X(01),AN,,dividend_capital_gain_code,,"DIVIDEND / CAPITAL GAIN CODE; values include:
+“0” = Cash
+“1” = Reinvest
+“2” = Div-Cash/LTG-Cash/STG-Reinvest
+“3” = Div-Cash/LTG-Reinvest/STG-Reinvest
+“4” = Div-Cash/LTG-Reinvest/STG-Cash
+“5” = Div-Reinvest/LTG-Cash/STG-Cash
+“6” = Div- Reinvest/LTG-Reinvest/STG-Cash
+“7” = Div- Reinvest/LTG-Cash/STG-Reinvest",
+3,151-151,X(01),AN,,broker_dealer_indicator,,"BROKER DEALER INDICATOR; values include:
+“Y” = Yes
+“N” = No
+“U” = Unknown",
+3,152-152,X(01),AN,,mutual_fund_detail_status_code,,"MUTUAL FUND DETAIL STATUS CODE; values include:
+“A” = Pending Pershing Approval
+“B” = Booked
+“C” = Completed
+“D” = Deleted - No Pending
+“E” = Pending Dealer Change Form
+“F” = Fund Processing Letter
+“I” = Pending Instruction Letter to the Fund
+“J” = Reject
+“K” = Cancelled
+“L” = Deleted - Pending Revision
+“M” = Pending IBD Papers
+“N” = Fund Processing - B52
+“P” = Pending Pershing Instruction
+“Q” = Completed - Tolerance Problem
+“R” = Rejected - Both
+“S” = Pending B50 / 3rd party instruction
+“T” = Pending Transmission
+“W” = Sent B50 / 3rd party instruction
+“Z” = Rejected Pershing",
+3,153-160,X(08),AN,,last_status_update_user_id,,LAST STATUS UPDATE USER ID,
+3,161-168,9(08),N,,actual_fund_date_,,"ACTUAL FUND DATE, in CCYYMMDD format",
+3,169-176,X(08),AN,,actual_fund_user_id,,ACTUAL FUND USER ID,
+3,177-196,X(20),AN,,fund_account_number,,FUND ACCOUNT NUMBER,
+3,197-200,X(04),AN,,fund_family_number,,FUND FAMILY NUMBER,
+3,201-206,X(06),AN,,mfts_reference_number,,MFTS REFERENCE NUMBER,
+3,207-207,X(01),AN,,requested_quantity_indicator,,"REQUESTED QUANTITY INDICATOR; values include:
+“F” = Full Position Requested
+“P” = Partial Position Requested",
+3,208-225,9(13)v9(05),N,,requested_quantity,5,REQUESTED QUANTITY; this will be zero when a Full Position is requested,
+3,226-226,X(01),AN,,requested_quantity_sign,,"REQUESTED QUANTITY SIGN; values include:
+“+” = Positive Quantity
+“-” = Negative Quantity
+“” = Not Applicable",
+3,227-487,X(261),AN,,not used,,Not Used,
+3,488-499,X(12),AN,,request_id,,REQUEST ID,
+3,500-500,X(01),AN,,end_of_the_detail_record_3,,Literally “X”; indicates the end of detail record 3,
+TRAILER,001-018,X(18),AN,,e_of_pershing,,Literally “EOFPERSHING” (end of Pershing file),
+TRAILER,019-051,X(18),AN,,asset_transfer_detail_record_3,,Literally “ACCOUNT ASSET”,
+TRAILER,052-061,X(10),AN,,data_of,,Literally “DATA OF”,
+TRAILER,062-071,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+TRAILER,072-082,X(11),AN,,o_remote,,Literally “TO REMOTE”,
+TRAILER,083-086,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+TRAILER,087-098,X(12),AN,,ends_here,,Literally “ENDS HERE.”,
+TRAILER,099-120,X(22),AN,,total_detail_records,,Literally “TOTAL DETAIL RECORDS:”,
+TRAILER,121-130,9(10),N,,number_of_detail_records,,NUMBER OF DETAIL RECORDS,
+TRAILER,131-133,X(03),AN,,not used,,Not Used,
+TRAILER,134-142,X(09),AN,,refreshed/updated/not_applicable,,"Indicates if the file is REFRESHED/UPDATED/NOT APPLICABLE – literally “REFRESHED”, “UPDATED”, or “ ”",
+TRAILER,143-514,X(372),AN,,not used,,Not Used,
+TRAILER,515-515,X(01),AN,,end_of_the_detail_record,,Literally “Z”; indicates the end of the trailer record,
