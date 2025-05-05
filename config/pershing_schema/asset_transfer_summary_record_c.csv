@@ -1,0 +1,84 @@
+record_name,position,picture,type,conditional_changes,field_name,scale,description,notes
+HEADER,001-018,X(18),AN,,b_of_pershing,,Literally “BOF      PERSHING ” (beginning of Pershing file),
+HEADER,019-051,X(18),AN,,asset_transfer_summary_record_c,,Literally “ASSET TRANSFER SUMMARY RECORD C  ”,
+HEADER,052-061,X(10),AN,,data_of ,,Literally “ DATA OF  ”,
+HEADER,062-071,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+HEADER,072-082,X(11),AN,,to_remote,,Literally “ TO REMOTE ”,
+HEADER,083-086,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+HEADER,087-100,X(14),AN,,begins_here,,Literally “ BEGINS HERE  ”,
+HEADER,101-110,X(10),AN,,run_date,,RUN DATE = “MM/DD/CCYY”,
+HEADER,111-111,X(01),AN,,not_used,,Not Used,
+HEADER,112-119,X(08),AN,,run_time,,RUN TIME = “HH:MM:SS”,
+HEADER,120-133,X(14),AN,,not_used,,Not Used,
+HEADER,134-142,X(09),AN,,refreshed_updated,,"Indicates if the file is REFRESHED/UPDATED/NOT APPLICABLE – literally “REFRESHED”, “UPDATED         ”  or“                                                     “",
+HEADER,143-514,X(372),AN,,not_used,,Not Used,
+HEADER,515-515,X(01),AN,,end_of_the_header_record,,Literally “A”; indicates the end of the header record,
+C,001 - 002,X(02),AN,,transaction_code,, TRANSACTION CODE = “AT”,
+C,003 - 003,X(01),AN,,record_indicator_transfer_type,,RECORD INDICATOR TRANSFER TYPE = “C”,
+C,004 - 011,9(08),N,,record_id_seq_num,,"RECORD ID SEQUENCE NUMBER, begins with“00000001”",
+C,012 - 020,X(09),AN,,account_number,,"ACCOUNT NUMBER, including Office (3), Base Account (5), Check Digit (1) ",
+C,021-024,X(04),AN,,investment_professional_number,,INVESTMENT PROFESSIONAL (IP) NUMBER; NOTE: For three-character IP Numbers position 24 will be “”.,
+C,025 - 025,X(01),AN,,record_type,,"RECORD TYPE; value includes:
+“0” = Transfer Level record",
+C,026 - 028,X(03),AN,,transfer_type ,,"TRANSFER TYPE; values include:
+“FUL” = Full Transfer
+“PTR” = Partial Transfer Receiver Initiated
+“RCR”= Residual Transfer",
+C,029-031,X(03),AN,,transfer_status,,TRANSFER STATUS; see Appendix T for values,
+C,032- 033,9(02),N,,days_in_pershing_status,,DAYS IN PERSHING STATUS,
+C,034 - 037,X(04),AN,,contra_broker_number,,CONTRA BROKER NUMBER,
+C,038-072,X(35),AN,,contra_broker_name,,CONTRA BROKER NAME,
+C,073-107,X(35),AN,,contra_account_number,,CONTRA ACCOUNT NUMBER,
+C,108-109,X(02),AN,,retirement_account_class_indicator,,"RETIREMENT ACCOUNT CLASS INDICATOR; values include:
+“B1” = IRA for which Pershing LLC is Custodian
+“B2” = IRA for which Pershing LLC is not Custodian
+“B3” = IRA where Pershing LLC acts as a servicing agent
+“  ” = Non-retirement account",
+C,110-117,9(08),N,,request_creation_date,,"REQUEST CREATION DATE, in CCYYMMDD format",
+C,118-125,X(08),AN,,request_creation_user_id,,REQUEST CREATION USER ID,
+C,126-133,9(08),N,,last_update_date,,"LAST UPDATE DATE, in CCYYMMDD format",
+C,134-141,X(08),AN,,last_update_user_id,,LAST UPDATE USER ID,
+C,142-159,9(16)v9(02),N,,total_market_value_of_transfer,2,TOTAL MARKET VALUE OF TRANSFER,
+C,160-160,X(01),AN,,total_market_value_sign,,"TOTAL MARKET VALUE SIGN; values include:
+“+” = Debit Amount
+“-” = Credit Amount
+“ ” = Not Applicable",
+C,161-163,X(03),AN,,source_code,,"SOURCE CODE; values include:
+“DRD” = Direct Rollover Due to Death
+“DRQ” = Direct Rollover
+“ROC” = Roll Over Contribution
+“TOA” = Transfer of Account",
+C,164-181,9(16)v9(02),N,,special_memorandum_account,2,SPECIAL MEMORANDUM ACCOUNT (SMA),
+C,182-182,X(01),AN,,special memorandum account sign,,SPECIAL MEMORANDUM ACCOUNT SIGN; see position 160 for values,
+C,183-222,X(40),AN,,customer_name,,CUSTOMER NAME,
+C,223-231,X(09),AN,,primary_tax_identification_number,,PRIMARY TAX IDENTIFICATION NUMBER,
+C,232-233,X(02),AN,,reason_code_for_reject,,REASON CODE FOR REJECT; see Appendix T for values,
+C,234-353,X(120),AN,,reason_comments,,REASON COMMENTS; free-form text,
+C,354-487,X(134),AN,,not_used,,Not Used,
+C,488-499,X(12),AN,,request_id,,REQUEST ID ,
+C,500-500,X(01),AN,,end_of_the_detail_record_c,, Literally “X”; indicates the end of detail record C,
+TRAILER,001-018,X(18),AN,,e_of_pershing,,Literally “EOFPERSHING” (end of Pershing file),
+TRAILER,019-051,X(18),AN,,asset_transfer_summary_record_c,,"Literally “ACCOUNT
+TRANSFER  ”",
+TRAILER,052-061,X(10),AN,,data_of,,Literally “ DATA  OF  ”,
+TRAILER,062-071,X(10),AN,,date_of_data,,DATE OF DATA = “MM/DD/CCYY”,
+TRAILER,072-082,X(11),AN,,to_remote,,"Literally “
+TO
+REMOTE
+”",
+TRAILER,083-086,X(04),AN,,remote_id,,REMOTE ID = “XXXX”,
+TRAILER,087-098,X(12),AN,,ends_here,,"Literally “
+ENDS
+HERE.
+”",
+TRAILER,099-120,X(22),AN,,total_detail_records,,"Literally “TOTAL
+DETAIL
+RECORDS:
+”",
+TRAILER,121-130,9(10),N,,number_of_detail_records,,NUMBER OF DETAIL RECORDS,
+TRAILER,131-133,X(03),AN,,not_used,,Not Used,
+TRAILER,134-142,X(09),AN,,file_status,,"Indicates if the file is REFRESHED/UPDATED/NOT APPLICABLE – literally “REFRESHED”, “UPDATED
+”, or “
+”",
+TRAILER,143-514,X(372),AN,,not_used,,Not Used,
+TRAILER,515-515,X(01),AN,,end_of_the_trailer_record,,Literally “Z”; indicates the end of the trailer record,
