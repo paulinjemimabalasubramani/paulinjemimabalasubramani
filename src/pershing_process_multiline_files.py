@@ -28,7 +28,7 @@ else:
 
 # %% Import Libraries
 
-import os,sys
+import os,sys,zipfile
 class app: pass
 sys.app = app
 sys.app.args = args
@@ -37,13 +37,22 @@ sys.app.parent_name = os.path.basename(__file__)
 from modules3.common_functions import catch_error, data_settings, logger
 
 @catch_error(logger)
+
 def handle_pershing_multiline_files():
     print(f'source_path : {data_settings.source_path}')
-    for root, dir, files in os.walk(data_settings.source_path):
-        for file_name in files:            
-            if 'ACA2' in file_name:
+    for root, dirs, files in os.walk(data_settings.source_path):
+        for file_name in files:
+            if 'ACA2' in file_name and file_name.endswith('.zip'):
+                zip_path = os.path.join(root, file_name)
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(root)
+                    print(f'Extracted: {zip_path}')
+
+        # After extraction, process the unzipped files
+        for file_name in os.listdir(root):
+            if 'ACA2' in file_name and not file_name.endswith('.zip'):
                 source_file_path = os.path.join(root, file_name)
-                with open(file=source_file_path,encoding='ISO-8859-1', mode='rt') as f:
+                with open(file=source_file_path, encoding='ISO-8859-1', mode='rt') as f:
                     lines = f.readlines()
                     HEADER = lines[0]
                     TRAILER = lines[-1]
