@@ -42,7 +42,8 @@ def handle_pershing_multiline_files():
     print(f'source_path : {data_settings.source_path}')
     for root, dirs, files in os.walk(data_settings.source_path):
         for file_name in files:
-            if 'ACA2' in file_name and file_name.endswith('.zip'):
+            print(f'file_name : {file_name}')
+            if 'ACA2' in file_name and file_name.upper().endswith('.ZIP'):
                 zip_path = os.path.join(root, file_name)
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(root)
@@ -50,7 +51,7 @@ def handle_pershing_multiline_files():
 
         # After extraction, process the unzipped files
         for file_name in os.listdir(root):
-            if 'ACA2' in file_name and not file_name.endswith('.zip'):
+            if 'ACA2' in file_name and not file_name.upper().endswith('.ZIP'):
                 source_file_path = os.path.join(root, file_name)
                 with open(file=source_file_path, encoding='ISO-8859-1', mode='rt') as f:
                     lines = f.readlines()
