@@ -43,8 +43,6 @@ from datetime import datetime
 # %% Parameters
 
 url_string = lambda symbol: f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=30y&interval=1d'
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'}
-
 csv_encoding = 'utf-8'
 csv_delimiter = ','
 csv_quotechar = '"'
@@ -72,7 +70,8 @@ def fetch_data(symbol:str):
     """
     Fetch symbol data from web and clean data
     """
-    logger.info(f'Fetching: {symbol}')
+    logger.info(f'Fetching: {symbol}, user-agent: {data_settings.user_agent}')
+    headers = {'User-Agent': data_settings.user_agent}
     req = urllib.request.Request(url_string(symbol), headers=headers)
     contents = urllib.request.urlopen(req).read()
     contents = json.loads(contents)
