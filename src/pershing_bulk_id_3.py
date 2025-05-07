@@ -95,11 +95,11 @@ def lines_to_hex(ftarget, lines:list,date_of_data:str=None):
     if len(lines) == 0: return
 
     hash = hash_func()
+
     for line in lines:
-        if date_of_data:
-            hash.update(line+date_of_data.strftime(r"%Y-%m-%d %H:%M:%S").encode('utf-8'))
-        else:
-            hash.update(line.encode('utf-8'))
+        hash_line= line+date_of_data.strftime(r"%Y-%m-%d %H:%M:%S") if date_of_data else line
+        hash.update(hash_line.encode('utf-8'))
+
     hex = hash.hexdigest()
 
     for line in lines:
