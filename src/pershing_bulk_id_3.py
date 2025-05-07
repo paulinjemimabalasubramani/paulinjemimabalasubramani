@@ -88,7 +88,7 @@ def add_prefix(prefix:str, line:str):
 # %% Convert lines to HASH value and write them to file
 
 @catch_error(logger)
-def lines_to_hex(ftarget, lines:list):
+def lines_to_hex(ftarget, lines:list,date_of_data:str=None):
     """
     Convert lines to HASH value and write them to file
     """
@@ -96,7 +96,10 @@ def lines_to_hex(ftarget, lines:list):
 
     hash = hash_func()
     for line in lines:
-        hash.update(line.encode('utf-8'))
+        if date_of_data:
+            hash.update(line+date_of_data.strftime(r"%Y-%m-%d %H:%M:%S").encode('utf-8'))
+        else:
+            hash.update(line.encode('utf-8'))
     hex = hash.hexdigest()
 
     for line in lines:
@@ -164,7 +167,10 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
                         first = False
                     else:
                         if (is_start_line(line=line, header_line=header_line) or 'asset_transfer' in file_name ) and lines:
-                            lines_to_hex(ftarget=ftarget, lines=lines)
+                            if 'asset_transfer' in file_name:
+                                lines_to_hex(ftarget=ftarget, lines=lines,header_info['date_of_data'])
+                            else:
+                                lines_to_hex(ftarget=ftarget, lines=lines)
                             lines = []
                         lines.append(line)
 
@@ -185,9 +191,14 @@ def iterate_over_all_fwf(source_path:str):
     """
     for root, dirs, files in os.walk(source_path):
         for file_name in files:
+
+            source_file_path = os.path.join(root, file_name)            
+            
             #As we are splitting the ACA2.ACA2 into transfer and asset file we are excluding ACA2.ACA2 for further processing. Please refer pershing_process_multiline_files.py           
-            if(file_name.startswith('ACA2')): continue
-            source_file_path = os.path.join(root, file_name)
+            if(file_name.startswith('ACA2')): 
+                delete_files_after_process(source_file_path)
+                continue
+            
             file_name_noext, file_ext = os.path.splitext(file_name)
             if file_ext.lower() == '.zip':
                 with tempfile.TemporaryDirectory(dir=data_settings.temporary_file_path) as tmpdir:
@@ -201,9 +212,13 @@ def iterate_over_all_fwf(source_path:str):
                 logger.info(f'Processing {source_file_path} , target file path {target_file_path}')
                 process_single_fwf(source_file_path=source_file_path, target_file_path=target_file_path)
 
-            if hasattr(data_settings, 'delete_files_after') and data_settings.delete_files_after.upper()=='TRUE':
-                logger.info(f'Deleting {source_file_path}')
-                os.remove(source_file_path)
+            delete_files_after_process(source_file_path)
+
+
+def delete_files_after_process(source_file_path):
+    if hasattr(data_settings, 'delete_files_after') and data_settings.delete_files_after.upper()=='TRUE':
+        logger.info(f'Deleting {source_file_path}')
+        os.remove(source_file_path)
 
 def splitAccountFullFile(source_path:str,source_file_path:str,zip_extract_dir:str):
     # data_settings.split_only_files defined in Pipelineconfiguration table
