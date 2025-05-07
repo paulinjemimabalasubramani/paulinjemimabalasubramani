@@ -168,7 +168,7 @@ def process_single_fwf(source_file_path:str, target_file_path:str):
                     else:
                         if (is_start_line(line=line, header_line=header_line) or 'asset_transfer' in file_name ) and lines:
                             if 'asset_transfer' in file_name:
-                                lines_to_hex(ftarget=ftarget, lines=lines,header_info['date_of_data'])
+                                lines_to_hex(ftarget=ftarget, lines=lines,date_of_data=header_info['date_of_data'])
                             else:
                                 lines_to_hex(ftarget=ftarget, lines=lines)
                             lines = []
