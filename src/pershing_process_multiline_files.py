@@ -41,6 +41,13 @@ from modules3.common_functions import catch_error, data_settings, logger
 def handle_pershing_multiline_files():
     print(f'source_path : {data_settings.source_path}')
     for root, dirs, files in os.walk(data_settings.source_path):
+        # Clean up any existing asset_transfer files
+        for file_name in files:
+            if 'asset_transfer' in file_name.lower():
+                file_path = os.path.join(root, file_name)
+                os.remove(file_path)
+                print(f'Deleted existing processed file: {file_path}')
+                
         for file_name in files:
             print(f'file_name : {file_name}')
             if 'ACA2' in file_name and file_name.upper().endswith('.ZIP'):
