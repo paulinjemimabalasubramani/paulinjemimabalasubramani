@@ -73,6 +73,8 @@ def connect_to_snowflake():
     """
     _, snowflake_user, snowflake_pass = get_secrets(data_settings.snowflake_key_vault_account)
 
+    logger.info(f"Snowflake Key Valut account : {data_settings.snowflake_key_vault_account}, Snowflake user: {snowflake_user}, Snowflake account: {data_settings.snowflake_account}")
+
     snowflake_connection = snowflake_connect(
         user = snowflake_user,
         password = snowflake_pass,
