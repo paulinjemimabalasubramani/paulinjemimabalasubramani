@@ -29,7 +29,7 @@ dag = DAG(
 # Define tasks
 run_comparison = BashOperator(
     task_id=f'RUN_SQL_SF_COMPARISON_{pipelinekey}',
-    bash_command=f'python {src_path}/{python_script} --pipelinekey {pipelinekey}--jars {jars}',
+    bash_command=f'SPARK_SUBMIT_ARGS="--jars {jars}" python {src_path}/{python_script} --pipelinekey {pipelinekey}',
     dag=dag
 )
 
