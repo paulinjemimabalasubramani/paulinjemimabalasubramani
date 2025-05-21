@@ -8,7 +8,7 @@ from dag_modules.dag_common import default_args, start_pipe, end_pipe, src_path,
 
 # %% Pipeline Parameters
 pipelinekey = 'SQL_SNOWFLAKE_DATA_COMPARE'
-python_script = 'sql_sf_data_compare.py'
+python_script = 'sql_sf_data_compare'
 
 tags = ['DataQuality', 'Validation', 'SQL-Snowflake']
 
