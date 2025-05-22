@@ -100,6 +100,11 @@ def extract_csv_file_meta(file_path:str, zip_file_path:str=None):
 
     is_full_load = getattr(data_settings, 'is_full_load', 'TRUE').upper() == 'TRUE'
 
+    # PBI : https://pw1appdvop01.ibddomain.net/AdvisorGroup/Applications/_workitems/edit/428220
+    
+    if(hasattr(data_settings, 'incremental_data_tables') and table_name in data_settings.incremental_data_tables.split(',')):
+        is_full_load = False
+
     file_meta = {
         'table_name': table_name.lower(), # table name should always be lower
         'file_name': file_name,
