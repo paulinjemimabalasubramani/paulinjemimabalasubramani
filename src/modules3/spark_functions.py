@@ -366,13 +366,15 @@ def read_csv(spark, file_path:str):
         if custom_delimiter in HEADER:
             delimiter = custom_delimiter
 
+    quote = '' if (hasattr(data_settings, 'is_empty_spark_quote')) else '"'
+
     csv_table = (spark.read # https://github.com/databricks/spark-csv
         .format('csv')
         .option('header', 'true')
         .option('multiLine', 'true')
         .option('delimiter', delimiter) # same as sep
         .option('escape', '"')
-        .option('quote', '"')
+        .option('quote', quote)
         .option('charset', 'UTF-8')
         .option('comment', None)
         .option('mode', 'PERMISSIVE')
