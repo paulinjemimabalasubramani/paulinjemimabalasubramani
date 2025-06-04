@@ -131,7 +131,7 @@ def get_header_info(file_path:str, is_bulk_formatted:bool=True):
     """
     Get Header Info from Pershing file
     """
-    with open(file=file_path, mode='rt') as f:
+    with open(file=file_path,encoding='ISO-8859-1', mode='rt') as f:
         HEADER = f.readline()
 
     if is_bulk_formatted:
