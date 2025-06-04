@@ -10,7 +10,7 @@ python_script = 'sql_snowflake_data_compare'
 tags = ['DataQuality', 'Validation', 'SQL-Snowflake']
 
 # Schedule to run every day 10:00 am CST
-schedule_interval = '0 10 * * *'
+schedule_interval = '0 11 * * *'
 
 # %% Create DAG
 dag = DAG(
