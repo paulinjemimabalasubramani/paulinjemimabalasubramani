@@ -1,19 +1,16 @@
 # %% Import Libraries
 from airflow import DAG
 from airflow.utils.dates import days_ago
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
-
-from dag_modules.dag_common import default_args, start_pipe, end_pipe, src_path, migrate_data
+from dag_modules.dag_common import default_args, start_pipe, end_pipe, migrate_data
 
 # %% Pipeline Parameters
 pipelinekey = 'SQL_SNOWFLAKE_DATA_COMPARE'
-python_script = 'sql_sf_data_compare'
+python_script = 'sql_snowflake_data_compare'
 
 tags = ['DataQuality', 'Validation', 'SQL-Snowflake']
 
-# Schedule to run every 6 hours
-schedule_interval = '0 */6 * * *'
+# Schedule to run every day 10:00 am CST
+schedule_interval = '0 11 * * *'
 
 # %% Create DAG
 dag = DAG(
