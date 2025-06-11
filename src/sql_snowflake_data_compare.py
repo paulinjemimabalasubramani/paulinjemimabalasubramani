@@ -423,6 +423,44 @@ def compare_spark_dataframes(spark, sql_df, snowflake_df, key_columns):
             logger.warning(f"Failed to collect target_df: {e}")
             comparison_results["target_query_result"] = [{"error": str(e), "message": "Failed to collect target DataFrame"}]
 
+        
+        #-- SPECIAL HANDLING FOR COUNT-ONLY QUERIES ---
+        # If no key columns are provided, it implies a count-only comparison.
+        # In this scenario, we only compare the counts and the single result row.
+        if not key_columns:
+            logger.info("No key columns provided. Performing count-only comparison.")
+            if comparison_results["source_count"] == comparison_results["target_count"]:
+                comparison_results["comparison_summary_message"] = f"Counts match: {comparison_results['source_count']} rows."
+            else:
+                comparison_results["comparison_summary_message"] = (
+                    f"Count mismatch: Source has {comparison_results['source_count']} rows, "
+                    f"Target has {comparison_results['target_count']} rows."
+                )
+            # For count-only, we don't need to populate data_not_in_source, data_not_in_target, or mismatch_column_values
+            # as these are relevant for row-by-row or column-by-column data mismatches.
+            # The 'source_query_result' and 'target_query_result' already contain the counts.
+            return comparison_results
+        
+        
+        # Handle scenarios where one or both DataFrames are empty (query ran, but no data)
+        source_has_data = comparison_results["source_count"] > 0
+        target_has_data = comparison_results["target_count"] > 0
+
+        if not source_has_data and not target_has_data:
+            comparison_results["comparison_summary_message"] = "Both SQL Server and Snowflake queries returned no data."
+            return comparison_results
+        elif not source_has_data:
+            comparison_results["comparison_summary_message"] = "SQL Server query returned no data. Data exists only in Snowflake."
+            # All target data is "not in source"
+            comparison_results["data_not_in_source"] = comparison_results["target_query_result"]
+            return comparison_results
+        elif not target_has_data:
+            comparison_results["comparison_summary_message"] = "Snowflake query returned no data. Data exists only in SQL Server."
+            # All source data is "not in target"
+            comparison_results["data_not_in_target"] = comparison_results["source_query_result"]
+            return comparison_results
+
+
         # Ensure key_columns are present in both DFs and are lowercased
         key_columns_lower = [col.lower() for col in key_columns]
         for key_col in key_columns_lower:
