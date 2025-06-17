@@ -754,6 +754,21 @@ def run_data_comparison():
                     logger.logger.error(f"Failed to store error details for config ID {config_id}: {e_store}", exc_info=True)
                 continue # Move to the next config item
 
+        # --- Send notifications after all comparisons are complete ---
+        logger.info("All comparisons completed. Sending notifications...")
+        try:
+            snowflake_cursor = snowflake_conn.cursor()
+            snowflake_cursor.execute('CALL DATAHUB.PIPELINE_METADATA.SP_SQL_TO_SNOWFLAKE_DATA_COMPARISON()')
+            logger.info('Stored Procedure SP_SQL_TO_SNOWFLAKE_DATA_COMPARISON has been called successfully')
+
+            sp_result = snowflake_cursor.fetchone()
+            if sp_result:
+                logger.info(f'Stored Procedure returned: {sp_result[0]}')
+       
+        except Exception as e:
+            logger.logger.error(f"Error calling SP_SQL_TO_SNOWFLAKE_DATA_COMPARISON: {str(e)}", exc_info=True)
+
+    
     except Exception as e_overall:
         # This catches any high-level errors not handled inside the loop,
         # e.g., initial Spark or Snowflake connection failures (which will re-raise)
