@@ -603,7 +603,7 @@ def store_comparison_result(
     comparison_data_dict 
 ):
     try:
-        logger.info(f"Generated JSON string for COMPARISON_RESULT (config ID {config_id}): {comparison_data_dict}")
+        logger.info(f"Generated JSON string for COMPARISON_RESULT (config ID {config_id})")
 
         insert_query = """
         INSERT INTO DATAHUB.PIPELINE_METADATA.SQL_SNOWFLAKE_DATA_COMPARE_RESULTS (
@@ -686,7 +686,9 @@ def run_data_comparison():
 
                 # Retrieve key columns from config_item, split by comma and strip whitespace
                 key_columns_str = config_item.get('KEY_COLUMNS', '')
-                key_columns = [k.strip().lower() for k in key_columns_str.split(',') if k.strip()]
+                if key_columns_str:
+                    key_columns = [k.strip().lower() for k in key_columns_str.split(',') if k.strip()]
+                else: key_columns = []
 
                 logger.info(f"Processing configuration ID: {config_id} with Key Columns: {key_columns}")
 
