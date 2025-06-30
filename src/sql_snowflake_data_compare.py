@@ -28,7 +28,7 @@ else:
 import os, pyodbc, argparse, sys, json, decimal
 from datetime import datetime
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, sum as spark_sum
 from pyspark.sql.types import StructType, StructField, StringType, DateType, TimestampType, LongType, DoubleType, DecimalType, BooleanType, IntegerType, BinaryType, ShortType, FloatType
 
 PYODBC_TYPE_MAP = {
@@ -360,6 +360,40 @@ def execute_snowflake_query_with_spark(spark, snowflake_conn, query):
         error_msg = f"Error executing Snowflake query with Spark: {str(e)}"
         logger.logger.error(error_msg, exc_info=True)
         return None, error_msg
+    
+
+def get_aggregated_count(df):
+    """
+    Checks if a DataFrame has a column named 'count' (case-insensitive)
+    and returns the sum of that column. Otherwise, returns the row count.
+    """
+    if df is None:
+        return 0
+
+    # Look for a common "count" like column name (case-insensitive)
+    count_col_name = None
+    for col_name in df.columns:
+        if 'count' in col_name.lower(): # Check for 'count' as a substring, broader
+            # You might want to make this more specific, e.g., col_name.lower() == 'count'
+            # if your queries always alias the count column strictly to 'count'.
+            count_col_name = col_name
+            break
+
+    if count_col_name:
+        try:
+            # Sum the 'count' column from the aggregate results
+            # Use spark_sum (aliased from pyspark.sql.functions.sum)
+            total_count = df.agg(spark_sum(col(count_col_name))).collect()[0][0]
+            if total_count is None:
+                return 0
+            # Ensure it's an integer if it came from a count aggregation
+            return int(total_count)
+        except Exception as e:
+            logger.warning(f"Could not sum '{count_col_name}' column. Falling back to row count. Error: {e}")
+            return df.count()
+    else:
+        # If no 'count' column is found, revert to the number of rows
+        return df.count()
 
 
 @catch_error(logger)
@@ -391,16 +425,16 @@ def compare_spark_dataframes(spark, sql_df, snowflake_df, key_columns):
             comparison_results["comparison_summary_message"] = "Both queries failed to execute."
             return comparison_results
         if sql_df is None:
-            comparison_results["target_count"] = snowflake_df.count() if snowflake_df else 0
+            comparison_results["target_count"] = get_aggregated_count(snowflake_df)
             comparison_results["comparison_summary_message"] = "SQL query failed to execute."
             try:
-                comparison_results["target_query_result"] = [row.asDict() for row in sql_df.collect()] if snowflake_df else []
+                comparison_results["target_query_result"] = [row.asDict() for row in snowflake_df.collect()] if snowflake_df else []
             except Exception as e:
                 logger.warning(f"Failed to collect target_df (on SQL query failure): {e}")
                 comparison_results["target_query_result"] = [{"error": str(e), "message": "Failed to collect target DataFrame"}]
             return comparison_results
         if snowflake_df is None:
-            comparison_results["source_count"] = sql_df.count() if sql_df else 0
+            comparison_results["source_count"] = get_aggregated_count(sql_df)
             comparison_results["comparison_summary_message"] = "Snowflake query failed to execute."
             try:
                 comparison_results["source_query_result"] = [row.asDict() for row in sql_df.collect()] if sql_df else []
@@ -409,8 +443,10 @@ def compare_spark_dataframes(spark, sql_df, snowflake_df, key_columns):
                 comparison_results["source_query_result"] = [{"error": str(e), "message": "Failed to collect source DataFrame"}]
             return comparison_results
 
-        comparison_results["source_count"] = sql_df.count()
-        comparison_results["target_count"] = snowflake_df.count()
+        comparison_results["source_count"] = get_aggregated_count(sql_df)
+        comparison_results["target_count"] = get_aggregated_count(snowflake_df)
+
+        logger.info(f"Calculated counts: Source={comparison_results['source_count']}, Target={comparison_results['target_count']}")
 
         try:
             comparison_results["source_query_result"] = [row.asDict() for row in sql_df.collect()]
@@ -428,13 +464,13 @@ def compare_spark_dataframes(spark, sql_df, snowflake_df, key_columns):
         # If no key columns are provided, it implies a count-only comparison.
         # In this scenario, we only compare the counts and the single result row.
         if not key_columns:
-            logger.info("No key columns provided. Performing count-only comparison.")
+            logger.info("No key columns provided. Performing count-only comparison based on calculated total counts..")
             if comparison_results["source_count"] == comparison_results["target_count"]:
-                comparison_results["comparison_summary_message"] = f"Counts match: {comparison_results['source_count']} rows."
+                comparison_results["comparison_summary_message"] = f"Counts match: {comparison_results['source_count']}."
             else:
                 comparison_results["comparison_summary_message"] = (
-                    f"Count mismatch: Source has {comparison_results['source_count']} rows, "
-                    f"Target has {comparison_results['target_count']} rows."
+                    f"Count mismatch: Source has {comparison_results['source_count']}, "
+                    f"Target has {comparison_results['target_count']}."
                 )
             # For count-only, we don't need to populate data_not_in_source, data_not_in_target, or mismatch_column_values
             # as these are relevant for row-by-row or column-by-column data mismatches.
@@ -443,19 +479,19 @@ def compare_spark_dataframes(spark, sql_df, snowflake_df, key_columns):
         
         
         # Handle scenarios where one or both DataFrames are empty (query ran, but no data)
-        source_has_data = comparison_results["source_count"] > 0
-        target_has_data = comparison_results["target_count"] > 0
+        source_has_rows = sql_df.count() > 0
+        target_has_rows = snowflake_df.count() > 0
 
-        if not source_has_data and not target_has_data:
-            comparison_results["comparison_summary_message"] = "Both SQL Server and Snowflake queries returned no data."
+        if not source_has_rows and not target_has_rows:
+            comparison_results["comparison_summary_message"] = "Both SQL Server and Snowflake queries returned no data (for row-level comparison)."
             return comparison_results
-        elif not source_has_data:
-            comparison_results["comparison_summary_message"] = "SQL Server query returned no data. Data exists only in Snowflake."
+        elif not source_has_rows:
+            comparison_results["comparison_summary_message"] = "SQL Server query returned no data. Data exists only in Snowflake (for row-level comparison)."
             # All target data is "not in source"
             comparison_results["data_not_in_source"] = comparison_results["target_query_result"]
             return comparison_results
-        elif not target_has_data:
-            comparison_results["comparison_summary_message"] = "Snowflake query returned no data. Data exists only in SQL Server."
+        elif not target_has_rows:
+            comparison_results["comparison_summary_message"] = "Snowflake query returned no data. Data exists only in SQL Server (for row-level comparison)."
             # All source data is "not in target"
             comparison_results["data_not_in_target"] = comparison_results["source_query_result"]
             return comparison_results
@@ -549,16 +585,18 @@ def compare_spark_dataframes(spark, sql_df, snowflake_df, key_columns):
 
 
                         if grouping_key not in grouped_mismatches:
-                            grouped_mismatches[grouping_key] = {
-                                "key_columns": key_columns_dict_for_output,
-                                "mismatches": []
-                            }
                             # If there's only one key column, flat-pack it as requested
                             if len(key_columns_lower) == 1:
                                 grouped_mismatches[grouping_key] = {
                                     "key_columns": key_columns_lower[0], # The column name
                                     "key_value": key_value,            # The actual value
                                     "mismatches": []
+                                }
+                            
+                            else:
+                                grouped_mismatches[grouping_key] = {
+                                "key_columns": key_columns_dict_for_output,
+                                "mismatches": []
                                 }
 
                         grouped_mismatches[grouping_key]["mismatches"].append({
@@ -577,11 +615,18 @@ def compare_spark_dataframes(spark, sql_df, snowflake_df, key_columns):
            not comparison_results["data_not_in_source"] and \
            not comparison_results["data_not_in_target"] and \
            not comparison_results["mismatch_column_values"]:
-            comparison_results["comparison_summary_message"] = f"Data matches perfectly: {comparison_results['source_count']} rows."
+            comparison_results["comparison_summary_message"] = f"Data matches perfectly: {comparison_results['source_count']}."
         else:
             # If there are any differences detected
             if not comparison_results["comparison_summary_message"].startswith("Data mismatch:"):
-                comparison_results["comparison_summary_message"] = "Data differences detected (counts or row-level mismatches)."
+                comparison_results["comparison_summary_message"] = "Data differences detected"
+                
+            if comparison_results["source_count"] != comparison_results["target_count"]:
+                comparison_results["comparison_summary_message"] += f" Count mismatch: Source has {comparison_results['source_count']}, Target has {comparison_results['target_count']}."
+            if comparison_results["data_not_in_source"]:
+                comparison_results["comparison_summary_message"] += f" {len(comparison_results['data_not_in_source'])} rows only in target."
+            if comparison_results["data_not_in_target"]:
+                comparison_results["comparison_summary_message"] += f" {len(comparison_results['data_not_in_target'])} rows only in source."
             if comparison_results["mismatch_column_values"]:
                 comparison_results["comparison_summary_message"] += " Column-level value mismatches detected."
 
