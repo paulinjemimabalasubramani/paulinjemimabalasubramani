@@ -21,7 +21,7 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, normalize_name, get_csv_rows, is_pc, get_secrets
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, normalize_name, get_csv_rows, is_pc,get_azure_key_vault, get_secrets
 import requests,json,csv
 import time
 
@@ -36,7 +36,7 @@ def call_api(http_method,url,headers=None,data1=None,params1=None,max_retries=3,
                     headers = headers,
                     data = data1,
                     params = params1,
-                    timeout = 180,
+                    timeout = 300,
                     )
             response.raise_for_status()
             return response.json()  # Return the JSON response if successful
@@ -56,10 +56,10 @@ def get_oauth_rpag_token(broker_delear_key:str):
     azure_kv_rpag_account_name = azure_rpag_kv[broker_delear_key]
 
     payload = {
-        'clientID': client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-client-id').value,    
-        'ClientSecret': client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-client-secret').value,
-        'userName': client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-username').value,
-        'password': client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-password').value
+        'clientID': azure_client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-client-id').value,    
+        'ClientSecret': azure_client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-client-secret').value,
+        'userName': azure_client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-username').value,
+        'password': azure_client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-password').value
     }
 
     response = call_api("POST",data_settings.rpag_token_url,headers={ 'Content-Type': 'application/json'},data1=json.dumps(payload))
