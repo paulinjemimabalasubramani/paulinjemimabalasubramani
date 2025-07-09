@@ -52,6 +52,8 @@ def get_data_feed_file_inventory(conn):
               for a file feed, or an empty list if no records are found.
     """
     cursor = conn.cursor()
+    lookup_pipeline_key = data_settings.pipelinekey.upper()
+
     try:
         query = f"""
             SELECT
@@ -62,26 +64,26 @@ def get_data_feed_file_inventory(conn):
                 FILE_NAME_PREFIX,
                 FILE_NAME_SUFFIX,
                 FILE_FORMAT,
-                PIPELINEKEY, -- Include PIPELINEKEY for logging/context if needed
-                FILE_ID -- Include FILE_ID for logging/context if needed
+                PIPELINEKEY,
+                FILE_ID
             FROM DATAHUB.PIPELINE_METADATA.DATA_FEED_FILE_INVENTORY
-            WHERE INBOUND_OUTBOUND_TEXT = 'OUTBOUND' -- Ensure it's an outbound feed
-            AND ACTIVE_FLG = 'Y' -- Ensure the feed is active
+            WHERE INBOUND_OUTBOUND_TEXT = 'OUTBOUND'
+            AND PIPELINEKEY = %s
+            AND ACTIVE_FLG = 'Y'
         """
-        cursor.execute(query)
-        results = cursor.fetchall() # Fetch all matching records
+        cursor.execute(query, (lookup_pipeline_key,))
+        result = cursor.fetchone()
 
-        metadata_list = []
-        if results:
+        if result:
             columns = [desc[0] for desc in cursor.description]
-            for row in results:
-                metadata_list.append(dict(zip(columns, row)))
-            print(f"Found {len(metadata_list)} active outbound metadata records.")
+            metadata = dict(zip(columns, result))
+            print(f"Metadata found for pipelinekey '{lookup_pipeline_key}': {metadata}")
+            return metadata
         else:
-            print(f"No active outbound metadata records found in DATA_FEED_FILE_INVENTORY.")
-        return metadata_list
+            print(f"No active outbound metadata found for pipelinekey '{lookup_pipeline_key}'.")
+            return None
     except Exception as e:
-        print(f"Error retrieving all metadata records: {e}")
+        print(f"Error retrieving metadata for pipelinekey '{lookup_pipeline_key}': {e}")
         raise
     finally:
         cursor.close()
@@ -113,7 +115,7 @@ def execute_source_query_and_fetch_data(conn, source_query):
         cursor.close()
 
 
-def write_data_to_file(file_path, column_names, data_rows, delimiter, include_header, run_date_str):
+def write_data_to_file(file_path, column_names, data_rows, delimiter, include_header):
     """
     Writes the fetched data to a file with the specified format.
 
@@ -123,16 +125,16 @@ def write_data_to_file(file_path, column_names, data_rows, delimiter, include_he
         data_rows (list): List of data tuples/lists.
         delimiter (str): Delimiter character for the file.
         include_header (bool): True if header should be included, False otherwise.
-        run_date_str (str): The current run date string (e.g., 'YYYYMMDD').
     """
     try:
-        # Prepend 'RUNDATE' to column names if header is included
-        output_column_names = ['RUNDATE'] + column_names if include_header else []
+        output_column_names = column_names
 
         # Prepare data rows by prepending run_date_str
-        output_data_rows = []
-        for row in data_rows:
-            output_data_rows.append([run_date_str] + list(row))
+        output_data_rows = data_rows
+        
+        # Ensure the output directory exists before writing
+        output_dir = os.path.dirname(file_path)
+        os.makedirs(output_dir, exist_ok=True)
 
         with open(file_path, 'w', newline='', encoding='utf-8') as outfile:
             writer = csv.writer(outfile, delimiter=delimiter)
@@ -146,59 +148,58 @@ def write_data_to_file(file_path, column_names, data_rows, delimiter, include_he
 
 def main():
 
-    print(f"Starting data extraction for all active outbound files.")
+    print(f"Starting data extraction for pipelinekey: {data_settings.pipelinekey.upper()}")
     snowflake_conn = None
     try:
         snowflake_conn = connect_to_snowflake()
 
         # Get all metadata records for all active outbound files
-        metadata_records = get_data_feed_file_inventory(snowflake_conn)
+        metadata = get_data_feed_file_inventory(snowflake_conn)
 
-        if not metadata_records:
-            print(f"Exiting: No active outbound metadata records found to process.")
+        if not metadata:
+            print(f"Exiting: No active outbound metadata record found for pipelinekey '{data_settings.pipelinekey.upper()}'.")
             return
         
-        # Get current run date for filename and RUNDATE column (common for all files in this run)
+        source_query = metadata.get('SOURCE_QUERY')
+        file_location = metadata.get('FILE_STORAGE_LOCATION_TEXT')
+        delimiter = metadata.get('DELIMITER_CHARACTER', '|')
+        header_available_flg = metadata.get('HEADER_AVAILABLE_FLG', 'N')
+        include_header = (header_available_flg.upper() == 'Y')
+
+        file_name_prefix = metadata.get('FILE_NAME_PREFIX')
+        file_name_suffix = metadata.get('FILE_NAME_SUFFIX', '') # Default to empty string
+        file_format = metadata.get('FILE_FORMAT', 'csv')
+
+        # Get current date for suffix formatting
         current_date = datetime.now()
-        run_date_str = current_date.strftime('%Y%m%d') # Format as YYYYMMDD
+        date_suffix = ''
 
-        # Loop through each metadata record and process it
-        for i, metadata in enumerate(metadata_records):
-            file_id = metadata.get('FILE_ID', 'N/A')
-            pipeline_key_for_record = metadata.get('PIPELINEKEY', 'N/A')
-            print(f"\n--- Processing file ID: {file_id} (PipelineKey: {pipeline_key_for_record}) - Record {i+1}/{len(metadata_records)} ---")
+        if file_name_suffix.lower() == '_yyyymmdd':
+            date_suffix = current_date.strftime('%Y%m%d')
+        elif file_name_suffix.lower() == '_yyyymm':
+            date_suffix = current_date.strftime('%Y%m')
+        # Else, if file_name_suffix is empty or anything else, date_suffix remains empty
 
-            source_query = metadata.get('SOURCE_QUERY')
-            file_location = metadata.get('FILE_STORAGE_LOCATION_TEXT')
-            delimiter = metadata.get('DELIMITER_CHARACTER', '|') # Default to '|'
-            header_available_flg = metadata.get('HEADER_AVAILABLE_FLG', 'N')
-            include_header = (header_available_flg.upper() == 'Y')
-            file_name_prefix = metadata.get('FILE_NAME_PREFIX', f"FILE_{file_id}") # Use FILE_ID if prefix is missing
-            file_name_suffix = metadata.get('FILE_NAME_SUFFIX', '')
-            file_format = metadata.get('FILE_FORMAT', 'csv')
+        # Construct output filename based on rules
+        if date_suffix:
+            output_filename = f"{file_name_prefix}{date_suffix}.{file_format}"
+        else:
+            output_filename = f"{file_name_prefix}.{file_format}"
 
-            if not source_query or not file_location:
-                print(f"Skipping record for File ID {file_id} due to missing SOURCE_QUERY or FILE_STORAGE_LOCATION_TEXT in metadata: {metadata}")
-                continue # Skip to the next metadata record
+        full_output_path = os.path.join(file_location, output_filename)
 
-            try:
-                column_names, data_rows = execute_source_query_and_fetch_data(snowflake_conn, source_query)
+        if not source_query or not file_location:
+            print("Error: SOURCE_QUERY or FILE_STORAGE_LOCATION_TEXT missing in metadata.")
+            return
 
-                # Construct output filename
-                # Example: FILE_NAME_PREFIX_YYYYMMDD_FILE_NAME_SUFFIX.FILE_FORMAT
-                output_filename = f"{file_name_prefix}_{run_date_str}{file_name_suffix}.{file_format}"
-                full_output_path = os.path.join(file_location, output_filename)
+        column_names, data_rows = execute_source_query_and_fetch_data(snowflake_conn, source_query)
 
-                write_data_to_file(full_output_path, column_names, data_rows, delimiter, include_header, run_date_str)
-
-            except Exception as e:
-                print(f"Error processing metadata record for File ID {file_id}: {e}")
-                # Continue to the next record even if one fails
-                continue
+        # Call write_data_to_file without run_date_str
+        write_data_to_file(full_output_path, column_names, data_rows, delimiter, include_header)
 
     except Exception as e:
-        print(f"An unhandled error occurred during the overall extraction process: {e}")
-        raise
+        print(f"An unhandled error occurred during extraction: {e}")
+        raise # Re-raise the exception to signal failure to Airflow
     finally:
         if snowflake_conn:
             snowflake_conn.close()
