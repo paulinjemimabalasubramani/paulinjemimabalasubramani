@@ -22,6 +22,7 @@ sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
 from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, normalize_name, get_csv_rows, is_pc,get_azure_key_vault, get_secrets
+from datetime import datetime
 import requests,json,csv
 import time
 
@@ -80,6 +81,8 @@ def download_rpag_client_data():
     csv_writer = csv.writer(output_file)
     csv_writer.writerow(fieldnames)
 
+    current_date = datetime.now().strftime('%Y%m%d')
+
     broker_delears = data_settings.broker_dealers.split(',')
     
     for broker_dealer in broker_delears:
@@ -94,7 +97,7 @@ def download_rpag_client_data():
         logger.info(f'Retrieved client data for broker dealer : {broker_dealer}')
 
         for item in results:
-            csv_writer.writerow([item['clientId'],broker_dealer.upper(),json.dumps(item)])
+            csv_writer.writerow([item['clientId'],broker_dealer.upper(),current_date,json.dumps(item)])
 
 if __name__ == '__main__':    
     download_rpag_client_data()
