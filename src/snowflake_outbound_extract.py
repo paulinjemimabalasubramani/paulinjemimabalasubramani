@@ -52,7 +52,6 @@ def get_data_feed_file_inventory(conn):
               for a file feed, or an empty list if no records are found.
     """
     cursor = conn.cursor()
-    lookup_pipeline_key = data_settings.pipelinekey.upper()
 
     try:
         query = f"""
@@ -68,22 +67,22 @@ def get_data_feed_file_inventory(conn):
                 FILE_ID
             FROM DATAHUB.PIPELINE_METADATA.DATA_FEED_FILE_INVENTORY
             WHERE INBOUND_OUTBOUND_TEXT = 'OUTBOUND'
-            AND PIPELINEKEY = %s
+            AND PIPELINEKEY = '{data_settings.pipelinekey.upper()}'
             AND ACTIVE_FLG = 'Y'
         """
-        cursor.execute(query, (lookup_pipeline_key,))
+        cursor.execute(query)
         result = cursor.fetchone()
 
         if result:
             columns = [desc[0] for desc in cursor.description]
             metadata = dict(zip(columns, result))
-            print(f"Metadata found for pipelinekey '{lookup_pipeline_key}': {metadata}")
+            print(f"Metadata found for pipelinekey: {metadata}")
             return metadata
         else:
-            print(f"No active outbound metadata found for pipelinekey '{lookup_pipeline_key}'.")
+            print(f"No active outbound metadata found for pipelinekey.")
             return None
     except Exception as e:
-        print(f"Error retrieving metadata for pipelinekey '{lookup_pipeline_key}': {e}")
+        print(f"Error retrieving metadata for pipelinekey: {e}")
         raise
     finally:
         cursor.close()
