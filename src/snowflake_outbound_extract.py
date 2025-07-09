@@ -145,7 +145,7 @@ def write_data_to_file(file_path, column_names, data_rows, delimiter, include_he
         print(f"Error writing data to file '{file_path}': {e}")
         raise
 
-def main():
+def snowflake_outbound_extract():
 
     print(f"Starting data extraction for pipelinekey: {data_settings.pipelinekey.upper()}")
     snowflake_conn = None
@@ -205,4 +205,4 @@ def main():
             print("Snowflake connection closed.")
 
 if __name__ == "__main__":
-    main()
+    snowflake_outbound_extract()
