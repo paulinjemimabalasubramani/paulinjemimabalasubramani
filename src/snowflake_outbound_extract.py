@@ -174,15 +174,15 @@ def main():
         current_date = datetime.now()
         date_suffix = ''
 
-        if file_name_suffix.lower() == '_yyyymmdd':
+        if file_name_suffix.lower() == 'yyyymmdd':
             date_suffix = current_date.strftime('%Y%m%d')
-        elif file_name_suffix.lower() == '_yyyymm':
+        elif file_name_suffix.lower() == 'yyyymm':
             date_suffix = current_date.strftime('%Y%m')
         # Else, if file_name_suffix is empty or anything else, date_suffix remains empty
 
         # Construct output filename based on rules
         if date_suffix:
-            output_filename = f"{file_name_prefix}{date_suffix}.{file_format}"
+            output_filename = f"{file_name_prefix}_{date_suffix}.{file_format}"
         else:
             output_filename = f"{file_name_prefix}.{file_format}"
 
