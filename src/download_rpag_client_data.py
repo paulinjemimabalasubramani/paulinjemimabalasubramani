@@ -138,7 +138,7 @@ def download_rpag_client_data():
     csv_writer = csv.writer(output_file)
     csv_writer.writerow(fieldnames)
 
-    current_date = datetime.now().strftime('%Y%m%d')
+    run_date = datetime.now().strftime('%Y%m%d')
 
     broker_delears = data_settings.broker_dealers.split(',')
     
@@ -154,7 +154,7 @@ def download_rpag_client_data():
         logger.info(f'Retrieved client data for broker dealer : {broker_dealer}')
 
         for item in results:
-            csv_writer.writerow([item['clientId'],broker_dealer.upper(),current_date,json.dumps(item)])
+            csv_writer.writerow([item['clientId'],broker_dealer.upper(),run_date,json.dumps(item)])
 
 if __name__ == '__main__':    
     download_rpag_client_data()
