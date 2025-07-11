@@ -25,6 +25,55 @@ from modules3.common_functions import catch_error, data_settings, logger, mark_e
 from datetime import datetime
 import requests,json,csv
 import time
+from modules3.snowflake_ddl import connect_to_snowflake
+
+
+@catch_error(logger)
+def is_fifth_business_day(conn):
+    """
+    Checks if today is the 5th business day of the month by querying Snowflake.
+    """
+    try:
+        # Connect using snowflake-connector-python
+        cursor = conn.cursor()
+
+        current_year = datetime.now().year
+        current_month = datetime.now().month
+
+        query = f"""
+            SELECT CALENDARDATE
+            FROM DATAHUB.PIPELINE_METADATA.DIM_DATE_REF
+            WHERE YearNumber = '{current_year}'
+              AND MonthNumber = '{current_month}'
+              AND IsWEEKDAY = 'Y'
+              AND IsHoliday = 'N'
+            ORDER BY CALENDARDATE ASC
+            LIMIT 5;
+        """
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        if len(rows) >= 5:
+            fifth_business_day = rows[4][0].date()
+            today = datetime.now().date()
+
+            if today == fifth_business_day:
+                logger.info(f"Today ({today}) is the 5th business day ({fifth_business_day}).")
+                return True
+            else:
+                logger.info(f"Today ({today}) is NOT the 5th business day ({fifth_business_day}).")
+                return False
+        else:
+            logger.warning(f"Could not find 5 business days for {current_month}/{current_year} in DIM_DATE_REF.")
+            return False
+
+    except Exception as e:
+        logger.error(f"Error checking 5th business day from Snowflake: {e}")
+        return False # Fail gracefully or re-raise if this is a hard requirement
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @catch_error(logger)
@@ -72,6 +121,14 @@ def get_oauth_rpag_token(broker_delear_key:str):
 @catch_error(logger)
 def download_rpag_client_data():
     
+    snowflake_conn = connect_to_snowflake()
+
+    if not is_fifth_business_day(snowflake_conn):
+        logger.info("Not the 5th business day. Skipping data download.")
+        sys.exit(0)
+
+    logger.info("It is the 5th business day. Proceeding with data download.")
+
     output_file_name=f'crm_client_plan.csv'
     os.makedirs(data_settings.source_path, exist_ok=True)
         
