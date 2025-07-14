@@ -34,7 +34,7 @@ sys.app.parent_name = os.path.basename(__file__)
 
 
 
-from modules3.common_functions import logger, data_settings, catch_error
+from modules3.common_functions import logger, data_settings, catch_error, generate_filename_suffix_for_snowflake_outbound_extract
 from modules3.snowflake_ddl import connect_to_snowflake
 from datetime import datetime
 
@@ -145,6 +145,7 @@ def write_data_to_file(file_path, column_names, data_rows, delimiter, include_he
         print(f"Error writing data to file '{file_path}': {e}")
         raise
 
+
 def snowflake_outbound_extract():
 
     print(f"Starting data extraction for pipelinekey: {data_settings.pipelinekey.upper()}")
@@ -166,28 +167,14 @@ def snowflake_outbound_extract():
         include_header = (header_available_flg.upper() == 'Y')
 
         file_name_prefix = metadata.get('FILE_NAME_PREFIX')
-        file_name_suffix = metadata.get('FILE_NAME_SUFFIX', '') # Default to empty string
+        file_name_suffix_template = metadata.get('FILE_NAME_SUFFIX', '') # Default to empty string
         file_format = metadata.get('FILE_FORMAT', 'csv')
 
         # Get current date for suffix formatting
         current_datetime = datetime.now()
-        date_suffix = ''
 
-        if file_name_suffix.lower() == 'yyyymmdd':
-            date_suffix = current_datetime.strftime('%Y%m%d')
-        elif file_name_suffix.lower() == 'yyyy-mm-dd':
-            date_suffix = current_datetime.strftime('%Y-%m-%d')
-        elif file_name_suffix.lower() == 'yyyymm':
-            date_suffix = current_datetime.strftime('%Y%m')
-        elif file_name_suffix.lower() == 'yyyy-mm':
-            date_suffix = current_datetime.strftime('%Y-%m')
-        elif file_name_suffix.lower() == 'yyyymmddhhmmss':
-            # This will append the full timestamp to the filename
-            date_suffix = current_datetime.strftime('%Y%m%d%H%M%S')
-        elif file_name_suffix.lower() == 'yyyy-mm-dd-hhmmss':
-            # This will append the full timestamp with hyphens
-            date_suffix = current_datetime.strftime('%Y-%m-%d-%H%M%S')
-        # Else, if file_name_suffix is empty or anything else, date_suffix remains empty
+        # Call the function to generate the suffix
+        date_suffix = generate_filename_suffix_for_snowflake_outbound_extract(file_name_suffix_template, current_datetime)
 
         # Construct output filename based on rules
         if date_suffix:

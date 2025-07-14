@@ -1238,6 +1238,36 @@ def process_file(source_file:str, record_separator:str):
         os.rename(source_file+'_tmp', source_file)
 
 
+def generate_filename_suffix_for_snowflake_outbound_extract(file_name_suffix_template: str, current_datetime: datetime) -> str:
+    """
+    Generates a date/time suffix for a filename based on a template.
+
+    Args:
+        file_name_suffix_template (str): The suffix template (e.g., 'yyyymmdd', 'yyyymmddhhmmss').
+        current_datetime (datetime): The datetime object to use for formatting.
+
+    Returns:
+        str: The formatted date/time suffix, or an empty string if no matching template.
+    """
+    if not file_name_suffix_template:
+        return ''
+
+    if file_name_suffix_template.lower() == 'yyyymmdd':
+        return current_datetime.strftime('%Y%m%d')
+    elif file_name_suffix_template.lower() == 'yyyy-mm-dd':
+        return current_datetime.strftime('%Y-%m-%d')
+    elif file_name_suffix_template.lower() == 'yyyymm':
+        return current_datetime.strftime('%Y%m')
+    elif file_name_suffix_template.lower() == 'yyyy-mm':
+        return current_datetime.strftime('%Y-%m')
+    elif file_name_suffix_template.lower() == 'yyyymmddhhmmss':
+        return current_datetime.strftime('%Y%m%d%H%M%S')
+    elif file_name_suffix_template.lower() == 'yyyy-mm-dd-hhmmss':
+        return current_datetime.strftime('%Y-%m-%d-%H%M%S')
+    else:
+        print(f"Warning: Unknown file_name_suffix template '{file_name_suffix_template}'. No date suffix will be added.")
+        return ''
+
 # %%
 
 class KeyVaultList:
