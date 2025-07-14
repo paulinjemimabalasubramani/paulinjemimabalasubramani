@@ -9,15 +9,12 @@ python_script = 'snowflake_outbound_extract'
 
 tags = ['Extract']
 
-# Schedule to run every day 11:30 am CST
-schedule_interval = '30 16 * * *'
-
 # %% Create DAG
 dag = DAG(
     dag_id=pipelinekey.lower(),
     default_args=default_args,
     description='Extract data from Snowflake',
-    schedule_interval=schedule_interval,
+    schedule_interval=None,
     start_date=days_ago(1),
     tags=tags,
     catchup=False,
