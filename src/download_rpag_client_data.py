@@ -132,7 +132,9 @@ def call_api(http_method,url,headers=None,data1=None,params1=None,max_retries=3,
 @catch_error(logger)
 def get_oauth_rpag_token(broker_delear_key:str):
 
-    azure_rpag_kv = {'OII': 'rpag-oii','OWI': 'rpag-owi',}
+    env_name = sys.app.environment.lower()
+    azure_tenant_id, azure_client = get_azure_key_vault()
+    azure_rpag_kv = {'OII': 'rpag-oii','OWI': 'rpag-owi',}    
     azure_kv_rpag_account_name = azure_rpag_kv[broker_delear_key]
 
     payload = {
@@ -155,7 +157,7 @@ def download_rpag_client_data():
         
     output_file = open(os.path.join(data_settings.source_path, output_file_name), mode='wt', newline='', encoding='utf-8')
         
-    fieldnames=['client_id','firm_name','client_plan']
+    fieldnames=['client_id','firm_name','run_date','client_plan']
     csv_writer = csv.writer(output_file)
     csv_writer.writerow(fieldnames)
 
@@ -187,5 +189,3 @@ if __name__ == '__main__':
         logger.info("Today is NOT a valid day to run the job based on configuration. Exiting.")
         sys.exit(0) # Exit gracefully if not a valid day  
 
-azure_tenant_id, azure_client = get_azure_key_vault()
-env_name = sys.app.environment.lower()
