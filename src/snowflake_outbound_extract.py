@@ -128,7 +128,7 @@ def write_data_to_file(file_path, column_names, data_rows, delimiter, include_he
     try:
         output_column_names = column_names
 
-        # Prepare data rows by prepending run_date_str
+        # Prepare data rows
         output_data_rows = data_rows
         
         # Ensure the output directory exists before writing
@@ -161,7 +161,7 @@ def snowflake_outbound_extract():
         
         source_query = metadata.get('SOURCE_QUERY')
         file_location = metadata.get('FILE_STORAGE_LOCATION_TEXT')
-        delimiter = metadata.get('DELIMITER_CHARACTER', '|')
+        delimiter = metadata.get('DELIMITER_CHARACTER', ',')
         header_available_flg = metadata.get('HEADER_AVAILABLE_FLG', 'N')
         include_header = (header_available_flg.upper() == 'Y')
 
@@ -170,13 +170,23 @@ def snowflake_outbound_extract():
         file_format = metadata.get('FILE_FORMAT', 'csv')
 
         # Get current date for suffix formatting
-        current_date = datetime.now()
+        current_datetime = datetime.now()
         date_suffix = ''
 
         if file_name_suffix.lower() == 'yyyymmdd':
-            date_suffix = current_date.strftime('%Y%m%d')
+            date_suffix = current_datetime.strftime('%Y%m%d')
+        elif file_name_suffix.lower() == 'yyyy-mm-dd':
+            date_suffix = current_datetime.strftime('%Y-%m-%d')
         elif file_name_suffix.lower() == 'yyyymm':
-            date_suffix = current_date.strftime('%Y%m')
+            date_suffix = current_datetime.strftime('%Y%m')
+        elif file_name_suffix.lower() == 'yyyy-mm':
+            date_suffix = current_datetime.strftime('%Y-%m')
+        elif file_name_suffix.lower() == 'yyyymmddhhmmss':
+            # This will append the full timestamp to the filename
+            date_suffix = current_datetime.strftime('%Y%m%d%H%M%S')
+        elif file_name_suffix.lower() == 'yyyy-mm-dd-hhmmss':
+            # This will append the full timestamp with hyphens
+            date_suffix = current_datetime.strftime('%Y-%m-%d-%H%M%S')
         # Else, if file_name_suffix is empty or anything else, date_suffix remains empty
 
         # Construct output filename based on rules
