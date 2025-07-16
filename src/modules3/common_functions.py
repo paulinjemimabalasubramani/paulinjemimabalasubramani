@@ -18,7 +18,6 @@ from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
 
 
-
 # %% Parameters
 
 execution_date_start = datetime.now()
@@ -1267,6 +1266,82 @@ def generate_filename_suffix_for_snowflake_outbound_extract(file_name_suffix_tem
     else:
         print(f"Warning: Unknown file_name_suffix template '{file_name_suffix_template}'. No date suffix will be added.")
         return ''
+
+
+def is_valid_day_to_run_job(day_indicator: str, day_in_number: int, sf_conn) -> bool:
+    """
+    Checks if the current date is a valid day to run the job based on day_indicator and day_in_number.
+    """
+    is_valid = False
+    current_date = datetime.now().strftime('%Y-%m-%d') # Format for comparison with CALENDARDATE
+    current_year = datetime.now().year
+    current_month = datetime.now().month
+
+    try:
+        
+        cursor = sf_conn.cursor()
+
+        query = f"""
+        SELECT CALENDARDATE, IsWEEKDAY, IsHoliday
+        FROM DATAHUB.PIPELINE_METADATA.DIM_DATE_REF
+        WHERE YearNumber = '{current_year}' AND MonthNumber = '{current_month}';
+        """
+
+        cursor.execute(query)
+        dim_date_ref_data = cursor.fetchall()
+        cursor.close()
+
+    except Exception as e:
+        logger.error(f"Failed to fetch data: {e}")
+        return False # If we can't get date info, we can't validate
+
+    count = 0
+    for row in dim_date_ref_data:
+        calendar_date = row[0].strftime('%Y-%m-%d') # Assuming CALENDARDATE is a datetime object
+        is_weekday = row[1]
+        is_holiday = row[2]
+
+        if ((day_indicator == 'BD' and is_weekday == 'Y' and is_holiday == 'N') or
+            (day_indicator == 'CD')):
+            count += 1
+            if count == day_in_number and calendar_date == current_date:
+                is_valid = True
+                break # Found the day, no need to continue looping
+            elif calendar_date == current_date and count != day_in_number:
+                # If we are on the current date but the count doesn't match, it's not valid for this config
+                break
+    return is_valid
+
+
+def get_valid_day_to_run_job(job_run_config_string: str, sf_conn) -> bool:
+    """
+    Parses the job run configuration string and checks if the job should proceed today.
+    Example: "BD=[5,6],CD=[7]"
+    """
+    is_valid = False
+    if job_run_config_string is None:
+        return is_valid
+
+    # Parse the configuration string: "BD=[5,6],CD=[7]" -> {'BD': ['5', '6'], 'CD': ['7']}
+    parsed_config = {}
+    parts = job_run_config_string.split(',')
+    for part in parts:
+        key_value = part.split('=')
+        if len(key_value) == 2:
+            key = key_value[0].strip()
+            values_str = key_value[1].strip('[]')
+            values = [int(v.strip()) for v in values_str.split(',') if v.strip()]
+            parsed_config[key] = values
+
+    # Loop through the parsed configurations and check for today
+    for day_indicator, day_numbers in parsed_config.items():
+        for day_in_number in day_numbers:
+            if is_valid_day_to_run_job(day_indicator, day_in_number, sf_conn):
+                is_valid = True
+                break # Found a valid configuration for today, no need to check further
+        if is_valid:
+            break
+    return is_valid
 
 # %%
 
