@@ -136,7 +136,7 @@ def get_oauth_rpag_token(broker_delear_key:str):
     azure_tenant_id, azure_client = get_azure_key_vault()
     azure_rpag_kv = {'OII': 'rpag-oii','OWI': 'rpag-owi',}    
     azure_kv_rpag_account_name = azure_rpag_kv[broker_delear_key]
-
+    
     payload = {
         'clientID': azure_client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-client-id').value,    
         'ClientSecret': azure_client.get_secret(f'{env_name}-{azure_kv_rpag_account_name}-client-secret').value,
@@ -161,7 +161,7 @@ def download_rpag_client_data():
     csv_writer = csv.writer(output_file)
     csv_writer.writerow(fieldnames)
 
-    run_date = datetime.now().strftime('%Y%m%d')
+    run_date = datetime.now().strftime('%Y-%m-%d')
 
     broker_delears = data_settings.broker_dealers.split(',')
     
