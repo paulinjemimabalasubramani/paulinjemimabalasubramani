@@ -21,88 +21,11 @@ sys.app = app
 sys.app.args = args
 sys.app.parent_name = os.path.basename(__file__)
 
-from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, normalize_name, get_csv_rows, is_pc,get_azure_key_vault, get_secrets
-from modules3.snowflake_ddl import connect_to_snowflake
+from modules3.common_functions import catch_error, data_settings, logger, mark_execution_end, normalize_name, get_csv_rows, is_pc,get_azure_key_vault, get_secrets, get_valid_day_to_run_job
 from datetime import datetime
 import requests,json,csv
 import time
-        
-def is_valid_day_to_run_job(day_indicator: str, day_in_number: int) -> bool:
-    """
-    Checks if the current date is a valid day to run the job based on day_indicator and day_in_number.
-    """
-    is_valid = False
-    current_date = datetime.now().strftime('%Y-%m-%d') # Format for comparison with CALENDARDATE
-    current_year = datetime.now().year
-    current_month = datetime.now().month
-
-    try:
-        
-        sf_conn = connect_to_snowflake()
-
-        cursor = sf_conn.cursor()
-
-        query = f"""
-        SELECT CALENDARDATE, IsWEEKDAY, IsHoliday
-        FROM DATAHUB.PIPELINE_METADATA.DIM_DATE_REF
-        WHERE YearNumber = '{current_year}' AND MonthNumber = '{current_month}';
-        """
-
-        cursor.execute(query)
-        dim_date_ref_data = cursor.fetchall()
-        cursor.close()
-        sf_conn.close()
-    except Exception as e:
-        logger.error(f"Failed to connect to Snowflake or fetch data: {e}")
-        return False # If we can't get date info, we can't validate
-
-    count = 0
-    for row in dim_date_ref_data:
-        calendar_date = row[0].strftime('%Y-%m-%d') # Assuming CALENDARDATE is a datetime object
-        is_weekday = row[1]
-        is_holiday = row[2]
-
-        if ((day_indicator == 'BD' and is_weekday == 'Y' and is_holiday == 'N') or
-            (day_indicator == 'CD')):
-            count += 1
-            if count == day_in_number and calendar_date == current_date:
-                is_valid = True
-                break # Found the day, no need to continue looping
-            elif calendar_date == current_date and count != day_in_number:
-                # If we are on the current date but the count doesn't match, it's not valid for this config
-                break
-    return is_valid
-
-
-def get_valid_day_to_run_job(job_run_config_string: str) -> bool:
-    """
-    Parses the job run configuration string and checks if the job should proceed today.
-    Example: "BD=[5,6],CD=[7]"
-    """
-    is_valid = False
-    if job_run_config_string is None:
-        return is_valid
-
-    # Parse the configuration string: "BD=[5,6],CD=[7]" -> {'BD': ['5', '6'], 'CD': ['7']}
-    parsed_config = {}
-    parts = job_run_config_string.split(',')
-    for part in parts:
-        key_value = part.split('=')
-        if len(key_value) == 2:
-            key = key_value[0].strip()
-            values_str = key_value[1].strip('[]')
-            values = [int(v.strip()) for v in values_str.split(',') if v.strip()]
-            parsed_config[key] = values
-
-    # Loop through the parsed configurations and check for today
-    for day_indicator, day_numbers in parsed_config.items():
-        for day_in_number in day_numbers:
-            if is_valid_day_to_run_job(day_indicator, day_in_number):
-                is_valid = True
-                break # Found a valid configuration for today, no need to check further
-        if is_valid:
-            break
-    return is_valid
+from modules3.snowflake_ddl import connect_to_snowflake
 
 
 @catch_error(logger)
@@ -181,11 +104,26 @@ def download_rpag_client_data():
 
 if __name__ == '__main__':  
     logger.info(f"Checking if today is a valid day to run the job with config: {data_settings.job_run_bd}")
-    if get_valid_day_to_run_job(data_settings.job_run_bd):
-        logger.info("Today is a valid day to run the job. Proceeding with RPAG extraction.")
-        download_rpag_client_data()
-        mark_execution_end()
-    else:
-        logger.info("Today is NOT a valid day to run the job based on configuration. Exiting.")
-        sys.exit(0) # Exit gracefully if not a valid day  
+    sf_connection = None
+
+    try:
+        sf_connection = connect_to_snowflake()
+
+        if get_valid_day_to_run_job(data_settings.job_run_bd, sf_connection):
+            logger.info("Today is a valid day to run the job. Proceeding with RPAG extraction.")
+            download_rpag_client_data()
+            mark_execution_end()
+        
+        else:
+            logger.info("Today is NOT a valid day to run the job based on configuration. Exiting.")
+            sys.exit(0) # Exit gracefully if not a valid day
+
+    except Exception as e:
+        logger.error(f"Error during job execution or Snowflake connection: {e}")
+        sys.exit(1) # Exit with error
+    
+    finally:
+        if sf_connection:
+            sf_connection.close() # Ensure connection is closed
+            logger.info("Snowflake connection closed.")  
 
