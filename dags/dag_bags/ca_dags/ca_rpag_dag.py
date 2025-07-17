@@ -17,7 +17,7 @@ python_spark_code = 'migrate_csv_3'
 
 tags = ['DB:ClientAccount', 'SC:RPAG']
 
-schedule_interval = '20 20 * * *' # https://crontab.guru/
+#schedule_interval = '20 20 * * *' # https://crontab.guru/
 
 
 
@@ -27,7 +27,7 @@ with DAG(
     dag_id = pipelinekey.lower(),
     default_args = default_args,
     description = pipelinekey,
-    schedule_interval = schedule_interval,
+    schedule_interval = None,
     start_date = days_ago(1),
     tags = tags,
     catchup = False,
