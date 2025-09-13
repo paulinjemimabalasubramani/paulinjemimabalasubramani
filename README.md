@@ -1,29 +1,37 @@
 # Introduction 
-Developed CI/CD pipeline frameworks for ELT processes based on client data sources and requirements.
-# Getting Started
-In this project, the tools majorly used are: Snowflake, Pyspark, Apache Airflow, Azure Devops, SQL Server
-Snowflake - For Loading and storing the data. It has data of different versions for each time updating the record (history of data) and also it has raw data stored in staging or vairant table and the meaningful data (data mapped with proper fields) in the target table. The business client has the visibility/access to the views (only specific data visible based on the business requirement) For moving the data from the variant to target target, I have used streams, tasks and procedures as part of the snowflake objects.
-The framework automatically produces the DDL scripts for snowflake objects. [The sample in Dumps zip file]
+This project showcases a CI/CD pipeline framework developed for ELT (Extract, Load, Transform) processes, tailored to client-specific data sources and business requirements. It automates data ingestion, transformation, and deployment using modern data engineering tools and cloud services.
 
-Pyspark - This is what is used for coding to build the framework.
+# Technologies Used
 
-Apache Airflow - The jobs are enabled to run to process the flow of extracting the data from the client source path to transfer and load to the snowflake staging table. All the jobs are being scheduled to run on certain time based on business requirements. The job fails if there is some exceptions raised during the process. All the information, warnings, errors details logged in the airflow.
+Snowflake:
+Stores raw and processed data.
+Maintains historical versions of records.
+Uses streams, tasks, and procedures to move data from staging (variant tables) to target tables.
+Automatically generates DDL scripts for Snowflake objects.
+(Sample scripts available in the Dumps zip file)
 
-Azure Devops - This is used to maintain the respository. Build and deploy the latest code to the production.
+PySpark:
+Core framework used for building the data pipeline logic and transformations.
 
-SQL Server - It has the config setup for each framework. And the log details of the files in each pipelines are also stored - maintaining the history of files being processed. I has also the data from the client stored. Those data is also replicated in snowflake. So, copy command text has the query what supposed to be replicated in the snowflake from sql server. [In Dumps zip file]
+Apache Airflow:
+Orchestrates jobs to extract data from client sources and load it into Snowflake.
+Jobs are scheduled based on business requirements.
+Logs all job activity including info, warnings, and errors.
+
+Azure DevOps:
+Manages source control and CI/CD pipelines.
+Builds and deploys the latest code to production environments.
+
+SQL Server:
+Stores configuration metadata for each pipeline.
+Maintains logs and history of processed files.
+Hosts client data that is replicated to Snowflake using COPY commands.
+(Sample queries available in the Dumps zip file)
 
 # Build and Test
-For testing - WinScp, SavyintCloud, Visual Studio and Azure Devops are used.
 
-SavyintCloud generates password which should be used for changing the code in WinScp and for deploying the latest version in Azure Devops (Service connections in project settings)
-
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
-
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+WinSCP: Used for secure file transfers and code updates.
+Saviynt Cloud: Generates secure passwords for deployment and access.
+Visual Studio: Development environment for framework components.
+Azure DevOps: Used for testing and deploying the latest code versions via service connections.
 
