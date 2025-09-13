@@ -31,7 +31,11 @@ Hosts client data that is replicated to Snowflake using COPY commands.
 # Build and Test
 
 WinSCP: Used for secure file transfers and code updates.
+
 Saviynt Cloud: Generates secure passwords for deployment and access.
+
 Visual Studio: Development environment for framework components.
+
 Azure DevOps: Used for testing and deploying the latest code versions via service connections.
+
 
